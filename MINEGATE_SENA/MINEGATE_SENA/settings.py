@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'core',
     'bootstrap5',
+    'usuarios',
 ]
 
 MIDDLEWARE = [
@@ -129,3 +130,35 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# LOGIN/LOGOUT SETTINGS
+
+# URLs de redirección después de login/logout
+LOGIN_URL = 'usuarios:login'  # A dónde ir si no está autenticado
+LOGIN_REDIRECT_URL = 'core:dashboard'  # A dónde ir después de login exitoso
+LOGOUT_REDIRECT_URL = 'core:index'  # A dónde ir después de logout
+
+# Configuración de sesiones
+SESSION_COOKIE_AGE = 3600  # 1 hora en segundos
+SESSION_SAVE_EVERY_REQUEST = True  # Actualiza la sesión en cada request
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # La sesión persiste al cerrar navegador
+
+# Configuración de seguridad de contraseñas
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {
+            'min_length': 8,  # Mínimo 8 caracteres
+        }
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+]
