@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Detalle de Visita Externa</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .container { max-width: 600px; margin: 0 auto; }
+    h1 { color: #333; }
+    .field { margin: 15px 0; }
+    .label { font-weight: bold; color: #555; }
+    .value { color: #333; margin-left: 10px; }
+    a { color: #4CAF50; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>{{ visita.nombre }}</h1>
+  
+  <div class="field">
+    <span class="label">ID:</span>
+    <span class="value">{{ visita.id }}</span>
+  </div>
+  
+  <div class="field">
+    <span class="label">Responsable:</span>
+    <span class="value">{{ visita.responsable }}</span>
+  </div>
+  
+  <div class="field">
+    <span class="label">Correo Electrónico:</span>
+    <span class="value">{{ visita.correo }}</span>
+  </div>
+  
+  <div class="field">
+    <span class="label">Teléfono:</span>
+    <span class="value">{{ visita.telefono }}</span>
+  </div>
+  
+  <div class="field">
+    <span class="label">Articulación:</span>
+    <span class="value">{{ visita.articulacion }}</span>
+  </div>
+  
+  <div class="field">
+    <span class="label">Cantidad:</span>
+    <span class="value">{{ visita.cantidad }}</span>
+  </div>
+  
+  <div class="field">
+    <span class="label">Fecha:</span>
+    <span class="value">{{ visita.fecha }}</span>
+  </div>
+  
+  <div class="field">
+    <span class="label">Hora:</span>
+    <span class="value">{{ visita.hora }}</span>
+  </div>
+  
+  <div class="field">
+    <span class="label">Creada:</span>
+    <span class="value">{{ visita.created_at }}</span>
+  </div>
+  
+  <div class="field">
+    <span class="label">Actualizada:</span>
+    <span class="value">{{ visita.updated_at }}</span>
+  </div>
+
+  <p><a href="/visita_externa/">Volver a Visitas Externas</a></p>
+</div>
+
+</body>
+</html>

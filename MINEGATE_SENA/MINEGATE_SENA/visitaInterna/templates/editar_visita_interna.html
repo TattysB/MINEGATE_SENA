@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Visita Interna</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #333; margin-bottom: 30px; text-align: center; }
+        div { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; color: #555; font-weight: bold; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        input:focus, select:focus { outline: none; border-color: #2196F3; box-shadow: 0 0 5px rgba(33, 150, 243, 0.3); }
+        .error { color: #d32f2f; font-size: 12px; margin-top: 5px; }
+        .buttons { display: flex; gap: 10px; justify-content: center; margin-top: 30px; }
+        button { padding: 12px 30px; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; transition: 0.3s; }
+        button[type="submit"] { background-color: #2196F3; color: white; }
+        button[type="submit"]:hover { background-color: #0b7dda; }
+        button[type="button"] { background-color: #757575; color: white; }
+        button[type="button"]:hover { background-color: #616161; }
+        a { text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Editar Visita Interna</h1>
+        
+        <form method="POST">
+            {% csrf_token %}
+            
+            <div>
+                <label for="id_nombre">Nombre:</label>
+                {{ form.nombre }}
+                {% if form.nombre.errors %}
+                    <div style="color: red;">{{ form.nombre.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div>
+                <label for="id_responsable">Responsable:</label>
+                {{ form.responsable }}
+                {% if form.responsable.errors %}
+                    <div style="color: red;">{{ form.responsable.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div>
+                <label for="id_telefono">Teléfono:</label>
+                {{ form.telefono }}
+                {% if form.telefono.errors %}
+                    <div style="color: red;">{{ form.telefono.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div>
+                <label for="id_cantidad">Cantidad de Visitantes:</label>
+                {{ form.cantidad }}
+                {% if form.cantidad.errors %}
+                    <div style="color: red;">{{ form.cantidad.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div>
+                <label for="id_fecha">Fecha de la Visita:</label>
+                {{ form.fecha }}
+                {% if form.fecha.errors %}
+                    <div style="color: red;">{{ form.fecha.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div>
+                <label for="id_estado">Estado:</label>
+                {{ form.estado }}
+                {% if form.estado.errors %}
+                    <div style="color: red;">{{ form.estado.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="buttons">
+                <button type="submit">Actualizar Visita</button>
+                <a href="{% url 'visita_interna' %}"><button type="button">Cancelar</button></a>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

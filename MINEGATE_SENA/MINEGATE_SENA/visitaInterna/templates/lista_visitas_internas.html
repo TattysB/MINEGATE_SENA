@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Visitas Internas</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 20px; }
+    .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    h1 { color: #333; margin-bottom: 30px; text-align: center; }
+    .btn-crear { margin-bottom: 20px; text-align: center; }
+    .btn-crear a { text-decoration: none; }
+    .btn-crear button { padding: 12px 30px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; transition: 0.3s; }
+    .btn-crear button:hover { background-color: #45a049; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+    th { background-color: #4CAF50; color: white; }
+    tr:nth-child(even) { background-color: #f2f2f2; }
+    tr:hover { background-color: #e8f5e9; }
+    .btn-action { padding: 6px 12px; margin: 2px; border: none; border-radius: 4px; font-size: 14px; cursor: pointer; transition: 0.3s; }
+    .btn-editar { background-color: #2196F3; color: white; }
+    .btn-editar:hover { background-color: #0b7dda; }
+    .btn-eliminar { background-color: #f44336; color: white; }
+    .btn-eliminar:hover { background-color: #da190b; }
+    a { text-decoration: none; }
+    .sin-datos { text-align: center; color: #999; padding: 40px; }
+    .filtros { margin: 20px 0; padding: 20px; background-color: #f9f9f9; border-radius: 4px; }
+    .filtros form { display: flex; gap: 10px; flex-wrap: wrap; }
+    .filtros form > div { flex: 1; min-width: 150px; }
+    .filtros label { display: block; margin-bottom: 5px; color: #555; font-weight: bold; }
+    .filtros input, .filtros select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+    .filtros button { padding: 8px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; transition: 0.3s; }
+    .filtros button:hover { background-color: #45a049; }
+    .estado { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+    .estado-pendiente { background-color: #fff3cd; color: #856404; }
+    .estado-confirmada { background-color: #d1ecf1; color: #0c5460; }
+    .estado-realizada { background-color: #d4edda; color: #155724; }
+    .estado-cancelada { background-color: #f8d7da; color: #721c24; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Lista de Visitas Internas</h1>
+  <div class="btn-crear"><a href="{% url 'crear_visita_interna' %}"><button>+ Crear Nueva Visita</button></a></div>
+
+  <div class="filtros">
+    <form method="GET">
+      <div>
+        <label for="buscar_nombre">Buscar por Nombre:</label>
+        <input type="text" id="buscar_nombre" name="nombre" value="{{ request.GET.nombre }}" placeholder="Ingrese el nombre">
+      </div>
+      <div>
+        <label for="filtrar_id">Filtrar por ID:</label>
+        <input type="number" id="filtrar_id" name="id" value="{{ request.GET.id }}" placeholder="Ingrese el ID">
+      </div>
+      <div>
+        <label for="filtrar_estado">Filtrar por Estado:</label>
+        <select id="filtrar_estado" name="estado">
+          <option value="">Todos</option>
+          <option value="pendiente" {% if request.GET.estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
+          <option value="confirmada" {% if request.GET.estado == 'confirmada' %}selected{% endif %}>Confirmada</option>
+          <option value="realizada" {% if request.GET.estado == 'realizada' %}selected{% endif %}>Realizada</option>
+          <option value="cancelada" {% if request.GET.estado == 'cancelada' %}selected{% endif %}>Cancelada</option>
+        </select>
+      </div>
+      <div style="display: flex; gap: 5px; align-items: flex-end;">
+        <button type="submit">Buscar</button>
+        <a href="{% url 'visita_interna' %}" style="text-decoration: none;"><button type="button">Limpiar</button></a>
+      </div>
+    </form>
+  </div>
+
+{% if visitas %}
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Responsable</th>
+        <th>Cantidad</th>
+        <th>Fecha</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for visita in visitas %}
+        <tr>
+          <td>{{ visita.id }}</td>
+          <td><a href="detalle_visita/{{ visita.id }}">{{ visita.nombre }}</a></td>
+          <td>{{ visita.responsable }}</td>
+          <td>{{ visita.cantidad }}</td>
+          <td>{{ visita.fecha }}</td>
+          <td><span class="estado estado-{{ visita.estado }}">{{ visita.get_estado_display }}</span></td>
+          <td>
+            <a href="{% url 'editar_visita_interna' visita.id %}"><button class="btn-action btn-editar">Editar</button></a>
+            <a href="{% url 'eliminar_visita_interna' visita.id %}"><button class="btn-action btn-eliminar">Eliminar</button></a>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p class="sin-datos">No hay visitas internas registradas.</p>
+{% endif %}
+</div>
+</body>
+</html>
