@@ -1,0 +1,72 @@
+.escaneo-container {
+  background: #f9fbff;
+  padding: 25px;
+  border-radius: 15px;
+  max-width: 800px;
+  margin: auto;
+}
+
+.lector {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.lector input {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  flex: 1;
+}
+
+.lector button {
+  padding: 8px 12px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.estado-mensaje {
+  display: none;
+  padding: 10px;
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+.estado-mensaje.exito { background-color: #d4edda; color: #155724; }
+.estado-mensaje.error { background-color: #f8d7da; color: #721c24; }
+.estado-mensaje.advertencia { background-color: #fff3cd; color: #856404; }
+
+.estado-acceso {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.estado-acceso ul {
+  list-style: none;
+  padding: 0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.item {
+  padding: 6px 10px;
+  border-radius: 6px;
+  margin-bottom: 5px;
+}
+
+.item-verde { background: #d4edda; color: #155724; }
+.item-rojo { background: #f8d7da; color: #721c24; }
+
+.estadisticas {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  font-weight: bold;
+}
+

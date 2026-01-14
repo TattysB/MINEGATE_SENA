@@ -1,0 +1,65 @@
+/* Estilos para la sección de visitantes */
+.visitantes-busqueda {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  
+  .visitantes-busqueda input,
+  .visitantes-busqueda select {
+    padding: 0.5rem;
+    border-radius: 6px;
+    border: none;
+    font-family: 'Orbitron', sans-serif;
+  }
+  
+  .buscar-btn {
+    padding: 0.5rem 1rem;
+    background-color: crimson;
+    border: none;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  
+  .tarjetas-visitas {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  
+  .tarjeta-visita {
+    background-color: #1a1a1a;
+    padding: 1rem;
+    border-radius: 8px;
+    color: white;
+    width: 250px;
+    box-shadow: 0 0 10px #000;
+  }
+  
+  .tarjeta-visita h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+    border-bottom: 2px solid #444;
+    padding-bottom: 0.5rem;
+  }
+  
+  .tarjeta-visita p {
+    margin: 0.3rem 0;
+    font-size: 0.9rem;
+  }
+  
+  .btn-detalle {
+    background-color: crimson;
+    color: white;
+    border: none;
+    padding: 0.4rem 1rem;
+    border-radius: 6px;
+    margin-top: 1rem;
+    cursor: pointer;
+    float: right;
+  }
+  
