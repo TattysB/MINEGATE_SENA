@@ -4,3 +4,7 @@ from django.shortcuts import render
 
 def index (request):
     return render (request, 'core/index.html')
+
+
+def panel_administrativo (request):
+    return render (request, 'core/panel_administrativo.html')   
