@@ -1,0 +1,308 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MineGate</title>
+
+    <link rel="stylesheet" href="{% static 'core/css/Panel_principal.css' %}" />
+    <link rel="stylesheet" href="{% static 'core/css/estilo_general.css' %}" />
+    <link rel="stylesheet" href="{% static 'core/css/Visitantes.css' %}" />
+    <link
+      rel="stylesheet"
+      href="{% static 'core/css/Estilos_para_visitantes.css' %}"
+    />
+    <link rel="stylesheet" href="{% static 'core/css/SideBar.css' %}" />
+    <link rel="stylesheet" href="{% static 'core/css/logo.css' %}" />
+    <link rel="stylesheet" href="{% static 'core/css/TopBar.css' %}" />
+    <link rel="stylesheet" href="{% static 'core/css/Botones.css' %}" />
+    <link rel="stylesheet" href="{% static 'core/css/Calendario.css' %}" />
+    <link rel="stylesheet" href="{% static 'core/css/Notificaciones.css' %}" />
+    <link rel="stylesheet" href="{% static 'core/css/Usuario.css' %}" />
+    <link rel="stylesheet" href="{% static 'core/css/configuraciones.css' %}" />
+    <link rel="stylesheet" href="{% static 'core/css/Fichas.css' %}" />
+    <link rel="stylesheet" href="{% static 'core/css/Escaneo.css' %}" />
+    <link rel="stylesheet" href="{% static 'core/css/Reportes.css' %}" />
+    <link rel="stylesheet" href="{% static 'core/css/CalendarioMeses.css' %}" />
+    <link rel="stylesheet" href="{% static 'core/css/Documentos.css' %}" />
+    <link rel="stylesheet" href="{% static 'core/css/responsivo.css' %}" />
+    <link
+      rel="stylesheet"
+      href="{% static 'core/css/barra_lateral_y_superior.css' %}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body>
+    <div class="app-container">
+      <!-- Hamburger Button -->
+      <button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle menu">
+        <i class="ri-menu-line"></i>
+      </button>
+
+      <!-- Sidebar Overlay for Mobile -->
+      <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+      <!-- Top Bar -->
+      <div class="topbar">
+        <div class="topbar-logo">
+          <img
+            src="{% static 'core/img/MINEGATE-NULL.png' %}"
+            alt="MineGate Logo"
+            title="MineGate"
+          />
+          <h1>MINEGATE</h1>
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="topbar-user">
+          <div class="user-profile-photo">
+            <img
+              src="{% static 'core/img/usuario.png' %}"
+              alt="Foto de perfil"
+              id="userProfileImg"
+              class="profile-img"
+            />
+          </div>
+          <div class="user-info">
+            <span class="user-role">Administrador</span>
+            <span class="user-name" id="userName">Admin</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="sidebar" id="sidebar">
+        <ul>
+          <li data-content="Panel_principal">
+            <i class="ri-dashboard-line icon-dashboard"></i
+            ><span>Panel principal</span>
+          </li>
+          <li data-content="calendario">
+            <i class="ri-calendar-line icon-calendar"></i
+            ><span>Calendario</span>
+          </li>
+          <li data-content="nuevavisita">
+            <i class="ri-add-circle-line icon-visit"></i
+            ><span>Nueva Visita</span>
+          </li>
+          <li data-content="visitantes">
+            <i class="ri-user-search-line icon-visitors"></i
+            ><span>Visitantes</span>
+          </li>
+          <li data-content="documentos">
+            <i class="ri-file-search-line icon-documents"></i
+            ><span>Revisión Documentos</span>
+          </li>
+          <li data-content="Escaneo">
+            <i class="ri-qr-scan-line icon-scan"></i
+            ><span>Escanear Documentos</span>
+          </li>
+          <li data-content="fichaaprendices">
+            <i class="ri-user-search-line icon-apprentice"></i
+            ><span>Ficha Aprendices</span>
+          </li>
+          <li data-content="Notificaciones">
+            <i class="ri-notification-3-line icon-notifications"></i
+            ><span>Notificaciones</span>
+          </li>
+          <li data-content="Configuracion">
+            <i class="ri-settings-3-line icon-settings"></i
+            ><span>Configuración</span>
+          </li>
+          <li data-content="Reportes">
+            <i class="ri-bar-chart-line icon-reports"></i><span>Reportes</span>
+          </li>
+        </ul>
+        <button id="logout" class="logout-button">
+          <li data-content="cerrar">
+            <i class="ri-logout-box-r-line icon-logout"></i
+            ><span>Cerrar Sesión</span>
+          </li>
+        </button>
+      </div>
+
+      <!-- Main Content -->
+      <main id="mainContent"></main>
+    </div>
+
+    <!-- Scripts -->
+    <script defer src="{% static 'core/js/Funcionalidades.js' %}"></script>
+    <script src="{% static 'core/js/Ver_todo.js' %}"></script>
+
+    <!-- Hamburger Menu Script -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // Set user info
+        const userNameEl = document.getElementById("userName");
+        const userRoleEl = document.querySelector(".user-role");
+
+        // Get user info from page (you can replace with dynamic data)
+        const user = {
+          name: "{{ user.username }}" || "Usuario",
+          role: "Administrador", // This can be dynamically set
+        };
+
+        if (userNameEl) userNameEl.textContent = user.name;
+        if (userRoleEl) userRoleEl.textContent = user.role;
+        const hamburgerBtn = document.getElementById("hamburgerBtn");
+        const sidebar = document.getElementById("sidebar");
+        const sidebarOverlay = document.getElementById("sidebarOverlay");
+        const sidebarItems = sidebar.querySelectorAll("li[data-content]");
+
+        // Add ripple effect function
+        function createRipple(event) {
+          const btn = event.currentTarget;
+          const ripple = document.createElement("span");
+          const rect = btn.getBoundingClientRect();
+          const size = Math.max(rect.width, rect.height);
+          const x = event.clientX - rect.left - size / 2;
+          const y = event.clientY - rect.top - size / 2;
+
+          ripple.style.width = ripple.style.height = size + "px";
+          ripple.style.left = x + "px";
+          ripple.style.top = y + "px";
+          ripple.classList.add("ripple");
+
+          btn.appendChild(ripple);
+          setTimeout(() => ripple.remove(), 600);
+        }
+
+        // Toggle sidebar with smooth animations
+        hamburgerBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          const isActive = sidebar.classList.contains("active");
+
+          if (!isActive) {
+            sidebar.classList.add("active");
+            sidebarOverlay.classList.add("active");
+            hamburgerBtn.classList.add("active");
+            // Prevent body scroll when menu is open
+            document.body.style.overflow = "hidden";
+          } else {
+            closeSidebar();
+          }
+        });
+
+        // Close sidebar function
+        function closeSidebar() {
+          sidebar.classList.remove("active");
+          sidebarOverlay.classList.remove("active");
+          hamburgerBtn.classList.remove("active");
+          document.body.style.overflow = "auto";
+        }
+
+        // Close sidebar when clicking overlay
+        sidebarOverlay.addEventListener("click", function () {
+          closeSidebar();
+        });
+
+        // Close sidebar when clicking on menu items
+        sidebarItems.forEach((item) => {
+          item.addEventListener("click", function (e) {
+            if (window.innerWidth <= 768) {
+              closeSidebar();
+              this.classList.add("active");
+              // Remove active class from other items
+              sidebarItems.forEach((otherItem) => {
+                if (otherItem !== this) otherItem.classList.remove("active");
+              });
+            }
+          });
+        });
+
+        // Close sidebar when clicking on logout button
+        const logoutBtn = document.getElementById("logout");
+        if (logoutBtn) {
+          logoutBtn.addEventListener("click", function () {
+            if (window.innerWidth <= 768) {
+              closeSidebar();
+            }
+          });
+        }
+
+        // Close sidebar on window resize (when going from mobile to desktop)
+        window.addEventListener("resize", function () {
+          if (window.innerWidth > 768) {
+            closeSidebar();
+            document.body.style.overflow = "auto";
+          }
+        });
+
+        // Close sidebar when pressing ESC key
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape" && sidebar.classList.contains("active")) {
+            closeSidebar();
+          }
+        });
+
+        // Add smooth scroll behavior
+        document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+          anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute("href"));
+            if (target) {
+              target.scrollIntoView({ behavior: "smooth" });
+            }
+          });
+        });
+
+        // Add touch support for better mobile experience
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        function handleSwipe() {
+          if (touchEndX < touchStartX - 50) {
+            // Swiped left - close menu
+            if (sidebar.classList.contains("active")) {
+              closeSidebar();
+            }
+          }
+          if (touchEndX > touchStartX + 50) {
+            // Swiped right - open menu
+            if (
+              !sidebar.classList.contains("active") &&
+              window.innerWidth <= 768
+            ) {
+              sidebar.classList.add("active");
+              sidebarOverlay.classList.add("active");
+              hamburgerBtn.classList.add("active");
+            }
+          }
+        }
+
+        document.addEventListener(
+          "touchstart",
+          (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+          },
+          false
+        );
+
+        document.addEventListener(
+          "touchend",
+          (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+          },
+          false
+        );
+      });
+    </script>
+  </body>
+</html>

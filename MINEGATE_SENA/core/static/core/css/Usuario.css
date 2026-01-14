@@ -1,0 +1,71 @@
+.usuario-panel {
+  max-width: 800px;
+  margin: auto;
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.usuario-info {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.avatar-section {
+  flex: 1;
+  text-align: center;
+}
+
+.avatar-preview {
+  border-radius: 50%;
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  margin-bottom: 8px;
+}
+
+.datos-section {
+  flex: 2;
+}
+
+.form-group {
+  margin-bottom: 12px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.error-msg {
+  color: red;
+  font-size: 0.8em;
+}
+
+.usuario-opciones {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.btn-cambiar-avatar,
+.btn-actualizar,
+.btn-cerrar-sesion {
+  background: #007bff;
+  color: white;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-cambiar-avatar:hover,
+.btn-actualizar:hover,
+.btn-cerrar-sesion:hover {
+  background: #0056b3;
+}
