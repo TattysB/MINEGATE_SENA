@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+{% load static %}
+
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MineGate - Nueva Contraseña</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="{% static 'css/recuperacion_contraseña.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/restablecer_contrasena.css' %}" />
+</head>
+
+<body>
+    <div class="recuperacion-container">
+        {% if validlink %}
+            <div class="recuperacion-header">
+                <i class="fa-solid fa-lock"></i>
+                <h1>Establecer Nueva Contraseña</h1>
+                <p>Por favor, ingresa tu nueva contraseña</p>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="POST" id="resetPasswordForm">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="id_password1">
+                        <i class="fa-solid fa-key"></i> {{ form.password1.label }}
+                    </label>
+                    <div class="password-field">
+                        <input type="password" name="password1" id="id_password1" class="form-control" placeholder="Ingrese su nueva contraseña" autocomplete="new-password" required>
+                        <button type="button" class="toggle-password" data-target="id_password1">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                    <!-- Contenedor de fortaleza de contraseña (se inserta dinámicamente) -->
+                    {% if form.password1.errors %}
+                        <div class="alert alert-error" style="margin-top: 10px;">
+                            {{ form.password1.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="id_password2">
+                        <i class="fa-solid fa-lock"></i> {{ form.password2.label }}
+                    </label>
+                    <div class="password-field">
+                        <input type="password" name="password2" id="id_password2" class="form-control" placeholder="Confirme su nueva contraseña" autocomplete="new-password" required>
+                        <button type="button" class="toggle-password" data-target="id_password2">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                    {% if form.password2.errors %}
+                        <div class="alert alert-error" style="margin-top: 10px;">
+                            {{ form.password2.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                {% if form.non_field_errors %}
+                    <div class="alert alert-error">
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+
+                <button type="submit" class="btn-submit">
+                    <i class="fa-solid fa-check"></i> Establecer Nueva Contraseña
+                </button>
+            </form>
+
+        {% else %}
+            <div class="invalid-link">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <h2>Enlace Inválido o Expirado</h2>
+                <p>El enlace de recuperación que utilizaste es inválido o ha expirado. Por favor, solicita un nuevo enlace de recuperación.</p>
+                <a href="{% url 'usuarios:solicitar_recuperacion' %}" class="btn-back">
+                    <i class="fa-solid fa-arrow-rotate-right"></i> Solicitar Nuevo Enlace
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <script>
+        // ===== FUNCIONES DE VALIDACIÓN DE CONTRASEÑA =====
+        
+        // Toggle password visibility
+        document.querySelectorAll('.toggle-password').forEach(button => {
+            button.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-target');
+                const input = document.getElementById(targetId);
+                const icon = this.querySelector('i');
+                
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            });
+        });
+
+        // Verificar fortaleza de contraseña
+        function checkPasswordStrength(password) {
+            const requirements = {
+                length: password.length >= 8,
+                uppercase: /[A-Z]/.test(password),
+                lowercase: /[a-z]/.test(password),
+                number: /\d/.test(password),
+                special: /[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\;'`~]/.test(password)
+            };
+            
+            const metCount = Object.values(requirements).filter(Boolean).length;
+            
+            let strength = 'none';
+            let strengthText = '';
+            let strengthClass = '';
+            
+            if (password.length === 0) {
+                strength = 'none';
+                strengthText = '';
+                strengthClass = '';
+            } else if (metCount <= 2) {
+                strength = 'weak';
+                strengthText = 'Muy débil';
+                strengthClass = 'strength-weak';
+            } else if (metCount === 3) {
+                strength = 'medium';
+                strengthText = 'Media';
+                strengthClass = 'strength-medium';
+            } else if (metCount === 4) {
+                strength = 'good';
+                strengthText = 'Buena';
+                strengthClass = 'strength-good';
+            } else if (metCount === 5) {
+                strength = 'strong';
+                strengthText = 'Segura';
+                strengthClass = 'strength-strong';
+            }
+            
+            return {
+                requirements,
+                metCount,
+                strength,
+                strengthText,
+                strengthClass
+            };
+        }
+
+        // Crear UI de fortaleza de contraseña
+        function createPasswordStrengthUI(passwordInput) {
+            if (!passwordInput) return;
+            
+            const formGroup = passwordInput.closest('.form-group');
+            if (!formGroup) return;
+            
+            // Verificar si ya existe la UI
+            if (formGroup.querySelector('.password-strength-container')) return;
+            
+            // Crear contenedor de fortaleza
+            const strengthContainer = document.createElement('div');
+            strengthContainer.className = 'password-strength-container';
+            strengthContainer.innerHTML = `
+                <div class="strength-bar-wrapper">
+                    <div class="strength-bar">
+                        <div class="strength-bar-fill"></div>
+                    </div>
+                    <span class="strength-text"></span>
+                </div>
+                <div class="password-requirements-dynamic">
+                    <div class="requirement unmet" data-req="length">
+                        <i class="fa-solid fa-circle-xmark req-icon" style="color: #ef4444;"></i>
+                        <span style="color: #ef4444;">Mínimo 8 caracteres</span>
+                    </div>
+                    <div class="requirement unmet" data-req="uppercase">
+                        <i class="fa-solid fa-circle-xmark req-icon" style="color: #ef4444;"></i>
+                        <span style="color: #ef4444;">Una letra mayúscula</span>
+                    </div>
+                    <div class="requirement unmet" data-req="lowercase">
+                        <i class="fa-solid fa-circle-xmark req-icon" style="color: #ef4444;"></i>
+                        <span style="color: #ef4444;">Una letra minúscula</span>
+                    </div>
+                    <div class="requirement unmet" data-req="number">
+                        <i class="fa-solid fa-circle-xmark req-icon" style="color: #ef4444;"></i>
+                        <span style="color: #ef4444;">Un número</span>
+                    </div>
+                    <div class="requirement unmet" data-req="special">
+                        <i class="fa-solid fa-circle-xmark req-icon" style="color: #ef4444;"></i>
+                        <span style="color: #ef4444;">Un carácter especial (!@#$%...)</span>
+                    </div>
+                </div>
+            `;
+            
+            // Insertar después del password-field
+            const passwordField = formGroup.querySelector('.password-field');
+            if (passwordField) {
+                passwordField.after(strengthContainer);
+            } else {
+                formGroup.appendChild(strengthContainer);
+            }
+            
+            // Configurar evento de input
+            passwordInput.addEventListener('input', function() {
+                updatePasswordStrengthUI(this.value, strengthContainer);
+            });
+            
+            // Mostrar requisitos al enfocar
+            passwordInput.addEventListener('focus', function() {
+                strengthContainer.classList.add('visible');
+            });
+            
+            // Ocultar requisitos al desenfocar (si la contraseña está vacía)
+            passwordInput.addEventListener('blur', function() {
+                if (!this.value) {
+                    strengthContainer.classList.remove('visible');
+                }
+            });
+        }
+
+        // Actualizar UI de fortaleza
+        function updatePasswordStrengthUI(password, container) {
+            if (!container) return;
+            
+            const result = checkPasswordStrength(password);
+            const barFill = container.querySelector('.strength-bar-fill');
+            const strengthText = container.querySelector('.strength-text');
+            const requirements = container.querySelectorAll('.requirement');
+            
+            // Actualizar barra de fortaleza
+            barFill.className = 'strength-bar-fill';
+            if (result.strengthClass) {
+                barFill.classList.add(result.strengthClass);
+            }
+            
+            // Calcular ancho de la barra
+            const widthPercent = (result.metCount / 5) * 100;
+            barFill.style.width = widthPercent + '%';
+            
+            // Actualizar texto
+            strengthText.textContent = result.strengthText;
+            strengthText.className = 'strength-text ' + result.strengthClass;
+            
+            // Actualizar requisitos
+            requirements.forEach(req => {
+                const reqName = req.dataset.req;
+                const icon = req.querySelector('.req-icon');
+                const textSpan = req.querySelector('span');
+                
+                if (result.requirements[reqName]) {
+                    req.classList.add('met');
+                    req.classList.remove('unmet');
+                    icon.className = 'fa-solid fa-circle-check req-icon';
+                    icon.style.color = '#10b981';
+                    if (textSpan) textSpan.style.color = '#10b981';
+                } else {
+                    req.classList.remove('met');
+                    req.classList.add('unmet');
+                    icon.className = 'fa-solid fa-circle-xmark req-icon';
+                    icon.style.color = '#ef4444';
+                    if (textSpan) textSpan.style.color = '#ef4444';
+                }
+            });
+            
+            // Mostrar contenedor si hay texto
+            if (password.length > 0) {
+                container.classList.add('visible');
+            }
+        }
+
+        // Validación del formulario
+        function setupResetPasswordValidation() {
+            const form = document.getElementById('resetPasswordForm');
+            if (!form) return;
+            
+            const pass1Input = document.getElementById('id_password1');
+            const pass2Input = document.getElementById('id_password2');
+            
+            // Crear UI de fortaleza para el primer campo de contraseña
+            createPasswordStrengthUI(pass1Input);
+            
+            form.addEventListener('submit', function(e) {
+                const password1 = pass1Input?.value || '';
+                const password2 = pass2Input?.value || '';
+                let hasErrors = false;
+                
+                // Limpiar errores previos
+                document.querySelectorAll('.field-error-inline').forEach(el => el.remove());
+                
+                // Validar que los campos no estén vacíos
+                if (!password1) {
+                    showFieldErrorInline(pass1Input, 'La contraseña es obligatoria');
+                    hasErrors = true;
+                }
+                
+                if (!password2) {
+                    showFieldErrorInline(pass2Input, 'Debes confirmar la contraseña');
+                    hasErrors = true;
+                }
+                
+                if (hasErrors) {
+                    e.preventDefault();
+                    return false;
+                }
+                
+                // Validar fortaleza de contraseña
+                const passwordResult = checkPasswordStrength(password1);
+                if (passwordResult.metCount < 5) {
+                    let missingReqs = [];
+                    if (!passwordResult.requirements.length) missingReqs.push('mínimo 8 caracteres');
+                    if (!passwordResult.requirements.uppercase) missingReqs.push('una mayúscula');
+                    if (!passwordResult.requirements.lowercase) missingReqs.push('una minúscula');
+                    if (!passwordResult.requirements.number) missingReqs.push('un número');
+                    if (!passwordResult.requirements.special) missingReqs.push('un carácter especial');
+                    showFieldErrorInline(pass1Input, 'Falta: ' + missingReqs.join(', '));
+                    hasErrors = true;
+                }
+                
+                // Validar que las contraseñas coincidan
+                if (password1 !== password2) {
+                    showFieldErrorInline(pass2Input, 'Las contraseñas no coinciden');
+                    hasErrors = true;
+                }
+                
+                if (hasErrors) {
+                    e.preventDefault();
+                    return false;
+                }
+                
+                // Mostrar animación de carga en el botón
+                const submitBtn = form.querySelector('.btn-submit');
+                if (submitBtn) {
+                    submitBtn.classList.add('loading');
+                    const icon = submitBtn.querySelector('i');
+                    const originalIcon = icon.className;
+                    icon.className = 'fa-solid fa-spinner';
+                    submitBtn.innerHTML = '<i class="fa-solid fa-spinner"></i> Actualizando...';
+                }
+                
+                return true;
+            });
+        }
+        
+        function showFieldErrorInline(input, message) {
+            const container = input.closest('.form-group');
+            if (!container) return;
+            
+            // Eliminar error previo
+            const existingError = container.querySelector('.field-error-inline');
+            if (existingError) existingError.remove();
+            
+            // Crear y añadir mensaje de error con animación
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'field-error-inline';
+            errorDiv.style.cssText = 'color: #ef4444; font-size: 12px; margin-top: 5px; animation: slideInShake 0.4s ease-out;';
+            errorDiv.innerHTML = '<i class="fa-solid fa-exclamation-circle"></i> ' + message;
+            container.appendChild(errorDiv);
+            
+            // Añadir shake al input
+            input.style.animation = 'shake 0.5s ease-out';
+            setTimeout(() => {
+                input.style.animation = '';
+            }, 500);
+        }
+
+        // Inicializar cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', function() {
+            setupResetPasswordValidation();
+        });
+    </script>
+</body>
+</html>
