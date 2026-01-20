@@ -1,0 +1,76 @@
+.calendario {
+    background: linear-gradient(145deg, #1a1a1a, #111);
+    border: 2px solid gold;
+    border-radius: 16px;
+    padding: 1.5rem;
+    max-width: 900px;
+    margin: 2rem auto;
+    color: white;
+    font-family: 'Orbitron', sans-serif;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+  }
+  
+  .calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  
+  .calendar-header h2 {
+    color: gold;
+    text-transform: capitalize;
+  }
+  
+  .calendar-header button {
+    background-color: #282828;
+    color: gold;
+    border: 1px solid gold;
+    padding: 5px 15px;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    cursor: pointer;
+  }
+  
+  .calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 0.5rem;
+    color: #ccc;
+  }
+  
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    text-align: center;
+  }
+  
+  .day {
+    padding: 20px 10px;
+    border-radius: 10px;
+    background-color: #222;
+    border: 1px solid #444;
+    transition: 0.2s;
+    cursor: pointer;
+  }
+  
+  .day:hover {
+    background-color: #333;
+    transform: scale(1.03);
+  }
+  
+  .visita {
+    background-color: #ffbf00;
+    color: black;
+    font-weight: bold;
+    box-shadow: 0 0 5px gold;
+  }
+  
+  .disponible {
+    background-color: #006400;
+    color: #fff;
+  }
+  
