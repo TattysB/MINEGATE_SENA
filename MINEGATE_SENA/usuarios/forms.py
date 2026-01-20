@@ -268,11 +268,18 @@ class RegistroForm(UserCreationForm):
         
         if commit:
             user.save()
-            # El perfil se crea automáticamente por la señal
-            perfil = user.perfil
-            perfil.documento = self.cleaned_data['documento']
-            perfil.telefono = self.cleaned_data.get('telefono', '')
-            perfil.save()
+            # Crear o actualizar el perfil manualmente
+            perfil, created = PerfilUsuario.objects.get_or_create(
+                user=user,
+                defaults={
+                    'documento': self.cleaned_data['documento'],
+                    'telefono': self.cleaned_data.get('telefono', ''),
+                }
+            )
+            if not created:
+                perfil.documento = self.cleaned_data['documento']
+                perfil.telefono = self.cleaned_data.get('telefono', '')
+                perfil.save()
         
         return user
 

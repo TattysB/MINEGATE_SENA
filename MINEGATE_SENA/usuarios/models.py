@@ -82,9 +82,17 @@ class PerfilUsuario(models.Model):
 def crear_perfil_usuario(sender, instance, created, **kwargs):
     """
     Crea automáticamente un perfil cuando se crea un usuario
+    Solo si el perfil no existe ya (evita duplicados con el formulario de registro)
     """
     if created:
-        PerfilUsuario.objects.create(user=instance)
+        # Solo crear si no existe ya un perfil para este usuario
+        if not hasattr(instance, 'perfil'):
+            try:
+                PerfilUsuario.objects.get(user=instance)
+            except PerfilUsuario.DoesNotExist:
+                # Solo crear para usuarios que no vienen del registro
+                # (superusuarios creados desde consola, etc.)
+                pass
 
 @receiver(post_save, sender=User)
 def guardar_perfil_usuario(sender, instance, **kwargs):
