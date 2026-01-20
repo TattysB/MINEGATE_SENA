@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+{% load static %}
+
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MineGate - Registro</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="{% static 'css/login.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/auth.css' %}" />
+</head>
+
+<body>
+    <!-- Contenedor de alertas -->
+    <div class="alerts-container" id="alertsContainer"></div>
+
+    <div class="container" id="container">
+        <!-- Formulario de Registro -->
+        <div class="form-container sign-up">
+            <form action="{% url 'usuarios:registro' %}" method="POST" id="registroForm">
+                {% csrf_token %}    
+                <h1>Crear Cuenta</h1>
+
+                {% if form.non_field_errors %}
+                    <div class="form-errors">{{ form.non_field_errors }}</div>
+                {% endif %}
+
+                <div class="form-group">
+                    <input type="text" name="documento" placeholder="Número de documento" required>
+                    {% if form.documento.errors %}
+                        <span class="field-error">{{ form.documento.errors|striptags }}</span>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    <input type="email" name="email" placeholder="Correo electrónico" required>
+                    {% if form.email.errors %}
+                        <span class="field-error">{{ form.email.errors|striptags }}</span>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    <input type="text" name="first_name" placeholder="Nombre" required>
+                    {% if form.first_name.errors %}
+                        <span class="field-error">{{ form.first_name.errors|striptags }}</span>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    <input type="text" name="last_name" placeholder="Apellido" required>
+                    {% if form.last_name.errors %}
+                        <span class="field-error">{{ form.last_name.errors|striptags }}</span>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <div class="password-field">
+                        <input type="password" name="password1" id="password1" placeholder="Contraseña (mín. 8 caracteres)" required>
+                        <button type="button" class="toggle-password" data-target="password1">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                    {% if form.password1.errors %}
+                        <span class="field-error">{{ form.password1.errors|striptags }}</span>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <div class="password-field">
+                        <input type="password" name="password2" id="password2" placeholder="Confirmar contraseña" required>
+                        <button type="button" class="toggle-password" data-target="password2">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                    {% if form.password2.errors %}
+                        <span class="field-error">{{ form.password2.errors|striptags }}</span>
+                    {% endif %}
+                </div>
+                
+                <button type="submit">Registrarse</button>
+
+                <!-- Enlace persistente para volver al inicio de sesión (visible en móvil) -->
+                <a href="{% url 'usuarios:login' %}" class="back-login-link">
+                    <i class="fa-solid fa-arrow-left"></i> Volver al inicio de sesión
+                </a>
+            </form>
+        </div>
+
+        <!-- Panel de Toggle -->
+        <div class="toggle-container">
+            <div class="toggle">
+                <div class="toggle-panel toggle-left">
+                    <div class="flip">
+                        <div class="front"></div>
+                        <div class="back"></div>
+                    </div>
+                    <h1>¡Hola, Amigo!</h1>
+                    <p>¿Ya tienes una cuenta? Inicia sesión para acceder</p> 
+                    <a href="{% url 'usuarios:login' %}" class="hidden">Entrar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'js/script.js' %}" defer></script>
+    <script src="{% static 'js/auth.js' %}" defer></script>
+    <script src="{% static 'js/logo_animation.js' %}" defer></script>
+    
+    <script>
+        // Activar el contenedor para mostrar el formulario de registro
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.getElementById('container');
+            if (container) {
+                container.classList.add('active');
+            }
+            
+            // Mostrar mensajes de Django si existen
+            {% if messages %}
+                {% for message in messages %}
+                    if (typeof showAlert === 'function') {
+                        var msgType = 'info';
+                        {% if message.tags %}
+                            {% if 'error' in message.tags %}
+                                msgType = 'error';
+                            {% elif 'success' in message.tags %}
+                                msgType = 'success';
+                            {% elif 'warning' in message.tags %}
+                                msgType = 'warning';
+                            {% endif %}
+                        {% endif %}
+                        showAlert('{{ message|escapejs }}', msgType);
+                    }
+                {% endfor %}
+            {% endif %}
+        });
+    </script>
+</body>
+</html>

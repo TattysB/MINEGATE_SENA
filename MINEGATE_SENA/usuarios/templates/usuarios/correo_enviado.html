@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+{% load static %}
+
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MineGate - Correo Enviado</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="{% static 'css/recuperacion_contraseña.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/correo_enviado.css' %}" />
+</head>
+
+<body>
+    <!-- Partículas de fondo -->
+    <div class="particles" id="particles"></div>
+    
+    <div class="recuperacion-container">
+        <!-- Círculo de éxito animado -->
+        <div class="success-circle">
+            <svg viewBox="0 0 120 120">
+                <circle class="circle-bg" cx="60" cy="60" r="54"/>
+                <circle class="circle-progress" cx="60" cy="60" r="54"/>
+            </svg>
+            <div class="icon-container">
+                <i class="fa-solid fa-envelope-circle-check"></i>
+            </div>
+        </div>
+        
+        <div class="recuperacion-header">
+            <h1>¡Correo Enviado!</h1>
+            <p>Hemos enviado las instrucciones para restablecer tu contraseña a tu correo electrónico.</p>
+        </div>
+
+        <div class="info-box">
+            <i class="fa-solid fa-circle-info"></i>
+            <p><strong>¿Qué hacer ahora?</strong></p>
+        </div>
+
+        <ul>
+            <li><span class="bullet"></span> <span>Revisa tu bandeja de entrada</span></li>
+            <li><span class="bullet"></span> <span>Si no lo ves, revisa tu carpeta de spam</span></li>
+            <li><span class="bullet"></span> <span>Haz clic en el enlace del correo (válido por 24 horas)</span></li>
+            <li><span class="bullet"></span> <span>Establece tu nueva contraseña</span></li>
+        </ul>
+
+        <a href="{% url 'usuarios:login' %}" class="btn-back">
+            <i class="fa-solid fa-arrow-left"></i> Volver al Inicio de Sesión
+        </a>
+    </div>
+    
+    <script>
+        // Crear partículas flotantes
+        function createParticles() {
+            const container = document.getElementById('particles');
+            const particleCount = 15;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 4 + 's';
+                particle.style.width = (Math.random() * 10 + 5) + 'px';
+                particle.style.height = particle.style.width;
+                container.appendChild(particle);
+            }
+        }
+        
+        createParticles();
+    </script>
+</body>
+</html>

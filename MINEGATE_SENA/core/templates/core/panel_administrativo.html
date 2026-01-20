@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MineGate</title>
 
-    <link rel="stylesheet" href="{% static 'core/css/Panel_principal.css' %}" />
+    <!-- ESTILOS ANTIGUOS (Comentados para pruebas) -->
+    <!-- <link rel="stylesheet" href="{% static 'core/css/Panel_principal.css' %}" />
     <link rel="stylesheet" href="{% static 'core/css/estilo_general.css' %}" />
     <link rel="stylesheet" href="{% static 'core/css/Visitantes.css' %}" />
     <link
@@ -27,10 +28,14 @@
     <link rel="stylesheet" href="{% static 'core/css/CalendarioMeses.css' %}" />
     <link rel="stylesheet" href="{% static 'core/css/Documentos.css' %}" />
     <link rel="stylesheet" href="{% static 'core/css/responsivo.css' %}" />
+    <link rel="stylesheet" href="{% static 'core/css/gestionar_permisos.css' %}" />
     <link
       rel="stylesheet"
       href="{% static 'core/css/barra_lateral_y_superior.css' %}"
-    />
+    /> -->
+
+    <!-- NUEVO ARCHIVO CSS CON MEJORAS (Limpio y Optimizado) -->
+    <link rel="stylesheet" href="{% static 'core/css/nuevos_estilos.css' %}" />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
@@ -121,6 +126,12 @@
             <i class="ri-notification-3-line icon-notifications"></i
             ><span>Notificaciones</span>
           </li>
+          {% if es_superusuario %}
+          <li data-content="GestionPermisos">
+            <i class="ri-shield-user-line icon-permissions"></i
+            ><span>Gestión de Permisos</span>
+          </li>
+          {% endif %}
           <li data-content="Configuracion">
             <i class="ri-settings-3-line icon-settings"></i
             ><span>Configuración</span>
@@ -129,21 +140,343 @@
             <i class="ri-bar-chart-line icon-reports"></i><span>Reportes</span>
           </li>
         </ul>
-        <button id="logout" class="logout-button">
-          <li data-content="cerrar">
+        <button id="logout" class="logout-button" onclick="abrirModalCerrarSesion(event)">
+          <li data-content="cerrar" style="display: flex; align-items: center; width: 100%;">
             <i class="ri-logout-box-r-line icon-logout"></i
             ><span>Cerrar Sesión</span>
           </li>
         </button>
       </div>
 
+      <!-- Modal Cerrar Sesión -->
+      <div id="modalCerrarSesion" class="modal">
+        <div class="modal-contenido">
+          <div class="modal-encabezado">
+            <h2>🚪 Cerrar Sesión</h2>
+            <button class="modal-cerrar" onclick="cerrarModal('modalCerrarSesion')">&times;</button>
+          </div>
+          <div class="modal-cuerpo">
+            <p style="text-align: center; font-size: 16px; margin: 20px 0;">
+              ¿Estás seguro de que deseas cerrar sesión?
+            </p>
+            <p class="texto-info" style="text-align: center;">
+              Se cerrará tu sesión actual y deberás iniciar sesión nuevamente para acceder.
+            </p>
+          </div>
+          <div class="modal-pie">
+            <button class="btn-modal btn-cancelar" onclick="cerrarModal('modalCerrarSesion')">
+              Cancelar
+            </button>
+            <a href="{% url 'usuarios:logout' %}" style="text-decoration: none;">
+              <button class="btn-modal btn-confirmar" style="background-color: #e74c3c;">
+                Sí, Cerrar Sesión
+              </button>
+            </a>
+          </div>
+        </div>
+      </div>
+
       <!-- Main Content -->
-      <main id="mainContent"></main>
+      <main id="mainContent">
+        {% if es_superusuario %}
+        <!-- Sección de Gestión de Permisos - Solo visible para superusuarios -->
+        <div id="seccion-gestion-permisos" class="contenido-seccion" style="display: none;">
+            
+            <!-- Mensajes -->
+            {% if messages %}
+                <div class="mensajes">
+                    {% for message in messages %}
+                        <div class="alerta alerta-{{ message.tags }}">
+                            <span>{{ message }}</span>
+                            <button type="button" class="btn-cerrar-alerta" onclick="this.parentElement.style.display='none';">×</button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Tarjetas de Estadísticas -->
+            <div class="seccion-estadisticas">
+                <div class="titulo-seccion">📈 Estadísticas de Usuarios</div>
+                <div class="grid-estadisticas">
+                    <div class="tarjeta-estadistica total">
+                        <div class="numero-estadistica">{{ total_usuarios }}</div>
+                        <div class="texto-estadistica">Total de Usuarios</div>
+                    </div>
+                    <div class="tarjeta-estadistica aprobado">
+                        <div class="numero-estadistica">{{ usuarios_aprobados }}</div>
+                        <div class="texto-estadistica">Aprobados</div>
+                    </div>
+                    <div class="tarjeta-estadistica pendiente">
+                        <div class="numero-estadistica">{{ usuarios_pendientes }}</div>
+                        <div class="texto-estadistica">Pendientes</div>
+                    </div>
+                    <div class="tarjeta-estadistica rechazado">
+                        <div class="numero-estadistica">{{ usuarios_rechazados }}</div>
+                        <div class="texto-estadistica">Rechazados</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtros y Búsqueda -->
+            <div class="seccion-filtros">
+                <div class="titulo-seccion">🔍 Filtros</div>
+                <form method="GET" class="formulario-filtros">
+                    <div class="grupo-filtros">
+                        <div class="filtro-botones">
+                            <a href="?filtro=todos" class="btn-filtro {% if filtro_actual == 'todos' %}activo{% endif %}">
+                                Todos
+                            </a>
+                            <a href="?filtro=aprobados" class="btn-filtro {% if filtro_actual == 'aprobados' %}activo{% endif %}">
+                                Aprobados
+                            </a>
+                            <a href="?filtro=pendientes" class="btn-filtro {% if filtro_actual == 'pendientes' %}activo{% endif %}">
+                                Pendientes
+                            </a>
+                            <a href="?filtro=rechazados" class="btn-filtro {% if filtro_actual == 'rechazados' %}activo{% endif %}">
+                                Rechazados
+                            </a>
+                        </div>
+                        <div class="busqueda">
+                            <input 
+                                type="text" 
+                                name="buscar" 
+                                placeholder="Buscar por usuario, email, documento..." 
+                                value="{{ buscar }}"
+                                class="input-busqueda"
+                            >
+                            <button type="submit" class="btn-buscar">🔍 Buscar</button>
+                            <a href="?filtro={{ filtro_actual }}" class="btn-limpiar">Limpiar</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Tabla de Usuarios -->
+            <div class="seccion-tabla">
+                <div class="titulo-seccion">👥 Lista de Usuarios{% if perfiles %} ({{ perfiles.count }}){% endif %}</div>
+                {% if perfiles %}
+                    <div class="tabla-responsiva">
+                        <table class="tabla-usuarios">
+                            <thead>
+                                <tr>
+                                    <th>Usuario</th>
+                                    <th>Documento</th>
+                                    <th>Email</th>
+                                    <th>Teléfono</th>
+                                    <th>Fecha Registro</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for perfil in perfiles %}
+                                    <tr class="fila-usuario {% if perfil.aprobado %}aprobado{% elif perfil.razon_rechazo %}rechazado{% else %}pendiente{% endif %}">
+                                        <td class="datos-usuario">
+                                            <div class="nombre-usuario">{{ perfil.user.get_full_name|default:perfil.user.username }}</div>
+                                            <div class="username">@{{ perfil.user.username }}</div>
+                                        </td>
+                                        <td>
+                                            <span class="documento">{{ perfil.documento }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="email">{{ perfil.user.email }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="telefono">{{ perfil.telefono|default:"No especificado" }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="fecha">{{ perfil.user.date_joined|date:"d/m/Y H:i" }}</span>
+                                        </td>
+                                        <td>
+                                            {% if perfil.aprobado %}
+                                                <span class="badge badge-aprobado">✓ APROBADO</span>
+                                                <div class="fecha-aprobacion">{{ perfil.fecha_aprobacion|date:"d/m/Y" }}</div>
+                                            {% elif perfil.razon_rechazo %}
+                                                <span class="badge badge-rechazado">✗ RECHAZADO</span>
+                                                <div class="razon">{{ perfil.razon_rechazo|truncatewords:5 }}</div>
+                                            {% else %}
+                                                <span class="badge badge-pendiente">⏳ PENDIENTE</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="acciones-usuario">
+                                                {% if not perfil.aprobado or perfil.razon_rechazo %}
+                                                    <button 
+                                                        type="button" 
+                                                        class="btn-accion btn-aprobar"
+                                                        onclick="abrirModalAprobar('{{ perfil.user.id }}', '{{ perfil.user.get_full_name|default:perfil.user.username }}')"
+                                                        title="Aprobar usuario"
+                                                    >
+                                                        ✓ Aprobar
+                                                    </button>
+                                                {% else %}
+                                                    <button 
+                                                        type="button" 
+                                                        class="btn-accion btn-rechazar"
+                                                        onclick="abrirModalRechazar('{{ perfil.user.id }}', '{{ perfil.user.get_full_name|default:perfil.user.username }}')"
+                                                        title="Rechazar usuario"
+                                                    >
+                                                        ✗ Rechazar
+                                                    </button>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="sin-resultados">
+                        <p>📋 No se encontraron usuarios con los criterios seleccionados.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Modales -->
+        <div id="modalAprobar" class="modal">
+            <div class="modal-contenido">
+                <div class="modal-encabezado">
+                    <h2>✓ Aprobar Usuario</h2>
+                    <button class="modal-cerrar" onclick="cerrarModal('modalAprobar')">&times;</button>
+                </div>
+                <div class="modal-cuerpo">
+                    <p>¿Deseas aprobar a <strong id="usuarioAprobar"></strong>?</p>
+                    <p class="texto-info">Este usuario podrá acceder al sistema normalmente.</p>
+                </div>
+                <div class="modal-pie">
+                    <button class="btn-modal btn-cancelar" onclick="cerrarModal('modalAprobar')">Cancelar</button>
+                    <form id="formAprobar" method="POST" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-modal btn-confirmar">Sí, Aprobar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div id="modalRechazar" class="modal">
+            <div class="modal-contenido">
+                <div class="modal-encabezado">
+                    <h2>✗ Rechazar Usuario</h2>
+                    <button class="modal-cerrar" onclick="cerrarModal('modalRechazar')">&times;</button>
+                </div>
+                <div class="modal-cuerpo">
+                    <p>¿Deseas rechazar a <strong id="usuarioRechazar"></strong>?</p>
+                    <div class="grupo-formulario">
+                        <label for="razonRechazo">Motivo del rechazo:</label>
+                        <textarea 
+                            id="razonRechazo" 
+                            name="razon" 
+                            class="textarea-razon"
+                            placeholder="Especifica la razón del rechazo..."
+                            required
+                        ></textarea>
+                    </div>
+                </div>
+                <div class="modal-pie">
+                    <button class="btn-modal btn-cancelar" onclick="cerrarModal('modalRechazar')">Cancelar</button>
+                    <form id="formRechazar" method="POST" style="display: inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="razon" id="razonInput">
+                        <button type="button" class="btn-modal btn-confirmar" onclick="confirmarRechazar()">Sí, Rechazar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+      </main>
     </div>
 
     <!-- Scripts -->
     <script defer src="{% static 'core/js/Funcionalidades.js' %}"></script>
     <script src="{% static 'core/js/Ver_todo.js' %}"></script>
+
+    <!-- Script para Gestión de Permisos -->
+    {% if es_superusuario %}
+    <script>
+        let usuarioIdAprobar = null;
+        let usuarioIdRechazar = null;
+
+        function abrirModalAprobar(usuarioId, nombreUsuario) {
+            usuarioIdAprobar = usuarioId;
+            document.getElementById('usuarioAprobar').textContent = nombreUsuario;
+            const form = document.getElementById('formAprobar');
+            form.action = `{% url 'core:aprobar_usuario' 0 %}`.replace('0', usuarioId);
+            abrirModal('modalAprobar');
+        }
+
+        function abrirModalRechazar(usuarioId, nombreUsuario) {
+            usuarioIdRechazar = usuarioId;
+            document.getElementById('usuarioRechazar').textContent = nombreUsuario;
+            document.getElementById('razonRechazo').value = '';
+            const form = document.getElementById('formRechazar');
+            form.action = `{% url 'core:rechazar_usuario' 0 %}`.replace('0', usuarioId);
+            abrirModal('modalRechazar');
+        }
+
+        function confirmarRechazar() {
+            const razon = document.getElementById('razonRechazo').value.trim();
+            if (!razon) {
+                alert('Por favor, especifica la razón del rechazo.');
+                return;
+            }
+            
+            document.getElementById('razonInput').value = razon;
+            document.getElementById('formRechazar').submit();
+        }
+
+        function abrirModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.style.display = 'flex';
+        }
+
+        function cerrarModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.style.display = 'none';
+        }
+
+        // Cerrar modal si se hace clic fuera del contenido
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+
+        // Auto-cerrar alertas después de 5 segundos
+        document.addEventListener('DOMContentLoaded', function() {
+            const alertas = document.querySelectorAll('.alerta');
+            alertas.forEach(alerta => {
+                setTimeout(() => {
+                    alerta.style.display = 'none';
+                }, 5000);
+            });
+        });
+    </script>
+    {% endif %}
+
+    <!-- ==========================================
+         FUNCIONES GLOBALES PARA CERRAR SESIÓN
+         ========================================== -->
+    <script>
+      // Función para abrir modal de cerrar sesión (GLOBAL)
+      function abrirModalCerrarSesion(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        const modal = document.getElementById('modalCerrarSesion');
+        if (modal) {
+          modal.style.display = 'flex';
+        }
+      }
+
+      // Función para cerrar modal (GLOBAL)
+      function cerrarModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+          modal.style.display = 'none';
+        }
+      }
+    </script>
 
     <!-- Hamburger Menu Script -->
     <script>
@@ -302,7 +635,38 @@
           },
           false
         );
+
+        // ========================================
+        // FUNCIONALIDAD DE COLAPSO DEL SIDEBAR
+        // ========================================
+        const sidebarElement = document.getElementById("sidebar");
+        
+        // Solo activar el colapso en pantallas grandes (no móviles)
+        if (window.innerWidth > 768) {
+          // Contraer sidebar al inicio
+          sidebarElement.classList.add("collapsed");
+          
+          // Expandir cuando el mouse entra
+          sidebarElement.addEventListener("mouseenter", function() {
+            sidebarElement.classList.remove("collapsed");
+          });
+          
+          // Contraer cuando el mouse sale
+          sidebarElement.addEventListener("mouseleave", function() {
+            sidebarElement.classList.add("collapsed");
+          });
+        }
+        
+        // Remover el colapso en móviles cuando se redimensiona la ventana
+        window.addEventListener("resize", function() {
+          if (window.innerWidth <= 768) {
+            sidebarElement.classList.remove("collapsed");
+          } else {
+            sidebarElement.classList.add("collapsed");
+          }
+        });
       });
+
     </script>
   </body>
 </html>

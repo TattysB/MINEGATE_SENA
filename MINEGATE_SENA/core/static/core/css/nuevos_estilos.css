@@ -1,0 +1,731 @@
+/* ========================================
+   VARIABLES Y CONFIGURACIÓN GLOBAL
+   ======================================== */
+:root {
+  /* Paleta de Verdes SENA */
+  --verde-primario: #39A900;
+  --verde-oscuro: #2d8500;
+  --verde-claro: #4FBF26;
+  --verde-suave: #E8F5E9;
+  --verde-gradiente-1: #2d8500;
+  --verde-gradiente-2: #39A900;
+  --verde-gradiente-3: #4FBF26;
+  
+  /* Colores Complementarios */
+  --blanco: #FFFFFF;
+  --negro: #1A1A1A;
+  --gris-oscuro: #2C3E50;
+  --gris-medio: #5A6C7D;
+  --gris-claro: #ECF0F1;
+  --gris-muy-claro: #F8F9FA;
+  
+  /* Colores de Estado */
+  --azul-info: #3498DB;
+  --amarillo-warning: #F39C12;
+  --rojo-danger: #E74C3C;
+  --verde-success: #27AE60;
+  
+  /* Sombras */
+  --sombra-suave: 0 2px 8px rgba(57, 169, 0, 0.1);
+  --sombra-media: 0 4px 16px rgba(57, 169, 0, 0.15);
+  --sombra-fuerte: 0 8px 24px rgba(57, 169, 0, 0.2);
+  --sombra-topbar: 0 2px 10px rgba(0, 0, 0, 0.1);
+  
+  /* Transiciones */
+  --transicion-rapida: all 0.2s ease;
+  --transicion-media: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transicion-suave: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Tamaños */
+  --sidebar-width: 280px;
+  --sidebar-collapsed-width: 120px;
+  --topbar-height: 80px;
+  --border-radius: 12px;
+  --border-radius-small: 8px;
+}
+
+/* Reset y Base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: linear-gradient(135deg, var(--verde-suave) 0%, var(--gris-muy-claro) 100%);
+  color: var(--gris-oscuro);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ========================================
+   CONTENEDOR PRINCIPAL
+   ======================================== */
+.app-container {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* ========================================
+   TOPBAR - BARRA SUPERIOR
+   ======================================== */
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: var(--topbar-height);
+  background: linear-gradient(135deg, var(--verde-gradiente-1) 0%, var(--verde-gradiente-2) 50%, var(--verde-gradiente-3) 100%);
+  display: flex;
+  align-items: center;
+  padding: 0 2.5rem;
+  box-shadow: var(--sombra-topbar);
+  z-index: 900;
+  transition: width var(--transicion-media);
+}
+
+.topbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  animation: slideInLeft 0.6s ease;
+}
+
+.topbar-logo img {
+  height: 45px;
+  width: 45px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  transition: var(--transicion-rapida);
+}
+
+.topbar-logo img:hover {
+  transform: scale(1.05) rotate(5deg);
+}
+
+.topbar-logo h1 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--blanco);
+  letter-spacing: 2px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.topbar-spacer {
+  flex: 1;
+}
+
+/* Usuario en Topbar */
+.topbar-user {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  padding: 0.6rem 1.2rem;
+  border-radius: 50px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  transition: var(--transicion-media);
+  animation: slideInRight 0.6s ease;
+}
+
+.topbar-user:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.user-profile-photo {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid var(--blanco);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: var(--transicion-rapida);
+}
+
+.user-profile-photo:hover {
+  transform: scale(1.1);
+  border-color: var(--verde-claro);
+}
+
+.user-profile-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.user-role {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.user-name {
+  font-size: 1rem;
+  color: var(--blanco);
+  font-weight: 600;
+}
+
+/* ========================================
+   SIDEBAR - BARRA LATERAL CON COLAPSO
+   ======================================== */
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: var(--topbar-height);
+  width: var(--sidebar-width);
+  height: calc(100vh - var(--topbar-height));
+  background: linear-gradient(180deg, var(--verde-gradiente-1) 0%, var(--verde-gradiente-2) 50%, var(--verde-gradiente-3) 100%);
+  padding: 1.5rem 0 3rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 1000;
+  transition: width var(--transicion-media);
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Sidebar Contraído */
+.sidebar.collapsed {
+  width: var(--sidebar-collapsed-width);
+}
+
+/* Scrollbar personalizado para sidebar */
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Lista del Sidebar */
+.sidebar ul {
+  list-style: none;
+  padding: 1rem 0 3rem;
+  margin: 0;
+}
+
+/* Items del Sidebar */
+.sidebar li {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  margin: 0.5rem 1rem;
+  color: var(--blanco);
+  cursor: pointer;
+  border-radius: var(--border-radius);
+  transition: var(--transicion-media);
+  font-size: 0.95rem;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid transparent;
+  overflow: visible;
+  white-space: nowrap;
+}
+
+.sidebar.collapsed li {
+  padding: 1rem;
+  margin: 0.5rem auto;
+  justify-content: center;
+  display: flex;
+  width: fit-content;
+}
+
+.sidebar li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--blanco);
+  transform: scaleY(0);
+  transition: var(--transicion-media);
+}
+
+.sidebar li:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateX(5px);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.sidebar.collapsed li:hover {
+  transform: translateX(0) scale(1.05);
+}
+
+.sidebar li:hover::before {
+  transform: scaleY(1);
+}
+
+.sidebar li.active {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: var(--blanco);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar li.active::before {
+  transform: scaleY(1);
+}
+
+/* ========================================
+   ICONOS DEL SIDEBAR - COLORIDOS TIPO EMOJI
+   ======================================== */
+.sidebar li i {
+  font-size: 1.8rem;
+  min-width: 45px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: var(--border-radius-small);
+  transition: var(--transicion-media);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.sidebar.collapsed li i {
+  min-width: 50px;
+  height: 50px;
+  font-size: 2rem;
+  white-space: nowrap;
+}
+
+.sidebar li:hover i {
+  background: var(--blanco);
+  transform: scale(1.1) rotate(-5deg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.sidebar li.active i {
+  background: var(--blanco);
+  transform: scale(1.05);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Colores específicos para cada icono */
+.icon-dashboard { color: #FF6B6B; } /* Rojo coral */
+.icon-calendar { color: #4ECDC4; } /* Turquesa */
+.icon-visit { color: #FFD93D; } /* Amarillo dorado */
+.icon-visitors { color: #6C5CE7; } /* Púrpura */
+.icon-documents { color: #FD79A8; } /* Rosa */
+.icon-scan { color: #00B894; } /* Verde esmeralda */
+.icon-apprentice { color: #0984E3; } /* Azul */
+.icon-notifications { color: #FDCB6E; } /* Naranja claro */
+.icon-permissions { color: #A29BFE; } /* Lavanda */
+.icon-settings { color: #74B9FF; } /* Azul cielo */
+.icon-reports { color: #55EFC4; } /* Menta */
+.icon-logout { color: #E17055; } /* Naranja terracota */
+
+/* Texto del Sidebar */
+.sidebar li span {
+  flex: 1;
+  white-space: nowrap;
+  opacity: 1;
+  transition: var(--transicion-media);
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.sidebar.collapsed li span {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+}
+
+/* Botón de Logout */
+.logout-button {
+  width: calc(100% - 2rem);
+  margin: 1rem 1rem 3rem 1rem;
+  background: rgba(231, 76, 60, 0.2);
+  border: 2px solid rgba(231, 76, 60, 0.4);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: var(--transicion-media);
+  padding: 0;
+  list-style: none;
+}
+
+.sidebar.collapsed .logout-button {
+  width: calc(100% - 1rem);
+  margin: 1rem 0.5rem 3rem 0.5rem;
+}
+
+.logout-button:hover {
+  background: rgba(231, 76, 60, 0.35);
+  border-color: var(--rojo-danger);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+}
+
+.logout-button li {
+  margin: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  transform: none !important;
+}
+
+.logout-button:hover li {
+  transform: none !important;
+}
+
+/* ========================================
+   HAMBURGER BUTTON (MOBILE)
+   ======================================== */
+.hamburger-btn {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, var(--verde-primario), var(--verde-claro));
+  border: none;
+  border-radius: var(--border-radius);
+  color: var(--blanco);
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+  box-shadow: var(--sombra-media);
+  transition: var(--transicion-media);
+}
+
+.hamburger-btn:hover {
+  transform: scale(1.05);
+  box-shadow: var(--sombra-fuerte);
+}
+
+.hamburger-btn.active {
+  background: linear-gradient(135deg, var(--verde-oscuro), var(--verde-primario));
+}
+
+/* Overlay para Mobile */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  visibility: hidden;
+  transition: var(--transicion-media);
+  z-index: 999;
+}
+
+.sidebar-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ========================================
+   MAIN CONTENT
+   ======================================== */
+main {
+  flex: 1;
+  margin-left: var(--sidebar-width);
+  margin-top: var(--topbar-height);
+  padding: 2rem;
+  min-height: calc(100vh - var(--topbar-height));
+  transition: margin-left var(--transicion-media);
+  animation: fadeIn 0.6s ease;
+}
+
+/* Ajuste cuando el sidebar está contraído */
+.app-container:has(.sidebar.collapsed) main {
+  margin-left: var(--sidebar-collapsed-width);
+}
+
+/* ========================================
+   MODALES
+   ======================================== */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  z-index: 2000;
+  justify-content: center;
+  align-items: center;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-contenido {
+  background: var(--blanco);
+  border-radius: var(--border-radius);
+  max-width: 500px;
+  width: 90%;
+  box-shadow: var(--sombra-fuerte);
+  overflow: hidden;
+  animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-encabezado {
+  background: linear-gradient(135deg, var(--verde-primario), var(--verde-claro));
+  color: var(--blanco);
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-encabezado h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.modal-cerrar {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: var(--blanco);
+  font-size: 1.8rem;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transicion-rapida);
+}
+
+.modal-cerrar:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg);
+}
+
+.modal-cuerpo {
+  padding: 2rem;
+}
+
+.modal-pie {
+  padding: 1.5rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  background: var(--gris-muy-claro);
+}
+
+.btn-modal {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--border-radius-small);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transicion-media);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-cancelar {
+  background: var(--gris-claro);
+  color: var(--gris-oscuro);
+}
+
+.btn-cancelar:hover {
+  background: var(--gris-medio);
+  color: var(--blanco);
+  transform: translateY(-2px);
+}
+
+.btn-confirmar {
+  background: linear-gradient(135deg, var(--verde-primario), var(--verde-claro));
+  color: var(--blanco);
+  box-shadow: var(--sombra-suave);
+}
+
+.btn-confirmar:hover {
+  box-shadow: var(--sombra-media);
+  transform: translateY(-2px);
+}
+
+/* ========================================
+   ANIMACIONES
+   ======================================== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Efecto Ripple */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transform: scale(0);
+  animation: ripple-animation 0.6s ease-out;
+  pointer-events: none;
+}
+
+@keyframes ripple-animation {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+@media (max-width: 768px) {
+  .hamburger-btn {
+    display: flex;
+  }
+
+  .sidebar {
+    transform: translateX(-100%);
+    width: var(--sidebar-width) !important;
+    top: var(--topbar-height) !important;
+  }
+
+  .sidebar.active {
+    transform: translateX(0);
+  }
+
+  .sidebar.collapsed {
+    transform: translateX(-100%);
+  }
+
+  .topbar {
+    left: 0 !important;
+    padding: 0 1rem 0 5rem;
+    width: 100% !important;
+  }
+
+  .topbar-logo h1 {
+    font-size: 1.3rem;
+  }
+
+  main {
+    margin-left: 0 !important;
+    padding: 1.5rem;
+  }
+
+  .topbar-user {
+    padding: 0.4rem 0.8rem;
+    gap: 0.5rem;
+  }
+
+  .user-profile-photo {
+    width: 35px;
+    height: 35px;
+  }
+
+  .user-info {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar-logo img {
+    height: 35px;
+    width: 35px;
+  }
+
+  .topbar-logo h1 {
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+  }
+
+  main {
+    padding: 1rem;
+  }
+}
+
+/* ========================================
+   UTILIDADES
+   ======================================== */
+.text-center {
+  text-align: center;
+}
+
+.mb-1 {
+  margin-bottom: 1rem;
+}
+
+.mb-2 {
+  margin-bottom: 2rem;
+}
+
+.mt-1 {
+  margin-top: 1rem;
+}
+
+.mt-2 {
+  margin-top: 2rem;
+}

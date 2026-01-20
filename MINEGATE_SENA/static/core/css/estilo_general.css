@@ -1,0 +1,55 @@
+:root {
+  --gold: #03624C;
+  --sidebar-bg: #024751;
+  --highlight: #ff0080;
+  --hover-gradient: linear-gradient(90deg, #2CC295);
+  --text-color: #FFFFFF;
+  --text-color2: #102830;
+  /* color del texto de bienvenida*/
+  --text-color3: #ffffff;
+  /* color del titulo*/
+  --hover-text: #102830;
+  --hover-text2: #FFFFFF;
+}
+
+body {
+  margin: 0;
+  font-family: 'Orbitron', sans-serif;
+  background-color: #EDFFF8;
+  color: var(--text-color);
+  color: var(--text-color2);
+  display: flex;
+}
+
+
+.user-photo {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+
+}
+
+.user-photo {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+
+}
+
+
+.sidebar:hover .logout-button span {
+  display: inline;
+}
+
+main {
+  margin-left: 10px;
+  padding: 2rem;
+  transition: margin-left 0.3s;
+  flex: 2;
+}
+
+.sidebar:hover+main {
+  margin-left: 220px;
+}
+
+

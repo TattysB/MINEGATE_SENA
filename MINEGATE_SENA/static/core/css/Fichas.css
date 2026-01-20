@@ -1,0 +1,71 @@
+.ficha-container {
+  max-width: 700px;
+  margin: auto;
+  background: #f9f9f9;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.ficha-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.form-group.half {
+  flex: 1;
+}
+
+input, select, textarea {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+input:invalid {
+  border-color: red;
+}
+
+.input-hint {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.form-botones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.btn-primary {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.btn-secondary {
+  background-color: #f44336;
+  color: white;
+}
+
+.mensaje-validacion {
+  margin-top: 10px;
+  font-weight: bold;
+}

@@ -1,0 +1,79 @@
+.calendar-container {
+  max-width: 1000px;
+  margin: auto;
+  padding: 25px;
+  background: #fefefe;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  position: relative;
+}
+
+.calendar-controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
+.calendar-header, .calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.calendar-header div {
+  text-align: center;
+  font-weight: bold;
+  background: #eaeaea;
+  padding: 8px;
+  border: 1px solid #ccc;
+}
+
+.day {
+  border: 1px solid #ddd;
+  min-height: 80px;
+  padding: 6px;
+  background: #f9f9f9;
+  position: relative;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.day:hover {
+  background: #e0f7fa;
+}
+
+.day-number {
+  font-weight: bold;
+  font-size: 16px;
+  color: #2c3e50;
+}
+
+.day-label {
+  font-size: 12px;
+  padding: 4px;
+  border-radius: 6px;
+  margin-top: 5px;
+  text-align: center;
+  color: white;
+}
+
+.schedule-button {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  padding: 14px 22px;
+  font-size: 16px;
+  border-radius: 50px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  cursor: pointer;
+  transition: background 0.3s ease;
+  z-index: 1000;
+}
+
+.schedule-button:hover {
+  background-color: #2ecc71;
+}

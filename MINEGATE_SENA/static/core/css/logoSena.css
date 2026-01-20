@@ -1,0 +1,31 @@
+ body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #333;
+            margin: 0;
+        }
+        .logo-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-transform: uppercase;
+        }
+        .logo-container h1 {
+            font-size: 2rem;
+            margin: 0;
+        }
+        .logo-container span {
+            font-weight: bold;
+            font-size: 3rem;
+        }
+        .logo-container .line {
+            width: 50px;
+            height: 2px;
+            background-color: white;
+            margin: 10px 0;
+        }

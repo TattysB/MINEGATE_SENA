@@ -1,0 +1,10 @@
+
+.img{
+  background: url('Imagenes/LOGO.jpg'); /* Establece la imagen de fondo como un logo ubicado en la carpeta 'Imagenes' */
+  width: 70px;                          /* Define un ancho de 70 píxeles */
+  height: 70px;                         /* Define una altura de 70 píxeles */
+  margin-bottom: 8px;
+  border-radius: 100%;                 /* Redondea completamente los bordes para que sea un círculo */
+            
+
+}

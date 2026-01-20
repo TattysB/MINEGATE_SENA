@@ -6,6 +6,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const carrito = document.getElementById('carrito');
     const mina = document.getElementById('mina');
 
+    // Verificar que todos los elementos existan antes de aplicar animaciones
+    if (!senaLogo || !mineElements || !minegateText || !pico || !carrito || !mina) {
+        console.warn('⚠️ Algunos elementos de la animación del logo no se encontraron en el DOM');
+        return;
+    }
+
     setTimeout(() => {
         senaLogo.style.transform = 'rotateY(90deg)'; // Rotación para la salida
         senaLogo.style.opacity = 0;
