@@ -45,6 +45,23 @@ class PerfilUsuario(models.Model):
         help_text="Fecha de nacimiento"
     )
     
+    aprobado = models.BooleanField(
+        default=False,
+        help_text="El usuario solo puede acceder al sistema si está aprobado por el administrador"
+    )
+    
+    razon_rechazo = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Razón por la cual se rechazó el acceso del usuario"
+    )
+    
+    fecha_aprobacion = models.DateTimeField(
+        null=True, 
+        blank=True,
+        help_text="Fecha en que se aprobó el acceso del usuario"
+    )
+    
     fecha_actualizacion = models.DateTimeField(auto_now=True)
     
     class Meta:
