@@ -1,0 +1,215 @@
+/* ===== ESTILOS ADICIONALES DE VALIDACIÓN (complementa a login.css) ===== */
+
+/* Contenedor de grupo de campo */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    margin-bottom: 6px;
+}
+
+/* Mensajes de error generales del formulario */
+.form-errors {
+    background: #fee2e2;
+    border-left: 4px solid #ef4444;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #991b1b;
+}
+
+/* Errores inline por campo */
+.field-error {
+    color: #ef4444;
+    font-size: 10px;
+    margin-top: 2px;
+    display: block;
+    text-align: left;
+    line-height: 1.2;
+}
+
+/* Input con error */
+.input-error {
+    border: 1px solid #ef4444 !important;
+    background-color: #fef2f2 !important;
+}
+
+/* Compatibilidad con error-message */
+.error-message {
+    color: #ef4444;
+    font-size: 10px;
+    margin-top: 2px;
+    display: block;
+}
+
+/* ===== BARRA DE FORTALEZA DE CONTRASEÑA ===== */
+
+.password-strength-container {
+    width: 100%;
+    margin-top: 8px;
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.password-strength-container.visible {
+    opacity: 1;
+    max-height: 200px;
+}
+
+/* Barra de fortaleza */
+.strength-bar-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.strength-bar {
+    flex: 1;
+    height: 6px;
+    background: #e5e7eb;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.strength-bar-fill {
+    height: 100%;
+    width: 0;
+    border-radius: 3px;
+    transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+/* Colores de fortaleza */
+.strength-bar-fill.strength-weak {
+    background: linear-gradient(90deg, #ef4444, #f87171);
+}
+
+.strength-bar-fill.strength-medium {
+    background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+.strength-bar-fill.strength-good {
+    background: linear-gradient(90deg, #84cc16, #a3e635);
+}
+
+.strength-bar-fill.strength-strong {
+    background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+/* Texto de fortaleza */
+.strength-text {
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 70px;
+    text-align: right;
+}
+
+.strength-text.strength-weak {
+    color: #ef4444;
+}
+
+.strength-text.strength-medium {
+    color: #f59e0b;
+}
+
+.strength-text.strength-good {
+    color: #84cc16;
+}
+
+.strength-text.strength-strong {
+    color: #10b981;
+}
+
+/* Requisitos de contraseña */
+.password-requirements {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.requirement {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    transition: all 0.2s ease;
+}
+
+.requirement .req-icon {
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.requirement span {
+    transition: all 0.2s ease;
+}
+
+.requirement.unmet,
+.requirement.unmet span {
+    color: #ef4444 !important;
+}
+
+.requirement.unmet .req-icon {
+    color: #ef4444 !important;
+}
+
+.requirement.met,
+.requirement.met span {
+    color: #10b981 !important;
+}
+
+.requirement.met .req-icon {
+    color: #10b981 !important;
+}
+
+/* ===== ESTILOS PARA INPUTS CON VALIDACIÓN ===== */
+
+/* Input válido (opcional, para feedback positivo) */
+.input-valid {
+    border: 1px solid #10b981 !important;
+    background-color: #f0fdf4 !important;
+}
+
+/* Animación de shake para errores */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+    20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+.input-error {
+    animation: shake 0.5s ease;
+}
+
+/* Responsive para móviles */
+@media (max-width: 768px) {
+    .password-strength-container {
+        margin-top: 6px;
+    }
+    
+    .strength-bar-wrapper {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 4px;
+    }
+    
+    .strength-text {
+        text-align: left;
+        min-width: unset;
+    }
+    
+    .password-requirements {
+        padding: 6px;
+    }
+    
+    .requirement {
+        font-size: 9px;
+    }
+}
