@@ -8,6 +8,7 @@ from django.views.decorators.csrf import csrf_protect
 from django.http import JsonResponse
 from django.db.models import Q
 from django.urls import reverse
+from django.conf import settings
 from .forms import LoginForm, RegistroForm, EditarUsuarioForm, EditarPerfilForm
 from .models import PerfilUsuario
 
@@ -378,8 +379,10 @@ def bienvenida_view(request):
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
-from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+from datetime import datetime
 from .forms import PasswordResetRequestForm, PasswordResetConfirmForm
 
 @csrf_protect
@@ -403,31 +406,27 @@ def password_reset_request_view(request):
                         reverse('usuarios:restablecer_contraseña', kwargs={'uidb64': uid, 'token': token})
                     )
                     
-                    # Enviar correo
-                    subject = 'Recuperación de Contraseña - MineGate SENA'
-                    message = f'''
-Hola {user.get_full_name() or user.username},
-
-Has solicitado restablecer tu contraseña en MineGate SENA.
-
-Para crear una nueva contraseña, haz clic en el siguiente enlace:
-{reset_url}
-
-Si no solicitaste este cambio, puedes ignorar este correo.
-
-Este enlace expirará en 24 horas.
-
-Saludos,
-El equipo de MineGate SENA
-                    '''
+                    # Preparar contexto para el template HTML
+                    email_context = {
+                        'nombre': user.first_name or user.username,
+                        'reset_url': reset_url,
+                        'year': datetime.now().year,
+                    }
                     
-                    send_mail(
-                        subject,
-                        message,
-                        'noreply@minegate.com',
-                        [user.email],
-                        fail_silently=False,
+                    # Renderizar template HTML
+                    html_content = render_to_string('usuarios/email_recuperacion.html', email_context)
+                    text_content = strip_tags(html_content)
+                    
+                    # Enviar correo HTML
+                    subject = '🔐 Recuperación de Contraseña - MineGate SENA'
+                    email = EmailMultiAlternatives(
+                        subject=subject,
+                        body=text_content,
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        to=[user.email]
                     )
+                    email.attach_alternative(html_content, "text/html")
+                    email.send()
                 
                 messages.success(request, 'Se ha enviado un correo con instrucciones para restablecer tu contraseña.')
                 return redirect('usuarios:correo_enviado')
@@ -475,15 +474,15 @@ def password_reset_confirm_view(request, uidb64, token):
             'validlink': True,
             'titulo': 'Establecer Nueva Contraseña'
         }
-        return render(request, 'usuarios/restablecer_contraseña.html', context)
+        return render(request, 'usuarios/restablecer_contrasena.html', context)
     else:
         messages.error(request, 'El enlace de recuperación es inválido o ha expirado.')
         context = {
             'validlink': False,
             'titulo': 'Enlace Inválido'
         }
-        return render(request, 'usuarios/restablecer_contraseña.html', context)
+        return render(request, 'usuarios/restablecer_contrasena.html', context)
 
 
 def password_reset_complete_view(request):
-    return render(request, 'usuarios/contraseña_actualizada.html')
+    return render(request, 'usuarios/contrasena_actualizada.html')
