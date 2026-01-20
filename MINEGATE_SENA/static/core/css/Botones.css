@@ -1,0 +1,44 @@
+.user-profile-button {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem 0;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s;
+  }
+  
+  .user-profile-button:hover {
+    background: var(--hover-gradient);
+    transform: scale(1.05);
+  }
+.logout-button {
+    margin-top: auto;
+    margin-bottom: 1rem;
+    background-color: transparent;
+    border: none;
+    color: var(--text-color);
+    padding: 12px;
+    width: 100%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s ease;
+  }
+  
+  .logout-button:hover {
+    background: radial-gradient(circle, #ff0000 10%, transparent 70%);
+    color: #fff;
+    transform: scale(1.05);
+  }
+  
+  .logout-button i {
+    margin-right: 10px;
+    font-size: 1.5rem;
+  }
+  
+  .logout-button span {
+    display: none;
+  }
+  

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+{% load static %}
+
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MineGate - Recuperar Contraseña</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="{% static 'css/recuperacion_contraseña.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/solicitar_recuperacion.css' %}" />
+</head>
+
+<body>
+    <div class="recuperacion-container">
+        <div class="recuperacion-header">
+            <i class="fa-solid fa-key"></i>
+            <h1>¿Olvidaste tu contraseña?</h1>
+            <p>Ingresa tu correo electrónico y te enviaremos instrucciones para restablecer tu contraseña</p>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}" style="animation: shake 0.5s ease;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="POST" action="{% url 'usuarios:solicitar_recuperacion' %}" id="recuperacionForm">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="id_email">
+                    <i class="fa-solid fa-envelope"></i> {{ form.email.label }}
+                </label>
+                {{ form.email }}
+                {% if form.email.help_text %}
+                    <div class="help-text">{{ form.email.help_text }}</div>
+                {% endif %}
+                {% if form.email.errors %}
+                    <div class="alert alert-error" style="margin-top: 10px; animation: shake 0.5s ease;">
+                        {{ form.email.errors }}
+                    </div>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="btn-submit" id="submitBtn">
+                <i class="fa-solid fa-paper-plane"></i> <span>Enviar Instrucciones</span>
+            </button>
+        </form>
+
+        <div class="back-login">
+            <a href="{% url 'usuarios:login' %}">
+                <i class="fa-solid fa-arrow-left"></i> Volver al inicio de sesión
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Animación de carga al enviar formulario
+        document.getElementById('recuperacionForm').addEventListener('submit', function(e) {
+            const btn = document.getElementById('submitBtn');
+            const icon = btn.querySelector('i');
+            const text = btn.querySelector('span');
+            
+            btn.classList.add('loading');
+            icon.className = 'fa-solid fa-spinner';
+            text.textContent = 'Enviando...';
+        });
+        
+        // Animación suave del placeholder
+        const emailInput = document.querySelector('input[type="email"]');
+        if (emailInput) {
+            emailInput.addEventListener('focus', function() {
+                this.parentElement.classList.add('focused');
+            });
+            emailInput.addEventListener('blur', function() {
+                this.parentElement.classList.remove('focused');
+            });
+        }
+    </script>
+</body>
+</html>

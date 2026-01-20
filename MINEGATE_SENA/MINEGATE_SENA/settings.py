@@ -40,6 +40,8 @@ INSTALLED_APPS = [
     'core',
     'bootstrap5',
     'usuarios',
+    'visitaInterna',
+    'visitaExterna',
 ]
 
 MIDDLEWARE = [
@@ -105,7 +107,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-co'
+LANGUAGE_CODE = 'es-co'
 
 TIME_ZONE = 'America/Bogota'
 
@@ -117,10 +119,10 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 
 STATICFILES_DIRS = [
-    BASE_DIR / 'static',  # Django buscará archivos estáticos aquí
+    BASE_DIR / 'static',
 ]
 
 # Para producción (cuando uses collectstatic)
@@ -138,6 +140,25 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = 'usuarios:login'  # A dónde ir si no está autenticado
 LOGIN_REDIRECT_URL = 'core:dashboard'  # A dónde ir después de login exitoso
 LOGOUT_REDIRECT_URL = 'core:index'  # A dónde ir después de logout
+
+# Configuración de correo electrónico
+# Para desarrollo: Los correos se mostrarán en la consola
+""" EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_HOST = 'localhost'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = ''
+EMAIL_HOST_PASSWORD = ''
+DEFAULT_FROM_EMAIL = 'noreply@minegate.com' """
+
+# Para producción, descomentar y configurar:
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'  # O tu servidor SMTP
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'minegate123@gmail.com'
+EMAIL_HOST_PASSWORD = 'zcvq ifep jxtz kyxy'
+DEFAULT_FROM_EMAIL = 'MineGate <minegate123@gmail.com>'
 
 # Configuración de sesiones
 SESSION_COOKIE_AGE = 3600  # 1 hora en segundos

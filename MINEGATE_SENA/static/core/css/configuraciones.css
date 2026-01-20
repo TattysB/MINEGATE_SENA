@@ -1,0 +1,55 @@
+.config-container {
+  max-width: 800px;
+  margin: auto;
+  background: #f9f9f9;
+  border-radius: 20px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.config-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.config-item {
+  display: flex;
+  flex-direction: column;
+}
+
+input, select {
+  padding: 8spx;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.btn-primary {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.mensaje-validacion {
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+/* Tema oscuro */
+.tema-oscuro {
+  background-color: #121212;
+  color: #e0e0e0;
+}
+
+.tema-oscuro input,
+.tema-oscuro select {
+  background-color: #1e1e1e;
+  color: #fff;
+  border-color: #555;
+}

@@ -1,0 +1,18 @@
+.mensaje-confirmacion {
+  text-align: center;
+  margin-top: 15px;
+  padding: 10px;
+  border-radius: 8px;
+  display: none;
+}
+
+.mensaje-confirmacion.exito {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.mensaje-confirmacion.error {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
