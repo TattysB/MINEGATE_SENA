@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'usuarios',
     'visitaInterna',
     'visitaExterna',
+    'calendario',
 ]
 
 MIDDLEWARE = [
