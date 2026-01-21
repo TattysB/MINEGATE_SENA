@@ -1,0 +1,64 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}">
+	<title>Calendario</title>
+	<script src="{% static 'calendario/js/calendario.js' %}" defer></script>
+</head>
+<body>
+	<div class="calendar-page">
+		<header class="calendar-header">
+			<h1>Sistema de Gestión de Visitas</h1>
+			<p class="subtitle">Gestiona tus visitas internas y externas - SENA</p>
+		</header>
+
+		<main class="calendar-card" data-year="{{ year }}" data-month="{{ month }}">
+			<div class="card-top">
+				<button id="prev" class="nav">‹</button>
+				<h2 id="month-title">{{ month_name }} {{ year }}</h2>
+				<button id="next" class="nav">›</button>
+			</div>
+
+			<table class="calendar-table">
+				<thead>
+					<tr>
+						<th>Dom</th><th>Lun</th><th>Mar</th><th>Mié</th><th>Jue</th><th>Vie</th><th>Sáb</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for week in weeks %}
+						<tr>
+							{% for day in week %}
+								{% if day.is_other_month %}
+									<td class="other-month">{{ day.date.day }}</td>
+								{% elif day.is_sunday %}
+									<td class="disabled">{{ day.date.day }}</td>
+								{% elif day.is_today %}
+									<td class="today">{{ day.date.day }}</td>
+								{% else %}
+									<td>{{ day.date.day }}</td>
+								{% endif %}
+							{% endfor %}
+						</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+
+			<div class="legend">
+				<span class="dot available"></span> Disponible
+				<span class="dot occupied"></span> Ocupado
+				<span class="dot pending"></span> Pendiente
+			</div>
+
+			<div class="actions">
+				<a href="#" class="btn green">Visita Externa</a>
+				<a href="#" class="btn orange">Visita Interna</a>
+			</div>
+		</main>
+	</div>
+
+</body>
+</html>

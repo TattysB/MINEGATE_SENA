@@ -1,0 +1,115 @@
+:root{
+  --green:#19a974;
+  --light-green:#eaf9ef;
+  --orange:#ff9a3c;
+  --card-bg:#ffffff;
+}
+*{box-sizing:border-box;font-family:Inter, Arial, sans-serif}
+body{background:linear-gradient(180deg,#eaf9ef 0%, #f7fff9 100%);margin:0;padding:30px 20px}
+.calendar-page{max-width:1100px;margin:0 auto;width:100%}
+.calendar-header{text-align:center;margin-bottom:26px}
+.calendar-header h1{color:var(--green);margin:0;font-size:28px;font-weight:700}
+.calendar-header .subtitle{color:#6baf93;margin:6px 0 0;font-size:12px}
+
+.calendar-page .calendar-card{background:var(--card-bg);border-radius:18px;padding:28px 36px;box-shadow:0 20px 40px rgba(50,80,60,0.06);position:relative;max-width:980px;margin:0 auto}
+#month-title{font-weight:700;color:#1f7f55;margin:8px 0 24px}
+.calendar-page .card-top{display:flex;align-items:center;justify-content:center;gap:18px;margin-bottom:10px}
+.calendar-page .card-top .nav{position:absolute;top:18px;background:#fff;border:1px solid #eee;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:Arial, Helvetica, sans-serif}
+.calendar-page .card-top .nav#prev{left:18px}
+.calendar-page .card-top .nav#next{right:18px}
+#month-title{font-weight:700;color:#1f7f55;margin:8px 0 24px}
+
+.calendar-page .calendar-table{width:100%;border-collapse:separate;border-spacing:12px 10px}
+.calendar-page .calendar-table thead th{color:#7b9b89;font-weight:700;padding:12px 6px;text-align:center;font-size:13px}
+.calendar-page .calendar-table td{min-width:56px;min-height:64px;text-align:center;background:#fff;border-radius:10px;padding:8px 6px;color:#2f4f3f;box-shadow:inset 0 0 0 1px rgba(200,200,200,0.08)}
+.calendar-page .calendar-table td.other-month{background:#f7f7f7;color:#cfcfcf;box-shadow:none}
+.calendar-page .calendar-table td.disabled{background:#f3f3f3;color:#bfbfbf;pointer-events:none;opacity:0.7}
+.calendar-page .calendar-table td.today{border:2px solid var(--green);background:#fff}
+
+.calendar-page .legend{display:flex;justify-content:center;gap:18px;margin-top:18px;color:#555;align-items:center}
+.dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px}
+.available{background:var(--green)}
+.occupied{background:#e74c3c}
+.pending{background:var(--orange)}
+
+.calendar-page .actions{display:flex;justify-content:center;gap:30px;margin-top:28px}
+.calendar-page .btn{display:inline-block;padding:18px 60px;border-radius:14px;color:#fff;text-decoration:none;font-weight:800;box-shadow:0 10px 0 rgba(0,0,0,0.06)}
+
+/* Estilos específicos cuando el calendario está dentro del panel administrativo */
+.calendar-in-panel .calendar-page{max-width:980px;margin:18px auto}
+.calendar-in-panel .calendar-page .calendar-card{padding:32px 44px;border-radius:14px}
+.calendar-in-panel .calendar-page .calendar-table{border-spacing:14px 14px}
+.calendar-in-panel .calendar-page .calendar-table td{min-width:62px;min-height:60px}
+.calendar-in-panel .calendar-page .card-top .nav{top:18px}
+.calendar-in-panel .calendar-page .legend{margin-top:22px}
+.calendar-in-panel .calendar-page .actions{margin-top:30px}
+
+/* Reglas forzadas para evitar que estilos globales reduzcan el calendario */
+.calendar-in-panel .calendar-page,
+.calendar-in-panel .calendar-page * {
+  box-sizing: border-box !important;
+}
+.calendar-in-panel .calendar-page { width: 100% !important; }
+.calendar-in-panel .calendar-page .calendar-card {
+  max-width: 980px !important;
+  margin: 0 auto !important;
+  padding: 32px 44px !important;
+  border-radius: 18px !important;
+  box-shadow: 0 20px 40px rgba(50,80,60,0.06) !important;
+}
+.calendar-in-panel .calendar-page .calendar-table td {
+  min-width: 64px !important;
+  min-height: 64px !important;
+  font-size: 15px !important;
+  padding: 8px 10px !important;
+}
+.calendar-in-panel .calendar-page .calendar-table thead th {
+  font-size: 13px !important;
+  padding-bottom: 12px !important;
+}
+.calendar-in-panel .calendar-page .calendar-header h1{font-size:24px !important}
+.calendar-in-panel .calendar-page .calendar-header .subtitle{font-size:12px !important}
+
+/* Asegurar que los controles prev/next sean visibles */
+.calendar-in-panel .calendar-page .card-top .nav{width:36px;height:36px;line-height:36px;font-size:18px !important}
+
+/* Ajustes de bumper para evitar que el layout del panel limite el ancho */
+#mainContent.calendar-in-panel{padding:20px 24px !important}
+
+/* Forzar que el mainContent actúe como contenedor centrado para el calendario */
+#mainContent.calendar-in-panel{
+  display: flex !important;
+  justify-content: center !important;
+  align-items: flex-start !important;
+}
+
+/* Asegurar que la tarjeta del calendario ocupe el ancho visual deseado */
+#mainContent.calendar-in-panel .calendar-page{
+  width: 100% !important;
+  max-width: 1200px !important;
+}
+#mainContent.calendar-in-panel .calendar-page .calendar-card{
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Aumentar espacio inferior para que los botones grandes se muestren centrados */
+#mainContent.calendar-in-panel .calendar-page .actions{
+  justify-content: center !important;
+  margin-top: 30px !important;
+}
+
+/* Asegurar que los botones grandes tengan el tamaño del ejemplo */
+#mainContent.calendar-in-panel .calendar-page .btn{
+  padding: 20px 80px !important;
+  font-size: 18px !important;
+  border-radius: 14px !important;
+}
+.btn.green{background:var(--green)}
+.btn.orange{background:var(--orange)}
+
+@media(max-width:900px){
+  .calendar-card{padding:18px}
+  .calendar-table td{height:48px}
+  .actions .btn{padding:12px 30px}
+}
