@@ -52,6 +52,14 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <style>
+      /* Mejor estilo para la campana de notificaciones */
+      .btn-notifications{ position:relative; display:inline-flex; align-items:center; justify-content:center; width:52px; height:52px; border-radius:12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(0,0,0,0.06); box-shadow: 0 4px 10px rgba(0,0,0,0.12); cursor:pointer; transition: transform .12s ease; }
+      .btn-notifications i{ font-size:24px; color: #ffffff; }
+      .btn-notifications:hover{ transform: translateY(-2px); }
+      .notif-count{ position:absolute; top:-8px; right:-8px; background:#ff3b30; color:#fff; min-width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; border-radius:50%; padding:0 6px; font-size:13px; box-shadow:0 2px 6px rgba(0,0,0,0.25); }
+      @media(max-width:768px){ .btn-notifications{ width:44px; height:44px } .btn-notifications i{ font-size:20px } .notif-count{ top:-6px; right:-6px; min-width:18px; height:18px; font-size:11px } }
+    </style>
     <!-- Calendario: cargar assets para asegurar estilo en panel -->
     <link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}">
     <script src="{% static 'calendario/js/calendario.js' %}" defer></script>
@@ -78,6 +86,12 @@
           <h1>MINEGATE</h1>
         </div>
         <div class="topbar-spacer"></div>
+        <div class="topbar-notifications">
+          <button id="notificationsBtn" class="btn-notifications" title="Notificaciones">
+            <i class="ri-notification-3-line"></i>
+            <span id="notif-count" class="notif-count" style="display:none">0</span>
+          </button>
+        </div>
         <div class="topbar-user">
           <div class="user-profile-photo">
             <img
@@ -393,9 +407,82 @@
       </main>
     </div>
 
+    <!-- Modal Centro de Notificaciones -->
+    <div id="modalNotificaciones" class="modal" style="display:none;">
+      <div class="modal-contenido" style="max-width:900px;width:90%;">
+        <div class="modal-encabezado">
+          <h2>Centro de Notificaciones</h2>
+          <button class="modal-cerrar" onclick="cerrarModal('modalNotificaciones')">&times;</button>
+        </div>
+        <div class="modal-cuerpo" id="modalNotificacionesBody">
+          <div id="notif-list-container">Cargando...</div>
+          <!-- Hidden form to render csrf token and ensure cookie is present for AJAX POST -->
+          <form id="_csrf_helper" style="display:none;">{% csrf_token %}</form>
+        </div>
+      </div>
+    </div>
+
     <!-- Scripts -->
     <script defer src="{% static 'core/js/Funcionalidades.js' %}"></script>
     <script src="{% static 'core/js/Ver_todo.js' %}"></script>
+    <script defer src="{% static 'notificaciones/js/notifications.js' %}"></script>
+
+    <script>
+      // Actualiza el contador de notificaciones no leídas
+      function updateNotifCount(){
+        fetch('/notificaciones/count/', {headers: {'X-Requested-With':'XMLHttpRequest'}})
+          .then(r=>r.json())
+          .then(data=>{
+            const badge = document.getElementById('notif-count');
+            if(!badge) return;
+            if(data.unread && data.unread>0){
+              badge.textContent = data.unread;
+              badge.style.display = 'inline-block';
+            } else {
+              badge.style.display = 'none';
+            }
+          }).catch(()=>{});
+      }
+
+      // Polling cada 30s para mantener actualizado el contador
+      document.addEventListener('DOMContentLoaded', function(){
+        updateNotifCount();
+        setInterval(updateNotifCount, 30000);
+      });
+
+      document.addEventListener('DOMContentLoaded', function(){
+        const btn = document.getElementById('notificationsBtn');
+        const modal = document.getElementById('modalNotificaciones');
+        const body = document.getElementById('modalNotificacionesBody');
+        if(!btn || !modal) return;
+        btn.addEventListener('click', function(e){
+          e.preventDefault();
+          modal.style.display = 'flex';
+          const target = document.getElementById('notif-list-container');
+          if(target) target.innerHTML = 'Cargando...';
+          fetch('/notificaciones/', {headers: {'X-Requested-With':'XMLHttpRequest'}})
+            .then(r => {
+              if(!r.ok) throw new Error('HTTP ' + r.status);
+              return r.text();
+            })
+            .then(html=>{
+              // Detect probable redirect to login (login form present)
+              if(/<input[^>]+name=["']?username["']?/i.test(html)){
+                document.getElementById('notif-list-container').innerHTML = '<div class="sin-notificaciones">Necesitas iniciar sesión para ver notificaciones.</div>';
+                console.warn('Notificaciones: respuesta parece ser formulario de login.');
+                return;
+              }
+              document.getElementById('notif-list-container').innerHTML = html;
+            })
+            .catch(err=>{
+              console.error('Error cargando notificaciones:', err);
+              // Fallback: abrir la URL completa para depuración o acceso directo
+              try{ window.location.href = '/notificaciones/'; }catch(e){
+                if(target) target.innerHTML = '<div>Error cargando notificaciones</div>'; }
+            });
+        });
+      });
+    </script>
 
     <!-- Script para Gestión de Permisos -->
     {% if es_superusuario %}
@@ -738,6 +825,26 @@
               .catch(err => console.error('Error cargando calendario:', err));
           });
         })();
+        
+        // Cargar centro de notificaciones al hacer click en el item del sidebar
+        const notifSidebarItem = document.querySelector('li[data-content="Notificaciones"]');
+        if(notifSidebarItem){
+          notifSidebarItem.addEventListener('click', function(ev){
+            ev.preventDefault();
+            const href = '/notificaciones/';
+            fetch(href)
+              .then(r=>r.text())
+              .then(html=>{
+                const main = document.getElementById('mainContent');
+                if(!main) return;
+                if (!window._previousMainHTML) window._previousMainHTML = main.innerHTML;
+                main.innerHTML = html;
+                // initialize notifications behavior for injected content
+                if(window.initNotifications) window.initNotifications(main);
+              })
+              .catch(err=>console.error('Error cargando notificaciones:', err));
+          });
+        }
       </script>
   </body>
 </html>
