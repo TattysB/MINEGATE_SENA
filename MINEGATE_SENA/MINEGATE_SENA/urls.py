@@ -24,4 +24,5 @@ urlpatterns = [
     path('visita-interna/', include('visitaInterna.urls')),
     path('visita-externa/', include('visitaExterna.urls')),
     path('calendario/', include('calendario.urls')),
+    path('notificaciones/', include('notificaciones.urls')),
 ]
