@@ -1,0 +1,20 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'notificaciones/css/notificaciones.css' %}">
+<div class="notificaciones-centro">
+  <div class="notificaciones-card">
+    <div class="notificaciones-header">
+      <div class="notificaciones-titulo">Centro de Notificaciones</div>
+      <div class="notificaciones-acciones">
+        <input id="notif-search" placeholder="Buscar notificaciones..." />
+        <select id="notif-priority">
+          <option value="">Todas</option>
+          <option value="3">Alta</option>
+          <option value="2">Normal</option>
+        </select>
+      </div>
+    </div>
+    <div id="notif-list-container">
+      {% include 'notificaciones/notificaciones_lista.html' %}
+    </div>
+  </div>
+</div>

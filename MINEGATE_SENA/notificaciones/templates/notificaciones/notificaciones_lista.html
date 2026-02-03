@@ -1,0 +1,26 @@
+{% load static %}
+<div class="notif-list">
+  {% if notifications and notifications|length > 0 %}
+    {% for n in notifications %}
+      {% comment %} add priority class if available {% endcomment %}
+      <div class="notif-item {% if n.priority %}priority-{{ n.priority }}{% endif %} {% if not n.read %}new{% endif %}" data-id="{{ n.id }}">
+        <div class="notif-left">🔔</div>
+        <div class="notif-content">
+          <div class="notif-meta">
+            <strong class="notif-title">{{ n.title }}</strong>
+            <span class="notif-time">{{ n.created_at|timesince }} ago</span>
+          </div>
+          <div class="notif-body">{{ n.message|linebreaksbr }}</div>
+          <div class="notif-actions">
+            {% if not n.read %}
+              <button class="btn-mark-read" data-id="{{ n.id }}">Marcar leída</button>
+            {% endif %}
+            <button class="btn-delete" data-id="{{ n.id }}">Eliminar</button>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="sin-notificaciones">No hay notificaciones.</div>
+  {% endif %}
+</div>

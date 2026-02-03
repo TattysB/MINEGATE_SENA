@@ -1,0 +1,35 @@
+/* Mejoras visuales para el Centro de Notificaciones */
+.notificaciones-centro { padding: 28px 20px; }
+.notificaciones-card { background: #ffffff; border-radius: 12px; padding: 22px; box-shadow: 0 8px 30px rgba(16,24,40,0.06); border: 1px solid rgba(15,23,42,0.04); }
+.notificaciones-header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px }
+.notificaciones-titulo { font-size:20px; font-weight:700; color:#0f172a }
+.notificaciones-acciones { display:flex; gap:8px; align-items:center }
+.notificaciones-acciones input { padding:8px 12px; border-radius:8px; border:1px solid #e6edf0; box-shadow:inset 0 1px 0 rgba(255,255,255,0.6); min-width:220px }
+.notificaciones-acciones select { padding:8px 10px; border-radius:8px; border:1px solid #e6edf0; background:#fff }
+
+.notif-list { display:flex; flex-direction:column; gap:12px }
+.notif-item { display:flex; gap:12px; align-items:flex-start; background:linear-gradient(180deg,#fbfffb,#ffffff); padding:14px; border-radius:10px; border:1px solid rgba(15,23,42,0.03) }
+.notif-left { width:44px; height:44px; border-radius:8px; display:flex; align-items:center; justify-content:center; background:#f0fdf4; color:#064e3b; font-weight:700 }
+.notif-content { flex:1 }
+.notif-meta { display:flex; justify-content:space-between; align-items:center }
+.notif-title { font-weight:700; color:#06314a }
+.notif-time { color:#64748b; font-size:13px }
+.notif-body { margin-top:8px; color:#374151 }
+.notif-actions { margin-top:10px; display:flex; gap:8px }
+.btn-mark-read, .btn-delete { padding:6px 10px; border-radius:8px; border:none; cursor:pointer; font-weight:600 }
+.btn-mark-read{ background:#06b6d4; color:white }
+.btn-delete{ background:#ef4444; color:white }
+.sin-notificaciones{ color:#6b7280; padding:12px }
+
+/* Prioridad visual */
+.priority-3 .notif-left{ background:#fff1f0; color:#9f1239 }
+.priority-2 .notif-left{ background:#f0fdf4; color:#065f46 }
+.priority-1 .notif-left{ background:#f8fafc; color:#1e293b }
+
+/* hover */
+.notif-item:hover{ transform:translateY(-3px); transition: transform .16s ease; box-shadow:0 10px 30px rgba(2,6,23,0.06) }
+
+@media(max-width:900px){
+	.notificaciones-acciones input{ min-width:140px }
+	.notif-left{ width:40px; height:40px }
+}
