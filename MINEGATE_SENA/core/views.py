@@ -183,4 +183,7 @@ def rechazar_usuario(request, usuario_id):
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'success': True, 'message': 'Usuario rechazado'})
     
-    return redirect('core:gestionar_permisos')   
+    return redirect('core:gestionar_permisos')  
+def protocolos(request):
+    """Renderiza la página de Protocolos de Seguridad."""
+    return render(request, 'protocolos.html')
