@@ -23,20 +23,23 @@ function cargarContenido(section) {
   const todasLasSecciones = mainContent.querySelectorAll('.contenido-seccion');
   todasLasSecciones.forEach(sec => sec.style.display = 'none');
   
+  // Remover contenido temporal si existe
+  const contenidoTemporal = mainContent.querySelector('.contenido-temporal');
+  if (contenidoTemporal) {
+    contenidoTemporal.remove();
+  }
+  
   // Si es la sección de Gestión de Permisos, mostrarla
   if (section === 'GestionPermisos') {
     const seccionPermisos = document.getElementById('seccion-gestion-permisos');
     if (seccionPermisos) {
       seccionPermisos.style.display = 'block';
+    } else {
+      console.warn('Sección de permisos no encontrada');
     }
   } else {
     // Aquí puedes agregar la lógica para cargar otras secciones
     // Por ahora solo muestra un mensaje temporal
-    const contenidoTemporal = mainContent.querySelector('.contenido-temporal');
-    if (contenidoTemporal) {
-      contenidoTemporal.remove();
-    }
-    
     const divTemporal = document.createElement('div');
     divTemporal.className = 'contenido-temporal';
     divTemporal.innerHTML = `<div class="seccion-${section}">

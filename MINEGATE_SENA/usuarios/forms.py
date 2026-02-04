@@ -53,9 +53,7 @@ class LoginForm(AuthenticationForm):
         username = self.cleaned_data.get('username')
         password = self.cleaned_data.get('password')
         
-        # Solo verificamos que los campos existan, la autenticación la hace la vista
         if username and password:
-            # No llamamos a authenticate() aquí, lo dejamos para la vista
             pass
         
         return self.cleaned_data

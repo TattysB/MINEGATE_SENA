@@ -1,21 +1,13 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib.auth.models import User
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import JsonResponse
 from django.db.models import Q
 from usuarios.models import PerfilUsuario
-from datetime import datetime
 
 # Create your views here.
 
 def index (request):
     return render (request, 'core/index.html')
-
-
-def es_superusuario(user):
-    """Verifica si el usuario es superusuario"""
-    return user.is_superuser
 
 
 @login_required(login_url='usuarios:login')
