@@ -1,0 +1,362 @@
+  /* ==================== VARIABLES ==================== */
+  :root {
+    --primary-color: #00b000;
+    --primary-dark: #164116;
+    --primary-light: #4bbe4b;
+    --danger-color: #dc3545;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --light-bg: #f8f9fa;
+    --text-dark: #212529;
+    --text-muted: #6c757d;
+    --border-color: #e9ecef;
+    --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    --shadow-md: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+  }
+
+  /* ==================== GENERAL STYLES ==================== */
+  body {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    min-height: 100vh;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  .password-wrapper {
+    max-width: 600px;
+    margin: 3rem auto;
+    padding: 0 1.5rem;
+    animation: fadeIn 0.6s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* ==================== CARD PRINCIPAL ==================== */
+  .password-card {
+    background: #ffffff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    border: none;
+    transition:
+      transform 0.3s ease,
+      box-shadow 0.3s ease;
+  }
+
+  .password-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 1.5rem 4rem rgba(0, 176, 0, 0.2);
+  }
+
+  /* ==================== HEADER ==================== */
+  .password-header {
+    background: linear-gradient(
+      90deg,
+      var(--primary-color) 0%,
+      var(--primary-dark) 100%
+    );
+    padding: 2rem 1.5rem;
+    color: #ffffff;
+    text-align: center;
+  }
+
+  .password-header h3 {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+
+  .password-header i {
+    font-size: 2rem;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  }
+
+  /* ==================== BODY DEL CARD ==================== */
+  .password-body {
+    padding: 2rem;
+  }
+
+  /* ==================== FORGOT PASSWORD SECTION ==================== */
+  .forgot-password-link {
+    display: block;
+    text-align: right;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border-color);
+  }
+
+  .forgot-password-link a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+  }
+
+  .forgot-password-link a:hover {
+    color: var(--primary-dark);
+    transform: translateX(5px);
+    text-decoration: underline;
+  }
+
+  .forgot-password-link i {
+    font-size: 1.1rem;
+  }
+
+  /* ==================== FORM CONTROLS ==================== */
+  .form-section {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-section h5 {
+    color: var(--primary-dark);
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .form-section h5 i {
+    color: var(--primary-color);
+    font-size: 1.3rem;
+  }
+
+  .form-label {
+    color: var(--text-dark);
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .form-label span {
+    color: var(--danger-color);
+    margin-left: 0.25rem;
+  }
+
+  /* INPUT FIELDS */
+  .form-control {
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    background-color: #f8f9fa;
+  }
+
+  .form-control:focus {
+    border-color: var(--primary-color);
+    background-color: #ffffff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 176, 0, 0.15);
+    outline: none;
+  }
+
+  .form-control:hover:not(:focus) {
+    border-color: var(--primary-light);
+    background-color: #fafbfc;
+  }
+
+  /* ERROR MESSAGES */
+  .text-danger {
+    color: var(--danger-color) !important;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .alert-danger {
+    background-color: #ffe5e5;
+    border: 2px solid var(--danger-color);
+    color: var(--danger-color);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .alert-danger strong {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .alert-danger ul {
+    margin: 0;
+    padding-left: 1.5rem;
+  }
+
+  .alert-danger li {
+    margin-bottom: 0.25rem;
+  }
+
+  /* HELP TEXT */
+  .form-text {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+    display: block;
+    line-height: 1.5;
+  }
+
+  /* ==================== BUTTONS ==================== */
+  .button-group {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid var(--border-color);
+  }
+
+  .btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+  }
+
+  /* BUTTON PRIMARY - ACTUALIZAR */
+  .btn-primary-custom {
+    background: linear-gradient(
+      135deg,
+      var(--primary-color) 0%,
+      var(--primary-dark) 100%
+    );
+    color: #ffffff;
+    box-shadow: 0 4px 15px rgba(0, 176, 0, 0.3);
+  }
+
+  .btn-primary-custom:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 176, 0, 0.4);
+    background: linear-gradient(
+      135deg,
+      var(--primary-dark) 0%,
+      var(--primary-color) 100%
+    );
+  }
+
+  .btn-primary-custom:active {
+    transform: translateY(-1px);
+  }
+
+  /* BUTTON SECONDARY - CANCELAR */
+  .btn-secondary-custom {
+    background-color: #ffffff;
+    color: var(--primary-color);
+    border: 2px solid var(--primary-color);
+  }
+
+  .btn-secondary-custom:hover {
+    background-color: var(--primary-color);
+    color: #ffffff;
+    transform: translateY(-3px);
+    box-shadow: 0 4px 15px rgba(0, 176, 0, 0.2);
+  }
+
+  .btn-secondary-custom:active {
+    transform: translateY(-1px);
+  }
+
+  /* ==================== HELPER TEXT ==================== */
+  .helper-text {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 2px solid var(--border-color);
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+
+  .helper-text i {
+    color: var(--primary-color);
+    margin-right: 0.5rem;
+  }
+
+  .required-fields {
+    color: var(--danger-color);
+    font-weight: 600;
+  }
+
+  /* ==================== RESPONSIVE ==================== */
+  @media (max-width: 768px) {
+    .password-wrapper {
+      margin: 1.5rem auto;
+    }
+
+    .password-header {
+      padding: 1.5rem 1rem;
+    }
+
+    .password-header h3 {
+      font-size: 1.5rem;
+    }
+
+    .password-body {
+      padding: 1.5rem 1rem;
+    }
+
+    .button-group {
+      flex-direction: column-reverse;
+      gap: 0.75rem;
+    }
+
+    .btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .form-control {
+      font-size: 16px; /* Evita zoom en iOS */
+    }
+  }
+
+  /* ==================== ANIMATIONS ==================== */
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(0, 176, 0, 0.7);
+    }
+    70% {
+      box-shadow: 0 0 0 10px rgba(0, 176, 0, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(0, 176, 0, 0);
+    }
+  }
+
+  .btn-primary-custom:focus {
+    animation: pulse 1.5s infinite;
+  }
+
+  /* ==================== HR DIVIDER ==================== */
+  hr {
+    border: none;
+    border-top: 2px solid var(--border-color);
+    margin: 1.5rem 0;
+    opacity: 0.6;
+  }
