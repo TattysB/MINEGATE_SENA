@@ -27,46 +27,56 @@
 <body>
 
 <div class="container">
-  <h1>{{ visita.nombre }}</h1>
+  <h1>{{ visita.nombre_programa }}</h1>
   
   <div class="field">
     <span class="label">ID:</span>
     <span class="value">{{ visita.id }}</span>
+  </div>
+
+  <div class="field">
+    <span class="label">Nombre de Programa:</span>
+    <span class="value">{{ visita.nombre_programa }}</span>
+  </div>
+
+  <div class="field">
+    <span class="label">Número de Ficha:</span>
+    <span class="value">{{ visita.numero_ficha }}</span>
   </div>
   
   <div class="field">
     <span class="label">Responsable:</span>
     <span class="value">{{ visita.responsable }}</span>
   </div>
-  
+
   <div class="field">
-    <span class="label">Teléfono:</span>
-    <span class="value">{{ visita.telefono }}</span>
+    <span class="label">Tipo de Documento:</span>
+    <span class="value">{{ visita.get_tipo_documento_responsable_display }}</span>
+  </div>
+
+  <div class="field">
+    <span class="label">Documento del responsable:</span>
+    <span class="value">{{ visita.documento_responsable }}</span>
+  </div>
+
+  <div class="field">
+    <span class="label">Correo del responsable:</span>
+    <span class="value">{{ visita.correo_responsable }}</span>
   </div>
   
   <div class="field">
-    <span class="label">Cantidad:</span>
-    <span class="value">{{ visita.cantidad }}</span>
+    <span class="label">Teléfono del responsable:</span>
+    <span class="value">{{ visita.telefono_responsable }}</span>
   </div>
   
   <div class="field">
-    <span class="label">Fecha:</span>
-    <span class="value">{{ visita.fecha }}</span>
+    <span class="label">Cantidad de aprendices:</span>
+    <span class="value">{{ visita.cantidad_aprendices }}</span>
   </div>
-  
+
   <div class="field">
-    <span class="label">Estado:</span>
-    <span class="value"><span class="estado estado-{{ visita.estado }}">{{ visita.get_estado_display }}</span></span>
-  </div>
-  
-  <div class="field">
-    <span class="label">Creada:</span>
-    <span class="value">{{ visita.created_at }}</span>
-  </div>
-  
-  <div class="field">
-    <span class="label">Actualizada:</span>
-    <span class="value">{{ visita.updated_at }}</span>
+    <span class="label">Observaciones:</span>
+    <span class="value">{{ visita.observaciones|default:"Sin observaciones" }}</span>
   </div>
 
   <div class="botones">

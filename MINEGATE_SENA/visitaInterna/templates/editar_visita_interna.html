@@ -11,8 +11,8 @@
         h1 { color: #333; margin-bottom: 30px; text-align: center; }
         div { margin-bottom: 20px; }
         label { display: block; margin-bottom: 8px; color: #555; font-weight: bold; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
-        input:focus, select:focus { outline: none; border-color: #2196F3; box-shadow: 0 0 5px rgba(33, 150, 243, 0.3); }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #2196F3; box-shadow: 0 0 5px rgba(33, 150, 243, 0.3); }
         .error { color: #d32f2f; font-size: 12px; margin-top: 5px; }
         .buttons { display: flex; gap: 10px; justify-content: center; margin-top: 30px; }
         button { padding: 12px 30px; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; transition: 0.3s; }
@@ -31,10 +31,18 @@
             {% csrf_token %}
             
             <div>
-                <label for="id_nombre">Nombre:</label>
-                {{ form.nombre }}
-                {% if form.nombre.errors %}
-                    <div style="color: red;">{{ form.nombre.errors }}</div>
+                <label for="id_nombre_programa">Nombre de Programa:</label>
+                {{ form.nombre_programa }}
+                {% if form.nombre_programa.errors %}
+                    <div style="color: red;">{{ form.nombre_programa.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div>
+                <label for="id_numero_ficha">Número de Ficha:</label>
+                {{ form.numero_ficha }}
+                {% if form.numero_ficha.errors %}
+                    <div style="color: red;">{{ form.numero_ficha.errors }}</div>
                 {% endif %}
             </div>
             
@@ -45,36 +53,52 @@
                     <div style="color: red;">{{ form.responsable.errors }}</div>
                 {% endif %}
             </div>
-            
+
             <div>
-                <label for="id_telefono">Teléfono:</label>
-                {{ form.telefono }}
-                {% if form.telefono.errors %}
-                    <div style="color: red;">{{ form.telefono.errors }}</div>
+                <label for="id_tipo_documento_responsable">Tipo de Documento:</label>
+                {{ form.tipo_documento_responsable }}
+                {% if form.tipo_documento_responsable.errors %}
+                    <div style="color: red;">{{ form.tipo_documento_responsable.errors }}</div>
                 {% endif %}
             </div>
-            
+
             <div>
-                <label for="id_cantidad">Cantidad de Visitantes:</label>
-                {{ form.cantidad }}
-                {% if form.cantidad.errors %}
-                    <div style="color: red;">{{ form.cantidad.errors }}</div>
+                <label for="id_documento_responsable">Documento del responsable:</label>
+                {{ form.documento_responsable }}
+                {% if form.documento_responsable.errors %}
+                    <div style="color: red;">{{ form.documento_responsable.errors }}</div>
                 {% endif %}
             </div>
-            
+
             <div>
-                <label for="id_fecha">Fecha de la Visita:</label>
-                {{ form.fecha }}
-                {% if form.fecha.errors %}
-                    <div style="color: red;">{{ form.fecha.errors }}</div>
+                <label for="id_correo_responsable">Correo del responsable:</label>
+                {{ form.correo_responsable }}
+                {% if form.correo_responsable.errors %}
+                    <div style="color: red;">{{ form.correo_responsable.errors }}</div>
                 {% endif %}
             </div>
-            
+
             <div>
-                <label for="id_estado">Estado:</label>
-                {{ form.estado }}
-                {% if form.estado.errors %}
-                    <div style="color: red;">{{ form.estado.errors }}</div>
+                <label for="id_telefono_responsable">Teléfono del responsable:</label>
+                {{ form.telefono_responsable }}
+                {% if form.telefono_responsable.errors %}
+                    <div style="color: red;">{{ form.telefono_responsable.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div>
+                <label for="id_cantidad_aprendices">Cantidad de aprendices:</label>
+                {{ form.cantidad_aprendices }}
+                {% if form.cantidad_aprendices.errors %}
+                    <div style="color: red;">{{ form.cantidad_aprendices.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div>
+                <label for="id_observaciones">Observaciones:</label>
+                {{ form.observaciones }}
+                {% if form.observaciones.errors %}
+                    <div style="color: red;">{{ form.observaciones.errors }}</div>
                 {% endif %}
             </div>
             
