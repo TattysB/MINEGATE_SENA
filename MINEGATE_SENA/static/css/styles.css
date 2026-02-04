@@ -1,0 +1,178 @@
+/* Global overrides */
+
+/* Make Bootstrap primary use the project green */
+.btn-primary {
+    background-color: #58af22;
+    color: #ffffff;
+    border-color: #58af22;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background-color: #4a9220;
+    border-color: #4a9220;
+    color: #ffffff;
+}
+
+/* Logo sizing (applies site-wide) */
+.navbar .navbar-brand img.navbar-logo,
+.navbar-logo,
+.navbar-brand .navbar-logo {
+    height: 35px !important;
+    max-height: 35px !important;
+    width: auto !important;
+    max-width: 200px !important;
+    display: inline-block !important;
+    margin-right: 10px !important;
+    object-fit: contain !important;
+}
+
+/* Ajuste adicional para móviles */
+@media (max-width: 576px) {
+    .navbar .navbar-brand img.navbar-logo {
+        height: 30px !important;
+        max-height: 30px !important;
+    }
+}
+
+/* Botón Flotante */
+.minegate-acc-trigger {
+    position: fixed;
+    bottom: 25px;
+    left: 25px;
+    width: 60px;
+    height: 60px;
+    background-color: #118d32;
+    color: white;
+    border-radius: 50%;
+    border: 3px solid white;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10001;
+    transition: transform 0.3s;
+}
+
+.minegate-acc-trigger:hover { 
+    transform: scale(1.1); 
+}
+
+/* Panel de Control */
+.acc-widget-panel {
+    display: none;
+    position: fixed;
+    bottom: 95px;
+    left: 25px;
+    width: 280px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    padding: 20px;
+    z-index: 10000;
+    border: 1px solid #ddd;
+}
+
+.acc-widget-panel h5 { 
+    color: #333; 
+    margin-bottom: 15px; 
+    border-bottom: 2px solid #eee; 
+    padding-bottom: 5px; 
+}
+
+.acc-btn-group { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 10px; 
+}
+
+.acc-opt {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: #f8f9fa;
+    border: 1px solid #e1e1e1;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    color: #444;
+}
+
+.acc-opt:hover { 
+    background: #e9ecef; 
+}
+
+/* Alto contraste */
+body.high-contrast-mode {
+    background-color: #000 !important;
+    color: #fff !important;
+}
+
+body.high-contrast-mode *, 
+body.high-contrast-mode div, 
+body.high-contrast-mode nav, 
+body.high-contrast-mode footer {
+    background-color: #000 !important;
+    color: #fff !important;
+    border-color: #fff !important;
+}
+
+body.high-contrast-mode a { 
+    color: #ff0 !important; 
+    text-decoration: underline !important; 
+}
+
+body.high-contrast-mode .btn { 
+    border: 2px solid #fff !important; 
+}
+
+/* Subrayar enlaces */
+body.underline-links a { 
+    text-decoration: underline !important; 
+    font-weight: bold; 
+}
+
+/* Cursor grande */
+body.big-cursor { 
+    cursor: url('https://cur.cursors-4u.net/others/oth-3/oth208.cur'), auto !important; 
+}
+
+body.big-cursor a, 
+body.big-cursor button { 
+    cursor: inherit !important; 
+}
+
+/* Espaciado de letras */
+body.extra-spacing { 
+    letter-spacing: 2px !important; 
+}
+
+#reading-guide {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    /* Creamos una "ventana" transparente en medio de una pantalla oscura */
+    background: radial-gradient(
+        circle at var(--mouse-x) var(--mouse-y), 
+        transparent 0%, 
+        transparent 50px, 
+        rgba(0, 0, 0, 0.5) 80px
+    );
+    z-index: 2147483647;
+    pointer-events: none; /* Permite hacer clic a través de la máscara */
+}
+
+
+/* para el mapa */
+    #map { 
+        height: 400px; 
+        width: 100%; 
+        border-radius: 15px; 
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        z-index: 1; /* Para que no se ponga encima del botón de accesibilidad */
+    }
