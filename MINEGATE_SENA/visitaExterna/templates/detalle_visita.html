@@ -4,13 +4,19 @@
   <title>Detalle de Visita Externa</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
-    .container { max-width: 600px; margin: 0 auto; }
-    h1 { color: #333; }
+    .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    h1 { color: #333; margin-bottom: 30px; }
     .field { margin: 15px 0; }
     .label { font-weight: bold; color: #555; }
     .value { color: #333; margin-left: 10px; }
-    a { color: #4CAF50; text-decoration: none; }
+    a { text-decoration: none; }
     a:hover { text-decoration: underline; }
+    .botones { margin-top: 30px; text-align: center; }
+    button { padding: 10px 20px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; transition: 0.3s; }
+    .btn-editar { background-color: #2196F3; color: white; }
+    .btn-editar:hover { background-color: #0b7dda; }
+    .btn-eliminar { background-color: #f44336; color: white; }
+    .btn-eliminar:hover { background-color: #da190b; }
   </style>
 </head>
 <body>
@@ -24,51 +30,50 @@
   </div>
   
   <div class="field">
-    <span class="label">Responsable:</span>
-    <span class="value">{{ visita.responsable }}</span>
+    <span class="label">Nombre de la Institución:</span>
+    <span class="value">{{ visita.nombre }}</span>
+  </div>
+  
+  <div class="field">
+    <span class="label">Nombre del Responsable:</span>
+    <span class="value">{{ visita.nombre_responsable }}</span>
+  </div>
+
+  <div class="field">
+    <span class="label">Tipo de Documento:</span>
+    <span class="value">{{ visita.get_tipo_documento_responsable_display }}</span>
+  </div>
+
+  <div class="field">
+    <span class="label">Documento del Responsable:</span>
+    <span class="value">{{ visita.documento_responsable }}</span>
   </div>
   
   <div class="field">
     <span class="label">Correo Electrónico:</span>
-    <span class="value">{{ visita.correo }}</span>
+    <span class="value">{{ visita.correo_responsable }}</span>
   </div>
   
   <div class="field">
     <span class="label">Teléfono:</span>
-    <span class="value">{{ visita.telefono }}</span>
+    <span class="value">{{ visita.telefono_responsable }}</span>
   </div>
   
   <div class="field">
-    <span class="label">Articulación:</span>
-    <span class="value">{{ visita.articulacion }}</span>
+    <span class="label">Cantidad de Visitantes:</span>
+    <span class="value">{{ visita.cantidad_visitantes }}</span>
   </div>
   
   <div class="field">
-    <span class="label">Cantidad:</span>
-    <span class="value">{{ visita.cantidad }}</span>
-  </div>
-  
-  <div class="field">
-    <span class="label">Fecha:</span>
-    <span class="value">{{ visita.fecha }}</span>
-  </div>
-  
-  <div class="field">
-    <span class="label">Hora:</span>
-    <span class="value">{{ visita.hora }}</span>
-  </div>
-  
-  <div class="field">
-    <span class="label">Creada:</span>
-    <span class="value">{{ visita.created_at }}</span>
-  </div>
-  
-  <div class="field">
-    <span class="label">Actualizada:</span>
-    <span class="value">{{ visita.updated_at }}</span>
+    <span class="label">Observación:</span>
+    <span class="value">{{ visita.observacion|default:"Sin observación" }}</span>
   </div>
 
-  <p><a href="/visita_externa/">Volver a Visitas Externas</a></p>
+  <div class="botones">
+    <a href="{% url 'editar_visita' visita.id %}"><button class="btn-editar">Editar</button></a>
+    <a href="{% url 'eliminar_visita' visita.id %}"><button class="btn-eliminar">Eliminar</button></a>
+    <p><a href="{% url 'visita_externa' %}">Volver a Visitas Externas</a></p>
+  </div>
 </div>
 
 </body>

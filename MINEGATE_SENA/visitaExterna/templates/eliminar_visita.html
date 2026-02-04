@@ -30,13 +30,13 @@
     
     <div class="info-box">
         <p><strong>Nombre:</strong> {{ visita.nombre }}</p>
-        <p><strong>Responsable:</strong> {{ visita.responsable }}</p>
-        <p><strong>Correo:</strong> {{ visita.correo }}</p>
-        <p><strong>Teléfono:</strong> {{ visita.telefono }}</p>
-        <p><strong>Articulación:</strong> {{ visita.articulacion }}</p>
-        <p><strong>Cantidad de Visitantes:</strong> {{ visita.cantidad }}</p>
-        <p><strong>Fecha:</strong> {{ visita.fecha }}</p>
-        <p><strong>Hora:</strong> {{ visita.hora }}</p>
+        <p><strong>Responsable:</strong> {{ visita.nombre_responsable }}</p>
+        <p><strong>Tipo de Documento:</strong> {{ visita.get_tipo_documento_responsable_display }}</p>
+        <p><strong>Documento:</strong> {{ visita.documento_responsable }}</p>
+        <p><strong>Correo:</strong> {{ visita.correo_responsable }}</p>
+        <p><strong>Teléfono:</strong> {{ visita.telefono_responsable }}</p>
+        <p><strong>Cantidad de Visitantes:</strong> {{ visita.cantidad_visitantes }}</p>
+        <p><strong>Observación:</strong> {{ visita.observacion }}</p>
     </div>
     
     <form method="POST">
