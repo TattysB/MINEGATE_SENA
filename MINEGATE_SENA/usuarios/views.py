@@ -486,3 +486,228 @@ def password_reset_confirm_view(request, uidb64, token):
 
 def password_reset_complete_view(request):
     return render(request, 'usuarios/contrasena_actualizada.html')
+
+
+# ==================== VISTAS DE GESTIÓN DE PERMISOS ====================
+
+def es_superusuario(user):
+    """Verifica si el usuario es superusuario"""
+    return user.is_superuser
+
+
+@login_required(login_url='usuarios:login')
+@user_passes_test(es_superusuario, login_url='core:panel_administrativo')
+def gestionar_permisos_view(request):
+    """
+    Vista para que el administrador gestione los permisos de acceso de los usuarios
+    Solo accesible por superusuarios
+    """
+    from datetime import datetime
+    
+    # Obtener filtros
+    filtro_actual = request.GET.get('filtro', 'todos')
+    buscar = request.GET.get('buscar', '')
+    
+    # Obtener todos los perfiles (excluyendo superusuarios)
+    perfiles = PerfilUsuario.objects.select_related('user').exclude(user__is_superuser=True)
+    
+    # Aplicar filtros
+    if filtro_actual == 'aprobados':
+        perfiles = perfiles.filter(aprobado=True)
+    elif filtro_actual == 'pendientes':
+        perfiles = perfiles.filter(aprobado=False, razon_rechazo__isnull=True)
+    elif filtro_actual == 'rechazados':
+        perfiles = perfiles.filter(aprobado=False, razon_rechazo__isnull=False)
+    
+    # Aplicar búsqueda
+    if buscar:
+        perfiles = perfiles.filter(
+            Q(user__username__icontains=buscar) |
+            Q(user__email__icontains=buscar) |
+            Q(user__first_name__icontains=buscar) |
+            Q(user__last_name__icontains=buscar) |
+            Q(documento__icontains=buscar)
+        )
+    
+    # Ordenar por fecha de registro
+    perfiles = perfiles.order_by('-user__date_joined')
+    
+    # Estadísticas
+    total_usuarios = PerfilUsuario.objects.exclude(user__is_superuser=True).count()
+    usuarios_aprobados = PerfilUsuario.objects.filter(aprobado=True).exclude(user__is_superuser=True).count()
+    usuarios_pendientes = PerfilUsuario.objects.filter(aprobado=False, razon_rechazo__isnull=True).exclude(user__is_superuser=True).count()
+    usuarios_rechazados = PerfilUsuario.objects.filter(aprobado=False, razon_rechazo__isnull=False).exclude(user__is_superuser=True).count()
+    
+    context = {
+        'perfiles': perfiles,
+        'filtro_actual': filtro_actual,
+        'buscar': buscar,
+        'total_usuarios': total_usuarios,
+        'usuarios_aprobados': usuarios_aprobados,
+        'usuarios_pendientes': usuarios_pendientes,
+        'usuarios_rechazados': usuarios_rechazados,
+    }
+    
+    return render(request, 'usuarios/gestionar_permisos.html', context)
+
+
+@login_required(login_url='usuarios:login')
+@user_passes_test(es_superusuario, login_url='core:panel_administrativo')
+def aprobar_usuario_view(request, usuario_id):
+    """
+    Aprueba un usuario para acceder al sistema
+    """
+    from datetime import datetime
+    from django.http import JsonResponse
+    
+    perfil = get_object_or_404(PerfilUsuario, user_id=usuario_id)
+    
+    if request.method == 'POST':
+        perfil.aprobado = True
+        perfil.razon_rechazo = None
+        perfil.fecha_aprobacion = datetime.now()
+        perfil.save()
+        
+        messages.success(request, f'✓ Usuario {perfil.user.username} aprobado exitosamente.')
+        
+        # Si es AJAX, retornar JSON
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': True, 'message': 'Usuario aprobado'})
+    
+    return redirect('core:panel_administrativo')
+
+
+@login_required(login_url='usuarios:login')
+@user_passes_test(es_superusuario, login_url='core:panel_administrativo')
+def rechazar_usuario_view(request, usuario_id):
+    """
+    Rechaza un usuario y no le permite acceder al sistema
+    """
+    from datetime import datetime
+    from django.http import JsonResponse
+    
+    perfil = get_object_or_404(PerfilUsuario, user_id=usuario_id)
+    
+    if request.method == 'POST':
+        razon = request.POST.get('razon', 'No se proporcionó razón')
+        
+        perfil.aprobado = False
+        perfil.razon_rechazo = razon
+        perfil.fecha_aprobacion = None
+        perfil.save()
+        
+        messages.warning(request, f'✗ Usuario {perfil.user.username} rechazado.')
+        
+        # Si es AJAX, retornar JSON
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': True, 'message': 'Usuario rechazado'})
+    
+    return redirect('core:panel_administrativo')
+
+
+@login_required(login_url='usuarios:login')
+@user_passes_test(es_superusuario, login_url='core:panel_administrativo')
+def eliminar_usuario_permisos_view(request, usuario_id):
+    """
+    Elimina permanentemente un usuario del sistema
+    Solo accesible por superusuarios
+    """
+    from django.http import JsonResponse
+    
+    usuario = get_object_or_404(User, id=usuario_id)
+    
+    # No permitir eliminar superusuarios
+    if usuario.is_superuser:
+        messages.error(request, '❌ No se puede eliminar un superusuario.')
+        return redirect('core:panel_administrativo')
+    
+    # No permitir que se elimine a sí mismo
+    if usuario == request.user:
+        messages.error(request, '❌ No puedes eliminarte a ti mismo.')
+        return redirect('core:panel_administrativo')
+    
+    if request.method == 'POST':
+        nombre_usuario = usuario.get_full_name() or usuario.username
+        
+        # Eliminar el usuario (esto también eliminará el perfil por CASCADE)
+        usuario.delete()
+        
+        messages.success(request, f'🗑️ Usuario {nombre_usuario} eliminado permanentemente.')
+        
+        # Si es AJAX, retornar JSON
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': True, 'message': 'Usuario eliminado'})
+    
+    return redirect('core:panel_administrativo')
+
+
+@login_required(login_url='usuarios:login')
+@user_passes_test(es_superusuario, login_url='core:panel_administrativo')
+def gestionar_permisos_ajax_view(request):
+    """
+    Vista AJAX para filtrar usuarios sin recargar la página
+    Retorna datos JSON para actualizar la tabla dinámicamente
+    """
+    from django.http import JsonResponse
+    
+    # Obtener filtros
+    filtro_actual = request.GET.get('filtro', 'todos')
+    buscar = request.GET.get('buscar', '')
+    
+    # Obtener todos los perfiles (excluyendo superusuarios)
+    perfiles = PerfilUsuario.objects.select_related('user').exclude(user__is_superuser=True)
+    
+    # Aplicar filtros
+    if filtro_actual == 'aprobados':
+        perfiles = perfiles.filter(aprobado=True)
+    elif filtro_actual == 'pendientes':
+        perfiles = perfiles.filter(aprobado=False, razon_rechazo__isnull=True)
+    elif filtro_actual == 'rechazados':
+        perfiles = perfiles.filter(aprobado=False, razon_rechazo__isnull=False)
+    
+    # Aplicar búsqueda
+    if buscar:
+        perfiles = perfiles.filter(
+            Q(user__username__icontains=buscar) |
+            Q(user__email__icontains=buscar) |
+            Q(user__first_name__icontains=buscar) |
+            Q(user__last_name__icontains=buscar) |
+            Q(documento__icontains=buscar)
+        )
+    
+    # Ordenar por fecha de registro
+    perfiles = perfiles.order_by('-user__date_joined')
+    
+    # Estadísticas
+    total_usuarios = PerfilUsuario.objects.exclude(user__is_superuser=True).count()
+    usuarios_aprobados = PerfilUsuario.objects.filter(aprobado=True).exclude(user__is_superuser=True).count()
+    usuarios_pendientes = PerfilUsuario.objects.filter(aprobado=False, razon_rechazo__isnull=True).exclude(user__is_superuser=True).count()
+    usuarios_rechazados = PerfilUsuario.objects.filter(aprobado=False, razon_rechazo__isnull=False).exclude(user__is_superuser=True).count()
+    
+    # Preparar datos de usuarios
+    usuarios_data = []
+    for perfil in perfiles:
+        usuarios_data.append({
+            'id': perfil.user.id,
+            'nombre': perfil.user.get_full_name() or perfil.user.username,
+            'username': perfil.user.username,
+            'documento': perfil.documento,
+            'email': perfil.user.email,
+            'telefono': perfil.telefono or 'No especificado',
+            'fecha_registro': perfil.user.date_joined.strftime('%d/%m/%Y %H:%M'),
+            'aprobado': perfil.aprobado,
+            'razon_rechazo': perfil.razon_rechazo,
+            'razon_rechazo_corta': ' '.join(perfil.razon_rechazo.split()[:5]) + '...' if perfil.razon_rechazo and len(perfil.razon_rechazo.split()) > 5 else (perfil.razon_rechazo or ''),
+            'fecha_aprobacion': perfil.fecha_aprobacion.strftime('%d/%m/%Y') if perfil.fecha_aprobacion else '',
+        })
+    
+    return JsonResponse({
+        'success': True,
+        'usuarios': usuarios_data,
+        'estadisticas': {
+            'total': total_usuarios,
+            'aprobados': usuarios_aprobados,
+            'pendientes': usuarios_pendientes,
+            'rechazados': usuarios_rechazados,
+        }
+    })

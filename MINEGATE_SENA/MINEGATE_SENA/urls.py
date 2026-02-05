@@ -24,3 +24,4 @@ urlpatterns = [
     path('visita_interna/', include('visitaInterna.urls')),
     path('visita_externa/', include('visitaExterna.urls')),
 ]
+
