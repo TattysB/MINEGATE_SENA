@@ -70,9 +70,9 @@
   </div>
 
   <div class="botones">
-    <a href="{% url 'editar_visita' visita.id %}"><button class="btn-editar">Editar</button></a>
-    <a href="{% url 'eliminar_visita' visita.id %}"><button class="btn-eliminar">Eliminar</button></a>
-    <p><a href="{% url 'visita_externa' %}">Volver a Visitas Externas</a></p>
+    <a href="{% url 'visitaExterna:editar_visita' visita.id %}"><button class="btn-editar">Editar</button></a>
+    <a href="{% url 'visitaExterna:eliminar_visita' visita.id %}"><button class="btn-eliminar">Eliminar</button></a>
+    <p><a href="{% url 'visitaExterna:visita_externa' %}">Volver a Visitas Externas</a></p>
   </div>
 </div>
 

@@ -80,9 +80,9 @@
   </div>
 
   <div class="botones">
-    <a href="{% url 'editar_visita_interna' visita.id %}"><button class="btn-editar">Editar</button></a>
-    <a href="{% url 'eliminar_visita_interna' visita.id %}"><button class="btn-eliminar">Eliminar</button></a>
-    <p><a href="{% url 'visita_interna' %}">Volver a Visitas Internas</a></p>
+    <a href="{% url 'visitaInterna:editar_visita_interna' visita.id %}"><button class="btn-editar">Editar</button></a>
+    <a href="{% url 'visitaInterna:eliminar_visita_interna' visita.id %}"><button class="btn-eliminar">Eliminar</button></a>
+    <p><a href="{% url 'visitaInterna:visita_interna' %}">Volver a Visitas Internas</a></p>
   </div>
 </div>
 

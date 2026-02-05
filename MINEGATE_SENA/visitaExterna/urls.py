@@ -1,6 +1,8 @@
 from django.urls import path
 from . import views
 
+app_name = 'visitaExterna'
+
 urlpatterns = [
     path('', views.visita_externa, name='visita_externa'),
     path('crear/', views.crear_visita, name='crear_visita'),

@@ -36,7 +36,7 @@
 
 <div class="container">
   <h1>Lista de Visitas Internas</h1>
-  <div class="btn-crear"><a href="{% url 'crear_visita_interna' %}"><button>+ Crear Nueva Visita</button></a></div>
+  <div class="btn-crear"><a href="{% url 'visitaInterna:crear_visita_interna' %}"><button>+ Crear Nueva Visita</button></a></div>
 
   <div class="filtros">
     <form method="GET">
@@ -58,7 +58,7 @@
       </div>
       <div style="display: flex; gap: 5px; align-items: flex-end;">
         <button type="submit">Buscar</button>
-        <a href="{% url 'visita_interna' %}" style="text-decoration: none;"><button type="button" style="background-color: #757575; color: white;">Limpiar</button></a>
+        <a href="{% url 'visitaInterna:visita_interna' %}" style="text-decoration: none;"><button type="button" style="background-color: #757575; color: white;">Limpiar</button></a>
       </div>
     </form>
   </div>
@@ -88,9 +88,9 @@
           <td>{{ visita.telefono_responsable }}</td>
           <td>{{ visita.cantidad_aprendices }}</td>
           <td>
-            <a href="{% url 'detalle_visita_interna' visita.id %}"><button class="btn-action" style="background-color: #FF9800; color: white;">Ver Detalle</button></a>
-            <a href="{% url 'editar_visita_interna' visita.id %}"><button class="btn-action btn-editar">Editar</button></a>
-            <a href="{% url 'eliminar_visita_interna' visita.id %}"><button class="btn-action btn-eliminar">Eliminar</button></a>
+            <a href="{% url 'visitaInterna:detalle_visita_interna' visita.id %}"><button class="btn-action" style="background-color: #FF9800; color: white;">Ver Detalle</button></a>
+            <a href="{% url 'visitaInterna:editar_visita_interna' visita.id %}"><button class="btn-action btn-editar">Editar</button></a>
+            <a href="{% url 'visitaInterna:eliminar_visita_interna' visita.id %}"><button class="btn-action btn-eliminar">Eliminar</button></a>
           </td>
         </tr>
       {% endfor %}

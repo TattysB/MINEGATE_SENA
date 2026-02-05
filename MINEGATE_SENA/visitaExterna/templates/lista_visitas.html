@@ -29,7 +29,7 @@
 
 <div class="container">
   <h1>Lista de Visitas Externas</h1>
-  <div class="btn-crear"><a href="{% url 'crear_visita' %}"><button>+ Crear Nueva Visita</button></a></div>
+  <div class="btn-crear"><a href="{% url 'visitaExterna:crear_visita' %}"><button>+ Crear Nueva Visita</button></a></div>
 
   <div style="margin: 20px 0; padding: 20px; background-color: #f9f9f9; border-radius: 4px;">
     <form method="GET" style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -47,7 +47,7 @@
       </div>
       <div style="display: flex; gap: 5px; align-items: flex-end;">
         <button type="submit" style="padding: 8px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; transition: 0.3s;">Buscar</button>
-        <a href="{% url 'visita_externa' %}" style="text-decoration: none;"><button type="button" style="padding: 8px 20px; background-color: #757575; color: white; border: none; border-radius: 4px; cursor: pointer; transition: 0.3s;">Limpiar</button></a>
+        <a href="{% url 'visitaExterna:visita_externa' %}" style="text-decoration: none;"><button type="button" style="padding: 8px 20px; background-color: #757575; color: white; border: none; border-radius: 4px; cursor: pointer; transition: 0.3s;">Limpiar</button></a>
       </div>
     </form>
   </div>
@@ -78,8 +78,8 @@
           <td>{{ visita.cantidad_visitantes }}</td>
           <td>
             <a href="detalle_visita/{{ visita.id }}"><button class="btn-action" style="background-color: #FF9800; color: white;">Ver Detalle</button></a>
-            <a href="{% url 'editar_visita' visita.id %}"><button class="btn-action btn-editar">Editar</button></a>
-            <a href="{% url 'eliminar_visita' visita.id %}"><button class="btn-action btn-eliminar">Eliminar</button></a>
+            <a href="{% url 'visitaExterna:editar_visita' visita.id %}"><button class="btn-action btn-editar">Editar</button></a>
+            <a href="{% url 'visitaExterna:eliminar_visita' visita.id %}"><button class="btn-action btn-eliminar">Eliminar</button></a>
           </td>
         </tr>
       {% endfor %}
