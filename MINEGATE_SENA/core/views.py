@@ -1,11 +1,10 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib.auth.models import User
-from django.contrib import messages
+from datetime import datetime
 from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, render, redirect
+from django.contrib.auth.decorators import login_required,user_passes_test
+from django.contrib import messages
 from django.db.models import Q
 from usuarios.models import PerfilUsuario
-from datetime import datetime
 
 # Create your views here.
 
@@ -17,10 +16,8 @@ def index(request):
 def es_superusuario(user):
     """Verifica si el usuario es superusuario"""
     return user.is_superuser
-
-
-@login_required(login_url="usuarios:login")
-def panel_administrativo(request):
+@login_required(login_url='usuarios:login')
+def panel_administrativo (request):
     """
     Panel administrativo principal
     Incluye gestión de permisos solo para superusuarios
@@ -213,3 +210,10 @@ def rechazar_usuario(request, usuario_id):
             return JsonResponse({"success": True, "message": "Usuario rechazado"})
 
     return redirect("core:gestionar_permisos")
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': True, 'message': 'Usuario rechazado'})
+    
+    return redirect('core:gestionar_permisos')  
+def protocolos(request):
+    """Renderiza la página de Protocolos de Seguridad."""
+    return render(request, 'protocolos.html')

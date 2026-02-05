@@ -65,7 +65,7 @@
       <div class="topbar">
         <div class="topbar-logo">
           <img
-            src="{% static 'core/img/MINEGATE-NULL.png' %}"
+            src="{% static 'img/LogoMine.png' %}"
             alt="MineGate Logo"
             title="MineGate"
           />
@@ -500,6 +500,8 @@
               </form>
             </div>
           </div>
+        <div id="seccion-gestion-permisos" class="contenido-seccion" style="display: none;">
+            {% include 'usuarios/gestionar_permisos.html' %}
         </div>
         {% endif %}
       </main>
@@ -568,13 +570,36 @@
         }
       };
 
-      // Auto-cerrar alertas después de 5 segundos
-      document.addEventListener("DOMContentLoaded", function () {
-        const alertas = document.querySelectorAll(".alerta");
-        alertas.forEach((alerta) => {
-          setTimeout(() => {
-            alerta.style.display = "none";
-          }, 5000);
+        // Auto-cerrar alertas después de 5 segundos
+        document.addEventListener('DOMContentLoaded', function() {
+            const alertas = document.querySelectorAll('.alerta');
+            alertas.forEach(alerta => {
+                setTimeout(() => {
+                    alerta.style.display = 'none';
+                }, 5000);
+            });
+            
+            // Si hay mensajes de éxito/warning (después de aprobar/rechazar), mostrar la sección de permisos automáticamente
+            {% if messages %}
+            const seccionPermisos = document.getElementById('seccion-gestion-permisos');
+            if (seccionPermisos) {
+                // Ocultar todas las secciones
+                const todasLasSecciones = document.querySelectorAll('.contenido-seccion, .contenido-temporal');
+                todasLasSecciones.forEach(sec => sec.style.display = 'none');
+                
+                // Mostrar sección de permisos
+                seccionPermisos.style.display = 'block';
+                
+                // Marcar el item del sidebar como activo
+                const sidebarItemsLocal = document.querySelectorAll('.sidebar li');
+                sidebarItemsLocal.forEach(item => {
+                    item.classList.remove('active');
+                    if (item.getAttribute('data-content') === 'GestionPermisos') {
+                        item.classList.add('active');
+                    }
+                });
+            }
+            {% endif %}
         });
       });
     </script>
@@ -792,5 +817,54 @@
         });
       });
     </script>
+
+    <!-- Elementos de accesibilidad -->
+    <div class="minegate-acc-trigger" onclick="toggleAccPanel()" title="Opciones de Accesibilidad">
+        <i class="fas fa-universal-access fa-2x"></i>
+    </div>
+
+    <div id="accPanel" class="acc-widget-panel" style="display: none; max-height: 80vh; overflow-y: auto;">
+        <h5 class="text-dark">Herramientas de Accesibilidad</h5>
+        <div class="acc-btn-group">
+            <button class="acc-opt" onclick="handleTextToSpeech()">
+                <span>Escuchar texto</span> 
+                <i class="fas fa-volume-up"></i>
+            </button>
+            <button class="acc-opt" onclick="adjustFont(1)">
+                <span>Aumentar letra</span> 
+                <i class="fas fa-plus"></i>
+            </button>
+            <button class="acc-opt" onclick="adjustFont(-1)">
+                <span>Disminuir letra</span> 
+                <i class="fas fa-minus"></i>
+            </button>
+            <button class="acc-opt" onclick="toggleFeature('extra-spacing')">
+                <span>Espacio entre letras</span> 
+                <i class="fas fa-arrows-alt-h"></i>
+            </button>
+            <button class="acc-opt" onclick="handleContrast()">
+                <span>Alto contraste</span> 
+                <i class="fas fa-adjust"></i>
+            </button>
+            <button class="acc-opt" onclick="toggleFeature('underline-links')">
+                <span>Subrayar enlaces</span> 
+                <i class="fas fa-link"></i>
+            </button>
+            <button class="acc-opt" onclick="toggleFeature('big-cursor')">
+                <span>Cursor grande</span> 
+                <i class="fas fa-mouse-pointer"></i>
+            </button>
+            <button class="acc-opt" onclick="toggleReadingGuide()">
+                <span>Guía de lectura</span> 
+                <i class="fas fa-grip-lines"></i>
+            </button>
+            <button class="acc-opt bg-danger text-white" onclick="resetAll()">
+                <span>Restablecer</span> 
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+    </div>
+
+    <script src="{% static 'js/accessibility.js' %}?v=1.1"></script>
   </body>
 </html>

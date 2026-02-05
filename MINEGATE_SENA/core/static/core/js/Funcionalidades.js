@@ -14,6 +14,7 @@ sidebarItems.forEach(item => {
     cargarContenido(section);
   });
 });
+
 // Función para cargar el contenido dinámicamente
 function cargarContenido(section) {
   const mainContent = document.getElementById('mainContent');

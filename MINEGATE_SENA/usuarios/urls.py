@@ -55,4 +55,18 @@ urlpatterns = [
         views.eliminar_usuario_view,
         name="eliminar_usuario",
     ),
+    path('perfil/', views.perfil_view, name='perfil'),
+    
+    # Panel de administración
+    path('usuarios/', views.lista_usuarios_view, name='lista_usuario'),
+    path('usuarios/crear/', views.crear_usuario_view, name='crear_usuario'),
+    path('usuarios/<int:user_id>/editar/', views.editar_usuario_view, name='editar_usuario'),
+    path('usuarios/<int:user_id>/eliminar/', views.eliminar_usuario_view, name='eliminar_usuario'),
+    
+    # Gestión de permisos
+    path('gestionar-permisos/', views.gestionar_permisos_view, name='gestionar_permisos'),
+    path('gestionar-permisos/ajax/', views.gestionar_permisos_ajax_view, name='gestionar_permisos_ajax'),
+    path('aprobar-usuario/<int:usuario_id>/', views.aprobar_usuario_view, name='aprobar_usuario'),
+    path('rechazar-usuario/<int:usuario_id>/', views.rechazar_usuario_view, name='rechazar_usuario'),
+    path('eliminar-usuario-permisos/<int:usuario_id>/', views.eliminar_usuario_permisos_view, name='eliminar_usuario_permisos'),
 ]
