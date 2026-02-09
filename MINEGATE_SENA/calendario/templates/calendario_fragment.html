@@ -1,7 +1,7 @@
 <div class="calendar-page">
   <header class="calendar-header">
     <h1>Sistema de Gestión de Visitas</h1>
-    <p class="subtitle">Gestiona tus visitas internas y externas - SENA</p>
+    <p class="subtitle">SENA - CENTRO MINERO</p>
   </header>
 
   <main class="calendar-card" data-year="{{ year }}" data-month="{{ month }}">
@@ -21,15 +21,17 @@
         {% for week in weeks %}
           <tr>
             {% for day in week %}
-              {% if day.is_other_month %}
-                <td class="other-month">{{ day.date.day }}</td>
-              {% elif day.is_sunday %}
-                <td class="disabled">{{ day.date.day }}</td>
-              {% elif day.is_today %}
-                <td class="today">{{ day.date.day }}</td>
-              {% else %}
-                <td>{{ day.date.day }}</td>
-              {% endif %}
+              {% with daystr=day.date|date:"Y-m-d" %}
+                {% if day.is_other_month %}
+                  <td class="other-month" data-date="{{ day.date|date:'Y-m-d' }}">{{ day.date.day }}</td>
+                {% elif day.is_sunday %}
+                  <td class="disabled" data-date="{{ day.date|date:'Y-m-d' }}">{{ day.date.day }}</td>
+                {% elif day.is_today %}
+                  <td class="today{% if daystr in available_dates %} available{% else %} no-available{% endif %}" data-date="{{ day.date|date:'Y-m-d' }}">{{ day.date.day }}</td>
+                {% else %}
+                  <td class="{% if daystr in available_dates %}available{% else %}no-available{% endif %}" data-date="{{ day.date|date:'Y-m-d' }}">{{ day.date.day }}</td>
+                {% endif %}
+              {% endwith %}
             {% endfor %}
           </tr>
         {% endfor %}
@@ -42,9 +44,86 @@
       <span class="dot pending"></span> Pendiente
     </div>
 
-    <div class="actions">
-      <a href="#" class="btn green">Visita Externa</a>
-      <a href="#" class="btn orange">Visita Interna</a>
-    </div>
+    
   </main>
+
+  <section class="availability-config">
+    <h3>Configurar Días y Horarios Disponibles</h3>
+    <form method="post" action="{% url 'calendario:save_availability' %}" id="availabilityForm">
+      {% csrf_token %}
+      <div class="fields">
+        <label>Fecha inicio:
+          <input type="date" id="startDate" name="start_date" required>
+        </label>
+        <label>Fecha fin:
+          <input type="date" id="endDate" name="end_date" required>
+        </label>
+      </div>
+      <div class="fields">
+        <label>Horarios (HH:MM separados por comas):
+          <input type="text" id="timesText" name="times_text" placeholder="08:00,09:00,10:30">
+        </label>
+      </div>
+      <button type="submit" class="btn blue" id="saveAvailBtn">Guardar Disponibilidades</button>
+    </form>
+    <p class="note">Las fechas marcadas en el calendario aparecerán como <span class="dot available"></span> disponibles.</p>
+  </section>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', function(){
+      var form = document.getElementById('availabilityForm');
+      var timesText = document.getElementById('timesText');
+      var startDate = document.getElementById('startDate');
+      var endDate = document.getElementById('endDate');
+      var saveBtn = document.getElementById('saveAvailBtn');
+
+      function canEnable(){
+          return startDate.value && endDate.value && timesText.value.trim();
+      }
+      function refresh(){ if(canEnable()){ saveBtn.disabled = false } else { saveBtn.disabled = true } }
+      timesText.addEventListener('input', refresh);
+      startDate.addEventListener('change', refresh);
+      endDate.addEventListener('change', refresh);
+
+        form.addEventListener('submit', function(e){
+          e.preventDefault();
+          var val = timesText.value.trim();
+          if(!val){ alert('Ingrese al menos un horario en formato HH:MM separado por comas.'); return false; }
+          var parts = val.split(',').map(function(s){return s.trim();}).filter(Boolean);
+          var data = new FormData(); data.append('start_date', startDate.value); data.append('end_date', endDate.value);
+          parts.forEach(function(p){ data.append('times', p); });
+          function getCookie(name){ var v = document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)'); return v ? v.pop() : ''; }
+          fetch(form.action, { method:'POST', headers:{ 'X-Requested-With':'XMLHttpRequest', 'X-CSRFToken':getCookie('csrftoken'), 'Accept':'application/json' }, body:data })
+          .then(function(res){ return res.json(); })
+          .then(function(json){
+            if(json.available_dates){
+              var avail = new Set(json.available_dates || []);
+              // Para cada celda de fecha en el calendario visible: marcar disponible o deshabilitar
+              document.querySelectorAll('table.calendar-table td[data-date]').forEach(function(td){
+                // mantener intactas las celdas de otro mes y las ya deshabilitadas (domingos)
+                if(td.classList.contains('other-month') || td.classList.contains('disabled')){
+                  return;
+                }
+                var d = td.getAttribute('data-date');
+                if(avail.has(d)){
+                  td.classList.remove('no-available');
+                  td.classList.add('available');
+                  td.style.pointerEvents = 'auto';
+                } else {
+                  td.classList.remove('available');
+                  td.classList.add('no-available');
+                  td.style.pointerEvents = 'none';
+                }
+              });
+              saveBtn.textContent='Guardado';
+              setTimeout(function(){ saveBtn.textContent='Guardar Disponibilidades'; },1600);
+            } else {
+              alert('Disponibilidades guardadas.');
+            }
+          })
+          .catch(function(err){ console.error(err); alert('Error al guardar disponibilidades.'); });
+        });
+      refresh();
+  });
+    </script>
 </div>
