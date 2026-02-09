@@ -738,6 +738,7 @@ def gestionar_permisos_view(request):
         'usuarios_aprobados': usuarios_aprobados,
         'usuarios_pendientes': usuarios_pendientes,
         'usuarios_rechazados': usuarios_rechazados,
+        'es_superusuario': request.user.is_superuser,
     }
     
     return render(request, 'usuarios/gestionar_permisos.html', context)

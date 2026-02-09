@@ -16,6 +16,7 @@ def index(request):
 def es_superusuario(user):
     """Verifica si el usuario es superusuario"""
     return user.is_superuser
+
 @login_required(login_url='usuarios:login')
 def panel_administrativo (request):
     """

@@ -7,30 +7,8 @@
     <title>MineGate</title>
 
     <!-- ESTILOS ANTIGUOS (Comentados para pruebas) -->
-    <!--<link rel="stylesheet" href="{% static 'core/css/Panel_principal.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/estilo_general.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/Visitantes.css' %}" />
-    <link rel="stylesheet"href="{% static 'core/css/Estilos_para_visitantes.css' %}"/>
-    <link rel="stylesheet" href="{% static 'core/css/SideBar.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/logo.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/TopBar.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/Botones.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/Calendario.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/Notificaciones.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/Usuario.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/configuraciones.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/Fichas.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/Escaneo.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/Reportes.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/CalendarioMeses.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/Documentos.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/responsivo.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/gestionar_permisos.css' %}" />
-    <link rel="stylesheet"href="{% static 'core/css/barra_lateral_y_superior.css' %}"/>-->
-
-    <!-- NUEVO ARCHIVO CSS CON MEJORAS del pane (Limpio y Optimizado) -->
     <link rel="stylesheet" href="{% static 'core/css/nuevos_estilos.css' %}" />
-    <!-- Estilos del Dropdown de Usuario -->
+     <!-- Estilos del Dropdown de Usuario -->
     <link rel="stylesheet" href="{% static 'core/css/user_dropdown.css' %}" />
     <!-- Iconos y Fuentes -->
     <link
@@ -38,16 +16,16 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
     />
     <link
-      rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css"
+      rel="stylesheet"
     />
     <link
-      rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap"
+      rel="stylesheet"
     />
     <link
-      rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
     />
   </head>
 
@@ -73,13 +51,13 @@
         </div>
         <div class="topbar-spacer"></div>
         <div class="topbar-user">
-          <div class="user-profile-dropdown">
-            <button
+            <div class="user-profile-dropdown">
+           <button
               class="user-profile-btn"
               id="userDropdownBtn"
               aria-label="User menu"
             >
-              <div class="user-profile-photo">
+            <div class="user-profile-photo">
                 {% if perfil and perfil.foto_perfil %}
                 <img
                   src="{{ perfil.foto_perfil.url }}"
@@ -88,6 +66,7 @@
                   class="profile-img"
                 />
                 {% else %}
+
                 <img
                   src="{% static 'core/img/usuario.png' %}"
                   alt="Foto de perfil"
@@ -96,6 +75,7 @@
                 />
                 {% endif %}
               </div>
+
               <div class="user-info">
                 <span class="user-role">Administrador</span>
                 <span class="user-name" id="userName">Admin</span>
@@ -103,7 +83,7 @@
               <i class="ri-arrow-down-s-line dropdown-icon"></i>
             </button>
 
-            <!-- desplegable Menu -->
+             <!-- desplegable Menu -->
             <div class="user-dropdown-menu" id="userDropdownMenu">
               <a
                 href="{% url 'usuarios:configuracion_perfil' %}"
@@ -152,12 +132,14 @@
             <i class="ri-notification-3-line icon-notifications"></i
             ><span>Notificaciones</span>
           </li>
+          
           {% if es_superusuario %}
-          <li data-content="GestionPermisos">
+          <li data-content="GestionPermisos" onclick="window.location.href='{% url 'usuarios:gestionar_permisos' %}'">
             <i class="ri-shield-user-line icon-permissions"></i
-            ><span>Gestión de Permisos</span>
+            ><span>Gestión de Permisos</span>  
           </li>
           {% endif %}
+
           <li data-content="Configuracion">
             <i class="ri-settings-3-line icon-settings"></i
             ><span>Configuración</span>
@@ -220,387 +202,53 @@
           </div>
         </div>
       </div>
-
+   
       <!-- Main Content -->
       <main id="mainContent">
-        {% if es_superusuario %}
-        <!-- Sección de Gestión de Permisos - Solo visible para superusuarios -->
-        <div
-          id="seccion-gestion-permisos"
-          class="contenido-seccion"
-          style="display: none"
-        >
-          <!-- Mensajes -->
-          {% if messages %}
-          <div class="mensajes">
-            {% for message in messages %}
-            <div class="alerta alerta-{{ message.tags }}">
-              <span>{{ message }}</span>
-              <button
-                type="button"
-                class="btn-cerrar-alerta"
-                onclick="this.parentElement.style.display = 'none'"
-              >
-                ×
-              </button>
-            </div>
-            {% endfor %}
-          </div>
-          {% endif %}
+        {% block content %}
 
-          <!-- Tarjetas de Estadísticas -->
-          <div class="seccion-estadisticas">
-            <div class="titulo-seccion">📈 Estadísticas de Usuarios</div>
-            <div class="grid-estadisticas">
-              <div class="tarjeta-estadistica total">
-                <div class="numero-estadistica">{{ total_usuarios }}</div>
-                <div class="texto-estadistica">Total de Usuarios</div>
-              </div>
-              <div class="tarjeta-estadistica aprobado">
-                <div class="numero-estadistica">{{ usuarios_aprobados }}</div>
-                <div class="texto-estadistica">Aprobados</div>
-              </div>
-              <div class="tarjeta-estadistica pendiente">
-                <div class="numero-estadistica">{{ usuarios_pendientes }}</div>
-                <div class="texto-estadistica">Pendientes</div>
-              </div>
-              <div class="tarjeta-estadistica rechazado">
-                <div class="numero-estadistica">{{ usuarios_rechazados }}</div>
-                <div class="texto-estadistica">Rechazados</div>
-              </div>
-            </div>
-          </div>
+        {% endblock %}
 
-          <!-- Filtros y Búsqueda -->
-          <div class="seccion-filtros">
-            <div class="titulo-seccion">🔍 Filtros</div>
-            <form method="GET" class="formulario-filtros">
-              <div class="grupo-filtros">
-                <div class="filtro-botones">
-                  <a
-                    href="?filtro=todos"
-                    class="btn-filtro {% if filtro_actual == 'todos' %}activo{% endif %}"
-                  >
-                    Todos
-                  </a>
-                  <a
-                    href="?filtro=aprobados"
-                    class="btn-filtro {% if filtro_actual == 'aprobados' %}activo{% endif %}"
-                  >
-                    Aprobados
-                  </a>
-                  <a
-                    href="?filtro=pendientes"
-                    class="btn-filtro {% if filtro_actual == 'pendientes' %}activo{% endif %}"
-                  >
-                    Pendientes
-                  </a>
-                  <a
-                    href="?filtro=rechazados"
-                    class="btn-filtro {% if filtro_actual == 'rechazados' %}activo{% endif %}"
-                  >
-                    Rechazados
-                  </a>
-                </div>
-                <div class="busqueda">
-                  <input
-                    type="text"
-                    name="buscar"
-                    placeholder="Buscar por usuario, email, documento..."
-                    value="{{ buscar }}"
-                    class="input-busqueda"
-                  />
-                  <button type="submit" class="btn-buscar">🔍 Buscar</button>
-                  <a href="?filtro={{ filtro_actual }}" class="btn-limpiar"
-                    >Limpiar</a
-                  >
-                </div>
-              </div>
-            </form>
-          </div>
-
-          <!-- Tabla de Usuarios -->
-          <div class="seccion-tabla">
-            <div class="titulo-seccion">
-              👥 Lista de Usuarios{% if perfiles %} ({{ perfiles.count}})
-              {%endif %}
-            </div>
-            {% if perfiles %}
-            <div class="tabla-responsiva">
-              <table class="tabla-usuarios">
-                <thead>
-                  <tr>
-                    <th>Usuario</th>
-                    <th>Documento</th>
-                    <th>Email</th>
-                    <th>Teléfono</th>
-                    <th>Fecha Registro</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for perfil in perfiles %}
-                  <tr
-                    class="fila-usuario {% if perfil.aprobado %}aprobado{% elif perfil.razon_rechazo %}rechazado{% else %}pendiente{% endif %}"
-                  >
-                    <td class="datos-usuario">
-                      <div class="nombre-usuario">
-                        {{
-                        perfil.user.get_full_name|default:perfil.user.username
-                        }}
-                      </div>
-                      <div class="username">@{{ perfil.user.username }}</div>
-                    </td>
-                    <td>
-                      <span class="documento">{{ perfil.documento }}</span>
-                    </td>
-                    <td>
-                      <span class="email">{{ perfil.user.email }}</span>
-                    </td>
-                    <td>
-                      <span class="telefono"
-                        >{{ perfil.telefono|default:"No especificado" }}</span
-                      >
-                    </td>
-                    <td>
-                      <span class="fecha"
-                        >{{ perfil.user.date_joined|date:"d/m/Y H:i" }}</span
-                      >
-                    </td>
-                    <td>
-                      {% if perfil.aprobado %}
-                      <span class="badge badge-aprobado">✓ APROBADO</span>
-                      <div class="fecha-aprobacion">
-                        {{ perfil.fecha_aprobacion|date:"d/m/Y" }}
-                      </div>
-                      {% elif perfil.razon_rechazo %}
-                      <span class="badge badge-rechazado">✗ RECHAZADO</span>
-                      <div class="razon">
-                        {{ perfil.razon_rechazo|truncatewords:5 }}
-                      </div>
-                      {% else %}
-                      <span class="badge badge-pendiente">⏳ PENDIENTE</span>
-                      {% endif %}
-                    </td>
-                    <td>
-                      <div class="acciones-usuario">
-                        {% if not perfil.aprobado or perfil.razon_rechazo %}
-                        <button
-                          type="button"
-                          class="btn-accion btn-aprobar"
-                          onclick="abrirModalAprobar('{{ perfil.user.id }}', '{{ perfil.user.get_full_name|default:perfil.user.username }}')"
-                          title="Aprobar usuario"
-                        >
-                          ✓ Aprobar
-                        </button>
-                        {% else %}
-                        <button
-                          type="button"
-                          class="btn-accion btn-rechazar"
-                          onclick="abrirModalRechazar('{{ perfil.user.id }}', '{{ perfil.user.get_full_name|default:perfil.user.username }}')"
-                          title="Rechazar usuario"
-                        >
-                          ✗ Rechazar
-                        </button>
-                        {% endif %}
-                      </div>
-                    </td>
-                  </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-            {% else %}
-            <div class="sin-resultados">
-              <p>
-                📋 No se encontraron usuarios con los criterios seleccionados.
-              </p>
-            </div>
-            {% endif %}
-          </div>
-        </div>
-
-        <!-- Modales -->
-        <div id="modalAprobar" class="modal">
-          <div class="modal-contenido">
-            <div class="modal-encabezado">
-              <h2>✓ Aprobar Usuario</h2>
-              <button
-                class="modal-cerrar"
-                onclick="cerrarModal('modalAprobar')"
-              >
-                &times;
-              </button>
-            </div>
-            <div class="modal-cuerpo">
-              <p>¿Deseas aprobar a <strong id="usuarioAprobar"></strong>?</p>
-              <p class="texto-info">
-                Este usuario podrá acceder al sistema normalmente.
-              </p>
-            </div>
-            <div class="modal-pie">
-              <button
-                class="btn-modal btn-cancelar"
-                onclick="cerrarModal('modalAprobar')"
-              >
-                Cancelar
-              </button>
-              <form id="formAprobar" method="POST" style="display: inline">
-                {% csrf_token %}
-                <button type="submit" class="btn-modal btn-confirmar">
-                  Sí, Aprobar
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-
-        <div id="modalRechazar" class="modal">
-          <div class="modal-contenido">
-            <div class="modal-encabezado">
-              <h2>✗ Rechazar Usuario</h2>
-              <button
-                class="modal-cerrar"
-                onclick="cerrarModal('modalRechazar')"
-              >
-                &times;
-              </button>
-            </div>
-            <div class="modal-cuerpo">
-              <p>¿Deseas rechazar a <strong id="usuarioRechazar"></strong>?</p>
-              <div class="grupo-formulario">
-                <label for="razonRechazo">Motivo del rechazo:</label>
-                <textarea
-                  id="razonRechazo"
-                  name="razon"
-                  class="textarea-razon"
-                  placeholder="Especifica la razón del rechazo..."
-                  required
-                ></textarea>
-              </div>
-            </div>
-            <div class="modal-pie">
-              <button
-                class="btn-modal btn-cancelar"
-                onclick="cerrarModal('modalRechazar')"
-              >
-                Cancelar
-              </button>
-              <form id="formRechazar" method="POST" style="display: inline">
-                {% csrf_token %}
-                <input type="hidden" name="razon" id="razonInput" />
-                <button
-                  type="button"
-                  class="btn-modal btn-confirmar"
-                  onclick="confirmarRechazar()"
-                >
-                  Sí, Rechazar
-                </button>
-              </form>
-            </div>
-          </div>
-        <div id="seccion-gestion-permisos" class="contenido-seccion" style="display: none;">
-            {% include 'usuarios/gestionar_permisos.html' %}
-        </div>
-        {% endif %}
       </main>
     </div>
 
     <!-- Scripts -->
     <script defer src="{% static 'core/js/Funcionalidades.js' %}"></script>
     <script src="{% static 'core/js/Ver_todo.js' %}"></script>
-    <!-- Script del menu desplegable de Usuario -->
-    <script defer src="{% static 'core/js/user_dropdown.js' %}"></script>
 
     <!-- Script para Gestión de Permisos -->
     {% if es_superusuario %}
     <script>
-      let usuarioIdAprobar = null;
-      let usuarioIdRechazar = null;
+      // Auto-cerrar alertas después de 5 segundos
+      document.addEventListener('DOMContentLoaded', function() {
+          const alertas = document.querySelectorAll('.alerta');
+          alertas.forEach(alerta => {
+              setTimeout(() => {
+                  alerta.style.display = 'none';
+              }, 5000);
+          });
 
-      function abrirModalAprobar(usuarioId, nombreUsuario) {
-        usuarioIdAprobar = usuarioId;
-        document.getElementById("usuarioAprobar").textContent = nombreUsuario;
-        const form = document.getElementById("formAprobar");
-        form.action = `{% url 'core:aprobar_usuario' 0 %}`.replace(
-          "0",
-          usuarioId,
-        );
-        abrirModal("modalAprobar");
-      }
+          // Si hay mensajes de éxito/warning (después de aprobar/rechazar), mostrar la sección de permisos automáticamente
+          {% if messages %}
+          const seccionPermisos = document.getElementById('seccion-gestion-permisos');
+          if (seccionPermisos) {
+              // Ocultar todas las secciones
+              const todasLasSecciones = document.querySelectorAll('.contenido-seccion, .contenido-temporal');
+              todasLasSecciones.forEach(sec => sec.style.display = 'none');
 
-      function abrirModalRechazar(usuarioId, nombreUsuario) {
-        usuarioIdRechazar = usuarioId;
-        document.getElementById("usuarioRechazar").textContent = nombreUsuario;
-        document.getElementById("razonRechazo").value = "";
-        const form = document.getElementById("formRechazar");
-        form.action = `{% url 'core:rechazar_usuario' 0 %}`.replace(
-          "0",
-          usuarioId,
-        );
-        abrirModal("modalRechazar");
-      }
+              // Mostrar sección de permisos
+              seccionPermisos.style.display = 'block';
 
-      function confirmarRechazar() {
-        const razon = document.getElementById("razonRechazo").value.trim();
-        if (!razon) {
-          alert("Por favor, especifica la razón del rechazo.");
-          return;
-        }
-
-        document.getElementById("razonInput").value = razon;
-        document.getElementById("formRechazar").submit();
-      }
-
-      function abrirModal(modalId) {
-        const modal = document.getElementById(modalId);
-        modal.style.display = "flex";
-      }
-
-      function cerrarModal(modalId) {
-        const modal = document.getElementById(modalId);
-        modal.style.display = "none";
-      }
-
-      // Cerrar modal si se hace clic fuera del contenido
-      window.onclick = function (event) {
-        if (event.target.classList.contains("modal")) {
-          event.target.style.display = "none";
-        }
-      };
-
-        // Auto-cerrar alertas después de 5 segundos
-        document.addEventListener('DOMContentLoaded', function() {
-            const alertas = document.querySelectorAll('.alerta');
-            alertas.forEach(alerta => {
-                setTimeout(() => {
-                    alerta.style.display = 'none';
-                }, 5000);
-            });
-            
-            // Si hay mensajes de éxito/warning (después de aprobar/rechazar), mostrar la sección de permisos automáticamente
-            {% if messages %}
-            const seccionPermisos = document.getElementById('seccion-gestion-permisos');
-            if (seccionPermisos) {
-                // Ocultar todas las secciones
-                const todasLasSecciones = document.querySelectorAll('.contenido-seccion, .contenido-temporal');
-                todasLasSecciones.forEach(sec => sec.style.display = 'none');
-                
-                // Mostrar sección de permisos
-                seccionPermisos.style.display = 'block';
-                
-                // Marcar el item del sidebar como activo
-                const sidebarItemsLocal = document.querySelectorAll('.sidebar li');
-                sidebarItemsLocal.forEach(item => {
-                    item.classList.remove('active');
-                    if (item.getAttribute('data-content') === 'GestionPermisos') {
-                        item.classList.add('active');
-                    }
-                });
-            }
-            {% endif %}
-        });
+              // Marcar el item del sidebar como activo
+              const sidebarItemsLocal = document.querySelectorAll('.sidebar li');
+              sidebarItemsLocal.forEach(item => {
+                  item.classList.remove('active');
+                  if (item.getAttribute('data-content') === 'GestionPermisos') {
+                      item.classList.add('active');
+                  }
+              });
+          }
+          {% endif %}
       });
     </script>
     {% endif %}
@@ -631,6 +279,35 @@
     <!-- Hamburger Menu Script -->
     <script>
       document.addEventListener("DOMContentLoaded", function () {
+        // ========================================
+        // FUNCIONALIDAD DEL DROPDOWN DE USUARIO
+        // ========================================
+        const userDropdownBtn = document.getElementById("userDropdownBtn");
+        const userDropdownMenu = document.getElementById("userDropdownMenu");
+
+        // Toggle dropdown menu when clicking the button
+        if (userDropdownBtn && userDropdownMenu) {
+          userDropdownBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            userDropdownMenu.classList.toggle("active");
+          });
+
+          // Close dropdown when clicking outside
+          document.addEventListener("click", function (e) {
+            if (!userDropdownBtn.contains(e.target) && !userDropdownMenu.contains(e.target)) {
+              userDropdownMenu.classList.remove("active");
+            }
+          });
+
+          // Close dropdown when clicking on menu items
+          const dropdownItems = userDropdownMenu.querySelectorAll(".dropdown-item");
+          dropdownItems.forEach(item => {
+            item.addEventListener("click", function () {
+              userDropdownMenu.classList.remove("active");
+            });
+          });
+        }
+
         // Set user info
         const userNameEl = document.getElementById("userName");
         const userRoleEl = document.querySelector(".user-role");
@@ -819,52 +496,61 @@
     </script>
 
     <!-- Elementos de accesibilidad -->
-    <div class="minegate-acc-trigger" onclick="toggleAccPanel()" title="Opciones de Accesibilidad">
-        <i class="fas fa-universal-access fa-2x"></i>
+    <div
+      class="minegate-acc-trigger"
+      onclick="toggleAccPanel()"
+      title="Opciones de Accesibilidad"
+    >
+      <i class="fas fa-universal-access fa-2x"></i>
     </div>
 
-    <div id="accPanel" class="acc-widget-panel" style="display: none; max-height: 80vh; overflow-y: auto;">
-        <h5 class="text-dark">Herramientas de Accesibilidad</h5>
-        <div class="acc-btn-group">
-            <button class="acc-opt" onclick="handleTextToSpeech()">
-                <span>Escuchar texto</span> 
-                <i class="fas fa-volume-up"></i>
-            </button>
-            <button class="acc-opt" onclick="adjustFont(1)">
-                <span>Aumentar letra</span> 
-                <i class="fas fa-plus"></i>
-            </button>
-            <button class="acc-opt" onclick="adjustFont(-1)">
-                <span>Disminuir letra</span> 
-                <i class="fas fa-minus"></i>
-            </button>
-            <button class="acc-opt" onclick="toggleFeature('extra-spacing')">
-                <span>Espacio entre letras</span> 
-                <i class="fas fa-arrows-alt-h"></i>
-            </button>
-            <button class="acc-opt" onclick="handleContrast()">
-                <span>Alto contraste</span> 
-                <i class="fas fa-adjust"></i>
-            </button>
-            <button class="acc-opt" onclick="toggleFeature('underline-links')">
-                <span>Subrayar enlaces</span> 
-                <i class="fas fa-link"></i>
-            </button>
-            <button class="acc-opt" onclick="toggleFeature('big-cursor')">
-                <span>Cursor grande</span> 
-                <i class="fas fa-mouse-pointer"></i>
-            </button>
-            <button class="acc-opt" onclick="toggleReadingGuide()">
-                <span>Guía de lectura</span> 
-                <i class="fas fa-grip-lines"></i>
-            </button>
-            <button class="acc-opt bg-danger text-white" onclick="resetAll()">
-                <span>Restablecer</span> 
-                <i class="fas fa-sync-alt"></i>
-            </button>
-        </div>
+    <div
+      id="accPanel"
+      class="acc-widget-panel"
+      style="display: none; max-height: 80vh; overflow-y: auto"
+    >
+      <h5 class="text-dark">Herramientas de Accesibilidad</h5>
+      <div class="acc-btn-group">
+        <button class="acc-opt" onclick="handleTextToSpeech()">
+          <span>Escuchar texto</span>
+          <i class="fas fa-volume-up"></i>
+        </button>
+        <button class="acc-opt" onclick="adjustFont(1)">
+          <span>Aumentar letra</span>
+          <i class="fas fa-plus"></i>
+        </button>
+        <button class="acc-opt" onclick="adjustFont(-1)">
+          <span>Disminuir letra</span>
+          <i class="fas fa-minus"></i>
+        </button>
+        <button class="acc-opt" onclick="toggleFeature('extra-spacing')">
+          <span>Espacio entre letras</span>
+          <i class="fas fa-arrows-alt-h"></i>
+        </button>
+        <button class="acc-opt" onclick="handleContrast()">
+          <span>Alto contraste</span>
+          <i class="fas fa-adjust"></i>
+        </button>
+        <button class="acc-opt" onclick="toggleFeature('underline-links')">
+          <span>Subrayar enlaces</span>
+          <i class="fas fa-link"></i>
+        </button>
+        <button class="acc-opt" onclick="toggleFeature('big-cursor')">
+          <span>Cursor grande</span>
+          <i class="fas fa-mouse-pointer"></i>
+        </button>
+        <button class="acc-opt" onclick="toggleReadingGuide()">
+          <span>Guía de lectura</span>
+          <i class="fas fa-grip-lines"></i>
+        </button>
+        <button class="acc-opt bg-danger text-white" onclick="resetAll()">
+          <span>Restablecer</span>
+          <i class="fas fa-sync-alt"></i>
+        </button>
+      </div>
     </div>
-
+     
     <script src="{% static 'js/accessibility.js' %}?v=1.1"></script>
+   
   </body>
 </html>
