@@ -30,42 +30,35 @@
     .filtros input, .filtros select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
     .filtros button { padding: 8px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; transition: 0.3s; }
     .filtros button:hover { background-color: #45a049; }
-    .estado { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
-    .estado-pendiente { background-color: #fff3cd; color: #856404; }
-    .estado-confirmada { background-color: #d1ecf1; color: #0c5460; }
-    .estado-realizada { background-color: #d4edda; color: #155724; }
-    .estado-cancelada { background-color: #f8d7da; color: #721c24; }
   </style>
 </head>
 <body>
 
 <div class="container">
   <h1>Lista de Visitas Internas</h1>
-  <div class="btn-crear"><a href="{% url 'crear_visita_interna' %}"><button>+ Crear Nueva Visita</button></a></div>
+  <div class="btn-crear"><a href="{% url 'visitaInterna:crear_visita_interna' %}"><button>+ Crear Nueva Visita</button></a></div>
 
   <div class="filtros">
     <form method="GET">
       <div>
-        <label for="buscar_nombre">Buscar por Nombre:</label>
-        <input type="text" id="buscar_nombre" name="nombre" value="{{ request.GET.nombre }}" placeholder="Ingrese el nombre">
+        <label for="buscar_nombre">Buscar por Nombre de Programa:</label>
+        <input type="text" id="buscar_nombre" name="nombre_programa" value="{{ request.GET.nombre_programa }}" placeholder="Ingrese el nombre">
       </div>
       <div>
-        <label for="filtrar_id">Filtrar por ID:</label>
-        <input type="number" id="filtrar_id" name="id" value="{{ request.GET.id }}" placeholder="Ingrese el ID">
+        <label for="buscar_responsable">Buscar por Responsable:</label>
+        <input type="text" id="buscar_responsable" name="responsable" value="{{ request.GET.responsable }}" placeholder="Ingrese el nombre">
       </div>
       <div>
-        <label for="filtrar_estado">Filtrar por Estado:</label>
-        <select id="filtrar_estado" name="estado">
-          <option value="">Todos</option>
-          <option value="pendiente" {% if request.GET.estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
-          <option value="confirmada" {% if request.GET.estado == 'confirmada' %}selected{% endif %}>Confirmada</option>
-          <option value="realizada" {% if request.GET.estado == 'realizada' %}selected{% endif %}>Realizada</option>
-          <option value="cancelada" {% if request.GET.estado == 'cancelada' %}selected{% endif %}>Cancelada</option>
-        </select>
+        <label for="filtrar_numero">Filtrar por Número de Ficha:</label>
+        <input type="number" id="filtrar_numero" name="numero_ficha" value="{{ request.GET.numero_ficha }}" placeholder="Ingrese el número de ficha">
+      </div>
+      <div>
+        <label for="filtrar_documento">Filtrar por Documento del Responsable:</label>
+        <input type="text" id="filtrar_documento" name="documento_responsable" value="{{ request.GET.documento_responsable }}" placeholder="Ingrese el documento">
       </div>
       <div style="display: flex; gap: 5px; align-items: flex-end;">
         <button type="submit">Buscar</button>
-        <a href="{% url 'visita_interna' %}" style="text-decoration: none;"><button type="button">Limpiar</button></a>
+        <a href="{% url 'visitaInterna:visita_interna' %}" style="text-decoration: none;"><button type="button" style="background-color: #757575; color: white;">Limpiar</button></a>
       </div>
     </form>
   </div>
@@ -75,11 +68,12 @@
     <thead>
       <tr>
         <th>ID</th>
-        <th>Nombre</th>
+        <th>Nombre de Programa</th>
+        <th>Número de Ficha</th>
         <th>Responsable</th>
-        <th>Cantidad</th>
-        <th>Fecha</th>
-        <th>Estado</th>
+        <th>Documento</th>
+        <th>Teléfono</th>
+        <th>Cantidad de Aprendices</th>
         <th>Acciones</th>
       </tr>
     </thead>
@@ -87,14 +81,16 @@
       {% for visita in visitas %}
         <tr>
           <td>{{ visita.id }}</td>
-          <td><a href="detalle_visita/{{ visita.id }}">{{ visita.nombre }}</a></td>
+          <td>{{ visita.nombre_programa }}</td>
+          <td>{{ visita.numero_ficha }}</td>
           <td>{{ visita.responsable }}</td>
-          <td>{{ visita.cantidad }}</td>
-          <td>{{ visita.fecha }}</td>
-          <td><span class="estado estado-{{ visita.estado }}">{{ visita.get_estado_display }}</span></td>
+          <td>{{ visita.documento_responsable }}</td>
+          <td>{{ visita.telefono_responsable }}</td>
+          <td>{{ visita.cantidad_aprendices }}</td>
           <td>
-            <a href="{% url 'editar_visita_interna' visita.id %}"><button class="btn-action btn-editar">Editar</button></a>
-            <a href="{% url 'eliminar_visita_interna' visita.id %}"><button class="btn-action btn-eliminar">Eliminar</button></a>
+            <a href="{% url 'visitaInterna:detalle_visita_interna' visita.id %}"><button class="btn-action" style="background-color: #FF9800; color: white;">Ver Detalle</button></a>
+            <a href="{% url 'visitaInterna:editar_visita_interna' visita.id %}"><button class="btn-action btn-editar">Editar</button></a>
+            <a href="{% url 'visitaInterna:eliminar_visita_interna' visita.id %}"><button class="btn-action btn-eliminar">Eliminar</button></a>
           </td>
         </tr>
       {% endfor %}

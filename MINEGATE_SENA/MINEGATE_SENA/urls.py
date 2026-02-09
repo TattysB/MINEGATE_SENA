@@ -21,11 +21,11 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
-    path("", include("core.urls")),
-    path("auth/", include("usuarios.urls")),
-    path("visita-interna/", include("visitaInterna.urls")),
-    path("visita-externa/", include("visitaExterna.urls")),
+    path('admin/', admin.site.urls),
+    path('',include('core.urls')),
+    path('auth/',include('usuarios.urls')),
+    path('visita_interna/', include('visitaInterna.urls')),
+    path('visita_externa/', include('visitaExterna.urls')),
 ]
 
 if settings.DEBUG:
