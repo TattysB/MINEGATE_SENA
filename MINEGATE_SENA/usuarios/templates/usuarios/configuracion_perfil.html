@@ -1,0 +1,88 @@
+{% extends "master.html" %} {% load static %} {% block title %}Configuración de
+Perfil - MINEGATE SENA{% endblock %} {% block content %}
+<link rel="stylesheet" href="{% static 'css/configuracion_perfil.css' %}" />
+<div class="config-wrapper">
+  <!-- ========== BANNER ========== -->
+  <div class="config-banner">
+    <div class="banner-content">
+      <div class="user-profile-photo">
+        {% if perfil and perfil.foto_perfil %}
+        <img
+          src="{{ perfil.foto_perfil.url }}"
+          alt="Foto de perfil"
+          id="userProfileImg"
+          class="profile-img"
+        />
+        {% else %}
+        <img
+          src="{% static 'core/img/usuario.png' %}"
+          alt="Foto de perfil"
+          id="userProfileImg"
+          class="profile-img"
+        />
+        {% endif %}
+      </div>
+      <div class="banner-text">
+        <h1>Configuración de Perfil</h1>
+        <p>Gestiona tu cuenta y preferencias de seguridad</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== GRID DE OPCIONES ========== -->
+  <div class="config-grid">
+    <!-- OPCIÓN 1: EDITAR PERFIL -->
+    <div class="config-card">
+      <div class="card-icon-large">
+        <i class="ri-user-3-line"></i>
+      </div>
+      <div class="card-content">
+        <h3>Editar Perfil</h3>
+        <p>
+          En esta sección puedes modificar tu información personal, actualizar
+          tu correo electrónico y gestionar tus datos de contacto. Mantener
+          estos datos al día garantiza una mejor comunicación y una experiencia
+          más segura dentro de la plataforma.
+        </p>
+      </div>
+      <a href="{% url 'usuarios:perfil' %}" class="btn btn-config btn-edit">
+        <i class="ri-edit-line"></i> Editar Perfil
+      </a>
+    </div>
+
+    <!-- OPCIÓN 2: CAMBIAR CONTRASEÑA -->
+    <div class="config-card">
+      <div class="card-icon-large">
+        <i class="ri-lock-password-fill"></i>
+
+        <link
+          href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css"
+          rel="stylesheet"
+        />
+      </div>
+      <div class="card-content">
+        <h3>Cambiar Contraseña</h3>
+        <p>
+          Actualiza tu contraseña periódicamente para proteger tu información
+          personal. Usar una contraseña segura ayuda a prevenir accesos no
+          autorizados y mantiene tu cuenta protegida en todo momento.
+        </p>
+      </div>
+      <a
+        href="{% url 'usuarios:cambiar_contraseña' %}"
+        class="btn btn-config btn-password"
+      >
+        <i class="ri-lock-line"></i> Cambiar Contraseña
+      </a>
+    </div>
+  </div>
+
+  <!-- ========== BOTÓN VOLVER ========== -->
+  <div class="config-footer">
+    <a href="{% url 'core:panel_administrativo' %}" class="btn-back">
+      <i class="ri-arrow-left-line"></i> Volver al Panel
+    </a>
+  </div>
+</div>
+
+{% endblock %}

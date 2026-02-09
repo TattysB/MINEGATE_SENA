@@ -1,5 +1,5 @@
 {% load static %}
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
@@ -7,35 +7,10 @@
     <title>MineGate</title>
 
     <!-- ESTILOS ANTIGUOS (Comentados para pruebas) -->
-    <!-- <link rel="stylesheet" href="{% static 'core/css/Panel_principal.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/estilo_general.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/Visitantes.css' %}" />
-    <link
-      rel="stylesheet"
-      href="{% static 'core/css/Estilos_para_visitantes.css' %}"
-    />
-    <link rel="stylesheet" href="{% static 'core/css/SideBar.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/logo.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/TopBar.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/Botones.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/Calendario.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/Notificaciones.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/Usuario.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/configuraciones.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/Fichas.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/Escaneo.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/Reportes.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/CalendarioMeses.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/Documentos.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/responsivo.css' %}" />
-    <link rel="stylesheet" href="{% static 'core/css/gestionar_permisos.css' %}" />
-    <link
-      rel="stylesheet"
-      href="{% static 'core/css/barra_lateral_y_superior.css' %}"
-    /> -->
-
-    <!-- NUEVO ARCHIVO CSS CON MEJORAS (Limpio y Optimizado) -->
     <link rel="stylesheet" href="{% static 'core/css/nuevos_estilos.css' %}" />
+     <!-- Estilos del Dropdown de Usuario -->
+    <link rel="stylesheet" href="{% static 'core/css/user_dropdown.css' %}" />
+    <!-- Iconos y Fuentes -->
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
@@ -76,17 +51,48 @@
         </div>
         <div class="topbar-spacer"></div>
         <div class="topbar-user">
-          <div class="user-profile-photo">
-            <img
-              src="{% static 'core/img/usuario.png' %}"
-              alt="Foto de perfil"
-              id="userProfileImg"
-              class="profile-img"
-            />
-          </div>
-          <div class="user-info">
-            <span class="user-role">Administrador</span>
-            <span class="user-name" id="userName">Admin</span>
+            <div class="user-profile-dropdown">
+           <button
+              class="user-profile-btn"
+              id="userDropdownBtn"
+              aria-label="User menu"
+            >
+            <div class="user-profile-photo">
+                {% if perfil and perfil.foto_perfil %}
+                <img
+                  src="{{ perfil.foto_perfil.url }}"
+                  alt="Foto de perfil"
+                  id="userProfileImg"
+                  class="profile-img"
+                />
+                {% else %}
+
+                <img
+                  src="{% static 'core/img/usuario.png' %}"
+                  alt="Foto de perfil"
+                  id="userProfileImg"
+                  class="profile-img"
+                />
+                {% endif %}
+              </div>
+
+              <div class="user-info">
+                <span class="user-role">Administrador</span>
+                <span class="user-name" id="userName">Admin</span>
+              </div>
+              <i class="ri-arrow-down-s-line dropdown-icon"></i>
+            </button>
+
+             <!-- desplegable Menu -->
+            <div class="user-dropdown-menu" id="userDropdownMenu">
+              <a
+                href="{% url 'usuarios:configuracion_perfil' %}"
+                class="dropdown-item"
+              >
+                <i class="ri-settings-line"></i>
+                <span>Configuración de Perfil</span>
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -128,12 +134,14 @@
             <i class="ri-notification-3-line icon-notifications"></i
             ><span>Notificaciones</span>
           </li>
+          
           {% if es_superusuario %}
-          <li data-content="GestionPermisos">
+          <li data-content="GestionPermisos" onclick="window.location.href='{% url 'usuarios:gestionar_permisos' %}'">
             <i class="ri-shield-user-line icon-permissions"></i
-            ><span>Gestión de Permisos</span>
+            ><span>Gestión de Permisos</span>  
           </li>
           {% endif %}
+
           <li data-content="Configuracion">
             <i class="ri-settings-3-line icon-settings"></i
             ><span>Configuración</span>
@@ -142,8 +150,15 @@
             <i class="ri-bar-chart-line icon-reports"></i><span>Reportes</span>
           </li>
         </ul>
-        <button id="logout" class="logout-button" onclick="abrirModalCerrarSesion(event)">
-          <li data-content="cerrar" style="display: flex; align-items: center; width: 100%;">
+        <button
+          id="logout"
+          class="logout-button"
+          onclick="abrirModalCerrarSesion(event)"
+        >
+          <li
+            data-content="cerrar"
+            style="display: flex; align-items: center; width: 100%"
+          >
             <i class="ri-logout-box-r-line icon-logout"></i
             ><span>Cerrar Sesión</span>
           </li>
@@ -155,37 +170,47 @@
         <div class="modal-contenido">
           <div class="modal-encabezado">
             <h2>🚪 Cerrar Sesión</h2>
-            <button class="modal-cerrar" onclick="cerrarModal('modalCerrarSesion')">&times;</button>
+            <button
+              class="modal-cerrar"
+              onclick="cerrarModal('modalCerrarSesion')"
+            >
+              &times;
+            </button>
           </div>
           <div class="modal-cuerpo">
-            <p style="text-align: center; font-size: 16px; margin: 20px 0;">
+            <p style="text-align: center; font-size: 16px; margin: 20px 0">
               ¿Estás seguro de que deseas cerrar sesión?
             </p>
-            <p class="texto-info" style="text-align: center;">
-              Se cerrará tu sesión actual y deberás iniciar sesión nuevamente para acceder.
+            <p class="texto-info" style="text-align: center">
+              Se cerrará tu sesión actual y deberás iniciar sesión nuevamente
+              para acceder.
             </p>
           </div>
           <div class="modal-pie">
-            <button class="btn-modal btn-cancelar" onclick="cerrarModal('modalCerrarSesion')">
+            <button
+              class="btn-modal btn-cancelar"
+              onclick="cerrarModal('modalCerrarSesion')"
+            >
               Cancelar
             </button>
-            <a href="{% url 'usuarios:logout' %}" style="text-decoration: none;">
-              <button class="btn-modal btn-confirmar" style="background-color: #e74c3c;">
+            <a href="{% url 'usuarios:logout' %}" style="text-decoration: none">
+              <button
+                class="btn-modal btn-confirmar"
+                style="background-color: #e74c3c"
+              >
                 Sí, Cerrar Sesión
               </button>
             </a>
           </div>
         </div>
       </div>
-
+   
       <!-- Main Content -->
       <main id="mainContent">
-        {% if es_superusuario %}
-        <!-- Sección de Gestión de Permisos - Solo visible para superusuarios -->
-        <div id="seccion-gestion-permisos" class="contenido-seccion" style="display: none;">
-            {% include 'usuarios/gestionar_permisos.html' %}
-        </div>
-        {% endif %}
+        {% block content %}
+
+        {% endblock %}
+
       </main>
     </div>
 
@@ -196,37 +221,37 @@
     <!-- Script para Gestión de Permisos -->
     {% if es_superusuario %}
     <script>
-        // Auto-cerrar alertas después de 5 segundos
-        document.addEventListener('DOMContentLoaded', function() {
-            const alertas = document.querySelectorAll('.alerta');
-            alertas.forEach(alerta => {
-                setTimeout(() => {
-                    alerta.style.display = 'none';
-                }, 5000);
-            });
-            
-            // Si hay mensajes de éxito/warning (después de aprobar/rechazar), mostrar la sección de permisos automáticamente
-            {% if messages %}
-            const seccionPermisos = document.getElementById('seccion-gestion-permisos');
-            if (seccionPermisos) {
-                // Ocultar todas las secciones
-                const todasLasSecciones = document.querySelectorAll('.contenido-seccion, .contenido-temporal');
-                todasLasSecciones.forEach(sec => sec.style.display = 'none');
-                
-                // Mostrar sección de permisos
-                seccionPermisos.style.display = 'block';
-                
-                // Marcar el item del sidebar como activo
-                const sidebarItemsLocal = document.querySelectorAll('.sidebar li');
-                sidebarItemsLocal.forEach(item => {
-                    item.classList.remove('active');
-                    if (item.getAttribute('data-content') === 'GestionPermisos') {
-                        item.classList.add('active');
-                    }
-                });
-            }
-            {% endif %}
-        });
+      // Auto-cerrar alertas después de 5 segundos
+      document.addEventListener('DOMContentLoaded', function() {
+          const alertas = document.querySelectorAll('.alerta');
+          alertas.forEach(alerta => {
+              setTimeout(() => {
+                  alerta.style.display = 'none';
+              }, 5000);
+          });
+
+          // Si hay mensajes de éxito/warning (después de aprobar/rechazar), mostrar la sección de permisos automáticamente
+          {% if messages %}
+          const seccionPermisos = document.getElementById('seccion-gestion-permisos');
+          if (seccionPermisos) {
+              // Ocultar todas las secciones
+              const todasLasSecciones = document.querySelectorAll('.contenido-seccion, .contenido-temporal');
+              todasLasSecciones.forEach(sec => sec.style.display = 'none');
+
+              // Mostrar sección de permisos
+              seccionPermisos.style.display = 'block';
+
+              // Marcar el item del sidebar como activo
+              const sidebarItemsLocal = document.querySelectorAll('.sidebar li');
+              sidebarItemsLocal.forEach(item => {
+                  item.classList.remove('active');
+                  if (item.getAttribute('data-content') === 'GestionPermisos') {
+                      item.classList.add('active');
+                  }
+              });
+          }
+          {% endif %}
+      });
     </script>
     {% endif %}
 
@@ -238,9 +263,9 @@
       function abrirModalCerrarSesion(event) {
         event.preventDefault();
         event.stopPropagation();
-        const modal = document.getElementById('modalCerrarSesion');
+        const modal = document.getElementById("modalCerrarSesion");
         if (modal) {
-          modal.style.display = 'flex';
+          modal.style.display = "flex";
         }
       }
 
@@ -248,7 +273,7 @@
       function cerrarModal(modalId) {
         const modal = document.getElementById(modalId);
         if (modal) {
-          modal.style.display = 'none';
+          modal.style.display = "none";
         }
       }
     </script>
@@ -256,6 +281,35 @@
     <!-- Hamburger Menu Script -->
     <script>
       document.addEventListener("DOMContentLoaded", function () {
+        // ========================================
+        // FUNCIONALIDAD DEL DROPDOWN DE USUARIO
+        // ========================================
+        const userDropdownBtn = document.getElementById("userDropdownBtn");
+        const userDropdownMenu = document.getElementById("userDropdownMenu");
+
+        // Toggle dropdown menu when clicking the button
+        if (userDropdownBtn && userDropdownMenu) {
+          userDropdownBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            userDropdownMenu.classList.toggle("active");
+          });
+
+          // Close dropdown when clicking outside
+          document.addEventListener("click", function (e) {
+            if (!userDropdownBtn.contains(e.target) && !userDropdownMenu.contains(e.target)) {
+              userDropdownMenu.classList.remove("active");
+            }
+          });
+
+          // Close dropdown when clicking on menu items
+          const dropdownItems = userDropdownMenu.querySelectorAll(".dropdown-item");
+          dropdownItems.forEach(item => {
+            item.addEventListener("click", function () {
+              userDropdownMenu.classList.remove("active");
+            });
+          });
+        }
+
         // Set user info
         const userNameEl = document.getElementById("userName");
         const userRoleEl = document.querySelector(".user-role");
@@ -399,7 +453,7 @@
           (e) => {
             touchStartX = e.changedTouches[0].screenX;
           },
-          false
+          false,
         );
 
         document.addEventListener(
@@ -408,32 +462,32 @@
             touchEndX = e.changedTouches[0].screenX;
             handleSwipe();
           },
-          false
+          false,
         );
 
         // ========================================
         // FUNCIONALIDAD DE COLAPSO DEL SIDEBAR
         // ========================================
         const sidebarElement = document.getElementById("sidebar");
-        
+
         // Solo activar el colapso en pantallas grandes (no móviles)
         if (window.innerWidth > 768) {
           // Contraer sidebar al inicio
           sidebarElement.classList.add("collapsed");
-          
+
           // Expandir cuando el mouse entra
-          sidebarElement.addEventListener("mouseenter", function() {
+          sidebarElement.addEventListener("mouseenter", function () {
             sidebarElement.classList.remove("collapsed");
           });
-          
+
           // Contraer cuando el mouse sale
-          sidebarElement.addEventListener("mouseleave", function() {
+          sidebarElement.addEventListener("mouseleave", function () {
             sidebarElement.classList.add("collapsed");
           });
         }
-        
+
         // Remover el colapso en móviles cuando se redimensiona la ventana
-        window.addEventListener("resize", function() {
+        window.addEventListener("resize", function () {
           if (window.innerWidth <= 768) {
             sidebarElement.classList.remove("collapsed");
           } else {
@@ -441,56 +495,64 @@
           }
         });
       });
-
     </script>
 
     <!-- Elementos de accesibilidad -->
-    <div class="minegate-acc-trigger" onclick="toggleAccPanel()" title="Opciones de Accesibilidad">
-        <i class="fas fa-universal-access fa-2x"></i>
+    <div
+      class="minegate-acc-trigger"
+      onclick="toggleAccPanel()"
+      title="Opciones de Accesibilidad"
+    >
+      <i class="fas fa-universal-access fa-2x"></i>
     </div>
 
-    <div id="accPanel" class="acc-widget-panel" style="display: none; max-height: 80vh; overflow-y: auto;">
-        <h5 class="text-dark">Herramientas de Accesibilidad</h5>
-        <div class="acc-btn-group">
-            <button class="acc-opt" onclick="handleTextToSpeech()">
-                <span>Escuchar texto</span> 
-                <i class="fas fa-volume-up"></i>
-            </button>
-            <button class="acc-opt" onclick="adjustFont(1)">
-                <span>Aumentar letra</span> 
-                <i class="fas fa-plus"></i>
-            </button>
-            <button class="acc-opt" onclick="adjustFont(-1)">
-                <span>Disminuir letra</span> 
-                <i class="fas fa-minus"></i>
-            </button>
-            <button class="acc-opt" onclick="toggleFeature('extra-spacing')">
-                <span>Espacio entre letras</span> 
-                <i class="fas fa-arrows-alt-h"></i>
-            </button>
-            <button class="acc-opt" onclick="handleContrast()">
-                <span>Alto contraste</span> 
-                <i class="fas fa-adjust"></i>
-            </button>
-            <button class="acc-opt" onclick="toggleFeature('underline-links')">
-                <span>Subrayar enlaces</span> 
-                <i class="fas fa-link"></i>
-            </button>
-            <button class="acc-opt" onclick="toggleFeature('big-cursor')">
-                <span>Cursor grande</span> 
-                <i class="fas fa-mouse-pointer"></i>
-            </button>
-            <button class="acc-opt" onclick="toggleReadingGuide()">
-                <span>Guía de lectura</span> 
-                <i class="fas fa-grip-lines"></i>
-            </button>
-            <button class="acc-opt bg-danger text-white" onclick="resetAll()">
-                <span>Restablecer</span> 
-                <i class="fas fa-sync-alt"></i>
-            </button>
-        </div>
+    <div
+      id="accPanel"
+      class="acc-widget-panel"
+      style="display: none; max-height: 80vh; overflow-y: auto"
+    >
+      <h5 class="text-dark">Herramientas de Accesibilidad</h5>
+      <div class="acc-btn-group">
+        <button class="acc-opt" onclick="handleTextToSpeech()">
+          <span>Escuchar texto</span>
+          <i class="fas fa-volume-up"></i>
+        </button>
+        <button class="acc-opt" onclick="adjustFont(1)">
+          <span>Aumentar letra</span>
+          <i class="fas fa-plus"></i>
+        </button>
+        <button class="acc-opt" onclick="adjustFont(-1)">
+          <span>Disminuir letra</span>
+          <i class="fas fa-minus"></i>
+        </button>
+        <button class="acc-opt" onclick="toggleFeature('extra-spacing')">
+          <span>Espacio entre letras</span>
+          <i class="fas fa-arrows-alt-h"></i>
+        </button>
+        <button class="acc-opt" onclick="handleContrast()">
+          <span>Alto contraste</span>
+          <i class="fas fa-adjust"></i>
+        </button>
+        <button class="acc-opt" onclick="toggleFeature('underline-links')">
+          <span>Subrayar enlaces</span>
+          <i class="fas fa-link"></i>
+        </button>
+        <button class="acc-opt" onclick="toggleFeature('big-cursor')">
+          <span>Cursor grande</span>
+          <i class="fas fa-mouse-pointer"></i>
+        </button>
+        <button class="acc-opt" onclick="toggleReadingGuide()">
+          <span>Guía de lectura</span>
+          <i class="fas fa-grip-lines"></i>
+        </button>
+        <button class="acc-opt bg-danger text-white" onclick="resetAll()">
+          <span>Restablecer</span>
+          <i class="fas fa-sync-alt"></i>
+        </button>
+      </div>
     </div>
-
+     
     <script src="{% static 'js/accessibility.js' %}?v=1.1"></script>
+   
   </body>
 </html>
