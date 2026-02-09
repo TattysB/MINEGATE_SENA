@@ -1,17 +1,88 @@
-  {% load static %}
+{% load static %}
+{% load accesibility_tags %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <title>{% block title %}{% endblock %}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MINEGATE - Control de Acceso y Visitas{% endblock %}</title>
 
     {% load bootstrap5 %}
     {% bootstrap_css %}
     {% bootstrap_javascript %}
-
-    <link rel ="stylesheet" href ="{% static 'css/styles.css'%}">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    
+    <!-- mapa -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    {% block extra_css %}
+    {% endblock %}
 </head>
 <body>
-    {% block content %}
-    {% endblock %}
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'core:index' %}">
+                <img src="{% static 'img/LogoMine.png' %}" alt="Logo MINEGATE" class="navbar-logo">
+                MINEGATE
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item"><a class="nav-link" href="{% url 'core:index' %}">Inicio</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'core:protocolos' %}">Seguridad y Protocolos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'core:index' %}">Visitas Académicas</a></li>
+                </ul>
+                <div class="d-flex">
+                    <a class="btn btn-primary" href="{% url 'core:visitas' %}">
+                        <i class="fas fa-sign-in-alt"></i> Realizar Visita
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+    
+    <footer class="footer mt-auto py-4 bg-dark text-white">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-3 col-sm-6">
+                    <p><strong>MINEGATE - Gestión Integral Minera</strong></p>
+                    <p>Fomentando la seguridad y el conocimiento en el sector.</p>
+                </div>
+                <div class="col-md-4 col-sm-6">
+                    <p><strong>Dirección</strong></p>
+                    <p>Centro Minero, Regional Boyacá, Sogamoso - Boyacá</p>
+                </div>
+                <div class="col-md-2 col-sm-6">
+                    <p><strong>Enlaces Rápidos</strong></p>
+                    <ul class="list-unstyled">
+                        <li><a href="{% url 'core:index' %}" class="text-white-50">Inicio</a></li>
+                        <li><a href="{% url 'usuarios:login' %}" class="text-white-50">Iniciar Sesión (admin)</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <p><strong>Contacto</strong></p>
+                    <ul class="list-unstyled">
+                        <li class="text-white-50"><i class="fas fa-phone"></i> +(57) 601 736 60 60</li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="bg-light">
+            <p class="text-center text-white-50 mb-0">&copy; {% now "Y" %} MINEGATE. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- Inclusión del widget de accesibilidad -->
+    {% accessibility_widget %}
 </body>
 </html>

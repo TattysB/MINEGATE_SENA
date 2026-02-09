@@ -5,22 +5,27 @@ from .models import VisitaInterna
 from .forms import VisitaInternaForm
 
 def visita_interna(request):
-  visitas = VisitaInterna.objects.all().values()
-  
-  # Filtrar por nombre
-  nombre = request.GET.get('nombre', '')
-  if nombre:
-    visitas = visitas.filter(nombre__icontains=nombre)
-  
-  # Filtrar por ID
-  visita_id = request.GET.get('id', '')
-  if visita_id:
-    visitas = visitas.filter(id=visita_id)
-  
-  # Filtrar por estado
-  estado = request.GET.get('estado', '')
-  if estado:
-    visitas = visitas.filter(estado=estado)
+  visitas = VisitaInterna.objects.all()
+
+  # Filtrar por nombre de programa
+  nombre_programa = request.GET.get('nombre_programa', '')
+  if nombre_programa:
+    visitas = visitas.filter(nombre_programa__icontains=nombre_programa)
+
+  # Filtrar por responsable
+  responsable = request.GET.get('responsable', '')
+  if responsable:
+    visitas = visitas.filter(responsable__icontains=responsable)
+
+  # Filtrar por número de ficha
+  numero_ficha = request.GET.get('numero_ficha', '')
+  if numero_ficha:
+    visitas = visitas.filter(numero_ficha=numero_ficha)
+
+  # Filtrar por documento del responsable
+  documento_responsable = request.GET.get('documento_responsable', '')
+  if documento_responsable:
+    visitas = visitas.filter(documento_responsable__icontains=documento_responsable)
   
   template = loader.get_template('lista_visitas_internas.html')
   context = {
