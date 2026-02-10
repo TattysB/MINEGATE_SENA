@@ -26,6 +26,7 @@ urlpatterns = [
     path('auth/',include('usuarios.urls')),
     path('', include('visitaInterna.urls')),
     path('', include('visitaExterna.urls')),
+    path('calendario/', include('calendario.urls')),
 ]
 
 if settings.DEBUG:
