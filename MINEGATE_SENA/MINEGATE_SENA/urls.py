@@ -24,8 +24,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('',include('core.urls')),
     path('auth/',include('usuarios.urls')),
-    path('visita_interna/', include('visitaInterna.urls')),
-    path('visita_externa/', include('visitaExterna.urls')),
+    path('', include('visitaInterna.urls')),
+    path('', include('visitaExterna.urls')),
 ]
 
 if settings.DEBUG:
