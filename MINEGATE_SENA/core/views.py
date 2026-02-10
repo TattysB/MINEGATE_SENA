@@ -230,3 +230,8 @@ def protocolos(request):
 def visitas(request):
     """Renderiza la página de Registro de Visitas."""
     return render(request, 'visitas.html')
+
+
+def error_404(request, exception=None):
+    """Maneja errores 404 - Página no encontrada"""
+    return render(request, '404.html', status=404)
