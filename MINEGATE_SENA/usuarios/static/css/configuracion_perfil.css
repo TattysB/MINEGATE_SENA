@@ -1,4 +1,7 @@
   :root {
+    --sena-green: #1b8f3a;
+    --sena-green-dark: #0f5e28;
+    --sena-green-light: #e9f6ee;
     --primary-color: #4bbe4b;
     --primary-dark: #458a45;
     --secondary-color: #6c757d;
@@ -32,10 +35,57 @@
       opacity: 0;
       transform: translateY(-20px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
     }
+  }
+
+  /* =====================
+   NAVBAR PERSONALIZADA
+===================== */
+
+  nav.navbar {
+    background: linear-gradient(135deg, var(--sena-green) 0%, var(--sena-green-dark) 100%) !important;
+    box-shadow: 0 2px 8px rgba(27, 143, 58, 0.15) !important;
+    padding: 0.6rem 0 !important;
+    min-height: auto;
+  }
+
+  .navbar .container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0.5rem 1rem;
+  }
+
+  a.navbar-brand {
+    font-weight: 800;
+    font-size: 1.7rem;
+    color: white !important;
+    letter-spacing: 0.8px;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    transition: all 0.3s ease;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    text-transform: uppercase;
+  }
+
+  a.navbar-brand:hover {
+    transform: scale(1.04);
+    color: #e9f6ee !important;
+  }
+
+  a.navbar-brand img {
+    height: 40px !important;
+    width: auto !important;
+    max-width: 170px !important;
+    display: inline-block !important;
+    margin-right: 8px !important;
   }
 
   /* ========== BANNER ========== */
@@ -56,11 +106,9 @@
     right: -50%;
     width: 500px;
     height: 500px;
-    background: radial-gradient(
-      circle,
-      rgba(255, 255, 255, 0.1) 0%,
-      transparent 70%
-    );
+    background: radial-gradient(circle,
+        rgba(255, 255, 255, 0.1) 0%,
+        transparent 70%);
     border-radius: 50%;
   }
 
@@ -136,6 +184,8 @@
     flex-direction: column;
     gap: 1.5rem;
     border: 2px solid transparent;
+    align-items: center;
+    text-align: center;
   }
 
   .config-card:hover {
@@ -147,11 +197,9 @@
   .card-icon-large {
     font-size: 3rem;
     color: var(--primary-color);
-    background: linear-gradient(
-      135deg,
-      rgba(0, 176, 0, 0.1) 0%,
-      rgba(22, 65, 22, 0.1) 100%
-    );
+    background: linear-gradient(135deg,
+        rgba(0, 176, 0, 0.1) 0%,
+        rgba(22, 65, 22, 0.1) 100%);
     width: 80px;
     height: 80px;
     border-radius: 50%;
@@ -203,7 +251,7 @@
 
   /* ========== BOTONES ========== */
   .btn-config {
-    padding: 0.9rem 1.5rem;
+    padding: 0.9rem 2rem;
     font-weight: 600;
     border-radius: 0.5rem;
     transition: all 0.3s ease;
@@ -217,7 +265,7 @@
     text-decoration: none;
     letter-spacing: 0.5px;
     font-family: inherit;
-    width: 100%;
+    min-width: 200px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   }
 
@@ -228,29 +276,29 @@
   }
 
   .btn-edit {
-    background: linear-gradient(
-      135deg,
-      var(--primary-color) 0%,
-      var(--primary-dark) 100%
-    );
+    background: linear-gradient(135deg,
+        var(--primary-color) 0%,
+        var(--primary-dark) 100%);
     color: var(--text-dark);
     border: 2px solid var(--primary-dark);
   }
 
   .btn-edit:hover {
-    background: linear-gradient(135deg, var(--primary-dark) 0%, #ffaa00 100%);
+    background: linear-gradient(135deg, var(--primary-dark) 0%, #357a35 100%);
     color: var(--text-dark);
   }
 
   .btn-password {
-    background: linear-gradient(135deg, var(--info-color) 0%, #0bb5e1 100%);
-    color: white;
-    border: 2px solid #0bb5e1;
+    background: linear-gradient(135deg,
+        var(--primary-color) 0%,
+        var(--primary-dark) 100%);
+    color: var(--text-dark);
+    border: 2px solid var(--primary-dark);
   }
 
   .btn-password:hover {
-    background: linear-gradient(135deg, #0bb5e1 0%, #0a9ec8 100%);
-    color: white;
+    background: linear-gradient(135deg, var(--primary-dark) 0%, #357a35 100%);
+    color: var(--text-dark);
   }
 
   .btn-config i {
