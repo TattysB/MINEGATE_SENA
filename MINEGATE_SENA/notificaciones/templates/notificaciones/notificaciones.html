@@ -11,10 +11,23 @@
           <option value="3">Alta</option>
           <option value="2">Normal</option>
         </select>
+        <label style="margin-left:8px;display:inline-flex;align-items:center;gap:6px">
+          Desde: <input type="date" id="notif-date-from" name="date_from" />
+        </label>
+        <label style="margin-left:8px;display:inline-flex;align-items:center;gap:6px">
+          Hasta: <input type="date" id="notif-date-to" name="date_to" />
+        </label>
       </div>
     </div>
     <div id="notif-list-container">
-      {% include 'notificaciones/notificaciones_lista.html' %}
+      <div class="notif-grid">
+        <div class="notif-list-column">
+          {% include 'notificaciones/notificaciones_lista.html' %}
+        </div>
+        <div class="notif-detail-column" id="notif-detail-pane">
+          <div class="notif-empty">Selecciona una notificación para ver detalle.</div>
+        </div>
+      </div>
     </div>
   </div>
 </div>

@@ -4,11 +4,17 @@
     {% for n in notifications %}
       {% comment %} add priority class if available {% endcomment %}
       <div class="notif-item {% if n.priority %}priority-{{ n.priority }}{% endif %} {% if not n.read %}new{% endif %}" data-id="{{ n.id }}">
-        <div class="notif-left">🔔</div>
+        <div class="notif-left">
+          <div class="notif-day">{{ n.created_at|date:"d" }}</div>
+          <div class="notif-month">{{ n.created_at|date:"m" }}</div>
+        </div>
         <div class="notif-content">
           <div class="notif-meta">
             <strong class="notif-title">{{ n.title }}</strong>
-            <span class="notif-time">{{ n.created_at|timesince }} ago</span>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="notif-time">{{ n.created_at|timesince }} ago</span>
+              <span class="notif-date">{{ n.created_at|date:"d/m/Y H:i" }}</span>
+            </div>
           </div>
           <div class="notif-body">{{ n.message|linebreaksbr }}</div>
           <div class="notif-actions">
