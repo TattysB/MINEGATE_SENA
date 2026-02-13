@@ -18,6 +18,8 @@ def unread_count(request):
 def center(request):
 	q = request.GET.get('q', '').strip()
 	priority = request.GET.get('priority')
+	date_from = request.GET.get('date_from', '').strip()
+	date_to = request.GET.get('date_to', '').strip()
 	try:
 		qs = Notification.objects.filter(user=request.user)
 		if q:
@@ -27,6 +29,20 @@ def center(request):
 				p = int(priority)
 				qs = qs.filter(priority=p)
 			except ValueError:
+				pass
+
+		# Filtrar por rango de fechas (si se proporcionan)
+		if date_from:
+			try:
+				_from = datetime.strptime(date_from, '%Y-%m-%d')
+				qs = qs.filter(created_at__date__gte=_from.date())
+			except Exception:
+				pass
+		if date_to:
+			try:
+				_to = datetime.strptime(date_to, '%Y-%m-%d')
+				qs = qs.filter(created_at__date__lte=_to.date())
+			except Exception:
 				pass
 
 		context = {'notifications': qs}
@@ -57,12 +73,42 @@ def center(request):
 
 
 @login_required
+def detail(request, pk):
+	"""Devuelve el HTML con el detalle de una notificación y marca como leída."""
+	try:
+		n = get_object_or_404(Notification, pk=pk, user=request.user)
+		if not n.read:
+			n.read = True
+			n.save()
+		return render(request, 'notificaciones/notificacion_detalle.html', {'n': n})
+	except OperationalError:
+		# fallback sample detail cuando no hay DB
+		now = datetime.now()
+		sample = type('N', (), {
+			'id': pk,
+			'title': 'Notificación de ejemplo',
+			'message': 'Detalle de notificación (modo demo).',
+			'priority': 2,
+			'read': True,
+			'created_at': now - timedelta(hours=1)
+		})
+		return render(request, 'notificaciones/notificacion_detalle.html', {'n': sample, 'db_missing': True})
+
+
+@login_required
 @require_POST
 def mark_read(request, pk):
 	n = get_object_or_404(Notification, pk=pk, user=request.user)
 	n.read = True
 	n.save()
 	return JsonResponse({'ok': True})
+
+
+@login_required
+def modal(request):
+	"""Devuelve el fragmento del modal (envoltorio). La lista se cargará por AJAX desde el cliente."""
+	# No forzamos uso de la base aquí; el fragmento contiene el contenedor donde el JS cargará la lista.
+	return render(request, 'notificaciones/modal_fragment.html', {})
 
 
 @login_required
