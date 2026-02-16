@@ -1,6 +1,13 @@
-{% extends "master.html" %} {% load static %} {% block title %}Configuración de
-Perfil - MINEGATE SENA{% endblock %} {% block content %}
+ {% load static %}  {% block content %}
 <link rel="stylesheet" href="{% static 'css/configuracion_perfil.css' %}" />
+<nav class="navbar sticky-top">
+    <div class="container">
+        <a class="navbar-brand" >
+            <img src="{% static 'img/LogoMine.png' %}" alt="Logo MINEGATE" class="navbar-logo">
+            MINEGATE
+        </a>
+    </div>
+</nav>
 <div class="config-wrapper">
   <!-- ========== BANNER ========== -->
   <div class="config-banner">

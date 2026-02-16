@@ -1,6 +1,7 @@
 from django.http import HttpResponse
 from django.template import loader
 from django.shortcuts import redirect
+from django.urls import reverse
 from .models import VisitaInterna
 from .forms import VisitaInternaForm
 
@@ -39,7 +40,7 @@ def crear_visita(request):
     form = VisitaInternaForm(request.POST)
     if form.is_valid():
       form.save()
-      return redirect('visita_interna')
+      return redirect(reverse('core:visitas'))
   else:
     form = VisitaInternaForm()
   
@@ -56,7 +57,7 @@ def editar_visita(request, id):
     form = VisitaInternaForm(request.POST, instance=visita)
     if form.is_valid():
       form.save()
-      return redirect('visita_interna')
+      return redirect(reverse('visitaInterna:visita_interna'))
   else:
     form = VisitaInternaForm(instance=visita)
   
@@ -81,7 +82,7 @@ def eliminar_visita(request, id):
   visita = VisitaInterna.objects.get(id=id)
   if request.method == 'POST':
     visita.delete()
-    return redirect('visita_interna')
+    return redirect(reverse('visitaInterna:visita_interna'))
   
   template = loader.get_template('eliminar_visita_interna.html')
   context = {

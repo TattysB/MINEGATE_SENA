@@ -1,0 +1,174 @@
+* { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
+}
+
+body { 
+    font-family: Arial, sans-serif; 
+    background-color: #f5f5f5; 
+    padding: 20px; 
+}
+
+.container { 
+    max-width: 1000px; 
+    margin: 0 auto; 
+    background: white; 
+    padding: 30px; 
+    border-radius: 8px; 
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+}
+
+h1 { 
+    color: #333; 
+    margin-bottom: 30px; 
+    text-align: center; 
+}
+
+.btn-crear { 
+    margin-bottom: 20px; 
+    text-align: center; 
+}
+
+.btn-crear a { 
+    text-decoration: none; 
+}
+
+.btn-crear button { 
+    padding: 12px 30px; 
+    background-color: #4CAF50; 
+    color: white; 
+    border: none; 
+    border-radius: 4px; 
+    font-size: 16px; 
+    cursor: pointer; 
+    transition: 0.3s; 
+}
+
+.btn-crear button:hover { 
+    background-color: #45a049; 
+}
+
+.filtros-box {
+    margin: 20px 0; 
+    padding: 20px; 
+    background-color: #f9f9f9; 
+    border-radius: 4px;
+}
+
+.filtros-form {
+    display: flex; 
+    gap: 10px; 
+    flex-wrap: wrap;
+}
+
+.filtro-campo {
+    flex: 1; 
+    min-width: 200px;
+}
+
+.filtro-campo label {
+    display: block; 
+    margin-bottom: 5px; 
+    color: #555; 
+    font-weight: bold;
+}
+
+.filtro-campo input {
+    width: 100%; 
+    padding: 8px; 
+    border: 1px solid #ddd; 
+    border-radius: 4px;
+}
+
+.filtros-botones {
+    display: flex; 
+    gap: 5px; 
+    align-items: flex-end;
+}
+
+.filtros-botones button {
+    padding: 8px 20px; 
+    border: none; 
+    border-radius: 4px; 
+    cursor: pointer; 
+    transition: 0.3s;
+}
+
+.btn-buscar {
+    background-color: #4CAF50; 
+    color: white;
+}
+
+.btn-limpiar {
+    background-color: #757575; 
+    color: white;
+}
+
+table { 
+    border-collapse: collapse; 
+    width: 100%; 
+    margin-top: 20px; 
+}
+
+th, td { 
+    border: 1px solid #ddd; 
+    padding: 12px; 
+    text-align: left; 
+}
+
+th { 
+    background-color: #4CAF50; 
+    color: white; 
+}
+
+tr:nth-child(even) { 
+    background-color: #f2f2f2; 
+}
+
+tr:hover { 
+    background-color: #e8f5e9; 
+}
+
+.btn-action { 
+    padding: 6px 12px; 
+    margin: 2px; 
+    border: none; 
+    border-radius: 4px; 
+    font-size: 14px; 
+    cursor: pointer; 
+    transition: 0.3s; 
+}
+
+.btn-detalle {
+    background-color: #FF9800; 
+    color: white;
+}
+
+.btn-editar { 
+    background-color: #2196F3; 
+    color: white; 
+}
+
+.btn-editar:hover { 
+    background-color: #0b7dda; 
+}
+
+.btn-eliminar { 
+    background-color: #f44336; 
+    color: white; 
+}
+
+.btn-eliminar:hover { 
+    background-color: #da190b; 
+}
+
+a { 
+    text-decoration: none; 
+}
+
+.sin-datos { 
+    text-align: center; 
+    color: #999; 
+    padding: 40px; 
+}

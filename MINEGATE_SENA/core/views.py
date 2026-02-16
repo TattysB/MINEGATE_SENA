@@ -219,17 +219,15 @@ def rechazar_usuario(request, usuario_id):
             return JsonResponse({"success": True, "message": "Usuario rechazado"})
 
     return redirect("core:gestionar_permisos")
+
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'success': True, 'message': 'Usuario rechazado'})
-    
+
     return redirect('core:gestionar_permisos')  
-def protocolos(request):
-    """Renderiza la página de Protocolos de Seguridad."""
-    return render(request, 'protocolos.html')
 
 def visitas(request):
     """Renderiza la página de Registro de Visitas."""
-    return render(request, 'visitas.html')
+    return render(request, 'core/visitas.html')
 
 
 def error_404(request, exception=None):
