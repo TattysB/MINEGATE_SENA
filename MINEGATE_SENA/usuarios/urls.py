@@ -69,4 +69,9 @@ urlpatterns = [
     path('aprobar-usuario/<int:usuario_id>/', views.aprobar_usuario_view, name='aprobar_usuario'),
     path('rechazar-usuario/<int:usuario_id>/', views.rechazar_usuario_view, name='rechazar_usuario'),
     path('eliminar-usuario-permisos/<int:usuario_id>/', views.eliminar_usuario_permisos_view, name='eliminar_usuario_permisos'),
+    
+    # Nuevas rutas de gestión de permisos
+    path('gestionar-permisos/crear/', views.crear_usuario_permisos_view, name='crear_usuario_permisos'),
+    path('gestionar-permisos/detalle/<int:usuario_id>/', views.detalle_usuario_permisos_view, name='detalle_usuario_permisos'),
+    path('gestionar-permisos/toggle-estado/<int:usuario_id>/', views.toggle_estado_usuario_view, name='toggle_estado_usuario'),
 ]

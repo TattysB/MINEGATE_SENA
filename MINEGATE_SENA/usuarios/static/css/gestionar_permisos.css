@@ -250,7 +250,7 @@
 .fecha-aprobacion, .razon { font-size: 0.75rem; color: var(--texto-secundario); margin-top: 0.25rem; }
 
 /* === ACCIONES === */
-.acciones-usuario { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.acciones-usuario { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
 
 .btn-accion {
     padding: 0.5rem 1rem;
@@ -264,6 +264,7 @@
     align-items: center;
     gap: 0.35rem;
     color: var(--blanco);
+    text-decoration: none;
 }
 .btn-aprobar { background: var(--gradient-verde); }
 .btn-aprobar:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0, 176, 0, 0.4); }
@@ -271,6 +272,115 @@
 .btn-rechazar:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(198, 40, 40, 0.4); }
 .btn-eliminar { background: linear-gradient(135deg, #78909c, #546e7a); }
 .btn-eliminar:hover { background: var(--gradient-rojo); transform: translateY(-2px); box-shadow: 0 4px 15px rgba(198, 40, 40, 0.4); }
+.btn-ver { background: linear-gradient(135deg, #1976d2, #1565c0); }
+.btn-ver:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(25, 118, 210, 0.4); color: var(--blanco); }
+
+/* === BOTÓN CREAR USUARIO === */
+.btn-crear-usuario {
+    padding: 0.85rem 1.75rem;
+    background: var(--gradient-verde);
+    color: var(--blanco);
+    border: none;
+    border-radius: 30px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transicion);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: var(--sombra-suave);
+}
+.btn-crear-usuario:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--sombra-media);
+    color: var(--blanco);
+}
+
+/* === TOGGLE SWITCH PÍLDORA === */
+.toggle-estado-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.toggle-switch {
+    position: relative;
+    width: 52px;
+    height: 28px;
+    cursor: pointer;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, #ef5350, #c62828);
+    transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 28px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background: var(--gradient-verde);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(24px);
+}
+
+.toggle-switch:hover .toggle-slider {
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2), 0 0 8px rgba(0, 176, 0, 0.4);
+}
+
+.toggle-switch input:focus + .toggle-slider {
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2), 0 0 0 3px rgba(0, 176, 0, 0.2);
+}
+
+.toggle-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    min-width: 65px;
+}
+
+.toggle-label.activo { color: var(--color-aprobado); }
+.toggle-label.inactivo { color: var(--color-rechazado); }
+
+/* Badge activo/inactivo */
+.badge-activo { 
+    background: linear-gradient(135deg, var(--color-aprobado-bg), #a5d6a7); 
+    color: var(--color-aprobado); 
+    border: 1px solid var(--color-aprobado); 
+}
+.badge-inactivo { 
+    background: linear-gradient(135deg, var(--color-rechazado-bg), #ef9a9a); 
+    color: var(--color-rechazado); 
+    border: 1px solid var(--color-rechazado); 
+}
 
 /* === SIN RESULTADOS === */
 .sin-resultados { text-align: center; padding: 3rem 2rem; color: var(--texto-secundario); }

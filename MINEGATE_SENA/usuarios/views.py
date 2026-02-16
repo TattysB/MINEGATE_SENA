@@ -888,6 +888,7 @@ def gestionar_permisos_ajax_view(request):
             'email': perfil.user.email,
             'telefono': perfil.telefono or 'No especificado',
             'fecha_registro': perfil.user.date_joined.strftime('%d/%m/%Y %H:%M'),
+            'is_active': perfil.user.is_active,
             'aprobado': perfil.aprobado,
             'razon_rechazo': perfil.razon_rechazo,
             'razon_rechazo_corta': ' '.join(perfil.razon_rechazo.split()[:5]) + '...' if perfil.razon_rechazo and len(perfil.razon_rechazo.split()) > 5 else (perfil.razon_rechazo or ''),
@@ -904,3 +905,164 @@ def gestionar_permisos_ajax_view(request):
             'rechazados': usuarios_rechazados,
         }
     })
+
+
+# ==================== CREAR USUARIO DESDE GESTIÓN DE PERMISOS ====================
+
+@login_required(login_url='usuarios:login')
+@user_passes_test(es_superusuario, login_url='core:panel_administrativo')
+def crear_usuario_permisos_view(request):
+    """
+    Vista para crear un nuevo usuario desde el módulo de gestión de permisos.
+    Similar al registro pero administrado por superusuarios.
+    """
+    from .forms import RegistroForm
+    
+    if request.method == 'POST':
+        form = RegistroForm(request.POST)
+        
+        # Obtener si debe ser aprobado automáticamente y/o activo
+        aprobar_automatico = request.POST.get('aprobar_automatico', 'off') == 'on'
+        usuario_activo = request.POST.get('usuario_activo', 'on') == 'on'
+        
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.is_active = usuario_activo
+            user.save()
+            
+            # Obtener o crear el perfil
+            from .models import PerfilUsuario
+            try:
+                perfil = PerfilUsuario.objects.get(user=user)
+            except PerfilUsuario.DoesNotExist:
+                perfil = PerfilUsuario.objects.create(
+                    user=user,
+                    documento=form.cleaned_data.get('documento', ''),
+                    telefono=form.cleaned_data.get('telefono', '')
+                )
+            
+            # Aprobar automáticamente si se seleccionó
+            if aprobar_automatico:
+                from datetime import datetime
+                perfil.aprobado = True
+                perfil.fecha_aprobacion = datetime.now()
+                perfil.razon_rechazo = None
+                perfil.save()
+            
+            messages.success(
+                request,
+                f'✓ Usuario {user.get_full_name() or user.username} creado exitosamente.'
+            )
+            return redirect('usuarios:gestionar_permisos')
+        else:
+            # Se manejan errores en el template
+            pass
+    else:
+        form = RegistroForm()
+    
+    context = {
+        'form': form,
+        'titulo': 'Crear Nuevo Usuario',
+    }
+    return render(request, 'usuarios/crear_usuario_permisos.html', context)
+
+
+# ==================== VER DETALLE DE USUARIO ====================
+
+@login_required(login_url='usuarios:login')
+@user_passes_test(es_superusuario, login_url='core:panel_administrativo')
+def detalle_usuario_permisos_view(request, usuario_id):
+    """
+    Vista para ver todos los detalles de un usuario.
+    Retorna JSON si es una petición AJAX.
+    """
+    usuario = get_object_or_404(User, id=usuario_id)
+    
+    try:
+        perfil = usuario.perfil
+    except PerfilUsuario.DoesNotExist:
+        perfil = None
+    
+    # Si es una petición AJAX, retornar JSON
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        datos_usuario = {
+            'id': usuario.id,
+            'username': usuario.username,
+            'nombre_completo': usuario.get_full_name() or usuario.username,
+            'first_name': usuario.first_name,
+            'last_name': usuario.last_name,
+            'email': usuario.email,
+            'is_active': usuario.is_active,
+            'is_staff': usuario.is_staff,
+            'is_superuser': usuario.is_superuser,
+            'date_joined': usuario.date_joined.strftime('%d/%m/%Y %H:%M'),
+            'last_login': usuario.last_login.strftime('%d/%m/%Y %H:%M') if usuario.last_login else 'Nunca',
+        }
+        
+        if perfil:
+            datos_usuario.update({
+                'documento': perfil.documento,
+                'telefono': perfil.telefono or 'No especificado',
+                'direccion': perfil.direccion or 'No especificada',
+                'fecha_nacimiento': perfil.fecha_nacimiento.strftime('%d/%m/%Y') if perfil.fecha_nacimiento else 'No especificada',
+                'aprobado': perfil.aprobado,
+                'razon_rechazo': perfil.razon_rechazo or '',
+                'fecha_aprobacion': perfil.fecha_aprobacion.strftime('%d/%m/%Y %H:%M') if perfil.fecha_aprobacion else '',
+                'foto_perfil': perfil.foto_perfil.url if perfil.foto_perfil else '',
+            })
+        
+        return JsonResponse({'success': True, 'usuario': datos_usuario})
+    
+    # Si no es AJAX, renderizar template
+    context = {
+        'usuario': usuario,
+        'perfil': perfil,
+        'titulo': f'Detalles de {usuario.get_full_name() or usuario.username}',
+    }
+    return render(request, 'usuarios/detalle_usuario_permisos.html', context)
+
+
+# ==================== CAMBIAR ESTADO ACTIVO/INACTIVO ====================
+
+@login_required(login_url='usuarios:login')
+@user_passes_test(es_superusuario, login_url='core:panel_administrativo')
+def toggle_estado_usuario_view(request, usuario_id):
+    """
+    Cambia el estado activo/inactivo de un usuario.
+    """
+    usuario = get_object_or_404(User, id=usuario_id)
+    
+    # No permitir cambiar estado de superusuarios
+    if usuario.is_superuser:
+        messages.error(request, '❌ No se puede cambiar el estado de un superusuario.')
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'message': 'No se puede cambiar el estado de un superusuario.'})
+        return redirect('usuarios:gestionar_permisos')
+    
+    # No permitir que se desactive a sí mismo
+    if usuario == request.user:
+        messages.error(request, '❌ No puedes desactivar tu propia cuenta.')
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'message': 'No puedes desactivar tu propia cuenta.'})
+        return redirect('usuarios:gestionar_permisos')
+    
+    if request.method == 'POST':
+        # Toggle el estado
+        usuario.is_active = not usuario.is_active
+        usuario.save()
+        
+        estado = 'activado' if usuario.is_active else 'desactivado'
+        emoji = '✓' if usuario.is_active else '⏸️'
+        messages.success(
+            request,
+            f'{emoji} Usuario {usuario.get_full_name() or usuario.username} {estado} exitosamente.'
+        )
+        
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'message': f'Usuario {estado}',
+                'nuevo_estado': usuario.is_active
+            })
+    
+    return redirect('usuarios:gestionar_permisos')
