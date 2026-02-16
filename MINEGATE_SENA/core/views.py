@@ -2,31 +2,23 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from datetime import datetime
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, render, redirect
-from django.contrib.auth.decorators import login_required,user_passes_test
+from django.shortcuts import get_object_or_404
 from django.contrib import messages
 from django.db.models import Q
 from usuarios.models import PerfilUsuario
 
-# Create your views here.
 
 def es_superusuario(user):
     """Verifica si el usuario es superusuario"""
     return user.is_superuser
 
-def index (request):
-    return render (request, 'core/index.html')
 
 def index(request):
     return render(request, "core/index.html")
 
 
-def es_superusuario(user):
-    """Verifica si el usuario es superusuario"""
-    return user.is_superuser
-
 @login_required(login_url='usuarios:login')
-def panel_administrativo (request):
+def panel_administrativo(request):
     """
     Panel administrativo principal
     Incluye gestión de permisos solo para superusuarios
@@ -219,13 +211,12 @@ def rechazar_usuario(request, usuario_id):
             return JsonResponse({"success": True, "message": "Usuario rechazado"})
 
     return redirect("core:gestionar_permisos")
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({'success': True, 'message': 'Usuario rechazado'})
-    
-    return redirect('core:gestionar_permisos')  
+
+
 def protocolos(request):
     """Renderiza la página de Protocolos de Seguridad."""
     return render(request, 'protocolos.html')
+
 
 def visitas(request):
     """Renderiza la página de Registro de Visitas."""
