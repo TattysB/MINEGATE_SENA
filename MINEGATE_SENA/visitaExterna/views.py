@@ -1,6 +1,7 @@
 from django.http import HttpResponse
 from django.template import loader
 from django.shortcuts import redirect
+from django.contrib import messages
 from .models import VisitaExterna
 from .forms import VisitaExternaForm
 
@@ -33,8 +34,12 @@ def crear_visita(request):
   if request.method == 'POST':
     form = VisitaExternaForm(request.POST)
     if form.is_valid():
-      form.save()
-      return redirect('visita_externa')
+      # Crear la visita con estado pendiente (revisión admin)
+      visita = form.save(commit=False)
+      visita.estado = 'pendiente'  # Pendiente de revisión por administrador
+      visita.save()
+      messages.success(request, '✅ Su solicitud de visita ha sido enviada y está pendiente de revisión por el administrador.')
+      return redirect('core:visitas')
   else:
     form = VisitaExternaForm()
   
