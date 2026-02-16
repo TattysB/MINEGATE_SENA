@@ -43,6 +43,9 @@ INSTALLED_APPS = [
     'visitaInterna',
     'visitaExterna',
     'accessibility',
+    'gestion_visitas',
+    'panel_visitante',
+    'documentos',
 ]
 
 MIDDLEWARE = [
@@ -147,7 +150,6 @@ LOGIN_REDIRECT_URL = "core:dashboard"  # A dónde ir después de login exitoso
 LOGOUT_REDIRECT_URL = "core:index"  # A dónde ir después de logout
 
 # Configuración de correo electrónico
-# Para desarrollo: Los correos se mostrarán en la consola
 """ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 EMAIL_HOST = 'localhost'
 EMAIL_PORT = 587

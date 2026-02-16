@@ -26,6 +26,10 @@ urlpatterns = [
     path('auth/',include('usuarios.urls')),
     path('visita_interna/', include('visitaInterna.urls')),
     path('visita_externa/', include('visitaExterna.urls')),
+    # Nuevas apps organizadas
+    path('gestion/', include('gestion_visitas.urls')),
+    path('visitante/', include('panel_visitante.urls')),
+    path('documentos/', include('documentos.urls')),
 ]
 
 if settings.DEBUG:
