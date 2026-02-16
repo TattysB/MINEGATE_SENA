@@ -3,6 +3,115 @@
  {% block content %} 
 <link rel="stylesheet" href="{% static 'css/gestionar_permisos.css' %}" />
 
+<style>
+  /* ===== ESTILOS ADICIONALES PARA GESTIÓN DE PERMISOS ===== */
+  
+  /* Botón Crear Usuario */
+  .btn-crear-usuario {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.85rem 1.5rem;
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 1rem;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    transition: all 0.3s ease;
+  }
+  
+  .btn-crear-usuario:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+    color: white;
+  }
+  
+  /* Badges de Estado Cuenta */
+  .badge-activo {
+    background-color: #28a745;
+    color: white;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  
+  .badge-inactivo {
+    background-color: #dc3545;
+    color: white;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  
+  /* Botón Ver Detalles */
+  .btn-ver {
+    background-color: #17a2b8;
+    color: white;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .btn-ver:hover {
+    background-color: #138496;
+    color: white;
+  }
+  
+  /* Botón Toggle Estado */
+  .btn-toggle {
+    background-color: #ffc107;
+    color: #333;
+    min-width: 40px;
+  }
+  
+  .btn-toggle:hover {
+    background-color: #e0a800;
+  }
+  
+  /* Ajuste columnas de tabla */
+  .tabla-usuarios th:nth-child(5),
+  .tabla-usuarios td:nth-child(5),
+  .tabla-usuarios th:nth-child(6),
+  .tabla-usuarios td:nth-child(6) {
+    text-align: center;
+  }
+  
+  /* Estilos para el modal de toggle */
+  #encabezadoToggle {
+    transition: background 0.3s ease;
+  }
+  
+  /* Acciones de usuario más compactas */
+  .acciones-usuario {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    justify-content: center;
+  }
+  
+  .acciones-usuario .btn-accion {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+  }
+  
+  /* Responsive */
+  @media (max-width: 992px) {
+    .seccion-acciones-principales {
+      justify-content: center !important;
+    }
+    
+    .btn-crear-usuario {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>
+
 <div class="contenedor-permisos">
   <!-- Mensajes -->
   {% if messages %}
@@ -21,6 +130,13 @@
     {% endfor %}
   </div>
   {% endif %}
+
+  <!-- Botón Crear Usuario -->
+  <div class="seccion-acciones-principales" style="margin-bottom: 1.5rem; display: flex; justify-content: flex-end;">
+    <a href="{% url 'usuarios:crear_usuario_permisos' %}" class="btn-crear-usuario">
+      ➕ Crear Nuevo Usuario
+    </a>
+  </div>
 
   <!-- Tarjetas de Estadísticas -->
   <div class="seccion-estadisticas">
@@ -126,7 +242,8 @@
             <th>Documento</th>
             <th>Email</th>
             <th>Fecha Registro</th>
-            <th>Estado</th>
+            <th>Cuenta</th>
+            <th>Aprobación</th>
             <th>Acciones</th>
           </tr>
         </thead>
@@ -154,6 +271,13 @@
               >
             </td>
             <td>
+              {% if perfil.user.is_active %}
+              <span class="badge badge-activo">✓ ACTIVO</span>
+              {% else %}
+              <span class="badge badge-inactivo">✗ INACTIVO</span>
+              {% endif %}
+            </td>
+            <td>
               {% if perfil.aprobado %}
               <span class="badge badge-aprobado">✓ APROBADO</span>
               <div class="fecha-aprobacion">
@@ -170,6 +294,21 @@
             </td>
             <td>
               <div class="acciones-usuario">
+                <a 
+                  href="{% url 'usuarios:detalle_usuario_permisos' perfil.user.id %}"
+                  class="btn-accion btn-ver"
+                  title="Ver detalles"
+                >
+                  👁️ Ver
+                </a>
+                <button
+                  type="button"
+                  class="btn-accion btn-toggle"
+                  onclick="abrirModalToggleEstado('{{ perfil.user.id }}', '{{ perfil.user.get_full_name|default:perfil.user.username }}', {{ perfil.user.is_active|yesno:'true,false' }})"
+                  title="{% if perfil.user.is_active %}Desactivar{% else %}Activar{% endif %} usuario"
+                >
+                  {% if perfil.user.is_active %}⏸️{% else %}▶️{% endif %}
+                </button>
                 {% if not perfil.aprobado or perfil.razon_rechazo %}
                 <button
                   type="button"
@@ -332,11 +471,44 @@
     </div>
   </div>
 
+  <!-- Modal Toggle Estado Usuario -->
+  <div id="modalToggleEstado" class="modal">
+    <div class="modal-contenido">
+      <div class="modal-encabezado" id="encabezadoToggle">
+        <h2 id="tituloToggle">⏸️ Cambiar Estado</h2>
+        <button class="modal-cerrar" onclick="cerrarModal('modalToggleEstado')">
+          &times;
+        </button>
+      </div>
+      <div class="modal-cuerpo">
+        <p>¿Deseas <strong id="accionToggle">desactivar</strong> a <strong id="usuarioToggle"></strong>?</p>
+        <p class="texto-info" id="infoToggle">
+          El usuario no podrá iniciar sesión mientras su cuenta esté desactivada.
+        </p>
+      </div>
+      <div class="modal-pie">
+        <button
+          class="btn-modal btn-cancelar"
+          onclick="cerrarModal('modalToggleEstado')"
+        >
+          Cancelar
+        </button>
+        <form id="formToggleEstado" method="POST" style="display: inline">
+          {% csrf_token %}
+          <button type="submit" class="btn-modal btn-confirmar" id="btnConfirmarToggle">
+            Sí, Cambiar Estado
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- Script para Gestión de Permisos -->
   <script>
     let usuarioIdAprobar = null;
     let usuarioIdRechazar = null;
     let usuarioIdEliminar = null;
+    let usuarioIdToggle = null;
     let filtroActualValor = '{{ filtro_actual|default:"todos" }}';
 
     // ==================== FUNCIONES DE FILTRADO ====================
@@ -506,8 +678,19 @@
         tdFecha.innerHTML = `<span class="fecha">${escaparHTML(usuario.fecha_registro || "")}</span>`;
         tr.appendChild(tdFecha);
 
-        // Celda de estado
+        // Celda de estado de cuenta (activo/inactivo)
+        const tdEstadoCuenta = document.createElement("td");
+        tdEstadoCuenta.style.textAlign = "center";
+        if (usuario.is_active !== false) {
+          tdEstadoCuenta.innerHTML = '<span class="badge badge-activo">✓ ACTIVO</span>';
+        } else {
+          tdEstadoCuenta.innerHTML = '<span class="badge badge-inactivo">✗ INACTIVO</span>';
+        }
+        tr.appendChild(tdEstadoCuenta);
+
+        // Celda de estado de aprobación
         const tdEstado = document.createElement("td");
+        tdEstado.style.textAlign = "center";
         if (usuario.aprobado) {
           tdEstado.innerHTML = `
                     <span class="badge badge-aprobado">✓ APROBADO</span>
@@ -528,6 +711,25 @@
         const tdAcciones = document.createElement("td");
         const divAcciones = document.createElement("div");
         divAcciones.className = "acciones-usuario";
+
+        // Botón Ver Detalle
+        const btnVer = document.createElement("a");
+        btnVer.href = "{% url 'usuarios:detalle_usuario_permisos' 0 %}".replace("0", usuario.id);
+        btnVer.className = "btn-accion btn-ver";
+        btnVer.title = "Ver detalles";
+        btnVer.textContent = "👁️ Ver";
+        divAcciones.appendChild(btnVer);
+
+        // Botón Toggle Estado
+        const btnToggle = document.createElement("button");
+        btnToggle.type = "button";
+        btnToggle.className = "btn-accion btn-toggle";
+        btnToggle.title = usuario.is_active !== false ? "Desactivar usuario" : "Activar usuario";
+        btnToggle.textContent = usuario.is_active !== false ? "⏸️" : "▶️";
+        btnToggle.onclick = function () {
+          abrirModalToggleEstado(usuario.id, usuario.nombre, usuario.is_active !== false);
+        };
+        divAcciones.appendChild(btnToggle);
 
         if (!usuario.aprobado || usuario.razon_rechazo) {
           const btnAprobar = document.createElement("button");
@@ -604,6 +806,38 @@
         usuarioId,
       );
       abrirModal("modalEliminar");
+    }
+
+    function abrirModalToggleEstado(usuarioId, nombreUsuario, estaActivo) {
+      usuarioIdToggle = usuarioId;
+      document.getElementById("usuarioToggle").textContent = nombreUsuario;
+      
+      const tituloToggle = document.getElementById("tituloToggle");
+      const accionToggle = document.getElementById("accionToggle");
+      const infoToggle = document.getElementById("infoToggle");
+      const btnConfirmar = document.getElementById("btnConfirmarToggle");
+      const encabezado = document.getElementById("encabezadoToggle");
+      
+      if (estaActivo) {
+        tituloToggle.textContent = "⏸️ Desactivar Usuario";
+        accionToggle.textContent = "desactivar";
+        infoToggle.textContent = "El usuario no podrá iniciar sesión mientras su cuenta esté desactivada.";
+        btnConfirmar.textContent = "Sí, Desactivar";
+        encabezado.style.background = "#ffc107";
+      } else {
+        tituloToggle.textContent = "▶️ Activar Usuario";
+        accionToggle.textContent = "activar";
+        infoToggle.textContent = "El usuario podrá iniciar sesión nuevamente una vez activada su cuenta.";
+        btnConfirmar.textContent = "Sí, Activar";
+        encabezado.style.background = "#28a745";
+      }
+      
+      const form = document.getElementById("formToggleEstado");
+      form.action = "{% url 'usuarios:toggle_estado_usuario' 0 %}".replace(
+        "0",
+        usuarioId,
+      );
+      abrirModal("modalToggleEstado");
     }
 
     function confirmarRechazar() {
