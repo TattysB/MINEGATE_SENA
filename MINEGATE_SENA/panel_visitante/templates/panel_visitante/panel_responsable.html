@@ -1,0 +1,782 @@
+{% extends "master.html" %}
+{% load static %}
+
+{% block title %}Mi Panel de Visitas - MINEGATE{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<style>
+    .panel-header {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        color: white;
+        padding: 40px 0;
+        margin-bottom: 30px;
+    }
+    
+    .panel-header h1 {
+        margin: 0;
+        font-weight: 700;
+    }
+    
+    .panel-header p {
+        margin: 10px 0 0;
+        opacity: 0.8;
+    }
+    
+    .user-badge {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 10px 20px;
+        border-radius: 50px;
+        display: inline-block;
+        margin-top: 15px;
+    }
+    
+    .user-badge i {
+        margin-right: 8px;
+        color: #ffc107;
+    }
+    
+    .section-title {
+        display: flex;
+        align-items: center;
+        margin: 30px 0 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #eee;
+    }
+    
+    .section-title i {
+        font-size: 1.5rem;
+        margin-right: 15px;
+        color: #667eea;
+    }
+    
+    .section-title h3 {
+        margin: 0;
+        font-weight: 600;
+    }
+    
+    .visita-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+        overflow: hidden;
+        transition: transform 0.3s ease;
+    }
+    
+    .visita-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .visita-card-header {
+        padding: 20px;
+        background: #f8f9fa;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .visita-id {
+        font-weight: 700;
+        color: #667eea;
+    }
+    
+    .estado-badge {
+        padding: 6px 15px;
+        border-radius: 50px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    
+    .estado-aprobada, .estado-confirmada {
+        background: #d1fae5;
+        color: #059669;
+    }
+    
+    .estado-aprobada_inicial {
+        background: #bbf7d0;
+        color: #16a34a;
+    }
+    
+    .estado-pendiente, .estado-enviada_coordinacion {
+        background: #fef3c7;
+        color: #d97706;
+    }
+    
+    .estado-documentos_enviados, .estado-en_revision_documentos {
+        background: #dbeafe;
+        color: #2563eb;
+    }
+    
+    .estado-rechazada {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+    
+    .visita-card-body {
+        padding: 20px;
+    }
+    
+    .visita-info {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .info-item {
+        background: #f8f9fa;
+        padding: 12px 15px;
+        border-radius: 10px;
+    }
+    
+    .info-item label {
+        display: block;
+        font-size: 0.75rem;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 5px;
+    }
+    
+    .info-item span {
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .asistentes-info {
+        background: linear-gradient(135deg, #667eea10 0%, #764ba210 100%);
+        border: 1px solid #667eea30;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .asistentes-info p {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .asistentes-count {
+        font-weight: 700;
+        color: #667eea;
+    }
+    
+    .visita-card-actions {
+        padding: 15px 20px;
+        background: #f8f9fa;
+        border-top: 1px solid #eee;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    
+    .btn-action {
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+    }
+    
+    .btn-registrar {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+    }
+    
+    .btn-registrar:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(16, 185, 129, 0.4);
+        color: white;
+    }
+    
+    .btn-ver {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .btn-ver:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+    
+    .btn-disabled {
+        background: #e5e7eb;
+        color: #9ca3af;
+        cursor: not-allowed;
+    }
+    
+    .btn-logout {
+        background: #dc2626;
+        color: white;
+        border: none;
+        padding: 10px 25px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-logout:hover {
+        background: #b91c1c;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #666;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        color: #ddd;
+        margin-bottom: 20px;
+    }
+    
+    .alert {
+        padding: 15px 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .alert-success {
+        background: #d1fae5;
+        color: #059669;
+        border: 1px solid #a7f3d0;
+    }
+    
+    .alert-warning {
+        background: #fef3c7;
+        color: #d97706;
+        border: 1px solid #fde68a;
+    }
+    
+    .enlace-compartir {
+        background: linear-gradient(135deg, #667eea10 0%, #764ba210 100%);
+        border: 2px dashed #667eea;
+        border-radius: 10px;
+        padding: 15px;
+        margin: 15px 0;
+    }
+    
+    .enlace-compartir label {
+        color: #667eea;
+        font-weight: 600;
+        margin-bottom: 10px;
+        display: block;
+    }
+    
+    .enlace-input-group {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .enlace-input {
+        flex: 1;
+        padding: 10px 15px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        background: white;
+    }
+    
+    .btn-copiar {
+        background: #667eea;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-copiar:hover {
+        background: #5a67d8;
+    }
+    
+    .btn-enviar-final {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: white;
+    }
+    
+    .btn-enviar-final:hover {
+        box-shadow: 0 5px 20px rgba(245, 158, 11, 0.4);
+        color: white;
+    }
+    
+    .estado-progreso {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 15px;
+        background: #f3f4f6;
+        border-radius: 10px;
+        margin: 15px 0;
+    }
+    
+    .estado-progreso-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+    
+    .estado-progreso-info h5 {
+        margin: 0 0 5px 0;
+        font-weight: 600;
+    }
+    
+    .estado-progreso-info p {
+        margin: 0;
+        font-size: 0.9rem;
+        color: #666;
+    }
+</style>
+
+<div class="panel-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center flex-wrap">
+            <div>
+                <h1><i class="fas fa-clipboard-list me-3"></i>Mi Panel de Visitas</h1>
+                <p>Gestione sus visitas programadas y registre asistentes</p>
+                <div class="user-badge">
+                    <i class="fas fa-user"></i> {{ correo }}
+                </div>
+            </div>
+            <a href="{% url 'panel_visitante:logout_responsable' %}" class="btn-logout">
+                <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container pb-5">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{% if 'error' in message.tags %}danger{% elif 'success' in message.tags %}success{% else %}warning{% endif %}">
+                <i class="fas fa-{% if 'error' in message.tags %}exclamation-circle{% elif 'success' in message.tags %}check-circle{% else %}info-circle{% endif %} me-2"></i>
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Visitas Internas -->
+    <div class="section-title">
+        <i class="fas fa-building"></i>
+        <div>
+            <h3>Visitas Internas (SENA)</h3>
+            <small class="text-muted">Programas y fichas del SENA</small>
+        </div>
+    </div>
+    
+    {% if visitas_internas %}
+        {% for visita in visitas_internas %}
+            <div class="visita-card">
+                <div class="visita-card-header">
+                    <span class="visita-id">
+                        <i class="fas fa-hashtag"></i> Visita #{{ visita.id }}
+                    </span>
+                    <span class="estado-badge estado-{{ visita.estado }}">
+                        {% if visita.estado == 'pendiente' %}
+                            <i class="fas fa-clock"></i> Pendiente de revisión
+                        {% elif visita.estado == 'enviada_coordinacion' %}
+                            <i class="fas fa-paper-plane"></i> Enviada a Coordinación
+                        {% elif visita.estado == 'aprobada_inicial' %}
+                            <i class="fas fa-check"></i> Aprobada - Lista para registro
+                        {% elif visita.estado == 'documentos_enviados' %}
+                            <i class="fas fa-file-upload"></i> Documentos Enviados
+                        {% elif visita.estado == 'en_revision_documentos' %}
+                            <i class="fas fa-search"></i> En Revisión de Documentos
+                        {% elif visita.estado == 'confirmada' %}
+                            <i class="fas fa-check-double"></i> Confirmada
+                        {% elif visita.estado == 'rechazada' %}
+                            <i class="fas fa-times-circle"></i> Rechazada
+                        {% else %}
+                            <i class="fas fa-question"></i> {{ visita.estado }}
+                        {% endif %}
+                    </span>
+                </div>
+                
+                <div class="visita-card-body">
+                    <!-- Estado de progreso -->
+                    <div class="estado-progreso">
+                        {% if visita.estado == 'pendiente' %}
+                            <div class="estado-progreso-icon" style="background: #fef3c7; color: #d97706;">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="estado-progreso-info">
+                                <h5>Esperando aprobación inicial</h5>
+                                <p>Su solicitud está siendo revisada por el equipo administrativo.</p>
+                            </div>
+                        {% elif visita.estado == 'enviada_coordinacion' %}
+                            <div class="estado-progreso-icon" style="background: #fef3c7; color: #d97706;">
+                                <i class="fas fa-paper-plane"></i>
+                            </div>
+                            <div class="estado-progreso-info">
+                                <h5>En coordinación</h5>
+                                <p>Su solicitud fue enviada a coordinación para su evaluación.</p>
+                            </div>
+                        {% elif visita.estado == 'aprobada_inicial' %}
+                            <div class="estado-progreso-icon" style="background: #bbf7d0; color: #16a34a;">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="estado-progreso-info">
+                                <h5>¡Aprobación inicial recibida!</h5>
+                                <p>Puede registrar asistentes y compartir el enlace de registro.</p>
+                            </div>
+                        {% elif visita.estado == 'documentos_enviados' %}
+                            <div class="estado-progreso-icon" style="background: #dbeafe; color: #2563eb;">
+                                <i class="fas fa-file-upload"></i>
+                            </div>
+                            <div class="estado-progreso-info">
+                                <h5>Solicitud final enviada</h5>
+                                <p>Los documentos están siendo revisados por el administrador.</p>
+                            </div>
+                        {% elif visita.estado == 'en_revision_documentos' %}
+                            <div class="estado-progreso-icon" style="background: #dbeafe; color: #2563eb;">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <div class="estado-progreso-info">
+                                <h5>Revisión de documentos en curso</h5>
+                                <p>El administrador está verificando los documentos de cada asistente.</p>
+                            </div>
+                        {% elif visita.estado == 'confirmada' %}
+                            <div class="estado-progreso-icon" style="background: #d1fae5; color: #059669;">
+                                <i class="fas fa-check-double"></i>
+                            </div>
+                            <div class="estado-progreso-info">
+                                <h5>¡Visita confirmada!</h5>
+                                <p>Todos los documentos fueron verificados. La visita está lista.</p>
+                            </div>
+                        {% elif visita.estado == 'rechazada' %}
+                            <div class="estado-progreso-icon" style="background: #fee2e2; color: #dc2626;">
+                                <i class="fas fa-times-circle"></i>
+                            </div>
+                            <div class="estado-progreso-info">
+                                <h5>Visita rechazada</h5>
+                                <p>{{ visita.observacion|default:"Contacte al administrador para más detalles." }}</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="visita-info">
+                        <div class="info-item">
+                            <label>Programa</label>
+                            <span>{{ visita.nombre_programa }}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Número de Ficha</label>
+                            <span>{{ visita.numero_ficha }}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Responsable</label>
+                            <span>{{ visita.responsable }}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Cantidad Máxima</label>
+                            <span>{{ visita.cantidad_aprendices }} asistentes</span>
+                        </div>
+                    </div>
+                    
+                    <div class="asistentes-info">
+                        <p>
+                            <i class="fas fa-users"></i>
+                            <span>Asistentes registrados: </span>
+                            <span class="asistentes-count">{{ visita.asistentes.count }} / {{ visita.cantidad_aprendices }}</span>
+                        </p>
+                    </div>
+                    
+                    <!-- Enlace compartible (solo si aprobada_inicial o estados siguientes) -->
+                    {% if visita.estado in 'aprobada_inicial,documentos_enviados,en_revision_documentos,confirmada' %}
+                        <div class="enlace-compartir">
+                            <label><i class="fas fa-link me-2"></i>Enlace de Registro para Asistentes</label>
+                            <div class="enlace-input-group">
+                                <input type="text" class="enlace-input" id="enlace-interna-{{ visita.id }}" 
+                                       value="{{ request.scheme }}://{{ request.get_host }}{% url 'documentos:registro_publico_interna' token=visita.token_acceso %}" readonly>
+                                <button class="btn-copiar" onclick="copiarEnlace('enlace-interna-{{ visita.id }}')">
+                                    <i class="fas fa-copy"></i> Copiar
+                                </button>
+                            </div>
+                            <small class="text-muted mt-2 d-block">
+                                <i class="fas fa-info-circle"></i> Comparta este enlace con los asistentes para que registren sus datos y suban sus documentos.
+                            </small>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="visita-card-actions">
+                    {% if visita.estado == 'aprobada_inicial' %}
+                        <a href="{% url 'panel_visitante:registrar_asistentes' tipo='interna' visita_id=visita.id %}" class="btn-action btn-registrar">
+                            <i class="fas fa-user-plus"></i> Registrar Asistentes
+                        </a>
+                        {% if visita.asistentes.count > 0 %}
+                            <a href="{% url 'panel_visitante:enviar_solicitud_final' tipo='interna' visita_id=visita.id %}" 
+                               class="btn-action btn-enviar-final"
+                               onclick="return confirm('¿Está seguro de enviar la solicitud final? Una vez enviada, los asistentes ya no podrán modificar sus documentos.')">
+                                <i class="fas fa-paper-plane"></i> Enviar Solicitud Final
+                            </a>
+                        {% else %}
+                            <span class="text-muted align-self-center">
+                                <i class="fas fa-info-circle"></i> Registre asistentes para enviar solicitud final
+                            </span>
+                        {% endif %}
+                    {% elif visita.estado in 'documentos_enviados,en_revision_documentos' %}
+                        <span class="btn-action btn-disabled">
+                            <i class="fas fa-hourglass-half"></i> En proceso de revisión
+                        </span>
+                    {% elif visita.estado == 'confirmada' %}
+                        <span class="btn-action btn-registrar" style="cursor: default;">
+                            <i class="fas fa-check-double"></i> Visita lista
+                        </span>
+                    {% else %}
+                        <span class="btn-action btn-disabled" title="Solo puede registrar asistentes cuando la visita esté aprobada">
+                            <i class="fas fa-user-plus"></i> Registrar Asistentes
+                        </span>
+                        <small class="text-muted align-self-center">
+                            <i class="fas fa-info-circle"></i> Disponible cuando la visita sea aprobada
+                        </small>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            <i class="fas fa-folder-open"></i>
+            <h4>No tiene visitas internas registradas</h4>
+            <p>Las visitas internas que registre aparecerán aquí</p>
+        </div>
+    {% endif %}
+
+    <!-- Visitas Externas -->
+    <div class="section-title">
+        <i class="fas fa-user-tie"></i>
+        <div>
+            <h3>Visitas Externas</h3>
+            <small class="text-muted">Universidades, colegios y otras instituciones</small>
+        </div>
+    </div>
+    
+    {% if visitas_externas %}
+        {% for visita in visitas_externas %}
+            <div class="visita-card">
+                <div class="visita-card-header">
+                    <span class="visita-id">
+                        <i class="fas fa-hashtag"></i> Visita #{{ visita.id }}
+                    </span>
+                    <span class="estado-badge estado-{{ visita.estado }}">
+                        {% if visita.estado == 'pendiente' %}
+                            <i class="fas fa-clock"></i> Pendiente de revisión
+                        {% elif visita.estado == 'enviada_coordinacion' %}
+                            <i class="fas fa-paper-plane"></i> Enviada a Coordinación
+                        {% elif visita.estado == 'aprobada_inicial' %}
+                            <i class="fas fa-check"></i> Aprobada - Lista para registro
+                        {% elif visita.estado == 'documentos_enviados' %}
+                            <i class="fas fa-file-upload"></i> Documentos Enviados
+                        {% elif visita.estado == 'en_revision_documentos' %}
+                            <i class="fas fa-search"></i> En Revisión de Documentos
+                        {% elif visita.estado == 'confirmada' %}
+                            <i class="fas fa-check-double"></i> Confirmada
+                        {% elif visita.estado == 'rechazada' %}
+                            <i class="fas fa-times-circle"></i> Rechazada
+                        {% else %}
+                            <i class="fas fa-question"></i> {{ visita.estado }}
+                        {% endif %}
+                    </span>
+                </div>
+                
+                <div class="visita-card-body">
+                    <!-- Estado de progreso -->
+                    <div class="estado-progreso">
+                        {% if visita.estado == 'pendiente' %}
+                            <div class="estado-progreso-icon" style="background: #fef3c7; color: #d97706;">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="estado-progreso-info">
+                                <h5>Esperando aprobación inicial</h5>
+                                <p>Su solicitud está siendo revisada por el equipo administrativo.</p>
+                            </div>
+                        {% elif visita.estado == 'enviada_coordinacion' %}
+                            <div class="estado-progreso-icon" style="background: #fef3c7; color: #d97706;">
+                                <i class="fas fa-paper-plane"></i>
+                            </div>
+                            <div class="estado-progreso-info">
+                                <h5>En coordinación</h5>
+                                <p>Su solicitud fue enviada a coordinación para su evaluación.</p>
+                            </div>
+                        {% elif visita.estado == 'aprobada_inicial' %}
+                            <div class="estado-progreso-icon" style="background: #bbf7d0; color: #16a34a;">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="estado-progreso-info">
+                                <h5>¡Aprobación inicial recibida!</h5>
+                                <p>Puede registrar asistentes y compartir el enlace de registro.</p>
+                            </div>
+                        {% elif visita.estado == 'documentos_enviados' %}
+                            <div class="estado-progreso-icon" style="background: #dbeafe; color: #2563eb;">
+                                <i class="fas fa-file-upload"></i>
+                            </div>
+                            <div class="estado-progreso-info">
+                                <h5>Solicitud final enviada</h5>
+                                <p>Los documentos están siendo revisados por el administrador.</p>
+                            </div>
+                        {% elif visita.estado == 'en_revision_documentos' %}
+                            <div class="estado-progreso-icon" style="background: #dbeafe; color: #2563eb;">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <div class="estado-progreso-info">
+                                <h5>Revisión de documentos en curso</h5>
+                                <p>El administrador está verificando los documentos de cada asistente.</p>
+                            </div>
+                        {% elif visita.estado == 'confirmada' %}
+                            <div class="estado-progreso-icon" style="background: #d1fae5; color: #059669;">
+                                <i class="fas fa-check-double"></i>
+                            </div>
+                            <div class="estado-progreso-info">
+                                <h5>¡Visita confirmada!</h5>
+                                <p>Todos los documentos fueron verificados. La visita está lista.</p>
+                            </div>
+                        {% elif visita.estado == 'rechazada' %}
+                            <div class="estado-progreso-icon" style="background: #fee2e2; color: #dc2626;">
+                                <i class="fas fa-times-circle"></i>
+                            </div>
+                            <div class="estado-progreso-info">
+                                <h5>Visita rechazada</h5>
+                                <p>{{ visita.observaciones|default:"Contacte al administrador para más detalles." }}</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="visita-info">
+                        <div class="info-item">
+                            <label>Institución</label>
+                            <span>{{ visita.nombre }}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Responsable</label>
+                            <span>{{ visita.nombre_responsable }}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Correo</label>
+                            <span>{{ visita.correo_responsable }}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Cantidad Máxima</label>
+                            <span>{{ visita.cantidad_visitantes }} visitantes</span>
+                        </div>
+                    </div>
+                    
+                    <div class="asistentes-info">
+                        <p>
+                            <i class="fas fa-users"></i>
+                            <span>Asistentes registrados: </span>
+                            <span class="asistentes-count">{{ visita.asistentes.count }} / {{ visita.cantidad_visitantes }}</span>
+                        </p>
+                    </div>
+                    
+                    <!-- Enlace compartible (solo si aprobada_inicial o estados siguientes) -->
+                    {% if visita.estado in 'aprobada_inicial,documentos_enviados,en_revision_documentos,confirmada' %}
+                        <div class="enlace-compartir">
+                            <label><i class="fas fa-link me-2"></i>Enlace de Registro para Asistentes</label>
+                            <div class="enlace-input-group">
+                                <input type="text" class="enlace-input" id="enlace-externa-{{ visita.id }}" 
+                                       value="{{ request.scheme }}://{{ request.get_host }}{% url 'documentos:registro_publico_externa' token=visita.token_acceso %}" readonly>
+                                <button class="btn-copiar" onclick="copiarEnlace('enlace-externa-{{ visita.id }}')">
+                                    <i class="fas fa-copy"></i> Copiar
+                                </button>
+                            </div>
+                            <small class="text-muted mt-2 d-block">
+                                <i class="fas fa-info-circle"></i> Comparta este enlace con los asistentes para que registren sus datos y suban sus documentos.
+                            </small>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="visita-card-actions">
+                    {% if visita.estado == 'aprobada_inicial' %}
+                        <a href="{% url 'panel_visitante:registrar_asistentes' tipo='externa' visita_id=visita.id %}" class="btn-action btn-registrar">
+                            <i class="fas fa-user-plus"></i> Registrar Asistentes
+                        </a>
+                        {% if visita.asistentes.count > 0 %}
+                            <a href="{% url 'panel_visitante:enviar_solicitud_final' tipo='externa' visita_id=visita.id %}" 
+                               class="btn-action btn-enviar-final"
+                               onclick="return confirm('¿Está seguro de enviar la solicitud final? Una vez enviada, los asistentes ya no podrán modificar sus documentos.')">
+                                <i class="fas fa-paper-plane"></i> Enviar Solicitud Final
+                            </a>
+                        {% else %}
+                            <span class="text-muted align-self-center">
+                                <i class="fas fa-info-circle"></i> Registre asistentes para enviar solicitud final
+                            </span>
+                        {% endif %}
+                    {% elif visita.estado in 'documentos_enviados,en_revision_documentos' %}
+                        <span class="btn-action btn-disabled">
+                            <i class="fas fa-hourglass-half"></i> En proceso de revisión
+                        </span>
+                    {% elif visita.estado == 'confirmada' %}
+                        <span class="btn-action btn-registrar" style="cursor: default;">
+                            <i class="fas fa-check-double"></i> Visita lista
+                        </span>
+                    {% else %}
+                        <span class="btn-action btn-disabled" title="Solo puede registrar asistentes cuando la visita esté aprobada">
+                            <i class="fas fa-user-plus"></i> Registrar Asistentes
+                        </span>
+                        <small class="text-muted align-self-center">
+                            <i class="fas fa-info-circle"></i> Disponible cuando la visita sea aprobada
+                        </small>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            <i class="fas fa-folder-open"></i>
+            <h4>No tiene visitas externas registradas</h4>
+            <p>Las visitas externas que registre aparecerán aquí</p>
+        </div>
+    {% endif %}
+    
+    <!-- Botón para nueva visita -->
+    <div class="text-center mt-5">
+        <a href="{% url 'core:visitas' %}" class="btn btn-lg btn-primary">
+            <i class="fas fa-plus-circle me-2"></i>Solicitar Nueva Visita
+        </a>
+    </div>
+</div>
+
+<script>
+function copiarEnlace(inputId) {
+    const input = document.getElementById(inputId);
+    input.select();
+    input.setSelectionRange(0, 99999);
+    
+    navigator.clipboard.writeText(input.value).then(function() {
+        // Cambiar temporalmente el botón para indicar que se copió
+        const btn = input.nextElementSibling;
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check"></i> Copiado';
+        btn.style.background = '#10b981';
+        
+        setTimeout(function() {
+            btn.innerHTML = originalHtml;
+            btn.style.background = '#667eea';
+        }, 2000);
+    }).catch(function(err) {
+        // Fallback para navegadores antiguos
+        document.execCommand('copy');
+        alert('Enlace copiado al portapapeles');
+    });
+}
+</script>
+{% endblock %}

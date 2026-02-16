@@ -1,0 +1,488 @@
+{% extends "master.html" %}
+{% load static %}
+
+{% block title %}Registrar Asistentes - MINEGATE{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        padding: 40px 0;
+        margin-bottom: 30px;
+    }
+    
+    .page-header h1 {
+        margin: 0;
+        font-weight: 700;
+    }
+    
+    .breadcrumb-custom a {
+        color: rgba(255, 255, 255, 0.8);
+        text-decoration: none;
+    }
+    
+    .breadcrumb-custom a:hover {
+        color: white;
+    }
+    
+    .visita-summary {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        padding: 25px;
+        margin-bottom: 30px;
+    }
+    
+    .visita-summary h4 {
+        margin: 0 0 20px;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .visita-summary h4 i {
+        color: #10b981;
+    }
+    
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+    }
+    
+    .summary-item {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 10px;
+    }
+    
+    .summary-item label {
+        display: block;
+        font-size: 0.75rem;
+        color: #666;
+        text-transform: uppercase;
+        margin-bottom: 5px;
+    }
+    
+    .summary-item span {
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .progress-section {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        padding: 25px;
+        margin-bottom: 30px;
+    }
+    
+    .progress-bar-custom {
+        background: #e5e7eb;
+        border-radius: 10px;
+        height: 30px;
+        overflow: hidden;
+        margin: 15px 0;
+    }
+    
+    .progress-fill {
+        background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        transition: width 0.5s ease;
+    }
+    
+    .progress-fill.full {
+        background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%);
+    }
+    
+    .form-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+    
+    .form-card h4 {
+        margin: 0 0 25px;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .form-card h4 i {
+        color: #10b981;
+    }
+    
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .form-group {
+        margin-bottom: 0;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .form-group label .required {
+        color: #dc2626;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        box-sizing: border-box;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: #10b981;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    }
+    
+    .btn-submit {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .btn-submit:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
+    }
+    
+    .btn-submit:disabled {
+        background: #9ca3af;
+        cursor: not-allowed;
+    }
+    
+    .asistentes-list {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        padding: 30px;
+    }
+    
+    .asistentes-list h4 {
+        margin: 0 0 25px;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .asistentes-list h4 i {
+        color: #667eea;
+    }
+    
+    .asistente-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        transition: all 0.3s ease;
+    }
+    
+    .asistente-item:hover {
+        background: #f0f0f0;
+    }
+    
+    .asistente-info h5 {
+        margin: 0 0 5px;
+        color: #333;
+    }
+    
+    .asistente-info p {
+        margin: 0;
+        font-size: 0.85rem;
+        color: #666;
+    }
+    
+    .btn-delete {
+        background: #fee2e2;
+        color: #dc2626;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        font-size: 0.9rem;
+    }
+    
+    .btn-delete:hover {
+        background: #dc2626;
+        color: white;
+    }
+    
+    .empty-list {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+    }
+    
+    .empty-list i {
+        font-size: 3rem;
+        color: #ddd;
+        margin-bottom: 15px;
+    }
+    
+    .btn-back {
+        background: #6b7280;
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-back:hover {
+        background: #4b5563;
+        color: white;
+    }
+    
+    .alert {
+        padding: 15px 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .alert-success {
+        background: #d1fae5;
+        color: #059669;
+        border: 1px solid #a7f3d0;
+    }
+    
+    .alert-danger {
+        background: #fee2e2;
+        color: #dc2626;
+        border: 1px solid #fca5a5;
+    }
+    
+    .alert-warning {
+        background: #fef3c7;
+        color: #d97706;
+        border: 1px solid #fde68a;
+    }
+    
+    .limit-warning {
+        background: #fef3c7;
+        border: 2px solid #f59e0b;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    
+    .limit-warning i {
+        font-size: 2rem;
+        color: #f59e0b;
+        margin-bottom: 10px;
+    }
+</style>
+
+<div class="page-header">
+    <div class="container">
+        <nav class="breadcrumb-custom mb-2">
+            <a href="{% url 'panel_visitante:panel_responsable' %}"><i class="fas fa-arrow-left me-2"></i>Volver al Panel</a>
+        </nav>
+        <h1><i class="fas fa-user-plus me-3"></i>Registrar Asistentes</h1>
+        <p>{% if tipo == 'interna' %}Visita Interna{% else %}Visita Externa{% endif %} #{{ visita.id }}</p>
+    </div>
+</div>
+
+<div class="container pb-5">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{% if 'error' in message.tags %}danger{% elif 'success' in message.tags %}success{% else %}warning{% endif %}">
+                <i class="fas fa-{% if 'error' in message.tags %}exclamation-circle{% elif 'success' in message.tags %}check-circle{% else %}info-circle{% endif %} me-2"></i>
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Resumen de la visita -->
+    <div class="visita-summary">
+        <h4><i class="fas fa-info-circle"></i> Información de la Visita</h4>
+        <div class="summary-grid">
+            {% if tipo == 'interna' %}
+                <div class="summary-item">
+                    <label>Programa</label>
+                    <span>{{ visita.nombre_programa }}</span>
+                </div>
+                <div class="summary-item">
+                    <label>Ficha</label>
+                    <span>{{ visita.numero_ficha }}</span>
+                </div>
+                <div class="summary-item">
+                    <label>Responsable</label>
+                    <span>{{ visita.responsable }}</span>
+                </div>
+            {% else %}
+                <div class="summary-item">
+                    <label>Institución</label>
+                    <span>{{ visita.nombre }}</span>
+                </div>
+                <div class="summary-item">
+                    <label>Responsable</label>
+                    <span>{{ visita.nombre_responsable }}</span>
+                </div>
+            {% endif %}
+            <div class="summary-item">
+                <label>Estado</label>
+                <span style="color: #10b981;"><i class="fas fa-check-circle"></i> Aprobada</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progreso de registro -->
+    <div class="progress-section">
+        <h4><i class="fas fa-chart-pie me-2" style="color: #667eea;"></i>Progreso de Registro</h4>
+        <div class="progress-bar-custom">
+            {% widthratio asistentes_actuales max_asistentes 100 as progress_percent %}
+            <div class="progress-fill {% if asistentes_actuales >= max_asistentes %}full{% endif %}" style="width: {{ progress_percent }}%;">
+                {% if progress_percent > 15 %}{{ asistentes_actuales }} / {{ max_asistentes }}{% endif %}
+            </div>
+        </div>
+        <p class="text-center text-muted mb-0">
+            <strong>{{ asistentes_actuales }}</strong> de <strong>{{ max_asistentes }}</strong> asistentes registrados
+        </p>
+    </div>
+
+    {% if not puede_agregar %}
+        <div class="limit-warning">
+            <i class="fas fa-exclamation-triangle d-block"></i>
+            <h5>Límite de asistentes alcanzado</h5>
+            <p class="mb-0">Ya ha registrado el número máximo de asistentes permitidos para esta visita.</p>
+        </div>
+    {% endif %}
+
+    <!-- Formulario para agregar asistente -->
+    <div class="form-card">
+        <h4><i class="fas fa-plus-circle"></i> Agregar Nuevo Asistente</h4>
+        
+        <form method="POST">
+            {% csrf_token %}
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Nombre Completo <span class="required">*</span></label>
+                    <input type="text" name="nombre_completo" class="form-control" placeholder="Nombre completo del asistente" required {% if not puede_agregar %}disabled{% endif %}>
+                </div>
+                
+                <div class="form-group">
+                    <label>Tipo de Documento <span class="required">*</span></label>
+                    <select name="tipo_documento" class="form-control" required {% if not puede_agregar %}disabled{% endif %}>
+                        <option value="">Seleccione...</option>
+                        <option value="CC">Cédula de Ciudadanía</option>
+                        <option value="CE">Cédula de Extranjería</option>
+                        <option value="TI">Tarjeta de Identidad</option>
+                        <option value="PPT">Permiso Especial de Permanencia</option>
+                        <option value="PP">Pasaporte</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Número de Documento <span class="required">*</span></label>
+                    <input type="text" name="numero_documento" class="form-control" placeholder="Número de documento" required {% if not puede_agregar %}disabled{% endif %}>
+                </div>
+                
+                <div class="form-group">
+                    <label>Correo Electrónico</label>
+                    <input type="email" name="correo" class="form-control" placeholder="correo@ejemplo.com" {% if not puede_agregar %}disabled{% endif %}>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Teléfono</label>
+                    <input type="text" name="telefono" class="form-control" placeholder="Número de teléfono" {% if not puede_agregar %}disabled{% endif %}>
+                </div>
+            </div>
+            
+            <div class="text-end mt-4">
+                <button type="submit" class="btn-submit" {% if not puede_agregar %}disabled{% endif %}>
+                    <i class="fas fa-user-plus"></i> Agregar Asistente
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Lista de asistentes registrados -->
+    <div class="asistentes-list">
+        <h4><i class="fas fa-users"></i> Asistentes Registrados ({{ asistentes_actuales }})</h4>
+        
+        {% if asistentes %}
+            {% for asistente in asistentes %}
+                <div class="asistente-item">
+                    <div class="asistente-info">
+                        <h5><i class="fas fa-user me-2" style="color: #667eea;"></i>{{ asistente.nombre_completo }}</h5>
+                        <p>
+                            <i class="fas fa-id-card me-1"></i>{{ asistente.get_tipo_documento_display }}: {{ asistente.numero_documento }}
+                            {% if asistente.correo %} | <i class="fas fa-envelope me-1"></i>{{ asistente.correo }}{% endif %}
+                            {% if asistente.telefono %} | <i class="fas fa-phone me-1"></i>{{ asistente.telefono }}{% endif %}
+                        </p>
+                    </div>
+                    <a href="{% url 'panel_visitante:eliminar_asistente' tipo=tipo asistente_id=asistente.id %}" class="btn-delete" onclick="return confirm('¿Está seguro de eliminar este asistente?')">
+                        <i class="fas fa-trash-alt me-1"></i>Eliminar
+                    </a>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-list">
+                <i class="fas fa-users-slash d-block"></i>
+                <p>No hay asistentes registrados aún</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Botón volver -->
+    <div class="text-center mt-4">
+        <a href="{% url 'panel_visitante:panel_responsable' %}" class="btn-back">
+            <i class="fas fa-arrow-left"></i> Volver al Panel
+        </a>
+    </div>
+</div>
+{% endblock %}

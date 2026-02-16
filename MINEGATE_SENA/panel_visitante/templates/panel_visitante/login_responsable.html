@@ -1,0 +1,215 @@
+{% extends "master.html" %}
+{% load static %}
+
+{% block title %}Acceso Responsable - MINEGATE{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<style>
+    .login-container {
+        min-height: calc(100vh - 200px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 40px 20px;
+    }
+    
+    .login-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        max-width: 450px;
+        width: 100%;
+        overflow: hidden;
+    }
+    
+    .login-header {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        color: white;
+        padding: 30px;
+        text-align: center;
+    }
+    
+    .login-header i {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        color: #ffc107;
+    }
+    
+    .login-header h2 {
+        margin: 0;
+        font-weight: 700;
+    }
+    
+    .login-header p {
+        margin: 10px 0 0;
+        opacity: 0.8;
+        font-size: 0.9rem;
+    }
+    
+    .login-body {
+        padding: 40px 30px;
+    }
+    
+    .form-group {
+        margin-bottom: 25px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .form-group label i {
+        margin-right: 8px;
+        color: #667eea;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        box-sizing: border-box;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    }
+    
+    .btn-login {
+        width: 100%;
+        padding: 15px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 10px;
+        color: white;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-login:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+    }
+    
+    .login-footer {
+        text-align: center;
+        padding: 20px 30px 30px;
+        border-top: 1px solid #eee;
+    }
+    
+    .login-footer a {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .login-footer a:hover {
+        text-decoration: underline;
+    }
+    
+    .alert {
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .alert-danger {
+        background-color: #fee2e2;
+        color: #dc2626;
+        border: 1px solid #fca5a5;
+    }
+    
+    .info-box {
+        background: #f0f7ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 25px;
+    }
+    
+    .info-box p {
+        margin: 0;
+        color: #1e40af;
+        font-size: 0.9rem;
+    }
+    
+    .info-box i {
+        color: #3b82f6;
+    }
+</style>
+
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <i class="fas fa-user-check"></i>
+            <h2>Panel del Responsable</h2>
+            <p>Acceda para gestionar sus visitas programadas</p>
+        </div>
+        
+        <div class="login-body">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle"></i> {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            <div class="info-box">
+                <p><i class="fas fa-info-circle"></i> Ingrese el <strong>correo electrónico</strong> y <strong>número de documento</strong> que registró al solicitar su visita.</p>
+            </div>
+            
+            <form method="POST">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="correo">
+                        <i class="fas fa-envelope"></i> Correo Electrónico
+                    </label>
+                    <input type="email" 
+                           class="form-control" 
+                           id="correo" 
+                           name="correo" 
+                           placeholder="ejemplo@correo.com"
+                           required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="documento">
+                        <i class="fas fa-id-card"></i> Número de Documento
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           id="documento" 
+                           name="documento" 
+                           placeholder="Ingrese su número de documento"
+                           required>
+                </div>
+                
+                <button type="submit" class="btn-login">
+                    <i class="fas fa-sign-in-alt"></i> Acceder al Panel
+                </button>
+            </form>
+        </div>
+        
+        <div class="login-footer">
+            <p>¿No ha solicitado una visita?</p>
+            <a href="{% url 'core:visitas' %}">
+                <i class="fas fa-plus-circle"></i> Solicitar nueva visita
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
