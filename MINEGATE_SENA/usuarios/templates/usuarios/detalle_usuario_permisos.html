@@ -96,6 +96,7 @@
         display: flex;
         align-items: center;
         gap: 1.5rem;
+        position: relative;
     }
 
     .avatar-usuario {
@@ -177,6 +178,9 @@
 
     /* Toggle en la cabecera */
     .toggle-cabecera {
+        position: absolute;
+        top: 1rem;
+        right: 1.5rem;
         display: flex;
         align-items: center;
         gap: 0.75rem;
@@ -189,7 +193,8 @@
     .toggle-cabecera .toggle-label-text {
         font-size: 0.85rem;
         font-weight: 600;
-        min-width: 70px;
+        min-width: 60px;
+        text-align: center;
     }
 
     .toggle-pildora {
@@ -383,10 +388,15 @@
         .cabecera-usuario {
             flex-direction: column;
             text-align: center;
+            padding-top: 3.5rem;
         }
 
         .toggle-cabecera {
-            margin-top: 1rem;
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            left: auto;
+            margin-top: 0;
         }
 
         .campo-info {
@@ -434,14 +444,10 @@
                 <h2>{{ usuario.get_full_name|default:usuario.username }}</h2>
                 <p>@{{ usuario.username }}</p>
                 <div class="badges-estado">
-                    {% if perfil %}
-                        {% if perfil.aprobado %}
-                            <span class="badge-header aprobado">✓ Aprobado</span>
-                        {% elif perfil.razon_rechazo %}
-                            <span class="badge-header rechazado">✗ Rechazado</span>
-                        {% else %}
-                            <span class="badge-header pendiente">⏳ Pendiente</span>
-                        {% endif %}
+                    {% if usuario.is_active %}
+                        <span class="badge-header aprobado">✓ Activo</span>
+                    {% else %}
+                        <span class="badge-header rechazado">✗ Inactivo</span>
                     {% endif %}
                 </div>
             </div>
@@ -528,48 +534,11 @@
                         <span class="valor">{% if usuario.is_staff %}Sí{% else %}No{% endif %}</span>
                     </div>
                 </div>
-
-                <!-- Estado de Aprobación -->
-                <div class="seccion-info">
-                    <h3>✅ Estado de Aprobación</h3>
-                    <div class="campo-info">
-                        <span class="label">Estado:</span>
-                        <span class="valor">
-                            {% if perfil.aprobado %}
-                                Aprobado
-                            {% elif perfil.razon_rechazo %}
-                                Rechazado
-                            {% else %}
-                                Pendiente de Aprobación
-                            {% endif %}
-                        </span>
-                    </div>
-                    {% if perfil.fecha_aprobacion %}
-                    <div class="campo-info">
-                        <span class="label">Fecha Aprobación:</span>
-                        <span class="valor">{{ perfil.fecha_aprobacion|date:"d/m/Y H:i" }}</span>
-                    </div>
-                    {% endif %}
-                    
-                    {% if perfil.razon_rechazo %}
-                    <div class="razon-rechazo">
-                        <strong>Razón del Rechazo:</strong><br>
-                        {{ perfil.razon_rechazo }}
-                    </div>
-                    {% endif %}
-                </div>
             </div>
         </div>
 
         <!-- Acciones -->
         <div class="acciones-detalle">
-            {% if not perfil.aprobado %}
-            <form action="{% url 'usuarios:aprobar_usuario' usuario.id %}" method="POST" style="display: inline;">
-                {% csrf_token %}
-                <button type="submit" class="btn-accion-detalle btn-aprobar-detalle">✓ Aprobar</button>
-            </form>
-            {% endif %}
-            
             <a href="{% url 'usuarios:editar_usuario' usuario.id %}" class="btn-accion-detalle btn-editar-detalle">
                 ✏️ Editar
             </a>

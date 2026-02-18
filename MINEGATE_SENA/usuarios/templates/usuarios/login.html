@@ -7,6 +7,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MineGate - Inicio de Sesión</title>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <link rel="stylesheet" href="{% static 'css/login.css' %}" />
     <link rel="stylesheet" href="{% static 'css/auth.css' %}" />
@@ -58,7 +61,7 @@
             </form>
         </div>
 
-        <!-- Panel de Toggle -->
+        <!-- Panel de Bienvenida -->
         <div class="toggle-container">
             <div class="toggle">
                 <div class="toggle-panel toggle-right">
@@ -67,8 +70,7 @@
                         <div class="back"></div>
                     </div>
                     <h1>¡Bienvenido!</h1>
-                    <p>¿No tienes una cuenta? Regístrate para usar todas las funciones del sitio</p>
-                    <a href="{% url 'usuarios:registro' %}" class="hidden">Registro</a>
+                    <p>Ingresa tus credenciales para acceder al sistema</p>
                 </div>
             </div>
         </div>

@@ -1,4 +1,7 @@
-MINEGATE SENA{% endblock %} {% block content %}
+{% extends "core/panel_administrativo.html" %}
+{% load static %}
+
+{% block content %}
 <link rel="stylesheet" href="{% static 'usuarios/css/editar_usuario.css' %}" />
 <link
   rel="stylesheet"
@@ -36,6 +39,9 @@ MINEGATE SENA{% endblock %} {% block content %}
         {% endif %}
         <form method="post" enctype="multipart/form-data" novalidate>
           {% csrf_token %}
+          {% if next_url %}
+          <input type="hidden" name="next" value="{{ next_url }}">
+          {% endif %}
 
           <!-- Alerta de Errores Generales -->
           {% if form_usuario.errors or form_perfil.errors %}
@@ -192,13 +198,13 @@ MINEGATE SENA{% endblock %} {% block content %}
 
           <div class="d-grid gap-2 d-md-flex justify-content-md-end">
             <a
-              href="{% url 'core:panel_administrativo' %}"
+              href="{% if next_url %}{{ next_url }}{% else %}{% url 'core:panel_administrativo' %}{% endif %}"
               class="btn btn-outline-success me-md-2"
             >
-              <i class="bi bi-arrow-left-circle"></i> Volver al panel
+              <i class="bi bi-arrow-left-circle"></i> Volver
             </a>
             <a
-              href="{% if es_perfil_propio %}{% url 'core:panel_administrativo' %}{% else %}{% url 'usuarios:lista_usuario' %}{% endif %}"
+              href="{% if next_url %}{{ next_url }}{% elif es_perfil_propio %}{% url 'core:panel_administrativo' %}{% else %}{% url 'usuarios:gestionar_permisos' %}{% endif %}"
               class="btn btn-secondary me-md-2"
             >
               <i class="bi bi-x-circle"></i> Cancelar
