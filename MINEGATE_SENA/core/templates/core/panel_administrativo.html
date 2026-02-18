@@ -661,13 +661,13 @@
           <p>Cargando visitas...</p>
         </td></tr>`;
         
-        fetch(`/api/visitas/?tipo=${tipoVisitaActual}&estado=${estado}&buscar=${encodeURIComponent(buscar)}`)
+        fetch(`/gestion/api/visitas/?tipo=${tipoVisitaActual}&estado=${estado}&buscar=${encodeURIComponent(buscar)}`)
           .then(response => response.json())
           .then(data => {
             // Actualizar estadísticas
             document.getElementById('statPendientes').textContent = data.stats.pendientes;
             document.getElementById('statCoordinacion').textContent = data.stats.coordinacion;
-            document.getElementById('statAprobadas').textContent = data.stats.aprobadas;
+            document.getElementById('statAprobadas').textContent = data.stats.aprobadas_inicial || 0;
             document.getElementById('statRechazadas').textContent = data.stats.rechazadas;
             
             // Llenar tabla
@@ -771,7 +771,7 @@
         contenido.innerHTML = '<p style="text-align:center;padding:20px;"><i class="ri-loader-4-line" style="animation:spin 1s linear infinite;"></i> Cargando...</p>';
         modal.style.display = 'block';
         
-        fetch(`/api/visitas/${tipo}/${id}/`)
+        fetch(`/gestion/api/visitas/${tipo}/${id}/`)
           .then(response => response.json())
           .then(data => {
             const mostrarRevisionDocs = ['documentos_enviados', 'en_revision_documentos'].includes(data.estado);
@@ -897,7 +897,7 @@
       function abrirModalCoordinacion(tipo, id) {
         document.getElementById('modalVisitaId').textContent = id;
         document.getElementById('modalTipoVisita').textContent = tipo === 'interna' ? 'Visita Interna' : 'Visita Externa';
-        document.getElementById('modalVisitaUrl').value = `/api/visitas/${tipo}/${id}/enviar_coordinacion/`;
+        document.getElementById('modalVisitaUrl').value = `/gestion/api/visitas/${tipo}/${id}/enviar_coordinacion/`;
         document.getElementById('correoCoordinacion').value = '';
         document.getElementById('modalMensaje').style.display = 'none';
         document.getElementById('btnEnviarCoord').disabled = false;
@@ -965,7 +965,7 @@
         if (accion === 'rechazar' && !confirm('¿Estás seguro de rechazar esta visita?')) return;
         if (accion === 'aprobar' && !confirm('¿Estás seguro de aprobar esta visita?')) return;
         
-        fetch(`/api/visitas/${tipo}/${id}/${accion}/`, {
+        fetch(`/gestion/api/visitas/${tipo}/${id}/${accion}/`, {
           method: 'POST',
           headers: {
             'X-CSRFToken': '{{ csrf_token }}'
