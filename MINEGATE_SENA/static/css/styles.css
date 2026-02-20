@@ -1,5 +1,32 @@
 /* Global overrides */
 
+/* Tipografía global - Work Sans */
+* {
+    font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body {
+    font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 400;
+}
+
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 700;
+}
+
+.navbar-brand,
+.btn,
+.nav-link {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 500;
+}
+
+strong, b {
+    font-weight: 700;
+}
+
 /* Make Bootstrap primary use the project green */
 .btn-primary {
     background-color: #58af22;

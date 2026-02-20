@@ -119,6 +119,11 @@
             ><span>Nueva Visita</span>
           </li>
           
+          <li data-content="gestionvisitas">
+            <i class="ri-calendar-check-line icon-visit-management"></i
+            ><span>Gestión de Visitas</span>
+          </li>
+          
           <li data-content="visitantes">
             <i class="ri-user-search-line icon-visitors"></i
             ><span>Visitantes</span>
@@ -215,6 +220,132 @@
         {% block content %}
 
         {% endblock %}
+
+        <!-- Sección Gestión de Visitas -->
+        <div id="seccion-gestion-visitas" class="contenido-seccion" style="display: none;">
+          <div style="padding: 20px;">
+            <h2 style="color: #1f2937; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+              <i class="ri-calendar-check-line" style="color: #8b5cf6;"></i>
+              Gestión de Visitas
+            </h2>
+            
+            <!-- Tabs para tipo de visita -->
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+              <button class="tab-visita active" data-tipo="internas" onclick="cambiarTabVisita('internas')" 
+                      style="padding: 10px 20px; border: none; background: #8b5cf6; color: white; border-radius: 8px; cursor: pointer; font-weight: 500;">
+                📋 Visitas Internas (SENA)
+              </button>
+              <button class="tab-visita" data-tipo="externas" onclick="cambiarTabVisita('externas')"
+                      style="padding: 10px 20px; border: none; background: #e5e7eb; color: #374151; border-radius: 8px; cursor: pointer; font-weight: 500;">
+                🏢 Visitas Externas
+              </button>
+            </div>
+            
+            <!-- Filtros -->
+            <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
+              <select id="filtroEstadoVisita" onchange="filtrarVisitas()" 
+                      style="padding: 10px 15px; border: 1px solid #d1d5db; border-radius: 8px; background: white;">
+                <option value="todos">Todos los estados</option>
+                <option value="pendiente">⏳ Pendientes</option>
+                <option value="enviada_coordinacion">📨 Enviadas a coordinación</option>
+                <option value="aprobada">✅ Aprobadas</option>
+                <option value="rechazada">❌ Rechazadas</option>
+              </select>
+              <input type="text" id="buscarVisita" placeholder="Buscar por responsable, institución..." 
+                     onkeyup="filtrarVisitas()"
+                     style="padding: 10px 15px; border: 1px solid #d1d5db; border-radius: 8px; width: 300px;">
+              <button onclick="cargarVisitas()" style="padding: 10px 15px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                <i class="ri-refresh-line"></i> Actualizar
+              </button>
+            </div>
+            
+            <!-- Estadísticas -->
+            <div id="estadisticasVisitas" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px;">
+              <div style="background: linear-gradient(135deg, #fef3c7, #fcd34d); padding: 15px; border-radius: 10px; text-align: center;">
+                <div style="font-size: 24px; font-weight: bold; color: #92400e;" id="statPendientes">0</div>
+                <div style="color: #92400e; font-size: 12px;">Pendientes</div>
+              </div>
+              <div style="background: linear-gradient(135deg, #e0e7ff, #a5b4fc); padding: 15px; border-radius: 10px; text-align: center;">
+                <div style="font-size: 24px; font-weight: bold; color: #3730a3;" id="statCoordinacion">0</div>
+                <div style="color: #3730a3; font-size: 12px;">En Coordinación</div>
+              </div>
+              <div style="background: linear-gradient(135deg, #d1fae5, #6ee7b7); padding: 15px; border-radius: 10px; text-align: center;">
+                <div style="font-size: 24px; font-weight: bold; color: #065f46;" id="statAprobadas">0</div>
+                <div style="color: #065f46; font-size: 12px;">Aprobadas</div>
+              </div>
+              <div style="background: linear-gradient(135deg, #fee2e2, #fca5a5); padding: 15px; border-radius: 10px; text-align: center;">
+                <div style="font-size: 24px; font-weight: bold; color: #991b1b;" id="statRechazadas">0</div>
+                <div style="color: #991b1b; font-size: 12px;">Rechazadas</div>
+              </div>
+            </div>
+            
+            <!-- Tabla de visitas -->
+            <div style="background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden;">
+              <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse;" id="tablaVisitas">
+                  <thead>
+                    <tr style="background: #f3f4f6;">
+                      <th style="padding: 12px 15px; text-align: left; font-weight: 600; color: #374151;">ID</th>
+                      <th style="padding: 12px 15px; text-align: left; font-weight: 600; color: #374151;">Tipo</th>
+                      <th style="padding: 12px 15px; text-align: left; font-weight: 600; color: #374151;">Responsable</th>
+                      <th style="padding: 12px 15px; text-align: left; font-weight: 600; color: #374151;">Institución/Programa</th>
+                      <th style="padding: 12px 15px; text-align: left; font-weight: 600; color: #374151;">Fecha Solicitud</th>
+                      <th style="padding: 12px 15px; text-align: left; font-weight: 600; color: #374151;">Cantidad</th>
+                      <th style="padding: 12px 15px; text-align: left; font-weight: 600; color: #374151;">Estado</th>
+                      <th style="padding: 12px 15px; text-align: center; font-weight: 600; color: #374151;">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody id="cuerpoTablaVisitas">
+                    <tr>
+                      <td colspan="8" style="padding: 40px; text-align: center; color: #6b7280;">
+                        <i class="ri-loader-4-line" style="font-size: 30px; animation: spin 1s linear infinite;"></i>
+                        <p>Cargando visitas...</p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Enviar a Coordinación -->
+        <div id="modalCoordinacion" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100%;height:100%;background-color:rgba(0,0,0,0.5);">
+          <div style="background:#fff;margin:10% auto;padding:30px;border-radius:10px;width:400px;max-width:90%;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+            <h3 style="margin-top:0;color:#8b5cf6;">📨 Enviar a Coordinación</h3>
+            <p style="color:#666;">Visita #<span id="modalVisitaId"></span> - <span id="modalTipoVisita"></span></p>
+            <form id="formCoordinacion">
+              <input type="hidden" id="modalVisitaUrl" value="">
+              <label style="display:block;margin-bottom:5px;font-weight:bold;">Correo de destino:</label>
+              <input type="email" id="correoCoordinacion" required placeholder="coordinacion@ejemplo.com"
+                     style="width:100%;padding:10px;border:1px solid #ddd;border-radius:5px;margin-bottom:15px;box-sizing:border-box;">
+              <div style="display:flex;gap:10px;justify-content:flex-end;">
+                <button type="button" onclick="cerrarModalCoordinacion()" 
+                        style="padding:10px 20px;border:1px solid #ddd;background:#f5f5f5;border-radius:5px;cursor:pointer;">
+                  Cancelar
+                </button>
+                <button type="submit" id="btnEnviarCoord"
+                        style="padding:10px 20px;border:none;background:#8b5cf6;color:white;border-radius:5px;cursor:pointer;">
+                  Enviar
+                </button>
+              </div>
+            </form>
+            <div id="modalMensaje" style="margin-top:15px;padding:10px;border-radius:5px;display:none;"></div>
+          </div>
+        </div>
+
+        <!-- Modal Ver Detalle -->
+        <div id="modalDetalleVisita" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100%;height:100%;background-color:rgba(0,0,0,0.5);">
+          <div style="background:#fff;margin:5% auto;padding:30px;border-radius:10px;width:600px;max-width:95%;max-height:80vh;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+              <h3 style="margin:0;color:#1f2937;">📋 Detalle de Visita #<span id="detalleVisitaId"></span></h3>
+              <button onclick="cerrarModalDetalle()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#6b7280;">&times;</button>
+            </div>
+            <div id="contenidoDetalleVisita">
+              <!-- Se llena dinámicamente -->
+            </div>
+          </div>
+        </div>
 
       </main>
     </div>
@@ -567,6 +698,379 @@
           });
         })();
       </script>
+
+    <!-- Script para Gestión de Visitas -->
+    <script>
+      // Variables globales
+      let tipoVisitaActual = 'internas';
+      
+      // Función para cambiar tab de tipo de visita
+      function cambiarTabVisita(tipo) {
+        tipoVisitaActual = tipo;
+        document.querySelectorAll('.tab-visita').forEach(tab => {
+          if (tab.getAttribute('data-tipo') === tipo) {
+            tab.style.background = '#8b5cf6';
+            tab.style.color = 'white';
+            tab.classList.add('active');
+          } else {
+            tab.style.background = '#e5e7eb';
+            tab.style.color = '#374151';
+            tab.classList.remove('active');
+          }
+        });
+        cargarVisitas();
+      }
+      
+      // Función para cargar visitas
+      function cargarVisitas() {
+        const estado = document.getElementById('filtroEstadoVisita').value;
+        const buscar = document.getElementById('buscarVisita').value;
+        const tbody = document.getElementById('cuerpoTablaVisitas');
+        
+        tbody.innerHTML = `<tr><td colspan="8" style="padding: 40px; text-align: center; color: #6b7280;">
+          <i class="ri-loader-4-line" style="font-size: 30px; animation: spin 1s linear infinite;"></i>
+          <p>Cargando visitas...</p>
+        </td></tr>`;
+        
+        fetch(`/gestion/api/visitas/?tipo=${tipoVisitaActual}&estado=${estado}&buscar=${encodeURIComponent(buscar)}`)
+          .then(response => response.json())
+          .then(data => {
+            // Actualizar estadísticas
+            document.getElementById('statPendientes').textContent = data.stats.pendientes;
+            document.getElementById('statCoordinacion').textContent = data.stats.coordinacion;
+            document.getElementById('statAprobadas').textContent = data.stats.aprobadas_inicial || 0;
+            document.getElementById('statRechazadas').textContent = data.stats.rechazadas;
+            
+            // Llenar tabla
+            if (data.visitas.length === 0) {
+              tbody.innerHTML = `<tr><td colspan="8" style="padding: 40px; text-align: center; color: #6b7280;">
+                <i class="ri-inbox-line" style="font-size: 40px;"></i>
+                <p>No hay visitas para mostrar</p>
+              </td></tr>`;
+              return;
+            }
+            
+            let html = '';
+            data.visitas.forEach(v => {
+              const estadoBadge = getEstadoBadge(v.estado);
+              html += `<tr style="border-bottom: 1px solid #e5e7eb;">
+                <td style="padding: 12px 15px;">#${v.id}</td>
+                <td style="padding: 12px 15px;">${v.tipo === 'interna' ? '📋 Interna' : '🏢 Externa'}</td>
+                <td style="padding: 12px 15px;">
+                  <div style="font-weight: 500;">${v.responsable}</div>
+                  <div style="font-size: 12px; color: #6b7280;">${v.correo}</div>
+                </td>
+                <td style="padding: 12px 15px;">${v.institucion}</td>
+                <td style="padding: 12px 15px;">${v.fecha_visita}</td>
+                <td style="padding: 12px 15px; text-align: center;">${v.cantidad}</td>
+                <td style="padding: 12px 15px;">${estadoBadge}</td>
+                <td style="padding: 12px 15px; text-align: center;">
+                  ${getAccionesVisita(v)}
+                </td>
+              </tr>`;
+            });
+            tbody.innerHTML = html;
+          })
+          .catch(error => {
+            tbody.innerHTML = `<tr><td colspan="8" style="padding: 40px; text-align: center; color: #ef4444;">
+              <i class="ri-error-warning-line" style="font-size: 40px;"></i>
+              <p>Error al cargar las visitas</p>
+            </td></tr>`;
+          });
+      }
+      
+      // Obtener badge de estado
+      function getEstadoBadge(estado) {
+        const badges = {
+          'pendiente': '<span style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:20px;font-size:11px;">⏳ Pendiente</span>',
+          'enviada_coordinacion': '<span style="background:#e0e7ff;color:#3730a3;padding:4px 10px;border-radius:20px;font-size:11px;">📨 En Coordinación</span>',
+          'aprobada_inicial': '<span style="background:#bbf7d0;color:#166534;padding:4px 10px;border-radius:20px;font-size:11px;">✅ Aprobada Inicial</span>',
+          'documentos_enviados': '<span style="background:#dbeafe;color:#1e40af;padding:4px 10px;border-radius:20px;font-size:11px;">📄 Docs Enviados</span>',
+          'en_revision_documentos': '<span style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:20px;font-size:11px;">🔍 En Revisión</span>',
+          'confirmada': '<span style="background:#d1fae5;color:#065f46;padding:4px 10px;border-radius:20px;font-size:11px;">✅✅ Confirmada</span>',
+          'rechazada': '<span style="background:#fee2e2;color:#991b1b;padding:4px 10px;border-radius:20px;font-size:11px;">❌ Rechazada</span>',
+        };
+        return badges[estado] || estado;
+      }
+      
+      // Obtener badge de estado de documento de asistente
+      function getEstadoDocumentoBadge(estado) {
+        const badges = {
+          'pendiente_documentos': '<span style="background:#fef3c7;color:#92400e;padding:3px 8px;border-radius:15px;font-size:10px;">⏳ Pendiente</span>',
+          'documentos_aprobados': '<span style="background:#d1fae5;color:#065f46;padding:3px 8px;border-radius:15px;font-size:10px;">✅ Aprobados</span>',
+          'documentos_rechazados': '<span style="background:#fee2e2;color:#991b1b;padding:3px 8px;border-radius:15px;font-size:10px;">❌ Rechazados</span>',
+        };
+        return badges[estado] || estado;
+      }
+      
+      // Obtener botones de acciones
+      function getAccionesVisita(v) {
+        let acciones = `<button onclick="verDetalleVisita('${v.tipo}', ${v.id})" style="background:#6b7280;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">👁️ Ver</button>`;
+        
+        if (v.estado === 'pendiente') {
+          acciones += `<button onclick="abrirModalCoordinacion('${v.tipo}', ${v.id})" style="background:#8b5cf6;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">📨 Coord.</button>`;
+          acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'aprobar')" style="background:#10b981;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">✅ Aprobar</button>`;
+          acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'rechazar')" style="background:#ef4444;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">❌</button>`;
+        }
+        
+        if (v.estado === 'enviada_coordinacion') {
+          acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'aprobar')" style="background:#10b981;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">✅ Aprobar</button>`;
+          acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'rechazar')" style="background:#ef4444;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">❌</button>`;
+        }
+        
+        if (v.estado === 'documentos_enviados') {
+          acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'iniciar_revision')" style="background:#f59e0b;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">🔍 Revisar</button>`;
+        }
+        
+        if (v.estado === 'documentos_enviados' || v.estado === 'en_revision_documentos') {
+          acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'confirmar_visita')" style="background:#10b981;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">✅✅ Confirmar</button>`;
+        }
+        
+        return acciones;
+      }
+      
+      // Filtrar visitas
+      function filtrarVisitas() {
+        cargarVisitas();
+      }
+      
+      // Ver detalle de visita
+      function verDetalleVisita(tipo, id) {
+        const modal = document.getElementById('modalDetalleVisita');
+        const contenido = document.getElementById('contenidoDetalleVisita');
+        document.getElementById('detalleVisitaId').textContent = id;
+        contenido.innerHTML = '<p style="text-align:center;padding:20px;"><i class="ri-loader-4-line" style="animation:spin 1s linear infinite;"></i> Cargando...</p>';
+        modal.style.display = 'block';
+        
+        fetch(`/gestion/api/visitas/${tipo}/${id}/`)
+          .then(response => response.json())
+          .then(data => {
+            const mostrarRevisionDocs = ['documentos_enviados', 'en_revision_documentos'].includes(data.estado);
+            
+            let asistentesHtml = '';
+            if (data.asistentes.length > 0) {
+              asistentesHtml = data.asistentes.map(a => {
+                let docsHtml = '';
+                if (mostrarRevisionDocs) {
+                  docsHtml = `
+                    <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap;">
+                      ${a.documento_identidad ? `<a href="${a.documento_identidad}" target="_blank" style="background:#3b82f6;color:white;padding:4px 8px;border-radius:4px;text-decoration:none;font-size:11px;">📄 Ver Doc. Identidad</a>` : '<span style="color:#9ca3af;font-size:11px;">Sin doc. identidad</span>'}
+                      ${a.documento_adicional ? `<a href="${a.documento_adicional}" target="_blank" style="background:#3b82f6;color:white;padding:4px 8px;border-radius:4px;text-decoration:none;font-size:11px;">📎 Ver Doc. Adicional</a>` : ''}
+                    </div>
+                    ${a.estado === 'pendiente_documentos' ? `
+                    <div style="margin-top:8px;display:flex;gap:5px;">
+                      <button onclick="revisarDocumento('${tipo}', ${a.id}, 'aprobar')" style="background:#10b981;color:white;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:11px;">✅ Aprobar</button>
+                      <button onclick="abrirModalRechazoDoc('${tipo}', ${a.id}, '${a.nombre_completo}')" style="background:#ef4444;color:white;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:11px;">❌ Rechazar</button>
+                    </div>
+                    ` : ''}
+                    ${a.observaciones_revision ? `<div style="margin-top:5px;font-size:11px;color:#6b7280;font-style:italic;">📝 ${a.observaciones_revision}</div>` : ''}
+                  `;
+                }
+                
+                return `
+                  <div style="padding:12px;background:#f9fafb;margin:8px 0;border-radius:8px;border:1px solid #e5e7eb;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                      <div>
+                        <strong>${a.nombre_completo}</strong>
+                        <div style="color:#6b7280;font-size:12px;">${a.tipo_documento}: ${a.numero_documento}</div>
+                        ${a.correo ? `<div style="color:#6b7280;font-size:12px;">✉️ ${a.correo}</div>` : ''}
+                      </div>
+                      ${getEstadoDocumentoBadge(a.estado)}
+                    </div>
+                    ${docsHtml}
+                  </div>
+                `;
+              }).join('');
+            } else {
+              asistentesHtml = '<p style="color:#6b7280;text-align:center;">No hay asistentes registrados</p>';
+            }
+            
+            let html = `
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:20px;">
+                <div><strong>Responsable:</strong> ${data.responsable}</div>
+                <div><strong>Correo:</strong> ${data.correo}</div>
+                <div><strong>Teléfono:</strong> ${data.telefono || 'N/A'}</div>
+                <div><strong>${tipo === 'interna' ? 'Programa' : 'Institución'}:</strong> ${data.programa || data.institucion || 'N/A'}</div>
+                ${tipo === 'interna' ? `<div><strong>Ficha:</strong> ${data.ficha || 'N/A'}</div>` : ''}
+                <div><strong>Fecha Solicitud:</strong> ${data.fecha_solicitud}</div>
+                <div><strong>Cantidad:</strong> ${data.cantidad}</div>
+                <div><strong>Estado:</strong> ${getEstadoBadge(data.estado)}</div>
+              </div>
+              ${data.observaciones ? `<div style="margin-bottom:20px;"><strong>Observaciones:</strong><br>${data.observaciones}</div>` : ''}
+              
+              <h4 style="color:#374151;border-bottom:1px solid #e5e7eb;padding-bottom:10px;">👥 Asistentes Registrados (${data.asistentes_count || data.asistentes.length})</h4>
+              <div style="max-height:300px;overflow-y:auto;margin-bottom:20px;">
+                ${asistentesHtml}
+              </div>
+              
+              <h4 style="color:#374151;border-bottom:1px solid #e5e7eb;padding-bottom:10px;">📜 Historial de Acciones</h4>
+              <div style="max-height:150px;overflow-y:auto;">
+              ${data.historial.length > 0 ? data.historial.map(h => `
+                <div style="padding:8px;border-left:3px solid #8b5cf6;margin:5px 0;background:#f9fafb;">
+                  <div style="font-size:12px;color:#6b7280;">${new Date(h.fecha_hora).toLocaleString()}</div>
+                  <div>${h.descripcion}</div>
+                </div>
+              `).join('') : '<p style="color:#6b7280;text-align:center;">Sin historial</p>'}
+              </div>
+            `;
+            contenido.innerHTML = html;
+            
+            // Guardar datos para posibles acciones
+            window.detalleVisitaActual = data;
+          })
+          .catch(error => {
+            contenido.innerHTML = '<p style="color:#ef4444;text-align:center;">Error al cargar el detalle</p>';
+          });
+      }
+      
+      // Revisar documento de asistente
+      function revisarDocumento(tipo, asistente_id, accion, observaciones='') {
+        const formData = new FormData();
+        formData.append('observaciones', observaciones);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        
+        fetch(`/api/asistentes/${tipo}/${asistente_id}/${accion}/`, {
+          method: 'POST',
+          body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            alert(data.message);
+            // Recargar el detalle
+            if (window.detalleVisitaActual) {
+              verDetalleVisita(window.detalleVisitaActual.tipo, window.detalleVisitaActual.id);
+            }
+          } else {
+            alert('Error: ' + data.error);
+          }
+        })
+        .catch(error => {
+          alert('Error de conexión');
+        });
+      }
+      
+      // Modal para rechazar documento con observaciones
+      function abrirModalRechazoDoc(tipo, asistente_id, nombre) {
+        const obs = prompt(`Ingrese las observaciones del rechazo para ${nombre}:`);
+        if (obs !== null && obs.trim() !== '') {
+          revisarDocumento(tipo, asistente_id, 'rechazar', obs);
+        } else if (obs === '') {
+          alert('Debe proporcionar observaciones al rechazar documentos');
+        }
+      }
+      
+      function cerrarModalDetalle() {
+        document.getElementById('modalDetalleVisita').style.display = 'none';
+      }
+      
+      // Modal de coordinación
+      function abrirModalCoordinacion(tipo, id) {
+        document.getElementById('modalVisitaId').textContent = id;
+        document.getElementById('modalTipoVisita').textContent = tipo === 'interna' ? 'Visita Interna' : 'Visita Externa';
+        document.getElementById('modalVisitaUrl').value = `/gestion/api/visitas/${tipo}/${id}/enviar_coordinacion/`;
+        document.getElementById('correoCoordinacion').value = '';
+        document.getElementById('modalMensaje').style.display = 'none';
+        document.getElementById('btnEnviarCoord').disabled = false;
+        document.getElementById('btnEnviarCoord').textContent = 'Enviar';
+        document.getElementById('modalCoordinacion').style.display = 'block';
+      }
+      
+      function cerrarModalCoordinacion() {
+        document.getElementById('modalCoordinacion').style.display = 'none';
+      }
+      
+      // Enviar formulario de coordinación
+      document.getElementById('formCoordinacion').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const url = document.getElementById('modalVisitaUrl').value;
+        const correo = document.getElementById('correoCoordinacion').value;
+        const btn = document.getElementById('btnEnviarCoord');
+        const mensaje = document.getElementById('modalMensaje');
+        
+        btn.disabled = true;
+        btn.textContent = 'Enviando...';
+        
+        const formData = new FormData();
+        formData.append('correo_coordinacion', correo);
+        
+        fetch(url, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+          },
+          body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            mensaje.style.background = '#d1fae5';
+            mensaje.style.color = '#065f46';
+            mensaje.textContent = data.message;
+            mensaje.style.display = 'block';
+            setTimeout(() => {
+              cerrarModalCoordinacion();
+              cargarVisitas();
+            }, 1500);
+          } else {
+            mensaje.style.background = '#fee2e2';
+            mensaje.style.color = '#991b1b';
+            mensaje.textContent = data.error;
+            mensaje.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = 'Enviar';
+          }
+        })
+        .catch(error => {
+          mensaje.style.background = '#fee2e2';
+          mensaje.style.color = '#991b1b';
+          mensaje.textContent = 'Error de conexión';
+          mensaje.style.display = 'block';
+          btn.disabled = false;
+          btn.textContent = 'Enviar';
+        });
+      });
+      
+      // Ejecutar acción sobre visita
+      function accionVisita(tipo, id, accion) {
+        if (accion === 'rechazar' && !confirm('¿Estás seguro de rechazar esta visita?')) return;
+        if (accion === 'aprobar' && !confirm('¿Estás seguro de aprobar esta visita?')) return;
+        
+        fetch(`/gestion/api/visitas/${tipo}/${id}/${accion}/`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            alert(data.message);
+            cargarVisitas();
+          } else {
+            alert('Error: ' + data.error);
+          }
+        })
+        .catch(error => {
+          alert('Error de conexión');
+        });
+      }
+      
+      // Cerrar modales al hacer clic fuera
+      document.getElementById('modalCoordinacion').addEventListener('click', function(e) {
+        if (e.target === this) cerrarModalCoordinacion();
+      });
+      document.getElementById('modalDetalleVisita').addEventListener('click', function(e) {
+        if (e.target === this) cerrarModalDetalle();
+      });
+    </script>
+    
+    <style>
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+    </style>
 
     <!-- Elementos de accesibilidad -->
     <div

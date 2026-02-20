@@ -24,8 +24,12 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('',include('core.urls')),
     path('auth/',include('usuarios.urls')),
-    path('', include('visitaInterna.urls')),
-    path('', include('visitaExterna.urls')),
+    path('visita_interna/', include('visitaInterna.urls')),
+    path('visita_externa/', include('visitaExterna.urls')),
+    # Nuevas apps organizadas
+    path('gestion/', include('gestion_visitas.urls')),
+    path('visitante/', include('panel_visitante.urls')),
+    path('documentos/', include('documentos.urls')),
     path('calendario/', include('calendario.urls')),
 ]
 

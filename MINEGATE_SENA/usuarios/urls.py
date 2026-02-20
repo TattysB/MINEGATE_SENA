@@ -6,7 +6,6 @@ app_name = "usuarios"
 urlpatterns = [
     # Autenticación
     path("login/", views.login_view, name="login"),
-    path("registro/", views.registro_view, name="registro"),
     path("logout/", views.logout_view, name="logout"),
     path("bienvenida/", views.bienvenida_view, name="bienvenida"),
     # Recuperación de contraseña
@@ -66,7 +65,10 @@ urlpatterns = [
     # Gestión de permisos
     path('gestionar-permisos/', views.gestionar_permisos_view, name='gestionar_permisos'),
     path('gestionar-permisos/ajax/', views.gestionar_permisos_ajax_view, name='gestionar_permisos_ajax'),
-    path('aprobar-usuario/<int:usuario_id>/', views.aprobar_usuario_view, name='aprobar_usuario'),
-    path('rechazar-usuario/<int:usuario_id>/', views.rechazar_usuario_view, name='rechazar_usuario'),
     path('eliminar-usuario-permisos/<int:usuario_id>/', views.eliminar_usuario_permisos_view, name='eliminar_usuario_permisos'),
+    
+    # Nuevas rutas de gestión de permisos
+    path('gestionar-permisos/crear/', views.crear_usuario_permisos_view, name='crear_usuario_permisos'),
+    path('gestionar-permisos/detalle/<int:usuario_id>/', views.detalle_usuario_permisos_view, name='detalle_usuario_permisos'),
+    path('gestionar-permisos/toggle-estado/<int:usuario_id>/', views.toggle_estado_usuario_view, name='toggle_estado_usuario'),
 ]
