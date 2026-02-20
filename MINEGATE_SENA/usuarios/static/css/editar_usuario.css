@@ -74,8 +74,13 @@ a.navbar-brand img {
 
 main.main-content {
   min-height: 100vh;
+<<<<<<< HEAD
+  padding: 2rem 0;
+  font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
+=======
   background: linear-gradient(135deg, #edf7f1, #f4f8f6);
   padding: 3rem 0;
+>>>>>>> develop
 }
 
 .page-wrapper {

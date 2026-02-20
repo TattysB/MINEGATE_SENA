@@ -15,28 +15,25 @@ class PerfilUsuarioInline(admin.StackedInline):
     can_delete = False
     verbose_name_plural = 'Perfil'
     fk_name = 'user'
-    fields = ('documento', 'telefono', 'direccion', 'foto_perfil', 'fecha_nacimiento', 'aprobado', 'razon_rechazo', 'fecha_aprobacion')
-    readonly_fields = ('fecha_aprobacion',)
+    fields = ('documento', 'telefono', 'direccion', 'foto_perfil', 'fecha_nacimiento')
 
 class CustomUserAdmin(UserAdmin):
     """
     Personalización del admin de usuarios
     """
     inlines = (PerfilUsuarioInline,)
-    list_display = ('username', 'email', 'first_name', 'last_name', 'es_aprobado', 'is_staff', 'is_active', 'date_joined')
-    list_filter = ('is_staff', 'is_superuser', 'is_active', 'date_joined', 'perfil__aprobado')
+    list_display = ('username', 'email', 'first_name', 'last_name', 'estado_cuenta', 'is_staff', 'is_active', 'date_joined')
+    list_filter = ('is_staff', 'is_superuser', 'is_active', 'date_joined')
     search_fields = ('username', 'first_name', 'last_name', 'email', 'perfil__documento')
     ordering = ('-date_joined',)
     
-    def es_aprobado(self, obj):
-        """Muestra el estado de aprobación del usuario"""
-        if hasattr(obj, 'perfil'):
-            if obj.perfil.aprobado:
-                return format_html('<span style="color: green; font-weight: bold;">✓ Aprobado</span>')
-            else:
-                return format_html('<span style="color: red; font-weight: bold;">✗ Pendiente</span>')
-        return '-'
-    es_aprobado.short_description = 'Estado'
+    def estado_cuenta(self, obj):
+        """Muestra el estado de la cuenta del usuario"""
+        if obj.is_active:
+            return format_html('<span style="color: green; font-weight: bold;">✓ Activo</span>')
+        else:
+            return format_html('<span style="color: red; font-weight: bold;">✗ Inactivo</span>')
+    estado_cuenta.short_description = 'Estado'
 
 # Re-registrar UserAdmin
 admin.site.unregister(User)
@@ -45,14 +42,14 @@ admin.site.register(User, CustomUserAdmin)
 @admin.register(PerfilUsuario)
 class PerfilUsuarioAdmin(admin.ModelAdmin):
     """
-    Admin para gestionar perfiles y aprobaciones de usuarios
+    Admin para gestionar perfiles de usuarios
     """
-    list_display = ('usuario', 'documento', 'telefono', 'estado_aprobacion', 'fecha_aprobacion', 'fecha_actualizacion')
-    list_filter = ('aprobado', 'fecha_aprobacion', 'fecha_actualizacion')
+    list_display = ('usuario', 'documento', 'telefono', 'estado_cuenta', 'fecha_actualizacion')
+    list_filter = ('user__is_active', 'fecha_actualizacion')
     search_fields = ('user__username', 'documento', 'user__email', 'user__first_name', 'user__last_name')
     ordering = ('-user__date_joined',)
-    actions = ['aprobar_usuarios', 'desaprobar_usuarios']
-    readonly_fields = ('fecha_actualizacion', 'fecha_aprobacion', 'info_usuario')
+    actions = ['activar_usuarios', 'desactivar_usuarios']
+    readonly_fields = ('fecha_actualizacion', 'info_usuario')
     
     fieldsets = (
         ('Información del Usuario', {
@@ -63,10 +60,6 @@ class PerfilUsuarioAdmin(admin.ModelAdmin):
         }),
         ('Información Personal', {
             'fields': ('foto_perfil', 'fecha_nacimiento')
-        }),
-        ('Control de Acceso', {
-            'fields': ('aprobado', 'razon_rechazo', 'fecha_aprobacion'),
-            'description': 'Aquí puedes aprobar o rechazar el acceso del usuario al sistema'
         }),
         ('Auditoría', {
             'fields': ('fecha_actualizacion',),
@@ -79,17 +72,17 @@ class PerfilUsuarioAdmin(admin.ModelAdmin):
         return f"{obj.user.get_full_name() or obj.user.username}"
     usuario.short_description = 'Usuario'
     
-    def estado_aprobacion(self, obj):
-        """Muestra el estado de aprobación con colores"""
-        if obj.aprobado:
+    def estado_cuenta(self, obj):
+        """Muestra el estado de la cuenta con colores"""
+        if obj.user.is_active:
             return format_html(
-                '<span style="color: white; background-color: green; padding: 5px 10px; border-radius: 3px; font-weight: bold;">✓ APROBADO</span>'
+                '<span style="color: white; background-color: green; padding: 5px 10px; border-radius: 3px; font-weight: bold;">✓ ACTIVO</span>'
             )
         else:
             return format_html(
-                '<span style="color: white; background-color: red; padding: 5px 10px; border-radius: 3px; font-weight: bold;">✗ PENDIENTE</span>'
+                '<span style="color: white; background-color: red; padding: 5px 10px; border-radius: 3px; font-weight: bold;">✗ INACTIVO</span>'
             )
-    estado_aprobacion.short_description = 'Estado'
+    estado_cuenta.short_description = 'Estado'
     
     def info_usuario(self, obj):
         """Muestra información completa del usuario"""
@@ -108,16 +101,20 @@ class PerfilUsuarioAdmin(admin.ModelAdmin):
         )
     info_usuario.short_description = 'Información del Usuario'
     
-    def aprobar_usuarios(self, request, queryset):
-        """Acción para aprobar usuarios"""
-        updated = queryset.update(aprobado=True, fecha_aprobacion=datetime.now())
-        self.message_user(request, f'{updated} usuario(s) aprobado(s) exitosamente.')
-    aprobar_usuarios.short_description = '✓ Aprobar usuarios seleccionados'
+    def activar_usuarios(self, request, queryset):
+        """Acción para activar usuarios"""
+        for perfil in queryset:
+            perfil.user.is_active = True
+            perfil.user.save()
+        self.message_user(request, f'{queryset.count()} usuario(s) activado(s) exitosamente.')
+    activar_usuarios.short_description = '✓ Activar usuarios seleccionados'
     
-    def desaprobar_usuarios(self, request, queryset):
-        """Acción para desaprobar usuarios"""
-        updated = queryset.update(aprobado=False, fecha_aprobacion=None)
-        self.message_user(request, f'{updated} usuario(s) desaprobado(s) exitosamente.', level='WARNING')
-    desaprobar_usuarios.short_description = '✗ Desaprobar usuarios seleccionados'
+    def desactivar_usuarios(self, request, queryset):
+        """Acción para desactivar usuarios"""
+        for perfil in queryset:
+            perfil.user.is_active = False
+            perfil.user.save()
+        self.message_user(request, f'{queryset.count()} usuario(s) desactivado(s) exitosamente.', level='WARNING')
+    desactivar_usuarios.short_description = '✗ Desactivar usuarios seleccionados'
 
 

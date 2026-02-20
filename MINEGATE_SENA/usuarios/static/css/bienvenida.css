@@ -7,7 +7,7 @@
 }
 
 body {
-    font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     background: linear-gradient(135deg, #a5d6a7 0%, #66bb6a 100%);
     height: 100vh;
     display: flex;

@@ -1,0 +1,142 @@
+.recovery-container {
+	min-height: calc(100vh - 200px);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: #ffffff;
+	padding: 40px 20px;
+}
+
+.recovery-card {
+	background: white;
+	border-radius: 20px;
+	box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+	max-width: 450px;
+	width: 100%;
+	overflow: hidden;
+}
+
+.recovery-header {
+	background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+	color: white;
+	padding: 30px;
+	text-align: center;
+}
+
+.recovery-header i {
+	font-size: 3rem;
+	margin-bottom: 15px;
+	color: #ffc107;
+}
+
+.recovery-header h2 {
+	margin: 0;
+	font-weight: 700;
+}
+
+.recovery-header p {
+	margin: 10px 0 0;
+	opacity: 0.8;
+	font-size: 0.9rem;
+}
+
+.recovery-body {
+	padding: 40px 30px;
+}
+
+.form-group {
+	margin-bottom: 25px;
+}
+
+.form-group label {
+	display: block;
+	margin-bottom: 8px;
+	font-weight: 600;
+	color: #333;
+}
+
+.form-group label i {
+	margin-right: 8px;
+	color: #667eea;
+}
+
+.form-control {
+	width: 100%;
+	padding: 15px;
+	border: 2px solid #e0e0e0;
+	border-radius: 10px;
+	font-size: 1rem;
+	transition: all 0.3s ease;
+	box-sizing: border-box;
+}
+
+.form-control:focus {
+	outline: none;
+	border-color: #667eea;
+	box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+.btn-recovery {
+	width: 100%;
+	padding: 15px;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	border: none;
+	border-radius: 10px;
+	color: white;
+	font-size: 1.1rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.3s ease;
+}
+
+.btn-recovery:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+}
+
+.recovery-footer {
+	text-align: center;
+	padding: 20px 30px 30px;
+	border-top: 1px solid #eee;
+}
+
+.recovery-footer a {
+	color: #667eea;
+	text-decoration: none;
+	font-weight: 500;
+}
+
+.recovery-footer a:hover {
+	text-decoration: underline;
+}
+
+.alert {
+	padding: 15px;
+	border-radius: 10px;
+	margin-bottom: 20px;
+}
+
+.alert-info {
+	background-color: #d1ecf1;
+	color: #0c5460;
+	border: 1px solid #bee5eb;
+}
+
+.info-box {
+	background: #f0f7ff;
+	border: 1px solid #bfdbfe;
+	border-radius: 10px;
+	padding: 15px;
+	margin-bottom: 25px;
+}
+
+.info-box p {
+	margin: 0;
+	color: #1e40af;
+	font-size: 0.9rem;
+}
+
+.info-box i {
+	color: #3b82f6;
+	margin-right: 8px;
+}
