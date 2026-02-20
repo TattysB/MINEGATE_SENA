@@ -36,21 +36,37 @@ def visita_interna(request):
 
 # Vista para crear una nueva visita interna
 def crear_visita(request):
+  # Verificar si el usuario está autenticado desde la sesión
+  if not request.session.get('responsable_autenticado'):
+    return redirect('panel_visitante:login_responsable')
+  
+  correo_responsable = request.session.get('responsable_correo')
+  documento_responsable = request.session.get('responsable_documento')
+  
   if request.method == 'POST':
     form = VisitaInternaForm(request.POST)
     if form.is_valid():
       # Crear la visita con estado pendiente (revisión admin)
       visita = form.save(commit=False)
+      # Usar los datos de la sesión para correo y documento
+      visita.correo_responsable = correo_responsable
+      visita.documento_responsable = documento_responsable
       visita.estado = 'pendiente'  # Pendiente de revisión por administrador
       visita.save()
       messages.success(request, '✅ Su solicitud de visita ha sido enviada y está pendiente de revisión por el administrador.')
-      return redirect('core:visitas')
+      return redirect('panel_visitante:panel_responsable')
+    else:
+      print(f"Errores del formulario: {form.errors}")
   else:
     form = VisitaInternaForm()
+    form.fields['documento_responsable'].initial = documento_responsable
+    form.fields['correo_responsable'].initial = correo_responsable
   
   template = loader.get_template('crear_visita_interna.html')
   context = {
     'form': form,
+    'correo_responsable': correo_responsable,
+    'documento_responsable': documento_responsable,
   }
   return HttpResponse(template.render(context, request))
 

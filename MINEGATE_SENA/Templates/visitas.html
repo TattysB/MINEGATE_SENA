@@ -23,48 +23,6 @@
         <hr class="mx-auto" style="width: 100px; height: 4px; background-color: #0d6efd; opacity: 1;">
     </div>
 
-    <!-- Sección de Registro de Visitas -->
-    <div class="p-5 bg-white rounded-4 shadow-sm border">
-        <div class="text-center mb-4">
-            <i class="fas fa-clipboard-check fa-3x text-primary mb-3"></i>
-            <h3 class="fw-bold">Registrar Nueva Visita</h3>
-            <p class="text-muted">Seleccione el tipo de visita que desea registrar</p>
-        </div>
-
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
-                <div class="row g-3">
-                    <!-- Opción Visita Interna -->
-                    <div class="col-md-6">
-                        <input type="radio" class="btn-check" name="tipo_visita" id="visita_interna" value="interna">
-                        <label class="btn btn-outline-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center p-4" for="visita_interna" style="min-height: 250px;">
-                            <i class="fas fa-building fa-3x mb-3"></i>
-                            <h5 class="mb-2">Visita Interna</h5>
-                            <p class="small text-muted mb-0">Personal del SENA, instructores, aprendices</p>
-                        </label>
-                    </div>
-
-                    <!-- Opción Visita Externa -->
-                    <div class="col-md-6">
-                        <input type="radio" class="btn-check" name="tipo_visita" id="visita_externa" value="externa">
-                        <label class="btn btn-outline-success w-100 h-100 d-flex flex-column align-items-center justify-content-center p-4" for="visita_externa" style="min-height: 250px;">
-                            <i class="fas fa-user-tie fa-3x mb-3"></i>
-                            <h5 class="mb-2">Visita Externa</h5>
-                            <p class="small text-muted mb-0">Universidades, Colegios</p>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Botón de Acción -->
-                <div class="text-center mt-4">
-                    <button onclick="crearVisita()" class="btn btn-primary btn-lg px-5 shadow">
-                        <i class="fas fa-plus-circle me-2"></i>Crear Visita
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Sección de Acceso para Responsables -->
     <div class="p-5 bg-white rounded-4 shadow-sm border mt-4">
         <div class="row align-items-center">
@@ -91,44 +49,7 @@
     </div>
 </section>
 
-<script>
-    function crearVisita() {
-        const tipoSeleccionado = document.querySelector('input[name="tipo_visita"]:checked');
-        
-        if (!tipoSeleccionado) {
-            alert('Por favor seleccione un tipo de visita');
-            return;
-        }
-        
-        if (tipoSeleccionado.value === 'interna') {
-            window.location.href = "{% url 'visitaInterna:crear_visita_interna' %}";
-        } else if (tipoSeleccionado.value === 'externa') {
-            window.location.href = "{% url 'visitaExterna:crear_visita' %}";
-        }
-    }
-
-    // Efecto visual al seleccionar
-    document.querySelectorAll('input[name="tipo_visita"]').forEach(radio => {
-        radio.addEventListener('change', function() {
-            document.querySelectorAll('label[for^="visita_"]').forEach(label => {
-                label.classList.remove('shadow-lg');
-            });
-            document.querySelector(`label[for="${this.id}"]`).classList.add('shadow-lg');
-        });
-    });
-</script>
-
 <style>
-    .btn-check:checked + label {
-        transform: scale(1.02);
-        transition: all 0.3s ease;
-    }
-    
-    .btn-check:checked + label .text-muted,
-    label[for^="visita_"]:hover .text-muted {
-        color: white !important;
-    }
-    
     label[for^="visita_"] {
         cursor: pointer;
         transition: all 0.3s ease;
