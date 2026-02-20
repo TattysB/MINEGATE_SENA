@@ -27,6 +27,9 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <!-- Calendario: cargar assets para asegurar estilo en panel -->
+    <link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}">
+    <script src="{% static 'calendario/js/calendario.js' %}" defer></script>
   </head>
 
   <body>
@@ -105,8 +108,10 @@
             ><span>Panel principal</span>
           </li>
           <li data-content="calendario">
-            <i class="ri-calendar-line icon-calendar"></i
-            ><span>Calendario</span>
+            <a href="{% url 'calendario:index' %}" class="sidebar-link" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;width:100%">
+              <i class="ri-calendar-line icon-calendar"></i>
+              <span>Calendario</span>
+            </a>
           </li>
 
           <li data-content="nuevavisita">
@@ -457,6 +462,8 @@
         const sidebar = document.getElementById("sidebar");
         const sidebarOverlay = document.getElementById("sidebarOverlay");
         const sidebarItems = sidebar.querySelectorAll("li[data-content]");
+        // Variable global para almacenar el contenido previo de #mainContent
+        window._previousMainHTML = window._previousMainHTML || null;
 
         // Add ripple effect function
         function createRipple(event) {
@@ -515,6 +522,21 @@
               sidebarItems.forEach((otherItem) => {
                 if (otherItem !== this) otherItem.classList.remove("active");
               });
+            }
+          });
+        });
+
+        // Restaurar contenido anterior si se hace click en cualquier item que NO sea "calendario"
+        sidebarItems.forEach((item) => {
+          item.addEventListener('click', function (e) {
+            const targetContent = this.getAttribute('data-content');
+            if (targetContent !== 'calendario') {
+              const main = document.getElementById('mainContent');
+              if (main && main.classList.contains('calendar-in-panel')) {
+                main.innerHTML = window._previousMainHTML || '';
+                main.classList.remove('calendar-in-panel');
+                window._previousMainHTML = null;
+              }
             }
           });
         });
@@ -627,6 +649,55 @@
         });
       });
     </script>
+      <!-- Script para cargar el calendario dentro del panel sin navegar -->
+      <script>
+        (function(){
+          const calendarioLink = document.querySelector("a[href='{% url 'calendario:index' %}']");
+          if(!calendarioLink) return;
+
+          function ensureCss(src){
+            if(document.querySelector("link[href='"+src+"']")) return;
+            const l = document.createElement('link');
+            l.rel = 'stylesheet';
+            l.href = src;
+            document.head.appendChild(l);
+          }
+          function ensureScript(src){
+            return new Promise((res)=>{
+              if(document.querySelector("script[src='"+src+"']")) return res();
+              const s = document.createElement('script');
+              s.src = src;
+              s.onload = ()=>res();
+              document.body.appendChild(s);
+            });
+          }
+
+          calendarioLink.addEventListener('click', function(ev){
+            ev.preventDefault();
+            const href = this.getAttribute('href');
+            ensureCss("{% static 'calendario/css/calendario.css' %}");
+            fetch(href, {headers: {'X-Requested-With':'XMLHttpRequest'}})
+              .then(r => r.text())
+              .then(html => {
+                const main = document.getElementById('mainContent');
+                if(!main) return;
+                // Guardar el contenido previo para poder restaurarlo cuando se navegue a otra sección
+                if (!window._previousMainHTML) window._previousMainHTML = main.innerHTML;
+                main.innerHTML = '<div class="calendar-page">' + html + '</div>';
+                // marcar main para aplicar estilos específicos cuando el calendario esté dentro del panel
+                main.classList.add('calendar-in-panel');
+                ensureScript("{% static 'calendario/js/calendario.js' %}")
+                  .then(()=>{
+                    const newContainer = main.querySelector('.calendar-card');
+                    if(window.initCalendar && newContainer) window.initCalendar(newContainer);
+                      // desplazar scroll al inicio del calendario
+                      if(typeof main.scrollIntoView === 'function') main.scrollIntoView({behavior: 'smooth'});
+                  });
+              })
+              .catch(err => console.error('Error cargando calendario:', err));
+          });
+        })();
+      </script>
 
     <!-- Script para Gestión de Visitas -->
     <script>
@@ -661,13 +732,13 @@
           <p>Cargando visitas...</p>
         </td></tr>`;
         
-        fetch(`/api/visitas/?tipo=${tipoVisitaActual}&estado=${estado}&buscar=${encodeURIComponent(buscar)}`)
+        fetch(`/gestion/api/visitas/?tipo=${tipoVisitaActual}&estado=${estado}&buscar=${encodeURIComponent(buscar)}`)
           .then(response => response.json())
           .then(data => {
             // Actualizar estadísticas
             document.getElementById('statPendientes').textContent = data.stats.pendientes;
             document.getElementById('statCoordinacion').textContent = data.stats.coordinacion;
-            document.getElementById('statAprobadas').textContent = data.stats.aprobadas;
+            document.getElementById('statAprobadas').textContent = data.stats.aprobadas_inicial || 0;
             document.getElementById('statRechazadas').textContent = data.stats.rechazadas;
             
             // Llenar tabla
@@ -771,7 +842,7 @@
         contenido.innerHTML = '<p style="text-align:center;padding:20px;"><i class="ri-loader-4-line" style="animation:spin 1s linear infinite;"></i> Cargando...</p>';
         modal.style.display = 'block';
         
-        fetch(`/api/visitas/${tipo}/${id}/`)
+        fetch(`/gestion/api/visitas/${tipo}/${id}/`)
           .then(response => response.json())
           .then(data => {
             const mostrarRevisionDocs = ['documentos_enviados', 'en_revision_documentos'].includes(data.estado);
@@ -897,7 +968,7 @@
       function abrirModalCoordinacion(tipo, id) {
         document.getElementById('modalVisitaId').textContent = id;
         document.getElementById('modalTipoVisita').textContent = tipo === 'interna' ? 'Visita Interna' : 'Visita Externa';
-        document.getElementById('modalVisitaUrl').value = `/api/visitas/${tipo}/${id}/enviar_coordinacion/`;
+        document.getElementById('modalVisitaUrl').value = `/gestion/api/visitas/${tipo}/${id}/enviar_coordinacion/`;
         document.getElementById('correoCoordinacion').value = '';
         document.getElementById('modalMensaje').style.display = 'none';
         document.getElementById('btnEnviarCoord').disabled = false;
@@ -965,7 +1036,7 @@
         if (accion === 'rechazar' && !confirm('¿Estás seguro de rechazar esta visita?')) return;
         if (accion === 'aprobar' && !confirm('¿Estás seguro de aprobar esta visita?')) return;
         
-        fetch(`/api/visitas/${tipo}/${id}/${accion}/`, {
+        fetch(`/gestion/api/visitas/${tipo}/${id}/${accion}/`, {
           method: 'POST',
           headers: {
             'X-CSRFToken': '{{ csrf_token }}'

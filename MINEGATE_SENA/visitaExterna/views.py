@@ -2,6 +2,7 @@ from django.http import HttpResponse
 from django.template import loader
 from django.shortcuts import redirect
 from django.contrib import messages
+from django.urls import reverse
 from .models import VisitaExterna
 from .forms import VisitaExternaForm
 
@@ -68,7 +69,7 @@ def editar_visita(request, id):
     form = VisitaExternaForm(request.POST, instance=visita)
     if form.is_valid():
       form.save()
-      return redirect('visita_externa')
+      return redirect(reverse('visitaExterna:visita_externa'))
   else:
     form = VisitaExternaForm(instance=visita)
   
@@ -93,7 +94,7 @@ def eliminar_visita(request, id):
   visita = VisitaExterna.objects.get(id=id)
   if request.method == 'POST':
     visita.delete()
-    return redirect('visita_externa')
+    return redirect(reverse('visitaExterna:visita_externa'))
   
   template = loader.get_template('eliminar_visita.html')
   context = {

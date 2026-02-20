@@ -30,6 +30,7 @@ urlpatterns = [
     path('gestion/', include('gestion_visitas.urls')),
     path('visitante/', include('panel_visitante.urls')),
     path('documentos/', include('documentos.urls')),
+    path('calendario/', include('calendario.urls')),
 ]
 
 if settings.DEBUG:

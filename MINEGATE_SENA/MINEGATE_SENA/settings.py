@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'usuarios',
     'visitaInterna',
     'visitaExterna',
+    'calendario',
     'accessibility',
     'gestion_visitas',
     'panel_visitante',

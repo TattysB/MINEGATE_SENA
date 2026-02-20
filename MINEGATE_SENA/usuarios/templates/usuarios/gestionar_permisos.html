@@ -47,30 +47,85 @@
     font-weight: 600;
   }
   
-  /* Botón Ver Detalles */
-  .btn-ver {
-    background-color: #17a2b8;
-    color: white;
-    text-decoration: none;
+  /* ===== BOTONES DE ACCIONES PROFESIONALES ===== */
+  .acciones-usuario {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .btn-accion {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    gap: 4px;
+  }
+  
+  .btn-accion:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+  
+  /* Botón Ver */
+  .btn-ver {
+    background-color: #e3f2fd;
+    color: #1976d2;
+    border: 1px solid #90caf9;
   }
   
   .btn-ver:hover {
-    background-color: #138496;
-    color: white;
+    background-color: #bbdefb;
+    color: #1565c0;
+  }
+  
+  /* Botón Editar */
+  .btn-editar {
+    background-color: #fff3e0;
+    color: #e65100;
+    border: 1px solid #ffcc80;
+  }
+  
+  .btn-editar:hover {
+    background-color: #ffe0b2;
+    color: #d84315;
   }
   
   /* Botón Toggle Estado */
   .btn-toggle {
-    background-color: #ffc107;
-    color: #333;
-    min-width: 40px;
+    background-color: #f3e5f5;
+    color: #7b1fa2;
+    border: 1px solid #ce93d8;
   }
   
   .btn-toggle:hover {
-    background-color: #e0a800;
+    background-color: #e1bee7;
+    color: #6a1b9a;
+  }
+  
+  /* Botón Eliminar */
+  .btn-eliminar {
+    background-color: #ffebee;
+    color: #c62828;
+    border: 1px solid #ef9a9a;
+  }
+  
+  .btn-eliminar:hover {
+    background-color: #ffcdd2;
+    color: #b71c1c;
+  }
+  
+  /* Iconos en botones */
+  .btn-accion i {
+    font-size: 13px;
   }
   
   /* Ajuste columnas de tabla */
@@ -84,19 +139,6 @@
   /* Estilos para el modal de toggle */
   #encabezadoToggle {
     transition: background 0.3s ease;
-  }
-  
-  /* Acciones de usuario más compactas */
-  .acciones-usuario {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-    justify-content: center;
-  }
-  
-  .acciones-usuario .btn-accion {
-    padding: 0.4rem 0.6rem;
-    font-size: 0.8rem;
   }
   
   /* Responsive */
@@ -147,16 +189,12 @@
         <div class="texto-estadistica">Total de Usuarios</div>
       </div>
       <div class="tarjeta-estadistica aprobado">
-        <div class="numero-estadistica">{{ usuarios_aprobados }}</div>
-        <div class="texto-estadistica">Aprobados</div>
-      </div>
-      <div class="tarjeta-estadistica pendiente">
-        <div class="numero-estadistica">{{ usuarios_pendientes }}</div>
-        <div class="texto-estadistica">Pendientes</div>
+        <div class="numero-estadistica">{{ usuarios_activos }}</div>
+        <div class="texto-estadistica">Activos</div>
       </div>
       <div class="tarjeta-estadistica rechazado">
-        <div class="numero-estadistica">{{ usuarios_rechazados }}</div>
-        <div class="texto-estadistica">Rechazados</div>
+        <div class="numero-estadistica">{{ usuarios_inactivos }}</div>
+        <div class="texto-estadistica">Inactivos</div>
       </div>
     </div>
   </div>
@@ -181,27 +219,19 @@
           </button>
           <button
             type="button"
-            class="btn-filtro {% if filtro_actual == 'aprobados' %}activo{% endif %}"
-            data-filtro="aprobados"
-            onclick="aplicarFiltro('aprobados')"
+            class="btn-filtro {% if filtro_actual == 'activos' %}activo{% endif %}"
+            data-filtro="activos"
+            onclick="aplicarFiltro('activos')"
           >
-            Aprobados
+            Activos
           </button>
           <button
             type="button"
-            class="btn-filtro {% if filtro_actual == 'pendientes' %}activo{% endif %}"
-            data-filtro="pendientes"
-            onclick="aplicarFiltro('pendientes')"
+            class="btn-filtro {% if filtro_actual == 'inactivos' %}activo{% endif %}"
+            data-filtro="inactivos"
+            onclick="aplicarFiltro('inactivos')"
           >
-            Pendientes
-          </button>
-          <button
-            type="button"
-            class="btn-filtro {% if filtro_actual == 'rechazados' %}activo{% endif %}"
-            data-filtro="rechazados"
-            onclick="aplicarFiltro('rechazados')"
-          >
-            Rechazados
+            Inactivos
           </button>
         </div>
         <div class="busqueda">
@@ -242,15 +272,14 @@
             <th>Documento</th>
             <th>Email</th>
             <th>Fecha Registro</th>
-            <th>Cuenta</th>
-            <th>Aprobación</th>
+            <th>Estado</th>
             <th>Acciones</th>
           </tr>
         </thead>
         <tbody>
           {% for perfil in perfiles %}
           <tr
-            class="fila-usuario {% if perfil.aprobado %}aprobado{% elif perfil.razon_rechazo %}rechazado{% else %}pendiente{% endif %}"
+            class="fila-usuario {% if perfil.user.is_active %}aprobado{% else %}rechazado{% endif %}"
             data-usuario-id="{{ perfil.user.id }}"
           >
             <td class="datos-usuario">
@@ -278,28 +307,20 @@
               {% endif %}
             </td>
             <td>
-              {% if perfil.aprobado %}
-              <span class="badge badge-aprobado">✓ APROBADO</span>
-              <div class="fecha-aprobacion">
-                {{ perfil.fecha_aprobacion|date:"d/m/Y" }}
-              </div>
-              {% elif perfil.razon_rechazo %}
-              <span class="badge badge-rechazado">✗ RECHAZADO</span>
-              <div class="razon">
-                {{ perfil.razon_rechazo|truncatewords:5 }}
-              </div>
-              {% else %}
-              <span class="badge badge-pendiente">⏳ PENDIENTE</span>
-              {% endif %}
-            </td>
-            <td>
               <div class="acciones-usuario">
                 <a 
                   href="{% url 'usuarios:detalle_usuario_permisos' perfil.user.id %}"
                   class="btn-accion btn-ver"
                   title="Ver detalles"
                 >
-                  👁️ Ver
+                  👁️
+                </a>
+                <a 
+                  href="{% url 'usuarios:editar_usuario' perfil.user.id %}?next={% url 'usuarios:gestionar_permisos' %}"
+                  class="btn-accion btn-editar"
+                  title="Editar usuario"
+                >
+                  ✏️
                 </a>
                 <button
                   type="button"
@@ -309,32 +330,13 @@
                 >
                   {% if perfil.user.is_active %}⏸️{% else %}▶️{% endif %}
                 </button>
-                {% if not perfil.aprobado or perfil.razon_rechazo %}
-                <button
-                  type="button"
-                  class="btn-accion btn-aprobar"
-                  onclick="abrirModalAprobar('{{ perfil.user.id }}', '{{ perfil.user.get_full_name|default:perfil.user.username }}')"
-                  title="Aprobar usuario"
-                >
-                  ✓ Aprobar
-                </button>
-                {% else %}
-                <button
-                  type="button"
-                  class="btn-accion btn-rechazar"
-                  onclick="abrirModalRechazar('{{ perfil.user.id }}', '{{ perfil.user.get_full_name|default:perfil.user.username }}')"
-                  title="Rechazar usuario"
-                >
-                  ✗ Rechazar
-                </button>
-                {% endif %}
                 <button
                   type="button"
                   class="btn-accion btn-eliminar"
                   onclick="abrirModalEliminar('{{ perfil.user.id }}', '{{ perfil.user.get_full_name|default:perfil.user.username }}', '{{ perfil.documento }}')"
                   title="Eliminar usuario"
                 >
-                  🗑️ Eliminar
+                  🗑️
                 </button>
               </div>
             </td>
@@ -351,80 +353,7 @@
   </div>
 
   <!-- Modales -->
-  <div id="modalAprobar" class="modal">
-    <div class="modal-contenido">
-      <div class="modal-encabezado">
-        <h2>✓ Aprobar Usuario</h2>
-        <button class="modal-cerrar" onclick="cerrarModal('modalAprobar')">
-          &times;
-        </button>
-      </div>
-      <div class="modal-cuerpo">
-        <p>¿Deseas aprobar a <strong id="usuarioAprobar"></strong>?</p>
-        <p class="texto-info">
-          Este usuario podrá acceder al sistema normalmente.
-        </p>
-      </div>
-      <div class="modal-pie">
-        <button
-          class="btn-modal btn-cancelar"
-          onclick="cerrarModal('modalAprobar')"
-        >
-          Cancelar
-        </button>
-        <form id="formAprobar" method="POST" style="display: inline">
-          {% csrf_token %}
-          <button type="submit" class="btn-modal btn-confirmar">
-            Sí, Aprobar
-          </button>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <div id="modalRechazar" class="modal">
-    <div class="modal-contenido">
-      <div class="modal-encabezado">
-        <h2>✗ Rechazar Usuario</h2>
-        <button class="modal-cerrar" onclick="cerrarModal('modalRechazar')">
-          &times;
-        </button>
-      </div>
-      <div class="modal-cuerpo">
-        <p>¿Deseas rechazar a <strong id="usuarioRechazar"></strong>?</p>
-        <div class="grupo-formulario">
-          <label for="razonRechazo">Motivo del rechazo:</label>
-          <textarea
-            id="razonRechazo"
-            name="razon"
-            class="textarea-razon"
-            placeholder="Especifica la razón del rechazo..."
-            required
-          ></textarea>
-        </div>
-      </div>
-      <div class="modal-pie">
-        <button
-          class="btn-modal btn-cancelar"
-          onclick="cerrarModal('modalRechazar')"
-        >
-          Cancelar
-        </button>
-        <form id="formRechazar" method="POST" style="display: inline">
-          {% csrf_token %}
-          <input type="hidden" name="razon" id="razonInput" />
-          <button
-            type="button"
-            class="btn-modal btn-confirmar"
-            onclick="confirmarRechazar()"
-          >
-            Sí, Rechazar
-          </button>
-        </form>
-      </div>
-    </div>
-  </div>
-
+  
   <!-- Modal Eliminar Usuario -->
   <div id="modalEliminar" class="modal">
     <div class="modal-contenido">
@@ -505,8 +434,6 @@
 
   <!-- Script para Gestión de Permisos -->
   <script>
-    let usuarioIdAprobar = null;
-    let usuarioIdRechazar = null;
     let usuarioIdEliminar = null;
     let usuarioIdToggle = null;
     let filtroActualValor = '{{ filtro_actual|default:"todos" }}';
@@ -587,13 +514,10 @@
       ).textContent = stats.total;
       document.querySelector(
         ".tarjeta-estadistica.aprobado .numero-estadistica",
-      ).textContent = stats.aprobados;
-      document.querySelector(
-        ".tarjeta-estadistica.pendiente .numero-estadistica",
-      ).textContent = stats.pendientes;
+      ).textContent = stats.activos;
       document.querySelector(
         ".tarjeta-estadistica.rechazado .numero-estadistica",
-      ).textContent = stats.rechazados;
+      ).textContent = stats.inactivos;
     }
 
     // Función auxiliar para escapar caracteres especiales
@@ -642,11 +566,7 @@
 
       // Generar filas de la tabla
       usuarios.forEach((usuario, index) => {
-        const estadoClass = usuario.aprobado
-          ? "aprobado"
-          : usuario.razon_rechazo
-            ? "rechazado"
-            : "pendiente";
+        const estadoClass = usuario.is_active ? "aprobado" : "rechazado";
 
         // Crear la fila
         const tr = document.createElement("tr");
@@ -688,25 +608,6 @@
         }
         tr.appendChild(tdEstadoCuenta);
 
-        // Celda de estado de aprobación
-        const tdEstado = document.createElement("td");
-        tdEstado.style.textAlign = "center";
-        if (usuario.aprobado) {
-          tdEstado.innerHTML = `
-                    <span class="badge badge-aprobado">✓ APROBADO</span>
-                    <div class="fecha-aprobacion">${escaparHTML(usuario.fecha_aprobacion || "")}</div>
-                `;
-        } else if (usuario.razon_rechazo) {
-          tdEstado.innerHTML = `
-                    <span class="badge badge-rechazado">✗ RECHAZADO</span>
-                    <div class="razon">${escaparHTML(usuario.razon_rechazo_corta || "")}</div>
-                `;
-        } else {
-          tdEstado.innerHTML =
-            '<span class="badge badge-pendiente">⏳ PENDIENTE</span>';
-        }
-        tr.appendChild(tdEstado);
-
         // Celda de acciones
         const tdAcciones = document.createElement("td");
         const divAcciones = document.createElement("div");
@@ -717,8 +618,16 @@
         btnVer.href = "{% url 'usuarios:detalle_usuario_permisos' 0 %}".replace("0", usuario.id);
         btnVer.className = "btn-accion btn-ver";
         btnVer.title = "Ver detalles";
-        btnVer.textContent = "👁️ Ver";
+        btnVer.textContent = "👁️";
         divAcciones.appendChild(btnVer);
+
+        // Botón Editar
+        const btnEditar = document.createElement("a");
+        btnEditar.href = "{% url 'usuarios:editar_usuario' 0 %}".replace("0", usuario.id) + "?next={% url 'usuarios:gestionar_permisos' %}";
+        btnEditar.className = "btn-accion btn-editar";
+        btnEditar.title = "Editar usuario";
+        btnEditar.textContent = "✏️";
+        divAcciones.appendChild(btnEditar);
 
         // Botón Toggle Estado
         const btnToggle = document.createElement("button");
@@ -731,33 +640,11 @@
         };
         divAcciones.appendChild(btnToggle);
 
-        if (!usuario.aprobado || usuario.razon_rechazo) {
-          const btnAprobar = document.createElement("button");
-          btnAprobar.type = "button";
-          btnAprobar.className = "btn-accion btn-aprobar";
-          btnAprobar.title = "Aprobar usuario";
-          btnAprobar.textContent = "✓ Aprobar";
-          btnAprobar.onclick = function () {
-            abrirModalAprobar(usuario.id, usuario.nombre);
-          };
-          divAcciones.appendChild(btnAprobar);
-        } else {
-          const btnRechazar = document.createElement("button");
-          btnRechazar.type = "button";
-          btnRechazar.className = "btn-accion btn-rechazar";
-          btnRechazar.title = "Rechazar usuario";
-          btnRechazar.textContent = "✗ Rechazar";
-          btnRechazar.onclick = function () {
-            abrirModalRechazar(usuario.id, usuario.nombre);
-          };
-          divAcciones.appendChild(btnRechazar);
-        }
-
         const btnEliminar = document.createElement("button");
         btnEliminar.type = "button";
         btnEliminar.className = "btn-accion btn-eliminar";
         btnEliminar.title = "Eliminar usuario";
-        btnEliminar.textContent = "🗑️ Eliminar";
+        btnEliminar.textContent = "🗑️";
         btnEliminar.onclick = function () {
           abrirModalEliminar(usuario.id, usuario.nombre, usuario.documento);
         };
@@ -772,29 +659,6 @@
     }
 
     // ==================== FUNCIONES DE MODALES ====================
-
-    function abrirModalAprobar(usuarioId, nombreUsuario) {
-      usuarioIdAprobar = usuarioId;
-      document.getElementById("usuarioAprobar").textContent = nombreUsuario;
-      const form = document.getElementById("formAprobar");
-      form.action = "{% url 'usuarios:aprobar_usuario' 0 %}".replace(
-        "0",
-        usuarioId,
-      );
-      abrirModal("modalAprobar");
-    }
-
-    function abrirModalRechazar(usuarioId, nombreUsuario) {
-      usuarioIdRechazar = usuarioId;
-      document.getElementById("usuarioRechazar").textContent = nombreUsuario;
-      document.getElementById("razonRechazo").value = "";
-      const form = document.getElementById("formRechazar");
-      form.action = "{% url 'usuarios:rechazar_usuario' 0 %}".replace(
-        "0",
-        usuarioId,
-      );
-      abrirModal("modalRechazar");
-    }
 
     function abrirModalEliminar(usuarioId, nombreUsuario, documento) {
       usuarioIdEliminar = usuarioId;
@@ -838,17 +702,6 @@
         usuarioId,
       );
       abrirModal("modalToggleEstado");
-    }
-
-    function confirmarRechazar() {
-      const razon = document.getElementById("razonRechazo").value.trim();
-      if (!razon) {
-        alert("Por favor, especifica la razón del rechazo.");
-        return;
-      }
-
-      document.getElementById("razonInput").value = razon;
-      document.getElementById("formRechazar").submit();
     }
 
     function abrirModal(modalId) {
