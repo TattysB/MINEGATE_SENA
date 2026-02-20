@@ -37,7 +37,21 @@ function cargarContenido(section) {
     } else {
       console.warn('Sección de permisos no encontrada');
     }
-  } else {
+  } 
+  // Si es la sección de Gestión de Visitas
+  else if (section === 'gestionvisitas') {
+    const seccionVisitas = document.getElementById('seccion-gestion-visitas');
+    if (seccionVisitas) {
+      seccionVisitas.style.display = 'block';
+      // Cargar visitas al mostrar la sección
+      if (typeof cargarVisitas === 'function') {
+        cargarVisitas();
+      }
+    } else {
+      console.warn('Sección de gestión de visitas no encontrada');
+    }
+  }
+  else {
     // Aquí puedes agregar la lógica para cargar otras secciones
     // Por ahora solo muestra un mensaje temporal
     const divTemporal = document.createElement('div');

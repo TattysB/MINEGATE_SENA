@@ -52,25 +52,6 @@ def login_view(request):
 
             if user is not None:
                 if user.is_active:
-                    # Verificar si el usuario está aprobado (excepto superusuarios)
-                    if not user.is_superuser:
-                        if not hasattr(user, "perfil") or not user.perfil.aprobado:
-                            razon = (
-                                getattr(user.perfil, "razon_rechazo", None)
-                                if hasattr(user, "perfil")
-                                else None
-                            )
-                            if razon:
-                                messages.error(
-                                    request, f"Tu acceso fue rechazado. Motivo: {razon}"
-                                )
-                            else:
-                                messages.warning(
-                                    request,
-                                    "Tu cuenta está pendiente de aprobación. El administrador revisará tu solicitud pronto.",
-                                )
-                            return redirect("usuarios:login")
-
                     login(request, user)
 
                     # Configurar duración de la sesión
@@ -112,114 +93,6 @@ def login_view(request):
     return render(request, "usuarios/login.html", context)
 
 
-@csrf_protect
-def registro_view(request):
-    """
-    Vista para el registro de nuevos usuarios
-    """
-    if request.user.is_authenticated:
-        return redirect("core:panel_administrativo")
-
-    if request.method == "POST":
-        form = RegistroForm(request.POST)
-
-        if form.is_valid():
-            user = form.save()
-            messages.success(
-                request,
-                "¡Cuenta creada exitosamente! Ya puedes iniciar sesión con tus credenciales.",
-            )
-            return redirect("usuarios:login")
-        else:
-            # Mensajes de error personalizados en español
-            if form.errors:
-                for field, errors in form.errors.items():
-                    for error in errors:
-                        if "password" in field:
-                            if "too similar" in str(error).lower():
-                                messages.error(
-                                    request,
-                                    "La contraseña es muy similar a tu información personal. Elige una más diferente.",
-                                )
-                            elif "too common" in str(error).lower():
-                                messages.error(
-                                    request,
-                                    "La contraseña es muy común. Por favor elige una más segura y única.",
-                                )
-                            elif "numeric" in str(error).lower():
-                                messages.error(
-                                    request,
-                                    "La contraseña no puede ser solo números. Incluye letras y caracteres especiales.",
-                                )
-                            elif (
-                                "short" in str(error).lower()
-                                or "at least" in str(error).lower()
-                            ):
-                                messages.error(
-                                    request,
-                                    "La contraseña debe tener al menos 8 caracteres.",
-                                )
-                            elif (
-                                "didn't match" in str(error).lower()
-                                or "match" in str(error).lower()
-                            ):
-                                messages.error(
-                                    request,
-                                    "Las contraseñas no coinciden. Verifica que sean iguales.",
-                                )
-                            else:
-                                messages.error(request, f"Contraseña: {error}")
-                        elif field == "username":
-                            if "already exists" in str(error).lower():
-                                messages.error(
-                                    request,
-                                    "Este número de documento ya está registrado en el sistema.",
-                                )
-                            elif "required" in str(error).lower():
-                                messages.error(
-                                    request, "El número de documento es obligatorio."
-                                )
-                            elif (
-                                "letters" in str(error).lower()
-                                or "alphanumeric" in str(error).lower()
-                            ):
-                                messages.error(
-                                    request, "El documento solo debe contener números."
-                                )
-                            else:
-                                messages.error(request, f"Documento: {error}")
-                        elif field == "email":
-                            if "already" in str(error).lower():
-                                messages.error(
-                                    request,
-                                    "Este correo electrónico ya está registrado. Intenta con otro.",
-                                )
-                            elif "valid" in str(error).lower():
-                                messages.error(
-                                    request,
-                                    "Por favor ingresa un correo electrónico válido.",
-                                )
-                            elif "required" in str(error).lower():
-                                messages.error(
-                                    request, "El correo electrónico es obligatorio."
-                                )
-                            else:
-                                messages.error(request, f"Correo: {error}")
-                        elif field == "__all__":
-                            messages.error(request, str(error))
-                        else:
-                            messages.error(request, f"{field}: {error}")
-            else:
-                messages.error(
-                    request, "Por favor revisa los datos ingresados e intenta de nuevo."
-                )
-    else:
-        form = RegistroForm()
-
-    context = {"form": form, "titulo": "Registro de Usuario"}
-    return render(request, "usuarios/registro.html", context)
-
-
 @login_required
 def logout_view(request):
     """
@@ -237,8 +110,8 @@ def logout_view(request):
 
 
 def es_staff(user):
-    """Función auxiliar para verificar si el usuario es staff"""
-    return user.is_staff
+    """Función auxiliar para verificar si el usuario es staff o superusuario"""
+    return user.is_staff or user.is_superuser
 
 
 @login_required
@@ -321,6 +194,9 @@ def editar_usuario_view(request, user_id):
     Vista para editar un usuario existente
     """
     usuario = get_object_or_404(User, id=user_id)
+    
+    # Determinar URL de retorno
+    next_url = request.GET.get('next', request.POST.get('next', ''))
 
     if request.method == "POST":
         form_usuario = EditarUsuarioForm(request.POST, instance=usuario)
@@ -334,7 +210,10 @@ def editar_usuario_view(request, user_id):
             messages.success(
                 request, f"Usuario {usuario.get_full_name()} actualizado exitosamente."
             )
-            return redirect("usuarios:lista_usuario")
+            # Redirigir a la URL de retorno o a gestionar_permisos
+            if next_url:
+                return redirect(next_url)
+            return redirect("usuarios:gestionar_permisos")
         else:
             messages.error(request, "Por favor corrige los errores en el formulario.")
     else:
@@ -348,6 +227,7 @@ def editar_usuario_view(request, user_id):
         "usuario": usuario,
         "accion": "Actualizar",
         "es_perfil_propio": False,
+        "next_url": next_url,
     }
     return render(request, "usuarios/editar_usuario.html", context)
 
@@ -694,8 +574,6 @@ def gestionar_permisos_view(request):
     Vista para que el administrador gestione los permisos de acceso de los usuarios
     Solo accesible por superusuarios
     """
-    from datetime import datetime
-    
     # Obtener filtros
     filtro_actual = request.GET.get('filtro', 'todos')
     buscar = request.GET.get('buscar', '')
@@ -704,12 +582,10 @@ def gestionar_permisos_view(request):
     perfiles = PerfilUsuario.objects.select_related('user').exclude(user__is_superuser=True)
     
     # Aplicar filtros
-    if filtro_actual == 'aprobados':
-        perfiles = perfiles.filter(aprobado=True)
-    elif filtro_actual == 'pendientes':
-        perfiles = perfiles.filter(aprobado=False, razon_rechazo__isnull=True)
-    elif filtro_actual == 'rechazados':
-        perfiles = perfiles.filter(aprobado=False, razon_rechazo__isnull=False)
+    if filtro_actual == 'activos':
+        perfiles = perfiles.filter(user__is_active=True)
+    elif filtro_actual == 'inactivos':
+        perfiles = perfiles.filter(user__is_active=False)
     
     # Aplicar búsqueda
     if buscar:
@@ -726,76 +602,20 @@ def gestionar_permisos_view(request):
     
     # Estadísticas
     total_usuarios = PerfilUsuario.objects.exclude(user__is_superuser=True).count()
-    usuarios_aprobados = PerfilUsuario.objects.filter(aprobado=True).exclude(user__is_superuser=True).count()
-    usuarios_pendientes = PerfilUsuario.objects.filter(aprobado=False, razon_rechazo__isnull=True).exclude(user__is_superuser=True).count()
-    usuarios_rechazados = PerfilUsuario.objects.filter(aprobado=False, razon_rechazo__isnull=False).exclude(user__is_superuser=True).count()
+    usuarios_activos = PerfilUsuario.objects.filter(user__is_active=True).exclude(user__is_superuser=True).count()
+    usuarios_inactivos = PerfilUsuario.objects.filter(user__is_active=False).exclude(user__is_superuser=True).count()
     
     context = {
         'perfiles': perfiles,
         'filtro_actual': filtro_actual,
         'buscar': buscar,
         'total_usuarios': total_usuarios,
-        'usuarios_aprobados': usuarios_aprobados,
-        'usuarios_pendientes': usuarios_pendientes,
-        'usuarios_rechazados': usuarios_rechazados,
+        'usuarios_activos': usuarios_activos,
+        'usuarios_inactivos': usuarios_inactivos,
         'es_superusuario': request.user.is_superuser,
     }
     
     return render(request, 'usuarios/gestionar_permisos.html', context)
-
-
-@login_required(login_url='usuarios:login')
-@user_passes_test(es_superusuario, login_url='core:panel_administrativo')
-def aprobar_usuario_view(request, usuario_id):
-    """
-    Aprueba un usuario para acceder al sistema
-    """
-    from datetime import datetime
-    from django.http import JsonResponse
-    
-    perfil = get_object_or_404(PerfilUsuario, user_id=usuario_id)
-    
-    if request.method == 'POST':
-        perfil.aprobado = True
-        perfil.razon_rechazo = None
-        perfil.fecha_aprobacion = datetime.now()
-        perfil.save()
-        
-        messages.success(request, f'✓ Usuario {perfil.user.username} aprobado exitosamente.')
-        
-        # Si es AJAX, retornar JSON
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({'success': True, 'message': 'Usuario aprobado'})
-    
-    return redirect('core:panel_administrativo')
-
-
-@login_required(login_url='usuarios:login')
-@user_passes_test(es_superusuario, login_url='core:panel_administrativo')
-def rechazar_usuario_view(request, usuario_id):
-    """
-    Rechaza un usuario y no le permite acceder al sistema
-    """
-    from datetime import datetime
-    from django.http import JsonResponse
-    
-    perfil = get_object_or_404(PerfilUsuario, user_id=usuario_id)
-    
-    if request.method == 'POST':
-        razon = request.POST.get('razon', 'No se proporcionó razón')
-        
-        perfil.aprobado = False
-        perfil.razon_rechazo = razon
-        perfil.fecha_aprobacion = None
-        perfil.save()
-        
-        messages.warning(request, f'✗ Usuario {perfil.user.username} rechazado.')
-        
-        # Si es AJAX, retornar JSON
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({'success': True, 'message': 'Usuario rechazado'})
-    
-    return redirect('core:panel_administrativo')
 
 
 @login_required(login_url='usuarios:login')
@@ -851,12 +671,10 @@ def gestionar_permisos_ajax_view(request):
     perfiles = PerfilUsuario.objects.select_related('user').exclude(user__is_superuser=True)
     
     # Aplicar filtros
-    if filtro_actual == 'aprobados':
-        perfiles = perfiles.filter(aprobado=True)
-    elif filtro_actual == 'pendientes':
-        perfiles = perfiles.filter(aprobado=False, razon_rechazo__isnull=True)
-    elif filtro_actual == 'rechazados':
-        perfiles = perfiles.filter(aprobado=False, razon_rechazo__isnull=False)
+    if filtro_actual == 'activos':
+        perfiles = perfiles.filter(user__is_active=True)
+    elif filtro_actual == 'inactivos':
+        perfiles = perfiles.filter(user__is_active=False)
     
     # Aplicar búsqueda
     if buscar:
@@ -873,9 +691,8 @@ def gestionar_permisos_ajax_view(request):
     
     # Estadísticas
     total_usuarios = PerfilUsuario.objects.exclude(user__is_superuser=True).count()
-    usuarios_aprobados = PerfilUsuario.objects.filter(aprobado=True).exclude(user__is_superuser=True).count()
-    usuarios_pendientes = PerfilUsuario.objects.filter(aprobado=False, razon_rechazo__isnull=True).exclude(user__is_superuser=True).count()
-    usuarios_rechazados = PerfilUsuario.objects.filter(aprobado=False, razon_rechazo__isnull=False).exclude(user__is_superuser=True).count()
+    usuarios_activos = PerfilUsuario.objects.filter(user__is_active=True).exclude(user__is_superuser=True).count()
+    usuarios_inactivos = PerfilUsuario.objects.filter(user__is_active=False).exclude(user__is_superuser=True).count()
     
     # Preparar datos de usuarios
     usuarios_data = []
@@ -888,10 +705,7 @@ def gestionar_permisos_ajax_view(request):
             'email': perfil.user.email,
             'telefono': perfil.telefono or 'No especificado',
             'fecha_registro': perfil.user.date_joined.strftime('%d/%m/%Y %H:%M'),
-            'aprobado': perfil.aprobado,
-            'razon_rechazo': perfil.razon_rechazo,
-            'razon_rechazo_corta': ' '.join(perfil.razon_rechazo.split()[:5]) + '...' if perfil.razon_rechazo and len(perfil.razon_rechazo.split()) > 5 else (perfil.razon_rechazo or ''),
-            'fecha_aprobacion': perfil.fecha_aprobacion.strftime('%d/%m/%Y') if perfil.fecha_aprobacion else '',
+            'is_active': perfil.user.is_active,
         })
     
     return JsonResponse({
@@ -899,8 +713,156 @@ def gestionar_permisos_ajax_view(request):
         'usuarios': usuarios_data,
         'estadisticas': {
             'total': total_usuarios,
-            'aprobados': usuarios_aprobados,
-            'pendientes': usuarios_pendientes,
-            'rechazados': usuarios_rechazados,
+            'activos': usuarios_activos,
+            'inactivos': usuarios_inactivos,
         }
     })
+
+
+# ==================== CREAR USUARIO DESDE GESTIÓN DE PERMISOS ====================
+
+@login_required(login_url='usuarios:login')
+@user_passes_test(es_superusuario, login_url='core:panel_administrativo')
+def crear_usuario_permisos_view(request):
+    """
+    Vista para crear un nuevo usuario desde el módulo de gestión de permisos.
+    Similar al registro pero administrado por superusuarios.
+    """
+    from .forms import RegistroForm
+    
+    if request.method == 'POST':
+        form = RegistroForm(request.POST)
+        
+        # Obtener si el usuario debe estar activo
+        usuario_activo = request.POST.get('usuario_activo', 'on') == 'on'
+        
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.is_active = usuario_activo
+            user.save()
+            
+            # Obtener o crear el perfil
+            from .models import PerfilUsuario
+            try:
+                perfil = PerfilUsuario.objects.get(user=user)
+            except PerfilUsuario.DoesNotExist:
+                perfil = PerfilUsuario.objects.create(
+                    user=user,
+                    documento=form.cleaned_data.get('documento', ''),
+                    telefono=form.cleaned_data.get('telefono', '')
+                )
+            
+            messages.success(
+                request,
+                f'✓ Usuario {user.get_full_name() or user.username} creado exitosamente.'
+            )
+            return redirect('usuarios:gestionar_permisos')
+        else:
+            # Se manejan errores en el template
+            pass
+    else:
+        form = RegistroForm()
+    
+    context = {
+        'form': form,
+        'titulo': 'Crear Nuevo Usuario',
+    }
+    return render(request, 'usuarios/crear_usuario_permisos.html', context)
+
+
+# ==================== VER DETALLE DE USUARIO ====================
+
+@login_required(login_url='usuarios:login')
+@user_passes_test(es_superusuario, login_url='core:panel_administrativo')
+def detalle_usuario_permisos_view(request, usuario_id):
+    """
+    Vista para ver todos los detalles de un usuario.
+    Retorna JSON si es una petición AJAX.
+    """
+    usuario = get_object_or_404(User, id=usuario_id)
+    
+    try:
+        perfil = usuario.perfil
+    except PerfilUsuario.DoesNotExist:
+        perfil = None
+    
+    # Si es una petición AJAX, retornar JSON
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        datos_usuario = {
+            'id': usuario.id,
+            'username': usuario.username,
+            'nombre_completo': usuario.get_full_name() or usuario.username,
+            'first_name': usuario.first_name,
+            'last_name': usuario.last_name,
+            'email': usuario.email,
+            'is_active': usuario.is_active,
+            'is_staff': usuario.is_staff,
+            'is_superuser': usuario.is_superuser,
+            'date_joined': usuario.date_joined.strftime('%d/%m/%Y %H:%M'),
+            'last_login': usuario.last_login.strftime('%d/%m/%Y %H:%M') if usuario.last_login else 'Nunca',
+        }
+        
+        if perfil:
+            datos_usuario.update({
+                'documento': perfil.documento,
+                'telefono': perfil.telefono or 'No especificado',
+                'direccion': perfil.direccion or 'No especificada',
+                'fecha_nacimiento': perfil.fecha_nacimiento.strftime('%d/%m/%Y') if perfil.fecha_nacimiento else 'No especificada',
+                'foto_perfil': perfil.foto_perfil.url if perfil.foto_perfil else '',
+            })
+        
+        return JsonResponse({'success': True, 'usuario': datos_usuario})
+    
+    # Si no es AJAX, renderizar template
+    context = {
+        'usuario': usuario,
+        'perfil': perfil,
+        'titulo': f'Detalles de {usuario.get_full_name() or usuario.username}',
+    }
+    return render(request, 'usuarios/detalle_usuario_permisos.html', context)
+
+
+# ==================== CAMBIAR ESTADO ACTIVO/INACTIVO ====================
+
+@login_required(login_url='usuarios:login')
+@user_passes_test(es_superusuario, login_url='core:panel_administrativo')
+def toggle_estado_usuario_view(request, usuario_id):
+    """
+    Cambia el estado activo/inactivo de un usuario.
+    """
+    usuario = get_object_or_404(User, id=usuario_id)
+    
+    # No permitir cambiar estado de superusuarios
+    if usuario.is_superuser:
+        messages.error(request, '❌ No se puede cambiar el estado de un superusuario.')
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'message': 'No se puede cambiar el estado de un superusuario.'})
+        return redirect('usuarios:gestionar_permisos')
+    
+    # No permitir que se desactive a sí mismo
+    if usuario == request.user:
+        messages.error(request, '❌ No puedes desactivar tu propia cuenta.')
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'message': 'No puedes desactivar tu propia cuenta.'})
+        return redirect('usuarios:gestionar_permisos')
+    
+    if request.method == 'POST':
+        # Toggle el estado
+        usuario.is_active = not usuario.is_active
+        usuario.save()
+        
+        estado = 'activado' if usuario.is_active else 'desactivado'
+        emoji = '✓' if usuario.is_active else '⏸️'
+        messages.success(
+            request,
+            f'{emoji} Usuario {usuario.get_full_name() or usuario.username} {estado} exitosamente.'
+        )
+        
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'message': f'Usuario {estado}',
+                'nuevo_estado': usuario.is_active
+            })
+    
+    return redirect('usuarios:gestionar_permisos')

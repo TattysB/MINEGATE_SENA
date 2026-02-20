@@ -1,40 +1,29 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
-from datetime import datetime
-from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, render, redirect
-from django.contrib.auth.decorators import login_required,user_passes_test
 from django.contrib import messages
 from django.db.models import Q
 from usuarios.models import PerfilUsuario
 
-# Create your views here.
 
 def es_superusuario(user):
     """Verifica si el usuario es superusuario"""
     return user.is_superuser
 
-def index (request):
-    return render (request, 'core/index.html')
 
 def index(request):
     return render(request, "core/index.html")
 
 
-def es_superusuario(user):
-    """Verifica si el usuario es superusuario"""
-    return user.is_superuser
-
 @login_required(login_url='usuarios:login')
-def panel_administrativo (request):
+def panel_administrativo(request):
     """
     Panel administrativo principal
     Incluye gestión de permisos solo para superusuarios
     """
-    # Verificar que el usuario esté aprobado (excepto superusuarios)
+    # Verificar que el usuario esté activo (excepto superusuarios)
     if not request.user.is_superuser:
-        if not hasattr(request.user, "perfil") or not request.user.perfil.aprobado:
-            messages.error(request, "No tienes permiso para acceder al sistema.")
+        if not request.user.is_active:
+            messages.error(request, "Tu cuenta está inactiva. Contacta al administrador.")
             return redirect("usuarios:login")
 
     context = {
@@ -54,12 +43,10 @@ def panel_administrativo (request):
         )
 
         # Aplicar filtros
-        if filtro_actual == "aprobados":
-            perfiles = perfiles.filter(aprobado=True)
-        elif filtro_actual == "pendientes":
-            perfiles = perfiles.filter(aprobado=False, razon_rechazo__isnull=True)
-        elif filtro_actual == "rechazados":
-            perfiles = perfiles.filter(aprobado=False, razon_rechazo__isnull=False)
+        if filtro_actual == "activos":
+            perfiles = perfiles.filter(user__is_active=True)
+        elif filtro_actual == "inactivos":
+            perfiles = perfiles.filter(user__is_active=False)
 
         # Aplicar búsqueda
         if buscar:
@@ -76,18 +63,13 @@ def panel_administrativo (request):
 
         # Estadísticas
         total_usuarios = PerfilUsuario.objects.exclude(user__is_superuser=True).count()
-        usuarios_aprobados = (
-            PerfilUsuario.objects.filter(aprobado=True)
+        usuarios_activos = (
+            PerfilUsuario.objects.filter(user__is_active=True)
             .exclude(user__is_superuser=True)
             .count()
         )
-        usuarios_pendientes = (
-            PerfilUsuario.objects.filter(aprobado=False, razon_rechazo__isnull=True)
-            .exclude(user__is_superuser=True)
-            .count()
-        )
-        usuarios_rechazados = (
-            PerfilUsuario.objects.filter(aprobado=False, razon_rechazo__isnull=False)
+        usuarios_inactivos = (
+            PerfilUsuario.objects.filter(user__is_active=False)
             .exclude(user__is_superuser=True)
             .count()
         )
@@ -98,9 +80,8 @@ def panel_administrativo (request):
                 "filtro_actual": filtro_actual,
                 "buscar": buscar,
                 "total_usuarios": total_usuarios,
-                "usuarios_aprobados": usuarios_aprobados,
-                "usuarios_pendientes": usuarios_pendientes,
-                "usuarios_rechazados": usuarios_rechazados,
+                "usuarios_activos": usuarios_activos,
+                "usuarios_inactivos": usuarios_inactivos,
             }
         )
 
@@ -116,13 +97,8 @@ def gestionar_permisos(request):
     """
     # Obtener estadísticas
     total_usuarios = PerfilUsuario.objects.count()
-    usuarios_aprobados = PerfilUsuario.objects.filter(aprobado=True).count()
-    usuarios_pendientes = PerfilUsuario.objects.filter(
-        aprobado=False, razon_rechazo__isnull=True
-    ).count()
-    usuarios_rechazados = PerfilUsuario.objects.filter(
-        aprobado=False, razon_rechazo__isnull=False
-    ).count()
+    usuarios_activos = PerfilUsuario.objects.filter(user__is_active=True).count()
+    usuarios_inactivos = PerfilUsuario.objects.filter(user__is_active=False).count()
 
     # Obtener filtros
     filtro = request.GET.get("filtro", "todos")
@@ -131,12 +107,10 @@ def gestionar_permisos(request):
     # Filtrar perfiles
     perfiles = PerfilUsuario.objects.all().select_related("user")
 
-    if filtro == "aprobados":
-        perfiles = perfiles.filter(aprobado=True)
-    elif filtro == "pendientes":
-        perfiles = perfiles.filter(aprobado=False, razon_rechazo__isnull=True)
-    elif filtro == "rechazados":
-        perfiles = perfiles.filter(aprobado=False, razon_rechazo__isnull=False)
+    if filtro == "activos":
+        perfiles = perfiles.filter(user__is_active=True)
+    elif filtro == "inactivos":
+        perfiles = perfiles.filter(user__is_active=False)
 
     # Búsqueda
     if buscar:
@@ -161,9 +135,8 @@ def gestionar_permisos(request):
     context = {
         "perfiles": perfiles,
         "total_usuarios": total_usuarios,
-        "usuarios_aprobados": usuarios_aprobados,
-        "usuarios_pendientes": usuarios_pendientes,
-        "usuarios_rechazados": usuarios_rechazados,
+        "usuarios_activos": usuarios_activos,
+        "usuarios_inactivos": usuarios_inactivos,
         "filtro_actual": filtro,
         "buscar": buscar,
     }
@@ -224,6 +197,10 @@ def rechazar_usuario(request, usuario_id):
             return JsonResponse({'success': True, 'message': 'Usuario rechazado'})
 
     return redirect('core:gestionar_permisos')  
+def protocolos(request):
+    """Renderiza la página de Protocolos de Seguridad."""
+    return render(request, 'protocolos.html')
+
 
 def visitas(request):
     """Renderiza la página de Registro de Visitas."""
