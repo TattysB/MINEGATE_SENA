@@ -151,7 +151,11 @@
   .calendar-card{padding:18px}
   .calendar-table td{height:48px}
   .actions .btn{padding:12px 30px}
+<<<<<<< HEAD
+  
+=======
 
+>>>>>>> develop
 
 /* Utility: visually hidden for captions and screen-reader text */
 .sr-only{position:absolute!important;height:1px;width:1px;overflow:hidden;clip:rect(1px,1px,1px,1px);white-space:nowrap;border:0;padding:0;margin:-1px}

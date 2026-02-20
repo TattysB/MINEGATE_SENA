@@ -144,6 +144,59 @@ def gestionar_permisos(request):
     return render(request, "core/gestionar_permisos.html", context)
 
 
+@login_required(login_url="usuarios:login")
+@user_passes_test(es_superusuario, login_url="core:panel_administrativo")
+def aprobar_usuario(request, usuario_id):
+    """
+    Aprueba un usuario para acceder al sistema
+    """
+    perfil = get_object_or_404(PerfilUsuario, user_id=usuario_id)
+
+    if request.method == "POST":
+        perfil.aprobado = True
+        perfil.razon_rechazo = None
+        perfil.fecha_aprobacion = datetime.now()
+        perfil.save()
+
+        messages.success(
+            request, f"✓ Usuario {perfil.user.username} aprobado exitosamente."
+        )
+
+        # Si es AJAX, retornar JSON
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({"success": True, "message": "Usuario aprobado"})
+
+    return redirect("core:gestionar_permisos")
+
+
+@login_required(login_url="usuarios:login")
+@user_passes_test(es_superusuario, login_url="core:panel_administrativo")
+def rechazar_usuario(request, usuario_id):
+    """
+    Rechaza un usuario y no le permite acceder al sistema
+    """
+    perfil = get_object_or_404(PerfilUsuario, user_id=usuario_id)
+
+    if request.method == "POST":
+        razon = request.POST.get("razon", "No se proporcionó razón")
+
+        perfil.aprobado = False
+        perfil.razon_rechazo = razon
+        perfil.fecha_aprobacion = None
+        perfil.save()
+
+        messages.warning(request, f"✗ Usuario {perfil.user.username} rechazado.")
+
+        # Si es AJAX, retornar JSON
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({"success": True, "message": "Usuario rechazado"})
+
+    return redirect("core:gestionar_permisos")
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': True, 'message': 'Usuario rechazado'})
+
+    return redirect('core:gestionar_permisos')  
 def protocolos(request):
     """Renderiza la página de Protocolos de Seguridad."""
     return render(request, 'protocolos.html')
@@ -152,3 +205,8 @@ def protocolos(request):
 def visitas(request):
     """Renderiza la página de Registro de Visitas."""
     return render(request, 'core/visitas.html')
+
+
+def error_404(request, exception=None):
+    """Maneja errores 404 - Página no encontrada"""
+    return render(request, '404.html', status=404)

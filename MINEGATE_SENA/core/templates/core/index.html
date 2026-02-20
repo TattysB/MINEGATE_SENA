@@ -45,7 +45,7 @@
                 <li>Cumplimiento verificado de Equipos de Protección Personal (EPP).</li>
                 <li>Reportes detallados para auditorías de seguridad.</li>
             </ul>
-            <a href="{% url 'core:protocolos' %}" class="link-more">Ver Protocolos de Seguridad »</a>
+            <a href="{% url 'pdf:Prot_Sostenimiento_Carbon.pdf' %}" class="btn btn-primary btn-lg">
         </div>
 
         <div class="feature-card education-focus">
@@ -62,14 +62,76 @@
                 <li>Comunicación automatizada de la aprobación o rechazo.</li>
                 <li>Promoción del conocimiento geológico y de ingeniería de minas.</li>
             </ul>
-            <a href="#" class="link-more">Proceso de Solicitud de Visitas »</a>
         </div>
     </div>
 
 </section>
-
 <section>
+<!-- Publicidad -->
+<div class="container mt-4">
+    <div class="row g-4">
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 border-top border-primary border-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
+                            <i class="fas fa-qrcode fa-2x text-primary"></i>
+                        </div>
+                        <h4 class="card-title mb-0">Control de Acceso</h4>
+                    </div>
+                    <p class="card-text text-secondary">Uso de lectores de código de barras y QR integrados para una trazabilidad total.</p>
+                    <ul class="list-unstyled small">
+                        <li><i class="fas fa-check text-success me-2"></i>Validación de credenciales</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 border-top border-warning border-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-warning bg-opacity-10 p-3 rounded-circle me-3">
+                            <i class="fas fa-hard-hat fa-2x text-warning"></i>
+                        </div>
+                        <h4 class="card-title mb-0">Equipo EPP</h4>
+                    </div>
+                    <p class="card-text text-secondary">Requisitos mínimos obligatorios para ingreso y permanencia en zona.</p>
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="badge bg-light text-dark border"><i class="fas fa-helmet-safety me-1"></i> Casco</span>
+                        <span class="badge bg-light text-dark border"><i class="fas fa-boot me-1"></i> Botas</span>
+                        <span class="badge bg-light text-dark border"><i class="fas fa-vest me-1"></i> Chaleco</span>
+                        <span class="badge bg-light text-dark border"><i class="fas fa-mitten me-1"></i> Guantes</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 border-top border-success border-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-success bg-opacity-10 p-3 rounded-circle me-3">
+                            <i class="fas fa-file-export fa-2x text-success"></i>
+                        </div>
+                        <h4 class="card-title mb-0">Reportes</h4>
+                    </div>
+                    <p class="card-text text-secondary">Exportación de datos y respaldos automatizados en la nube.</p>
+                    <ul class="list-unstyled small">
+                        <li><i class="fas fa-file-pdf text-danger me-2"></i>Formatos PDF y CSV</li>
+                        <li><i class="fas fa-envelope-open-text text-primary me-2"></i>Alertas por Email</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <div style="display: flex; justify-content: center; align-items: center;">
+        <p> </p>
+    </div>
 <!--CAROUSEL -->
+
     <div id="minegateCarousel" class="carousel slide" data-bs-ride="carousel">
     <div class="carousel-indicators">
         <button type="button" data-bs-target="#minegateCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
@@ -111,14 +173,14 @@
         </button>
     </div>
 </section>
-
-<section >
-    <div class="container mt-4">
-        
-        <h3>Nuestra Ubicación</h3>
-        <div id="map"></div>
-        <script src="{% static 'js/mapa.js' %}?v=1.1"></script>
-
+    
+<section class="mt-5">
+    <div class="container">
+        <div style="display: flex; justify-content: center; align-items: center;">
+            <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3969.8779475232395!2d-72.8948405!3d5.7307141999999995!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8e6a491be67608dd%3A0x638a5b4bcf1dcb98!2sOFICINA%20GICEMIN!5e0!3m2!1ses!2sco!4v1770656231113!5m2!1ses!2sco" width="1400" height="480" style="border:0; border-radius: 8px;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
     </div>
 </section>
+
+
 {% endblock content %}
