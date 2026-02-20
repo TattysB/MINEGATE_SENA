@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html>
 <head>
@@ -23,8 +24,22 @@
   </style>
 </head>
 <body>
+=======
+{% extends "master.html" %}
+{% load static %}
+>>>>>>> develop
 
-<div class="container">
+{% block title %}Detalle de Visita Externa{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/detalle_visita.css' %}">
+<style>
+    .navbar, .footer { display: none !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
   <h1>{{ visita.nombre }}</h1>
   
   <div class="field">
@@ -78,6 +93,4 @@
     <p><a href="{% url 'visitaExterna:visita_externa' %}">Volver a Visitas Externas</a></p>
   </div>
 </div>
-
-</body>
-</html>
+{% endblock %}

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -28,6 +29,23 @@
 <body>
     <div class="container">
         <h1>Eliminar Visita Externa</h1>
+=======
+{% extends "master.html" %}
+{% load static %}
+
+{% block title %}Eliminar Visita Externa{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/eliminar_visita.css' %}">
+<style>
+    .navbar, .footer { display: none !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1>Eliminar Visita Externa</h1>
+>>>>>>> develop
     
     <p class="warning">¿Está seguro de que desea eliminar la siguiente visita?</p>
     
@@ -46,9 +64,8 @@
         {% csrf_token %}
         <div class="buttons">
             <button type="submit">Confirmar Eliminación</button>
-            <a href="{% url 'core:visitas' %}"><button type="button">Cancelar</button></a>
+            <a href="{% url 'visitaExterna:visita_externa' %}"><button type="button">Cancelar</button></a>
         </div>
     </form>
-    </div>
-</body>
-</html>
+</div>
+{% endblock %}

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -29,6 +30,23 @@
 <body>
     <div class="container">
         <h1>Editar Visita Externa</h1>
+=======
+{% extends "master.html" %}
+{% load static %}
+
+{% block title %}Editar Visita Externa{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/editar_visita.css' %}">
+<style>
+    .navbar, .footer { display: none !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1>Editar Visita Externa</h1>
+>>>>>>> develop
     
     <form method="POST">
         {% csrf_token %}
@@ -99,9 +117,8 @@
         
         <div class="buttons">
             <button type="submit">Actualizar Visita</button>
-            <a href="{% url 'core:visitas' %}"><button type="button">Cancelar</button></a>
+            <a href="{% url 'visitaExterna:visita_externa' %}"><button type="button">Cancelar</button></a>
         </div>
     </form>
-    </div>
-</body>
-</html>
+</div>
+{% endblock %}
