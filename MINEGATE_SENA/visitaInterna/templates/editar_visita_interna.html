@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -28,6 +29,22 @@
 </head>
 <body>
     <div class="container">
+=======
+{% extends "master.html" %}
+{% load static %}
+
+{% block title %}Editar Visita Interna - MINEGATE{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/editar_visita_interna.css' %}">
+<style>
+  .navbar, .footer { display: none !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+>>>>>>> develop
         <h1>Editar Visita Interna</h1>
         
         <form method="POST">
@@ -107,9 +124,8 @@
             
             <div class="buttons">
                 <button type="submit">Actualizar Visita</button>
-                <a href="{% url 'core:visitas' %}"><button type="button">Cancelar</button></a>
+                <a href="{% url 'visitaInterna:visita_interna' %}"><button type="button">Cancelar</button></a>
             </div>
         </form>
-    </div>
-</body>
-</html>
+</div>
+{% endblock %}

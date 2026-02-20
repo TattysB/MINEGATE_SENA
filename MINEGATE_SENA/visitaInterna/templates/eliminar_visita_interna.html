@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -27,6 +28,22 @@
 </head>
 <body>
     <div class="container">
+=======
+{% extends "master.html" %}
+{% load static %}
+
+{% block title %}Eliminar Visita Interna - MINEGATE{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/eliminar_visita_interna.css' %}">
+<style>
+  .navbar, .footer { display: none !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+>>>>>>> develop
         <h1>Eliminar Visita Interna</h1>
         
         <p class="warning">¿Está seguro de que desea eliminar la siguiente visita?</p>
@@ -47,9 +64,8 @@
             {% csrf_token %}
             <div class="buttons">
                 <button type="submit">Confirmar Eliminación</button>
-                <a href="{% url 'core:visitas' %}"><button type="button">Cancelar</button></a>
+                <a href="{% url 'visitaInterna:visita_interna' %}"><button type="button">Cancelar</button></a>
             </div>
         </form>
-    </div>
-</body>
-</html>
+</div>
+{% endblock %}

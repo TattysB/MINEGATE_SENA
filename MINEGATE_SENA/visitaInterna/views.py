@@ -2,6 +2,7 @@ from django.http import HttpResponse
 from django.template import loader
 from django.shortcuts import redirect
 from django.contrib import messages
+from django.urls import reverse
 from .models import VisitaInterna
 from .forms import VisitaInternaForm
 
@@ -39,12 +40,8 @@ def crear_visita(request):
   if request.method == 'POST':
     form = VisitaInternaForm(request.POST)
     if form.is_valid():
-      # Crear la visita con estado pendiente (revisión admin)
-      visita = form.save(commit=False)
-      visita.estado = 'pendiente'  # Pendiente de revisión por administrador
-      visita.save()
-      messages.success(request, '✅ Su solicitud de visita ha sido enviada y está pendiente de revisión por el administrador.')
-      return redirect('core:visitas')
+      form.save()
+      return redirect(reverse('core:visitas'))
   else:
     form = VisitaInternaForm()
   
@@ -61,7 +58,7 @@ def editar_visita(request, id):
     form = VisitaInternaForm(request.POST, instance=visita)
     if form.is_valid():
       form.save()
-      return redirect('visita_interna')
+      return redirect(reverse('visitaInterna:visita_interna'))
   else:
     form = VisitaInternaForm(instance=visita)
   
@@ -86,7 +83,7 @@ def eliminar_visita(request, id):
   visita = VisitaInterna.objects.get(id=id)
   if request.method == 'POST':
     visita.delete()
-    return redirect('visita_interna')
+    return redirect(reverse('visitaInterna:visita_interna'))
   
   template = loader.get_template('eliminar_visita_interna.html')
   context = {

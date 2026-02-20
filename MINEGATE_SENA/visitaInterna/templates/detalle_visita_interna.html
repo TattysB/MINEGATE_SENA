@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html>
 <head>
@@ -28,8 +29,22 @@
   </style>
 </head>
 <body>
+=======
+{% extends "master.html" %}
+{% load static %}
+>>>>>>> develop
 
-<div class="container">
+{% block title %}Detalle de Visita Interna - MINEGATE{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/detalle_visita_interna.css' %}">
+<style>
+  .navbar, .footer { display: none !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
   <h1>{{ visita.nombre_programa }}</h1>
   
   <div class="field">
@@ -88,6 +103,4 @@
     <p><a href="{% url 'visitaInterna:visita_interna' %}">Volver a Visitas Internas</a></p>
   </div>
 </div>
-
-</body>
-</html>
+{% endblock %}

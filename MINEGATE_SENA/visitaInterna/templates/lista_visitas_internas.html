@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html>
 <head>
@@ -36,8 +37,22 @@
   </style>
 </head>
 <body>
+=======
+{% extends "master.html" %}
+{% load static %}
+>>>>>>> develop
 
-<div class="container">
+{% block title %}Visitas Internas - MINEGATE{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/lista_visitas_internas.css' %}">
+<style>
+  .navbar, .footer { display: none !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
   <h1>Lista de Visitas Internas</h1>
   <div class="btn-crear"><a href="{% url 'visitaInterna:crear_visita_interna' %}"><button>+ Crear Nueva Visita</button></a></div>
 
@@ -103,5 +118,4 @@
   <p class="sin-datos">No hay visitas internas registradas.</p>
 {% endif %}
 </div>
-</body>
-</html>
+{% endblock %}
