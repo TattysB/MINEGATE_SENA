@@ -3,6 +3,8 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db.models import Q
 from usuarios.models import PerfilUsuario
+from django.http import JsonResponse
+from datetime import datetime
 
 
 def es_superusuario(user):
@@ -144,7 +146,6 @@ def gestionar_permisos(request):
     return render(request, "core/gestionar_permisos.html", context)
 
 
-<<<<<<< HEAD
 @login_required(login_url="usuarios:login")
 @user_passes_test(es_superusuario, login_url="core:panel_administrativo")
 def aprobar_usuario(request, usuario_id):
@@ -198,21 +199,19 @@ def rechazar_usuario(request, usuario_id):
             return JsonResponse({'success': True, 'message': 'Usuario rechazado'})
 
     return redirect('core:gestionar_permisos')  
-=======
 def protocolos(request):
     """Renderiza la página de Protocolos de Seguridad."""
     return render(request, 'protocolos.html')
->>>>>>> develop
+def protocolos(request):
+    """Renderiza la página de Protocolos de Seguridad."""
+    return render(request, 'protocolos.html')
 
 
 def visitas(request):
     """Renderiza la página de Registro de Visitas."""
     return render(request, 'core/visitas.html')
-<<<<<<< HEAD
 
 
 def error_404(request, exception=None):
     """Maneja errores 404 - Página no encontrada"""
     return render(request, '404.html', status=404)
-=======
->>>>>>> develop

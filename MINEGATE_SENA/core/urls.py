@@ -12,15 +12,13 @@ urlpatterns = [
     path(
         "gestionar_permisos/", views.gestionar_permisos, name="gestionar_permisos"
     ),
-<<<<<<< HEAD
     path(
         "aprobar_usuario/<int:usuario_id>/", views.aprobar_usuario, name="aprobar_usuario"
     ),
     path(
         "rechazar_usuario/<int:usuario_id>/", views.rechazar_usuario, name="rechazar_usuario"
     ),
-=======
     path('protocolos/', views.protocolos, name='protocolos'),
->>>>>>> develop
+    path('protocolos/', views.protocolos, name='protocolos'),
     path('visitas/', views.visitas, name='visitas'),
 ]
