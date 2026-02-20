@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restablecer Contraseña - MINEGATE</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .greeting {
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        .message-box {
+            background-color: #f0f7ff;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .message-box p {
+            margin: 0;
+            color: #1e40af;
+            font-size: 14px;
+        }
+
+        .action-box {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .action-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 40px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .action-button:hover {
+            opacity: 0.9;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .link-box {
+            background-color: #f5f5f5;
+            border: 1px dashed #ddd;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            word-break: break-all;
+        }
+
+        .link-box p {
+            margin: 0;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .link-box a {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .important {
+            background-color: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .important p {
+            margin: 0;
+            font-size: 13px;
+            color: #856404;
+        }
+
+        .instructions {
+            background-color: #e8f4f8;
+            padding: 20px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+
+        .instructions h3 {
+            margin-top: 0;
+            color: #2980b9;
+            font-size: 14px;
+        }
+
+        .instructions ol {
+            margin: 10px 0;
+            padding-left: 20px;
+            font-size: 13px;
+            color: #34495e;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+        }
+
+        .footer {
+            background-color: #f9f9f9;
+            padding: 20px 30px;
+            text-align: center;
+            border-top: 1px solid #eee;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .footer a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        .security-note {
+            background-color: #e8f5e9;
+            border-left: 4px solid #27ae60;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .security-note p {
+            margin: 0;
+            font-size: 13px;
+            color: #1b5e20;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🔐 Restablece tu Contraseña</h1>
+            <p>Sistema de Gestión de Visitas MINEGATE</p>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <!-- Saludo -->
+            <div class="greeting">
+                Hola,<br>
+                <strong>Hemos recibido una solicitud para restablecer la contraseña</strong> de tu cuenta en MINEGATE.
+            </div>
+
+            <!-- Información sobre el proceso -->
+            <div class="message-box">
+                <p>📧 Si solicitaste restablecer tu contraseña, haz clic en el botón a continuación para crear una nueva contraseña segura.</p>
+            </div>
+
+            <!-- Botón de acción -->
+            <div class="action-box">
+                <a href="{{ reset_url }}" class="action-button">Restablecer Contraseña</a>
+            </div>
+
+            <!-- Si copiar/pegar es necesario -->
+            <div class="link-box">
+                <p><strong>O copia y pega este enlace en tu navegador:</strong></p>
+                <a href="{{ reset_url }}">{{ reset_url }}</a>
+            </div>
+
+            <!-- Instrucciones -->
+            <div class="instructions">
+                <h3>📋 Pasos a seguir:</h3>
+                <ol>
+                    <li>Haz clic en el botón "Restablecer Contraseña" o copia el enlace anterior</li>
+                    <li>Ingresa tu nueva contraseña (mínimo 8 caracteres)</li>
+                    <li>Asegúrate de crear una contraseña segura con mayúsculas, números y caracteres especiales</li>
+                    <li>Confirma tu nueva contraseña</li>
+                    <li>Inicia sesión con tu nueva contraseña</li>
+                </ol>
+            </div>
+
+            <!-- Advertencia de validez del enlace -->
+            <div class="important">
+                <p>
+                    <strong>⏰ Importante:</strong> Este enlace es válido únicamente por <strong>24 horas</strong>. 
+                    Si expira, puedes solicitar un nuevo enlace de recuperación.
+                </p>
+            </div>
+
+            <!-- Nota de seguridad -->
+            <div class="security-note">
+                <p>
+                    <strong>🛡️ Por tu seguridad:</strong> MINEGATE nunca te pedirá tu contraseña por correo electrónico. 
+                    Si no solicitaste este cambio, ignora este mensaje o contacta al administrador.
+                </p>
+            </div>
+
+            <!-- Ayuda adicional -->
+            <div style="margin: 20px 0; padding: 15px; background-color: #f5f5f5; border-radius: 4px; font-size: 13px; color: #666;">
+                <p>
+                    <strong>¿Necesitas ayuda?</strong><br>
+                    Si tienes problemas para restablecer tu contraseña, contacta al equipo de soporte de MINEGATE 
+                    respondiendo a este correo o visitando nuestra página de ayuda.
+                </p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>
+                © 2026 MINEGATE - Sistema de Gestión de Visitas<br>
+                <a href="">Política de Privacidad</a> | 
+                <a href="">Términos de Servicio</a><br>
+                <strong>Este es un correo automático, no respondas a este mensaje.</strong>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

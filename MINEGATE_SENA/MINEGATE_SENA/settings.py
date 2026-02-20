@@ -149,6 +149,23 @@ LOGIN_URL = "usuarios:login"  # A dónde ir si no está autenticado
 LOGIN_REDIRECT_URL = "core:dashboard"  # A dónde ir después de login exitoso
 LOGOUT_REDIRECT_URL = "core:index"  # A dónde ir después de logout
 
+
+# EMAIL CONFIGURATION
+# Para desarrollo, usar Console Email Backend (muestra correos en consola)
+# Para producción, cambiar a SMTP Real
+
+# Configuración de correo para DESARROLLO (muestra en consola)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Configuración de correo para PRODUCCIÓN (descomenta cuando sea necesario)
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.gmail.com'  # o tu proveedor de correo
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = 'tu-correo@gmail.com'
+# EMAIL_HOST_PASSWORD = 'tu-contraseña-aplicación'
+# DEFAULT_FROM_EMAIL = 'tu-correo@gmail.com'
+
 # Configuración de correo electrónico
 """ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 EMAIL_HOST = 'localhost'
