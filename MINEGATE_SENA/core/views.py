@@ -151,4 +151,4 @@ def protocolos(request):
 
 def visitas(request):
     """Renderiza la página de Registro de Visitas."""
-    return render(request, 'visitas.html')
+    return render(request, 'core/visitas.html')
