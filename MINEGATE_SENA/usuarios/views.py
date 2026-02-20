@@ -756,7 +756,7 @@ def crear_usuario_permisos_view(request):
                 request,
                 f'✓ Usuario {user.get_full_name() or user.username} creado exitosamente.'
             )
-            return redirect('usuarios:gestionar_permisos')
+            form = RegistroForm()  # Limpiar el formulario para uno nuevo
         else:
             # Se manejan errores en el template
             pass

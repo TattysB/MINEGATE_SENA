@@ -18,18 +18,14 @@ from django.conf import settings
 
 def login_responsable(request):
     """
-    Login para responsables de visitas usando correo y documento.
+    Login para responsables de visitas usando solo documento y contraseña.
     """
     if request.method == 'POST':
-        correo = request.POST.get('correo', '').strip()
         documento = request.POST.get('documento', '').strip()
         contrasena = request.POST.get('contrasena', '')
-        rol = request.POST.get('rol', 'interno')
 
         visitante = RegistroVisitante.objects.filter(
-            correo__iexact=correo,
-            documento=documento,
-            rol=rol
+            documento=documento
         ).first()
 
         if visitante and visitante.check_password(contrasena):
@@ -42,13 +38,13 @@ def login_responsable(request):
             
             messages.success(
                 request,
-                f'Bienvenido {correo}. Accediendo a tu panel...'
+                f'Bienvenido {visitante.correo}. Accediendo a tu panel...'
             )
             return redirect('panel_visitante:panel_responsable')
 
         messages.error(
             request,
-            'Credenciales invalidas. Verifica correo, documento, rol y contrasena.',
+            'Credenciales inválidas. Verifica tu documento y contraseña.',
         )
     
     return render(request, 'login_responsable.html')
@@ -58,8 +54,9 @@ def registro_visita(request):
     """
     Registro inicial de visita para responsables.
     """
-    if request.user.is_authenticated:
-        return redirect('core:panel_administrativo')
+    # Si ya hay una sesión de responsable activa, redirigir al panel de responsable
+    if request.session.get('responsable_autenticado'):
+        return redirect('panel_visitante:panel_responsable')
 
     if request.method == 'POST':
         form = RegistroVisitanteForm(request.POST)
@@ -95,7 +92,7 @@ def logout_responsable(request):
     request.session.pop('responsable_documento', None)
     request.session.pop('responsable_autenticado', None)
     messages.success(request, 'Sesión cerrada correctamente.')
-    return redirect('core:visitas')
+    return redirect('panel_visitante:login_responsable')
 
 
 def panel_responsable(request):
