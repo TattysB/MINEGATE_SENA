@@ -45,7 +45,7 @@
                 <li>Cumplimiento verificado de Equipos de Protección Personal (EPP).</li>
                 <li>Reportes detallados para auditorías de seguridad.</li>
             </ul>
-            <a href="https://www.minenergia.gov.co/documents/9604/Prot_Sostenimiento_Carbon.pdf" target="_blank" class="link-more">Ver Protocolos de Seguridad »</a>
+            <a href="{% url 'pdf:Prot_Sostenimiento_Carbon.pdf' %}" class="btn btn-primary btn-lg">
         </div>
 
         <div class="feature-card education-focus">
@@ -181,4 +181,6 @@
         </div>
     </div>
 </section>
+
+
 {% endblock content %}
