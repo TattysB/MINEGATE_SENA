@@ -32,11 +32,15 @@ class VisitaExternaForm(forms.ModelForm):
             }),
             'documento_responsable': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Ingrese el número de documento'
+                'placeholder': 'Documento del responsable',
+                'readonly': True,
+                'style': 'background-color: #e9ecef; cursor: not-allowed;'
             }),
             'correo_responsable': forms.EmailInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'correo@ejemplo.com'
+                'placeholder': 'correo@ejemplo.com',
+                'readonly': True,
+                'style': 'background-color: #e9ecef; cursor: not-allowed;'
             }),
             'telefono_responsable': forms.TextInput(attrs={
                 'class': 'form-control',
