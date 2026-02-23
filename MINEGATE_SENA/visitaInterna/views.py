@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.urls import reverse
 from .models import VisitaInterna
 from .forms import VisitaInternaForm
+from panel_visitante.models import RegistroVisitante
 
 def visita_interna(request):
   visitas = VisitaInterna.objects.all()
@@ -44,6 +45,16 @@ def crear_visita(request):
   correo_responsable = request.session.get('responsable_correo')
   documento_responsable = request.session.get('responsable_documento')
   
+  # Obtener datos del visitante registrado
+  visitante = None
+  try:
+    visitante = RegistroVisitante.objects.get(
+      correo__iexact=correo_responsable,
+      documento=documento_responsable
+    )
+  except RegistroVisitante.DoesNotExist:
+    pass
+  
   if request.method == 'POST':
     form = VisitaInternaForm(request.POST)
     if form.is_valid():
@@ -62,12 +73,19 @@ def crear_visita(request):
     form = VisitaInternaForm()
     form.fields['documento_responsable'].initial = documento_responsable
     form.fields['correo_responsable'].initial = correo_responsable
+    
+    # Precarga datos del visitante si existen
+    if visitante:
+      form.fields['responsable'].initial = f"{visitante.nombre} {visitante.apellido}"
+      form.fields['tipo_documento_responsable'].initial = visitante.tipo_documento
+      form.fields['telefono_responsable'].initial = visitante.telefono
   
   template = loader.get_template('crear_visita_interna.html')
   context = {
     'form': form,
     'correo_responsable': correo_responsable,
     'documento_responsable': documento_responsable,
+    'visitante': visitante,
   }
   return HttpResponse(template.render(context, request))
 

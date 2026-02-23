@@ -25,10 +25,15 @@ class VisitaExternaForm(forms.ModelForm):
             }),
             'nombre_responsable': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Ingrese el nombre'
+                'placeholder': 'Ingrese el nombre',
+                'readonly': True,
+                'style': 'background-color: #e9ecef; cursor: not-allowed;'
             }),
             'tipo_documento_responsable': forms.Select(attrs={
-                'class': 'form-control'
+                'class': 'form-control',
+                'readonly': True,
+                'style': 'background-color: #e9ecef; cursor: not-allowed;',
+                'disabled': True
             }),
             'documento_responsable': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -44,7 +49,9 @@ class VisitaExternaForm(forms.ModelForm):
             }),
             'telefono_responsable': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': '3001234567'
+                'placeholder': '3001234567',
+                'readonly': True,
+                'style': 'background-color: #e9ecef; cursor: not-allowed;'
             }),
             'cantidad_visitantes': forms.NumberInput(attrs={
                 'class': 'form-control',
