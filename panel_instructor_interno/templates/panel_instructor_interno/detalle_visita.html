@@ -1,0 +1,287 @@
+{% extends "master.html" %}
+{% load static %}
+
+{% block title %}Detalle Visita #{{ visita.id }} - MINEGATE{% endblock %}
+
+{% block extra_css %}
+<style>
+  :root { --sena-verde: #39a900; --sena-verde-oscuro: #2d8600; }
+
+  .page-header { background: linear-gradient(135deg, #1a5c00, var(--sena-verde)); color: white; padding: 2rem 0; }
+  .page-header h2 { font-weight: 800; }
+  .breadcrumb-nav a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.85rem; }
+  .breadcrumb-nav span { color: rgba(255,255,255,0.5); margin: 0 6px; }
+
+  .detail-card { background: white; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden; margin-bottom: 1.5rem; }
+  .detail-card-header { padding: 1rem 1.5rem; display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1rem; border-bottom: 1px solid #f0f0f0; }
+  .detail-card-header.verde { background: #f0fdf4; color: #166534; border-bottom-color: #bbf7d0; }
+  .detail-card-header.azul { background: #eff6ff; color: #1e40af; border-bottom-color: #bfdbfe; }
+  .detail-card-header.morado { background: #faf5ff; color: #6b21a8; border-bottom-color: #e9d5ff; }
+  .detail-card-body { padding: 1.5rem; }
+  .info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.2rem; }
+  .info-item label { display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #9ca3af; margin-bottom: 3px; }
+  .info-item span { font-size: 0.95rem; font-weight: 600; color: #111827; }
+
+  /* Timeline */
+  .timeline { padding: 0.5rem 0; }
+  .timeline-step { display: flex; align-items: flex-start; gap: 1.2rem; margin-bottom: 1.5rem; position: relative; }
+  .timeline-step:not(:last-child)::before { content:''; position:absolute; left:18px; top:38px; width:2px; height:calc(100% + 8px); background:#e5e7eb; }
+  .timeline-step.done::before { background: var(--sena-verde); }
+  .step-circle { width:38px; height:38px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:1rem; border:2px solid #e5e7eb; background:white; color:#9ca3af; position:relative; z-index:1; }
+  .step-circle.done { background:var(--sena-verde); border-color:var(--sena-verde); color:white; }
+  .step-circle.active { background:#fef3c7; border-color:#f59e0b; color:#92400e; }
+  .step-circle.rejected { background:#fee2e2; border-color:#ef4444; color:#991b1b; }
+  .step-info h6 { font-size:0.9rem; font-weight:700; margin:0 0 2px; color:#111827; }
+  .step-info small { font-size:0.78rem; color:#6b7280; }
+  .step-info.done h6 { color: var(--sena-verde); }
+  .step-info.active h6 { color:#92400e; }
+
+  /* Asistentes */
+  .asistente-item { background:#f9fafb; border:1px solid #e5e7eb; border-radius:10px; padding:0.9rem 1.2rem; margin-bottom:0.7rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+  .asistente-info h6 { font-size:0.9rem; font-weight:700; margin:0 0 3px; color:#111827; }
+  .asistente-info small { color:#6b7280; font-size:0.8rem; }
+  .btn-registrar { background:var(--sena-verde); color:white; border:none; padding:10px 22px; border-radius:50px; font-weight:700; font-size:0.9rem; text-decoration:none; display:inline-flex; align-items:center; gap:7px; transition:all 0.2s; }
+  .btn-registrar:hover { background:var(--sena-verde-oscuro); color:white; transform:translateY(-1px); }
+  .btn-enviar { background:#6366f1; color:white; border:none; padding:10px 22px; border-radius:50px; font-weight:700; font-size:0.9rem; text-decoration:none; display:inline-flex; align-items:center; gap:7px; transition:all 0.2s; }
+  .btn-enviar:hover { background:#4f46e5; color:white; }
+  .btn-eliminar-asi { background:transparent; color:#ef4444; border:1px solid #ef4444; padding:4px 12px; border-radius:50px; font-size:0.78rem; font-weight:600; text-decoration:none; transition:all 0.2s; }
+  .btn-eliminar-asi:hover { background:#fee2e2; color:#991b1b; }
+  .progress-wrap { background:#e9ecef; border-radius:50px; height:12px; overflow:hidden; margin:0.5rem 0; }
+  .progress-fill { background:linear-gradient(90deg, var(--sena-verde), #5dc72e); height:100%; border-radius:50px; transition:width 0.5s; }
+  .empty-asistentes { text-align:center; padding:2rem; color:#9ca3af; }
+  .empty-asistentes i { font-size:2rem; opacity:0.4; }
+  .estado-aprobada { background:#d1fae5; color:#065f46; padding:4px 12px; border-radius:50px; font-size:0.8rem; font-weight:700; }
+  .info-box-aprobada { background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:1rem 1.3rem; font-size:0.88rem; color:#166534; }
+  .info-box-enviado { background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; padding:1rem 1.3rem; font-size:0.88rem; color:#1e40af; }
+</style>
+{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<div class="page-header">
+  <div class="container">
+    <div class="breadcrumb-nav mb-2">
+      <a href="{% url 'panel_instructor_interno:panel' %}">Mi Panel</a>
+      <span>›</span>
+      <a href="{% url 'panel_instructor_interno:mis_visitas' %}">Mis Visitas</a>
+      <span>›</span>
+      <span style="color:rgba(255,255,255,0.9)">Visita #{{ visita.id }}</span>
+    </div>
+    <h2><i class="fas fa-clipboard-check me-3"></i>Detalle de Visita #{{ visita.id }}</h2>
+    <p class="mb-0 mt-1" style="opacity:0.85;">{{ visita.nombre_programa }} — Ficha {{ visita.numero_ficha }}</p>
+  </div>
+</div>
+
+<div class="container py-4">
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{% if 'error' in message.tags %}danger{% elif 'success' in message.tags %}success{% else %}warning{% endif %} alert-dismissible fade show" role="alert">
+        {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- ===== TIMELINE DE ESTADO ===== -->
+  <div class="detail-card">
+    <div class="detail-card-header verde"><i class="fas fa-map-signs"></i>Estado de la Solicitud</div>
+    <div class="detail-card-body">
+      {% with estado=visita.estado %}
+      <div class="timeline">
+
+        <div class="timeline-step {% if estado != 'pendiente' %}done{% endif %}">
+          <div class="step-circle {% if estado == 'pendiente' %}active{% else %}done{% endif %}">
+            {% if estado == 'pendiente' %}<i class="fas fa-clock"></i>{% else %}<i class="fas fa-check"></i>{% endif %}
+          </div>
+          <div class="step-info {% if estado == 'pendiente' %}active{% else %}done{% endif %}">
+            <h6>Solicitud enviada</h6>
+            <small>{{ visita.fecha_solicitud|date:"d M Y H:i" }}</small>
+          </div>
+        </div>
+
+        {% if estado != 'rechazada' %}
+        <div class="timeline-step {% if estado not in 'pendiente,enviada_coordinacion' %}done{% endif %}">
+          <div class="step-circle {% if estado == 'enviada_coordinacion' %}active{% elif estado not in 'pendiente,enviada_coordinacion' %}done{% endif %}">
+            <i class="fas fa-paper-plane"></i>
+          </div>
+          <div class="step-info {% if estado == 'enviada_coordinacion' %}active{% elif estado not in 'pendiente,enviada_coordinacion' %}done{% endif %}">
+            <h6>Enviada a coordinación</h6>
+            <small>El equipo administrativo revisa la solicitud</small>
+          </div>
+        </div>
+
+        <div class="timeline-step {% if estado in 'documentos_enviados,en_revision_documentos,confirmada' %}done{% endif %}">
+          <div class="step-circle {% if estado == 'aprobada_inicial' %}active{% elif estado in 'documentos_enviados,en_revision_documentos,confirmada' %}done{% endif %}">
+            <i class="fas fa-check"></i>
+          </div>
+          <div class="step-info {% if estado == 'aprobada_inicial' %}active{% elif estado in 'documentos_enviados,en_revision_documentos,confirmada' %}done{% endif %}">
+            <h6>Aprobación inicial — Registrar aprendices</h6>
+            <small>{% if estado == 'aprobada_inicial' %}¡Puedes registrar los aprendices ahora!{% else %}Registro de aprendices habilitado{% endif %}</small>
+          </div>
+        </div>
+
+        <div class="timeline-step {% if estado == 'confirmada' %}done{% endif %}">
+          <div class="step-circle {% if estado == 'documentos_enviados' or estado == 'en_revision_documentos' %}active{% elif estado == 'confirmada' %}done{% endif %}">
+            <i class="fas fa-file-alt"></i>
+          </div>
+          <div class="step-info {% if estado == 'documentos_enviados' or estado == 'en_revision_documentos' %}active{% elif estado == 'confirmada' %}done{% endif %}">
+            <h6>Solicitud final enviada — Documentos en revisión</h6>
+            <small>El administrador verifica los documentos de cada aprendiz</small>
+          </div>
+        </div>
+
+        <div class="timeline-step">
+          <div class="step-circle {% if estado == 'confirmada' %}done{% endif %}">
+            <i class="fas fa-trophy"></i>
+          </div>
+          <div class="step-info {% if estado == 'confirmada' %}done{% endif %}">
+            <h6>Visita confirmada</h6>
+            <small>Todo listo para la visita</small>
+          </div>
+        </div>
+
+        {% else %}
+        <div class="timeline-step">
+          <div class="step-circle rejected"><i class="fas fa-times"></i></div>
+          <div class="step-info" style="color:#991b1b;">
+            <h6>Visita rechazada</h6>
+            <small>Contacte al administrador para más información</small>
+          </div>
+        </div>
+        {% endif %}
+
+      </div>
+      {% endwith %}
+    </div>
+  </div>
+
+  <!-- ===== SECCIÓN REGISTRO DE APRENDICES (visible solo cuando corresponde) ===== -->
+  {% if visita.estado == 'aprobada_inicial' or visita.estado == 'documentos_enviados' or visita.estado == 'en_revision_documentos' or visita.estado == 'confirmada' %}
+  <div class="detail-card">
+    <div class="detail-card-header morado">
+      <i class="fas fa-users"></i>Registro de Aprendices
+      <span class="ms-auto" style="font-size:0.82rem; font-weight:600; color:#9ca3af;">
+        {{ visita.asistentes.count }} / {{ visita.cantidad_aprendices }} registrados
+      </span>
+    </div>
+    <div class="detail-card-body">
+
+      <!-- Barra de progreso -->
+      <div class="mb-3">
+        {% widthratio visita.asistentes.count visita.cantidad_aprendices 100 as pct %}
+        <div class="progress-wrap">
+          <div class="progress-fill" style="width:{% if pct %}{{ pct }}{% else %}0{% endif %}%;"></div>
+        </div>
+        <small class="text-muted">{{ visita.asistentes.count }} de {{ visita.cantidad_aprendices }} aprendices registrados</small>
+      </div>
+
+      {% if visita.estado == 'aprobada_inicial' %}
+        <div class="info-box-aprobada mb-3">
+          <i class="fas fa-check-circle me-2"></i>
+          <strong>¡Visita aprobada!</strong> Ya puedes registrar los aprendices y luego enviar la solicitud final.
+        </div>
+        <div class="d-flex flex-wrap gap-2 mb-4">
+          <a href="{% url 'panel_visitante:registrar_asistentes' tipo='interna' visita_id=visita.id %}" class="btn-registrar">
+            <i class="fas fa-user-plus"></i> Registrar / Ver aprendices
+          </a>
+          {% if visita.asistentes.count > 0 %}
+          <form method="post" action="{% url 'panel_visitante:enviar_solicitud_final' tipo='interna' visita_id=visita.id %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn-enviar" onclick="return confirm('¿Enviar la solicitud final? Asegúrate de haber registrado todos los aprendices.')">
+              <i class="fas fa-paper-plane"></i> Enviar solicitud final
+            </button>
+          </form>
+          {% endif %}
+        </div>
+      {% elif visita.estado == 'documentos_enviados' or visita.estado == 'en_revision_documentos' %}
+        <div class="info-box-enviado mb-3">
+          <i class="fas fa-search me-2"></i>
+          <strong>Solicitud final enviada.</strong> El administrador está revisando los documentos de los aprendices.
+        </div>
+        <a href="{% url 'panel_visitante:registrar_asistentes' tipo='interna' visita_id=visita.id %}" class="btn-registrar mb-3">
+          <i class="fas fa-eye"></i> Ver aprendices registrados
+        </a>
+      {% elif visita.estado == 'confirmada' %}
+        <a href="{% url 'panel_visitante:registrar_asistentes' tipo='interna' visita_id=visita.id %}" class="btn-registrar mb-3">
+          <i class="fas fa-eye"></i> Ver lista de aprendices
+        </a>
+      {% endif %}
+
+      <!-- Lista resumida de aprendices -->
+      {% if visita.asistentes.all %}
+        {% for asistente in visita.asistentes.all|slice:":5" %}
+        <div class="asistente-item">
+          <div class="asistente-info">
+            <h6><i class="fas fa-user me-2" style="color:#6b21a8;"></i>{{ asistente.nombre_completo }}</h6>
+            <small>{{ asistente.get_tipo_documento_display }}: {{ asistente.numero_documento }}</small>
+          </div>
+          {% if visita.estado == 'aprobada_inicial' %}
+          <a href="{% url 'panel_visitante:eliminar_asistente' tipo='interna' asistente_id=asistente.id %}"
+             class="btn-eliminar-asi"
+             onclick="return confirm('¿Eliminar a {{ asistente.nombre_completo }}?')">
+            <i class="fas fa-trash me-1"></i>Eliminar
+          </a>
+          {% endif %}
+        </div>
+        {% endfor %}
+        {% if visita.asistentes.count > 5 %}
+          <p class="text-muted small text-center mt-2">y {{ visita.asistentes.count|add:"-5" }} más...
+            <a href="{% url 'panel_visitante:registrar_asistentes' tipo='interna' visita_id=visita.id %}">Ver todos</a>
+          </p>
+        {% endif %}
+      {% else %}
+        <div class="empty-asistentes">
+          <i class="fas fa-users-slash d-block mb-2"></i>
+          <p class="mb-0">Aún no hay aprendices registrados.</p>
+        </div>
+      {% endif %}
+
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ===== DATOS DEL PROGRAMA ===== -->
+  <div class="detail-card">
+    <div class="detail-card-header verde"><i class="fas fa-graduation-cap"></i>Datos del Programa</div>
+    <div class="detail-card-body">
+      <div class="info-grid">
+        <div class="info-item"><label>Programa</label><span>{{ visita.nombre_programa }}</span></div>
+        <div class="info-item"><label>Número de Ficha</label><span>{{ visita.numero_ficha }}</span></div>
+        <div class="info-item"><label>Cantidad de Aprendices</label><span>{{ visita.cantidad_aprendices }}</span></div>
+        <div class="info-item"><label>Fecha de Solicitud</label><span>{{ visita.fecha_solicitud|date:"d M Y H:i" }}</span></div>
+      </div>
+      {% if visita.observaciones %}
+      <div class="mt-3">
+        <label style="font-size:0.75rem;font-weight:700;text-transform:uppercase;color:#9ca3af;">Observaciones</label>
+        <p style="font-size:0.9rem;">{{ visita.observaciones }}</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ===== DATOS DEL RESPONSABLE ===== -->
+  <div class="detail-card">
+    <div class="detail-card-header azul"><i class="fas fa-user-tie"></i>Datos del Responsable</div>
+    <div class="detail-card-body">
+      <div class="info-grid">
+        <div class="info-item"><label>Responsable</label><span>{{ visita.responsable }}</span></div>
+        <div class="info-item"><label>Documento</label><span>{{ visita.tipo_documento_responsable }} {{ visita.documento_responsable }}</span></div>
+        <div class="info-item"><label>Correo</label><span>{{ visita.correo_responsable }}</span></div>
+        <div class="info-item"><label>Teléfono</label><span>{{ visita.telefono_responsable }}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTÓN VOLVER -->
+  <div class="d-flex gap-2">
+    <a href="{% url 'panel_instructor_interno:mis_visitas' %}" class="btn btn-outline-secondary">
+      <i class="fas fa-arrow-left me-2"></i>Volver a Mis Visitas
+    </a>
+    <a href="{% url 'panel_instructor_interno:panel' %}" class="btn btn-outline-success">
+      <i class="fas fa-home me-2"></i>Ir al Panel
+    </a>
+  </div>
+
+</div>
+{% endblock %}

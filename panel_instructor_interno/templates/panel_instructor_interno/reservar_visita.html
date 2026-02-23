@@ -1,0 +1,181 @@
+{% extends "master.html" %}
+{% load static %}
+
+{% block title %}Reservar Visita Interna - MINEGATE{% endblock %}
+
+{% block extra_css %}
+<style>
+  :root {
+    --sena-verde: #39a900;
+    --sena-verde-oscuro: #2d8600;
+  }
+  .page-header {
+    background: linear-gradient(135deg, #1a5c00, var(--sena-verde));
+    color: white;
+    padding: 2rem 0;
+  }
+  .page-header h2 { font-weight: 800; margin: 0; }
+  .breadcrumb-nav a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.85rem; }
+  .breadcrumb-nav span { color: rgba(255,255,255,0.5); margin: 0 6px; }
+
+  .form-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    overflow: hidden;
+    margin-bottom: 2rem;
+  }
+  .form-card-header {
+    background: #f8fffe;
+    border-bottom: 2px solid #e8f8e0;
+    padding: 1.2rem 1.8rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    color: var(--sena-verde-oscuro);
+    font-size: 1rem;
+  }
+  .form-card-header i { font-size: 1.1rem; }
+  .form-card-body { padding: 1.8rem; }
+  label { font-weight: 600; font-size: 0.9rem; color: #374151; margin-bottom: 4px; }
+  .form-control, .form-select { border-radius: 8px; border: 1.5px solid #d1d5db; font-size: 0.9rem; padding: 0.55rem 0.85rem; }
+  .form-control:focus, .form-select:focus { border-color: var(--sena-verde); box-shadow: 0 0 0 3px rgba(57,169,0,0.12); }
+  .section-label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.8px; color: #6b7280; font-weight: 700; margin-bottom: 0.8rem; padding-bottom: 6px; border-bottom: 1px solid #f0f0f0; }
+  .helper-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 1rem; margin-bottom: 1.5rem; font-size: 0.85rem; color: #065f46; }
+  .btn-submit { background: var(--sena-verde); border: none; color: white; padding: 0.75rem 2.5rem; border-radius: 50px; font-weight: 700; font-size: 1rem; transition: all 0.2s; }
+  .btn-submit:hover { background: var(--sena-verde-oscuro); transform: translateY(-1px); }
+  .fichas-dropdown { max-height: 200px; overflow-y: auto; }
+</style>
+{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<!-- Page Header -->
+<div class="page-header">
+  <div class="container">
+    <div class="breadcrumb-nav mb-2">
+      <a href="{% url 'panel_instructor_interno:panel' %}"><i class="fas fa-home me-1"></i>Mi Panel</a>
+      <span>›</span>
+      <span style="color:rgba(255,255,255,0.9)">Reservar Visita Interna</span>
+    </div>
+    <h2><i class="fas fa-calendar-plus me-3"></i>Reservar Visita Interna</h2>
+    <p class="mb-0 mt-1" style="opacity:0.85;">Complete el formulario para solicitar una visita al SENA Centro Minero</p>
+  </div>
+</div>
+
+<div class="container py-4">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{% if 'error' in message.tags %}danger{% else %}success{% endif %} alert-dismissible fade show" role="alert">
+        {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Fichas disponibles: Helper rápido -->
+  {% if fichas %}
+  <div class="helper-box">
+    <strong><i class="fas fa-lightbulb me-2"></i>Fichas disponibles</strong><br>
+    Puedes usar una de las fichas ya registradas:
+    <div class="mt-2 d-flex flex-wrap gap-2">
+      {% for ficha in fichas|slice:":8" %}
+        <button type="button" class="btn btn-sm btn-outline-success"
+          onclick="document.getElementById('id_numero_ficha').value='{{ ficha.numero }}'; document.getElementById('id_nombre_programa').value='{{ ficha.programa.nombre }}';">
+          <i class="fas fa-tag me-1"></i>{{ ficha.numero }} — {{ ficha.programa.nombre }}
+        </button>
+      {% endfor %}
+      {% if fichas|length > 8 %}<span class="text-muted small align-self-center">y más...</span>{% endif %}
+    </div>
+  </div>
+  {% else %}
+  <div class="alert alert-warning">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    No hay fichas registradas aún.
+    <a href="{% url 'panel_instructor_interno:crear_ficha' %}" class="alert-link">Crea una ficha</a> antes de reservar la visita,
+    o ingresa los datos manualmente en el formulario.
+  </div>
+  {% endif %}
+
+  <form method="POST">
+    {% csrf_token %}
+
+    <!-- Datos del Programa -->
+    <div class="form-card">
+      <div class="form-card-header">
+        <i class="fas fa-graduation-cap"></i>Datos del Programa de Formación
+      </div>
+      <div class="form-card-body">
+        <div class="row g-3">
+          <div class="col-md-8">
+            <label for="id_nombre_programa">Nombre del Programa <span class="text-danger">*</span></label>
+            {{ form.nombre_programa }}
+            {% if form.nombre_programa.errors %}<div class="text-danger small mt-1">{{ form.nombre_programa.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label for="id_numero_ficha">Número de Ficha <span class="text-danger">*</span></label>
+            {{ form.numero_ficha }}
+            {% if form.numero_ficha.errors %}<div class="text-danger small mt-1">{{ form.numero_ficha.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label for="id_cantidad_aprendices">Cantidad de Aprendices <span class="text-danger">*</span></label>
+            {{ form.cantidad_aprendices }}
+            {% if form.cantidad_aprendices.errors %}<div class="text-danger small mt-1">{{ form.cantidad_aprendices.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Datos del Responsable -->
+    <div class="form-card">
+      <div class="form-card-header">
+        <i class="fas fa-user-tie"></i>Datos del Responsable
+      </div>
+      <div class="form-card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="id_responsable">Nombre del Responsable <span class="text-danger">*</span></label>
+            {{ form.responsable }}
+          </div>
+          <div class="col-md-3">
+            <label for="id_tipo_documento_responsable">Tipo de Documento</label>
+            {{ form.tipo_documento_responsable }}
+          </div>
+          <div class="col-md-3">
+            <label for="id_documento_responsable">Número de Documento <span class="text-danger">*</span></label>
+            {{ form.documento_responsable }}
+          </div>
+          <div class="col-md-6">
+            <label for="id_correo_responsable">Correo Electrónico <span class="text-danger">*</span></label>
+            {{ form.correo_responsable }}
+          </div>
+          <div class="col-md-6">
+            <label for="id_telefono_responsable">Teléfono <span class="text-danger">*</span></label>
+            {{ form.telefono_responsable }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Observaciones -->
+    <div class="form-card">
+      <div class="form-card-header">
+        <i class="fas fa-comment-alt"></i>Observaciones
+      </div>
+      <div class="form-card-body">
+        {{ form.observaciones }}
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center">
+      <a href="{% url 'panel_instructor_interno:panel' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Volver al Panel
+      </a>
+      <button type="submit" class="btn-submit btn">
+        <i class="fas fa-paper-plane me-2"></i>Enviar Solicitud
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
