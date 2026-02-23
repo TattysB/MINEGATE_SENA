@@ -154,3 +154,102 @@ class PasswordResetConfirmForm(forms.Form):
                 raise forms.ValidationError("Las contraseñas no coinciden.")
 
         return cleaned_data
+
+
+class EditarPerfilForm(forms.ModelForm):
+    """Formulario para que el visitante edite su información personal"""
+    
+    password_actual = forms.CharField(
+        label="Contraseña Actual",
+        required=False,
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Ingrese su contraseña actual",
+            }
+        ),
+        help_text="Solo requerida si desea cambiar su contraseña",
+    )
+    
+    nueva_password = forms.CharField(
+        label="Nueva Contraseña",
+        required=False,
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Nueva contraseña (opcional)",
+            }
+        ),
+        help_text="Dejar en blanco si no desea cambiar la contraseña",
+    )
+    
+    confirmar_password = forms.CharField(
+        label="Confirmar Nueva Contraseña",
+        required=False,
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Confirme su nueva contraseña",
+            }
+        ),
+    )
+    
+    class Meta:
+        model = RegistroVisitante
+        fields = ['nombre', 'apellido', 'tipo_documento', 'telefono', 'correo']
+        widgets = {
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nombre'
+            }),
+            'apellido': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Apellido'
+            }),
+            'tipo_documento': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'telefono': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Teléfono'
+            }),
+            'correo': forms.EmailInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'correo@ejemplo.com'
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.visitante = kwargs.pop('visitante', None)
+        super().__init__(*args, **kwargs)
+    
+    def clean_correo(self):
+        correo = self.cleaned_data.get('correo', '').strip()
+        if RegistroVisitante.objects.filter(correo__iexact=correo).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError("Este correo ya está registrado por otro usuario.")
+        return correo
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        password_actual = cleaned_data.get('password_actual')
+        nueva_password = cleaned_data.get('nueva_password')
+        confirmar_password = cleaned_data.get('confirmar_password')
+        
+        # Si quiere cambiar contraseña
+        if nueva_password or confirmar_password:
+            # Verificar contraseña actual
+            if not password_actual:
+                raise forms.ValidationError("Debe ingresar su contraseña actual para cambiarla.")
+            
+            if self.visitante and not self.visitante.check_password(password_actual):
+                raise forms.ValidationError("La contraseña actual es incorrecta.")
+            
+            # Validar que coincidan
+            if nueva_password != confirmar_password:
+                raise forms.ValidationError("Las contraseñas nuevas no coinciden.")
+            
+            # Validar seguridad de la contraseña
+            if len(nueva_password) < 8:
+                raise forms.ValidationError("La nueva contraseña debe tener al menos 8 caracteres.")
+        
+        return cleaned_data

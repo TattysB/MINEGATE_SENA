@@ -11,7 +11,7 @@ from django.urls import reverse
 from datetime import datetime
 from visitaInterna.models import VisitaInterna, AsistenteVisitaInterna
 from visitaExterna.models import VisitaExterna, AsistenteVisitaExterna
-from .forms import RegistroVisitanteForm, PasswordResetRequestForm, PasswordResetConfirmForm
+from .forms import RegistroVisitanteForm, PasswordResetRequestForm, PasswordResetConfirmForm, EditarPerfilForm
 from .models import RegistroVisitante
 from django.conf import settings
 
@@ -63,6 +63,10 @@ def registro_visita(request):
 
         if form.is_valid():
             visitante = RegistroVisitante(
+                nombre=request.POST.get('nombre', ''),
+                apellido=request.POST.get('apellido', ''),
+                tipo_documento=request.POST.get('tipo_documento', 'CC'),
+                telefono=request.POST.get('telefono', ''),
                 correo=form.cleaned_data['correo'],
                 documento=form.cleaned_data['documento'],
                 rol=form.cleaned_data['rol'],
@@ -111,6 +115,12 @@ def panel_responsable(request):
         return redirect('panel_visitante:login_responsable')
     
     try:
+        # Obtener información del visitante
+        visitante = RegistroVisitante.objects.filter(
+            correo__iexact=correo,
+            documento=documento
+        ).first()
+        
         # Obtener visitas del responsable
         visitas_internas = VisitaInterna.objects.filter(
             correo_responsable__iexact=correo,
@@ -122,10 +132,14 @@ def panel_responsable(request):
             documento_responsable=documento
         ).prefetch_related('asistentes')
         
+        nombre_completo = f"{visitante.nombre} {visitante.apellido}" if visitante else correo
+        
         context = {
             'visitas_internas': visitas_internas,
             'visitas_externas': visitas_externas,
             'correo': correo,
+            'nombre_completo': nombre_completo,
+            'visitante': visitante,
             'rol': rol,
         }
         
@@ -134,6 +148,58 @@ def panel_responsable(request):
     except Exception as e:
         messages.error(request, f'Error al cargar el panel: {str(e)}')
         return redirect('panel_visitante:login_responsable')
+
+
+def editar_perfil(request):
+    """
+    Vista para que el visitante edite su información personal.
+    """
+    # Verificar autenticación
+    if not request.session.get('responsable_autenticado'):
+        messages.warning(request, 'Debe iniciar sesión para acceder.')
+        return redirect('panel_visitante:login_responsable')
+    
+    correo = request.session.get('responsable_correo')
+    documento = request.session.get('responsable_documento')
+    
+    # Obtener el visitante
+    visitante = get_object_or_404(
+        RegistroVisitante,
+        correo__iexact=correo,
+        documento=documento
+    )
+    
+    if request.method == 'POST':
+        form = EditarPerfilForm(request.POST, instance=visitante, visitante=visitante)
+        if form.is_valid():
+            # Guardar cambios
+            visitante_actualizado = form.save(commit=False)
+            
+            # Si cambió contraseña
+            nueva_password = form.cleaned_data.get('nueva_password')
+            if nueva_password:
+                visitante_actualizado.set_password(nueva_password)
+                messages.info(request, 'Tu contraseña ha sido actualizada. Usa la nueva contraseña en tu próximo inicio de sesión.')
+            
+            visitante_actualizado.save()
+            
+            # Actualizar sesión si cambió el correo
+            if visitante_actualizado.correo != correo:
+                request.session['responsable_correo'] = visitante_actualizado.correo
+                request.session.modified = True
+                messages.info(request, f'Tu correo de acceso ha sido actualizado a: {visitante_actualizado.correo}')
+            
+            messages.success(request, '¡Tu información ha sido actualizada exitosamente!')
+            return redirect('panel_visitante:panel_responsable')
+    else:
+        form = EditarPerfilForm(instance=visitante, visitante=visitante)
+    
+    context = {
+        'form': form,
+        'visitante': visitante,
+    }
+    
+    return render(request, 'editar_perfil.html', context)
 
 
 def registrar_asistentes(request, tipo, visita_id):
@@ -340,8 +406,14 @@ def restablecer_contraseña(request):
 
                 # Preparar contexto para el template HTML
                 email_context = {
-                    'nombre': visitante.documento,
                     'reset_url': reset_url,
+                    'nombre_usuario': f"{visitante.nombre} {visitante.apellido}" if hasattr(visitante, 'nombre') and hasattr(visitante, 'apellido') else None,
+                    'expiracion_horas': 24,
+                    'institucion': 'SENA',
+                    'email_soporte': 'soporte@minegate.com',
+                    'telefono_soporte': None,  # Agregar si se tiene
+                    'url_privacidad': None,  # Agregar si se tiene
+                    'url_terminos': None,  # Agregar si se tiene
                     'year': datetime.now().year,
                 }
 

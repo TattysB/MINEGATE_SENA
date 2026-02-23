@@ -8,6 +8,18 @@ class RegistroVisitante(models.Model):
 		('externo', 'Usuario Externo'),
 	]
 	
+	TIPO_DOCUMENTO = [
+		('CC', 'Cédula de Ciudadanía (CC)'),
+		('CE', 'Cédula de Extranjería (CE)'),
+		('TI', 'Tarjeta de Identidad (TI)'),
+		('PA', 'Pasaporte (PA)'),
+		('PE', 'Permiso Especial (PE)'),
+	]
+	
+	nombre = models.CharField(max_length=100, default='')
+	apellido = models.CharField(max_length=100, default='')
+	tipo_documento = models.CharField(max_length=2, choices=TIPO_DOCUMENTO, default='CC')
+	telefono = models.CharField(max_length=20, default='')
 	correo = models.EmailField(unique=True)
 	documento = models.CharField(max_length=20, unique=True)
 	password_hash = models.CharField(max_length=128)
