@@ -57,7 +57,7 @@
 
 .form-group label i {
     margin-right: 8px;
-    color: #667eea;
+    color: #00af00;
 }
 
 .form-control {
@@ -72,14 +72,14 @@
 
 .form-control:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    border-color: #00af00;
+    box-shadow: 0 0 0 3px rgba(0, 175, 0, 0.2);
 }
 
 .btn-login {
     width: 100%;
     padding: 15px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #00af00 0%, #008c00 100%);
     border: none;
     border-radius: 10px;
     color: white;
@@ -91,7 +91,7 @@
 
 .btn-login:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 10px 30px rgba(0, 175, 0, 0.4);
 }
 
 .login-footer {
@@ -101,7 +101,7 @@
 }
 
 .login-footer a {
-    color: #667eea;
+    color: #00af00;
     text-decoration: none;
     font-weight: 500;
 }
@@ -132,12 +132,12 @@
 
 .info-box p {
     margin: 0;
-    color: #1e40af;
+    color: #000000;
     font-size: 0.9rem;
 }
 
 .info-box i {
-    color: #3b82f6;
+    color: #00af00;
 }
 
 .recovery-link {
@@ -185,20 +185,20 @@
 }
 
 .role-option input[type="radio"]:checked + .role-label {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #00af00 0%, #008c00 100%);
     color: white;
-    border-color: #667eea;
+    border-color: #00af00;
     transform: scale(1.02);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 5px 15px rgba(0, 175, 0, 0.3);
 }
 
 .role-label:hover {
-    border-color: #667eea;
-    background-color: #f0f4ff;
+    border-color: #00af00;
+    background-color: #f0fff0;
 }
 
 .role-option input[type="radio"]:checked + .role-label:hover {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #00af00 0%, #008c00 100%);
     color: white;
 }
 

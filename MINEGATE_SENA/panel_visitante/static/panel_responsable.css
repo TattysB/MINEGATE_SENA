@@ -190,13 +190,13 @@
 }
 
 .btn-ver {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #00af00 0%, #008c00 100%);
     color: white;
 }
 
 .btn-ver:hover {
     transform: translateY(-2px);
-    box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 5px 20px rgba(0, 175, 0, 0.4);
     color: white;
 }
 
@@ -281,7 +281,7 @@
 }
 
 .btn-copiar {
-    background: #667eea;
+    background: #00af00;
     color: white;
     border: none;
     padding: 10px 20px;
@@ -292,7 +292,7 @@
 }
 
 .btn-copiar:hover {
-    background: #5a67d8;
+    background: #008c00;
 }
 
 .btn-enviar-final {
@@ -334,4 +334,198 @@
     margin: 0;
     font-size: 0.9rem;
     color: #666;
+}
+
+/* User Badge Enhanced */
+.user-badge-enhanced {
+    display: flex;
+    align-items: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    font-size: 1.1rem;
+    height: 50px;
+}
+
+.user-badge-enhanced .user-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-badge-enhanced .user-name {
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: 0.5px;
+}
+
+.user-badge-enhanced .user-role {
+    font-size: 0.75rem;
+    opacity: 0.85;
+    margin-top: 2px;
+}
+
+/* Button View Info */
+.btn-view-info {
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+    transition: all 0.3s ease;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-view-info:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+}
+
+/* User Info Modal */
+.user-info-modal {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+}
+
+.user-info-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 25px;
+}
+
+.user-avatar {
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    margin-right: 15px;
+}
+
+.user-info-header .modal-title {
+    font-weight: 700;
+    font-size: 1.3rem;
+    margin: 0;
+}
+
+.user-info-header .text-muted {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* User Info Body */
+.user-info-body {
+    padding: 30px;
+}
+
+.info-card {
+    background: #f8f9fa;
+    border-left: 4px solid #667eea;
+    padding: 15px;
+    border-radius: 8px;
+    display: flex;
+    gap: 12px;
+    transition: all 0.3s ease;
+    margin-bottom: 10px;
+}
+
+.info-card:hover {
+    background: #f0f1f8;
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+}
+
+.info-icon {
+    font-size: 1.5rem;
+    color: #667eea;
+    width: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.info-content {
+    flex: 1;
+}
+
+.info-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0 0 5px 0;
+    display: block;
+}
+
+.info-value {
+    margin: 0;
+    color: #212529;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+/* Info Divider */
+.info-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #ddd, transparent);
+}
+
+/* Info Summary */
+.info-summary {
+    background: #e8f4ff;
+    padding: 15px 20px;
+    border-radius: 8px;
+    border-left: 4px solid #0d6efd;
+}
+
+.summary-item {
+    font-size: 0.9rem;
+    color: #333;
+}
+
+.summary-item i {
+    width: 20px;
+}
+
+.summary-item span {
+    color: #667eea;
+    font-weight: 600;
+}
+
+/* User Info Footer */
+.user-info-footer {
+    border-top: 1px solid #e9ecef;
+    padding: 15px 25px;
+    background: #f8f9fa;
+}
+
+/* Responsive */
+@media (max-width: 576px) {
+    .user-badge-enhanced {
+        width: 100%;
+        justify-content: center;
+        margin-bottom: 10px;
+    }
+    
+    .info-card {
+        margin-bottom: 15px;
+    }
+    
+    .user-info-header {
+        padding: 20px;
+    }
+    
+    .user-info-body {
+        padding: 20px;
+    }
 }
