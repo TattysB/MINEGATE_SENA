@@ -10,7 +10,13 @@
 <div class="page-header">
     <div class="container">
         <nav class="breadcrumb-custom mb-2">
-            <a href="{% url 'panel_visitante:panel_responsable' %}"><i class="fas fa-arrow-left me-2"></i>Volver al Panel</a>
+            {% if request.session.responsable_rol == 'interno' %}
+                <a href="{% url 'panel_instructor_interno:detalle_visita' visita.id %}"><i class="fas fa-arrow-left me-2"></i>Volver al detalle de la visita</a>
+            {% elif request.session.responsable_rol == 'externo' %}
+                <a href="{% url 'panel_instructor_externo:detalle_visita' visita.id %}"><i class="fas fa-arrow-left me-2"></i>Volver al detalle de la visita</a>
+            {% else %}
+                <a href="{% url 'panel_visitante:panel_responsable' %}"><i class="fas fa-arrow-left me-2"></i>Volver al Panel</a>
+            {% endif %}
         </nav>
         <h1><i class="fas fa-user-plus me-3"></i>Registrar Asistentes</h1>
         <p>{% if tipo == 'interna' %}Visita Interna{% else %}Visita Externa{% endif %} #{{ visita.id }}</p>
@@ -166,9 +172,19 @@
 
     <!-- Botón volver -->
     <div class="text-center mt-4">
-        <a href="{% url 'panel_visitante:panel_responsable' %}" class="btn-back">
-            <i class="fas fa-arrow-left"></i> Volver al Panel
-        </a>
+        {% if request.session.responsable_rol == 'interno' %}
+            <a href="{% url 'panel_instructor_interno:detalle_visita' visita.id %}" class="btn-back">
+                <i class="fas fa-arrow-left"></i> Volver al detalle de la visita
+            </a>
+        {% elif request.session.responsable_rol == 'externo' %}
+            <a href="{% url 'panel_instructor_externo:detalle_visita' visita.id %}" class="btn-back">
+                <i class="fas fa-arrow-left"></i> Volver al detalle de la visita
+            </a>
+        {% else %}
+            <a href="{% url 'panel_visitante:panel_responsable' %}" class="btn-back">
+                <i class="fas fa-arrow-left"></i> Volver al Panel
+            </a>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

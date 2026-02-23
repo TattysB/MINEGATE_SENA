@@ -16,6 +16,27 @@ from .models import RegistroVisitante
 from django.conf import settings
 
 
+
+def _redirect_segun_rol(request, tipo=None, visita_id=None):
+    """
+    Redirige al panel correcto según el rol de la sesión.
+    Si se pasa tipo y visita_id, intenta ir al detalle de la visita.
+    """
+    rol = request.session.get('responsable_rol')
+    if rol == 'interno':
+        if tipo and visita_id:
+            from django.urls import reverse
+            return redirect(reverse('panel_instructor_interno:detalle_visita', args=[visita_id]))
+        return redirect('panel_instructor_interno:panel')
+    elif rol == 'externo':
+        if tipo and visita_id:
+            from django.urls import reverse
+            return redirect(reverse('panel_instructor_externo:detalle_visita', args=[visita_id]))
+        return redirect('panel_instructor_externo:panel')
+    else:
+        return redirect('panel_visitante:panel_responsable')
+
+
 def login_responsable(request):
     """
     Login para responsables de visitas usando correo y documento.
@@ -44,7 +65,11 @@ def login_responsable(request):
                 request,
                 f'Bienvenido {correo}. Accediendo a tu panel...'
             )
-            return redirect('panel_visitante:panel_responsable')
+            # Redirigir al panel de instructor según el rol
+            if visitante.rol == 'interno':
+                return redirect('panel_instructor_interno:panel')
+            else:
+                return redirect('panel_instructor_externo:panel')
 
         messages.error(
             request,
@@ -172,12 +197,12 @@ def registrar_asistentes(request, tipo, visita_id):
         max_asistentes = visita.cantidad_visitantes
     else:
         messages.error(request, 'Tipo de visita no válido.')
-        return redirect('panel_visitante:panel_responsable')
+        return _redirect_segun_rol(request)
     
     # Verificar que la visita esté aprobada inicialmente para registro de asistentes
     if visita.estado not in ['aprobada_inicial', 'documentos_enviados', 'en_revision_documentos']:
         messages.error(request, 'Solo puede registrar asistentes en visitas aprobadas.')
-        return redirect('panel_visitante:panel_responsable')
+        return _redirect_segun_rol(request)
     
     # Verificar límite de asistentes
     asistentes_actuales = asistentes.count()
@@ -252,7 +277,7 @@ def eliminar_asistente(request, tipo, asistente_id):
         # Verificar que el responsable tenga acceso a esta visita
         if visita.correo_responsable.lower() != correo.lower() or visita.documento_responsable != documento:
             messages.error(request, 'No tiene permiso para esta acción.')
-            return redirect('panel_visitante:panel_responsable')
+            return _redirect_segun_rol(request)
         visita_id = visita.id
         asistente.delete()
     elif tipo == 'externa':
@@ -260,12 +285,12 @@ def eliminar_asistente(request, tipo, asistente_id):
         visita = asistente.visita
         if visita.correo_responsable.lower() != correo.lower() or visita.documento_responsable != documento:
             messages.error(request, 'No tiene permiso para esta acción.')
-            return redirect('panel_visitante:panel_responsable')
+            return _redirect_segun_rol(request)
         visita_id = visita.id
         asistente.delete()
     else:
         messages.error(request, 'Tipo de visita no válido.')
-        return redirect('panel_visitante:panel_responsable')
+        return _redirect_segun_rol(request)
     
     messages.success(request, 'Asistente eliminado correctamente.')
     return redirect('panel_visitante:registrar_asistentes', tipo=tipo, visita_id=visita_id)
@@ -288,32 +313,32 @@ def enviar_solicitud_final(request, tipo, visita_id):
         visita = get_object_or_404(VisitaInterna, id=visita_id)
         if visita.correo_responsable.lower() != correo.lower() or visita.documento_responsable != documento:
             messages.error(request, 'No tiene permiso para esta acción.')
-            return redirect('panel_visitante:panel_responsable')
+            return _redirect_segun_rol(request)
     elif tipo == 'externa':
         visita = get_object_or_404(VisitaExterna, id=visita_id)
         if visita.correo_responsable.lower() != correo.lower() or visita.documento_responsable != documento:
             messages.error(request, 'No tiene permiso para esta acción.')
-            return redirect('panel_visitante:panel_responsable')
+            return _redirect_segun_rol(request)
     else:
         messages.error(request, 'Tipo de visita no válido.')
-        return redirect('panel_visitante:panel_responsable')
+        return _redirect_segun_rol(request)
     
     # Verificar que la visita esté en estado aprobada_inicial
     if visita.estado != 'aprobada_inicial':
         messages.error(request, 'Solo puede enviar la solicitud final cuando la visita esté aprobada inicialmente.')
-        return redirect('panel_visitante:panel_responsable')
+        return _redirect_segun_rol(request, tipo, visita_id)
     
     # Verificar que haya al menos un asistente registrado
     if visita.asistentes.count() == 0:
         messages.error(request, 'Debe registrar al menos un asistente antes de enviar la solicitud final.')
-        return redirect('panel_visitante:panel_responsable')
+        return _redirect_segun_rol(request, tipo, visita_id)
     
     # Cambiar el estado a documentos_enviados
     visita.estado = 'documentos_enviados'
     visita.save()
     
     messages.success(request, '¡Solicitud final enviada correctamente! El administrador revisará los documentos de los asistentes.')
-    return redirect('panel_visitante:panel_responsable')
+    return _redirect_segun_rol(request, tipo, visita_id)
 
 
 def restablecer_contraseña(request):
