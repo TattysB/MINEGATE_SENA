@@ -138,7 +138,7 @@
 
 .features-box h3 i {
     margin-right: 10px;
-    color: #667eea;
+    color: #00af00;
 }
 
 .features-list {
@@ -169,7 +169,7 @@
 
 .btn-primary {
     padding: 15px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #00af00 0%, #008c00 100%);
     color: white;
     border: none;
     border-radius: 10px;
@@ -183,7 +183,7 @@
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 10px 30px rgba(0, 175, 0, 0.4);
 }
 
 .btn-secondary {
@@ -213,6 +213,6 @@
 }
 
 .footer-note i {
-    color: #667eea;
+    color: #00af00;
     margin-right: 5px;
 }
