@@ -186,7 +186,7 @@
         <div class="content">
             <!-- Saludo -->
             <div class="greeting">
-                Hola,<br>
+                Hola{% if nombre_usuario %} <strong>{{ nombre_usuario }}</strong>{% endif %},<br>
                 <strong>Hemos recibido una solicitud para restablecer la contraseña</strong> de tu cuenta en MINEGATE.
             </div>
 
@@ -221,7 +221,7 @@
             <!-- Advertencia de validez del enlace -->
             <div class="important">
                 <p>
-                    <strong>⏰ Importante:</strong> Este enlace es válido únicamente por <strong>24 horas</strong>. 
+                    <strong>⏰ Importante:</strong> Este enlace es válido únicamente por <strong>{% if expiracion_horas %}{{ expiracion_horas }}{% else %}24{% endif %} horas</strong>. 
                     Si expira, puedes solicitar un nuevo enlace de recuperación.
                 </p>
             </div>
@@ -238,8 +238,8 @@
             <div style="margin: 20px 0; padding: 15px; background-color: #f5f5f5; border-radius: 4px; font-size: 13px; color: #666;">
                 <p>
                     <strong>¿Necesitas ayuda?</strong><br>
-                    Si tienes problemas para restablecer tu contraseña, contacta al equipo de soporte de MINEGATE 
-                    respondiendo a este correo o visitando nuestra página de ayuda.
+                    Si tienes problemas para restablecer tu contraseña, contacta al equipo de soporte de MINEGATE{% if email_soporte %} al correo <a href="mailto:{{ email_soporte }}" style="color: #667eea; text-decoration: none;">{{ email_soporte }}</a>{% endif %} 
+                    {% if telefono_soporte %}o llama al {{ telefono_soporte }}{% endif %}.
                 </p>
             </div>
         </div>
@@ -247,9 +247,10 @@
         <!-- Footer -->
         <div class="footer">
             <p>
-                © 2026 MINEGATE - Sistema de Gestión de Visitas<br>
-                <a href="">Política de Privacidad</a> | 
-                <a href="">Términos de Servicio</a><br>
+                © {% now "Y" %} MINEGATE - Sistema de Gestión de Visitas{% if institucion %} - {{ institucion }}{% endif %}<br>
+                {% if url_privacidad %}<a href="{{ url_privacidad }}">Política de Privacidad</a>{% endif %}
+                {% if url_privacidad and url_terminos %} | {% endif %}
+                {% if url_terminos %}<a href="{{ url_terminos }}">Términos de Servicio</a>{% endif %}<br>
                 <strong>Este es un correo automático, no respondas a este mensaje.</strong>
             </p>
         </div>

@@ -1,11 +1,15 @@
-{% extends "master.html" %}
+<!DOCTYPE html>
 {% load static %}
-
-{% block title %}Mi Panel de Visitas - MINEGATE{% endblock %}
-
-{% block content %}
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-<link rel="stylesheet" href="{% static 'panel_responsable.css' %}">
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Panel de Visitas - MINEGATE</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'panel_responsable.css' %}">
+</head>
+<body>
 
 <div class="panel-header">
     <div class="container">
@@ -13,8 +17,26 @@
             <div>
                 <h1><i class="fas fa-clipboard-list me-3"></i>Mi Panel de Visitas</h1>
                 <p>Gestione sus visitas programadas y registre asistentes</p>
-                <div class="user-badge">
-                    <i class="fas fa-user"></i> {{ correo }}
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    <div class="user-badge-enhanced">
+                        <i class="fas fa-user-circle me-2"></i> 
+                        <div class="user-info">
+                            <div class="user-name">{{ nombre_completo }}</div>
+                            <div class="user-role">
+                                {% if rol == 'interno' %}Visitante Interno
+                                {% elif rol == 'externo' %}Visitante Externo
+                                {% else %}{{ rol }}{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% if visitante %}
+                    <a href="{% url 'panel_visitante:editar_perfil' %}" class="btn btn-warning btn-view-info">
+                        <i class="fas fa-user-edit me-1"></i> Editar Perfil
+                    </a>
+                    <button class="btn btn-info btn-view-info" data-bs-toggle="modal" data-bs-target="#userInfoModal">
+                        <i class="fas fa-eye me-1"></i> Ver Detalles
+                    </button>
+                    {% endif %}
                 </div>
             </div>
             <a href="{% url 'panel_visitante:logout_responsable' %}" class="btn-logout">
@@ -451,4 +473,106 @@ function copiarEnlace(inputId) {
     });
 }
 </script>
-{% endblock %}
+
+<!-- Modal de Información del Usuario -->
+{% if visitante %}
+<div class="modal fade" id="userInfoModal" tabindex="-1" aria-labelledby="userInfoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content user-info-modal">
+            <div class="modal-header user-info-header">
+                <div class="d-flex align-items-center">
+                    <div class="user-avatar">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title" id="userInfoModalLabel">{{ visitante.nombre }} {{ visitante.apellido }}</h5>
+                        <small class="text-muted">
+                            {% if rol == 'interno' %}
+                                <i class="fas fa-building me-1"></i>Visitante Interno SENA
+                            {% elif rol == 'externo' %}
+                                <i class="fas fa-globe me-1"></i>Visitante Externo
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body user-info-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="info-card">
+                            <div class="info-icon">
+                                <i class="fas fa-id-card"></i>
+                            </div>
+                            <div class="info-content">
+                                <label class="info-label">Tipo de Documento</label>
+                                <p class="info-value">{{ visitante.get_tipo_documento_display }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="info-card">
+                            <div class="info-icon">
+                                <i class="fas fa-barcode"></i>
+                            </div>
+                            <div class="info-content">
+                                <label class="info-label">Número de Documento</label>
+                                <p class="info-value">{{ visitante.documento }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="info-card">
+                            <div class="info-icon">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div class="info-content">
+                                <label class="info-label">Correo Electrónico</label>
+                                <p class="info-value" style="font-size: 0.9rem;">{{ visitante.correo }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="info-card">
+                            <div class="info-icon">
+                                <i class="fas fa-phone"></i>
+                            </div>
+                            <div class="info-content">
+                                <label class="info-label">Teléfono</label>
+                                <p class="info-value">{{ visitante.telefono }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-divider mt-4"></div>
+
+                <div class="info-summary mt-4">
+                    <div class="summary-item">
+                        <i class="fas fa-calendar-check text-success me-2"></i>
+                        <strong>Registrado desde:</strong>
+                        <span>{{ visitante.created_at|date:"d \d\e M, Y" }}</span>
+                    </div>
+                    <div class="summary-item mt-2">
+                        <i class="fas fa-sign-in-alt text-info me-2"></i>
+                        <strong>Último acceso:</strong>
+                        <span>{% if visitante.last_login %}{{ visitante.last_login|date:"d \d\e M, Y \a\l\a\s H:i" }}{% else %}Sin registro{% endif %}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer user-info-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

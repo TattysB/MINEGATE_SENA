@@ -5,6 +5,45 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/crear_visita_interna.css' %}">
+<style>
+    .form-sections-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        margin-bottom: 30px;
+    }
+    @media (max-width: 768px) {
+        .form-sections-container {
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+    }
+    .form-section {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+    }
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #667eea;
+    }
+    .form-section-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+    .form-section-grid > div {
+        display: flex;
+        flex-direction: column;
+    }
+    .form-section-grid.full-width {
+        grid-column: 1 / -1;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -15,81 +54,99 @@
         <form method="POST">
             {% csrf_token %}
             
-            <div>
-                <label for="id_nombre_programa">Nombre de Programa:</label>
-                {{ form.nombre_programa }}
-                {% if form.nombre_programa.errors %}
-                    <div style="color: red;">{{ form.nombre_programa.errors }}</div>
-                {% endif %}
-            </div>
+            <div class="form-sections-container">
+                <!-- Columna Izquierda: Datos del Responsable (No Editables) -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="fas fa-user-circle me-2"></i>Datos del Responsable
+                    </div>
+                    <div class="form-section-grid">
+                        <div>
+                            <label for="id_responsable">Nombre del Responsable:</label>
+                            {{ form.responsable }}
+                            {% if form.responsable.errors %}
+                                <div style="color: red;">{{ form.responsable.errors }}</div>
+                            {% endif %}
+                        </div>
 
-            <div>
-                <label for="id_numero_ficha">Número de Ficha:</label>
-                <input type="number" id="id_numero_ficha" name="numero_ficha" min="0" max="99999999" placeholder="Ingrese el número" required>
-                {% if form.numero_ficha.errors %}
-                    <div style="color: red;">{{ form.numero_ficha.errors }}</div>
-                {% endif %}
-            </div>
+                        <div>
+                            <label for="id_tipo_documento_responsable">Tipo de Documento:</label>
+                            {{ form.tipo_documento_responsable }}
+                            {% if form.tipo_documento_responsable.errors %}
+                                <div style="color: red;">{{ form.tipo_documento_responsable.errors }}</div>
+                            {% endif %}
+                        </div>
 
-            <div>
-                <label for="id_responsable">Nombre del Responsable:</label>
-                {{ form.responsable }}
-                {% if form.responsable.errors %}
-                    <div style="color: red;">{{ form.responsable.errors }}</div>
-                {% endif %}
-            </div>
+                        <div>
+                            <label for="id_documento_responsable">Documento:</label>
+                            {{ form.documento_responsable }}
+                            {% if form.documento_responsable.errors %}
+                                <div style="color: red;">{{ form.documento_responsable.errors }}</div>
+                            {% endif %}
+                        </div>
 
-            <div>
-                <label for="id_tipo_documento_responsable">Tipo de Documento:</label>
-                {{ form.tipo_documento_responsable }}
-                {% if form.tipo_documento_responsable.errors %}
-                    <div style="color: red;">{{ form.tipo_documento_responsable.errors }}</div>
-                {% endif %}
-            </div>
+                        <div>
+                            <label for="id_correo_responsable">Correo:</label>
+                            {{ form.correo_responsable }}
+                            {% if form.correo_responsable.errors %}
+                                <div style="color: red;">{{ form.correo_responsable.errors }}</div>
+                            {% endif %}
+                        </div>
 
-            <div>
-                <label for="id_documento_responsable">Documento del responsable:</label>
-                {{ form.documento_responsable }}
-                {% if form.documento_responsable.errors %}
-                    <div style="color: red;">{{ form.documento_responsable.errors }}</div>
-                {% endif %}
-            </div>
+                        <div style="grid-column: 1 / -1;">
+                            <label for="id_telefono_responsable">Teléfono:</label>
+                            {{ form.telefono_responsable }}
+                            {% if form.telefono_responsable.errors %}
+                                <div style="color: red;">{{ form.telefono_responsable.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
 
-            <div>
-                <label for="id_correo_responsable">Correo del responsable:</label>
-                {{ form.correo_responsable }}
-                {% if form.correo_responsable.errors %}
-                    <div style="color: red;">{{ form.correo_responsable.errors }}</div>
-                {% endif %}
-            </div>
+                <!-- Columna Derecha: Datos de la Visita (Editables) -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="fas fa-calendar-alt me-2"></i>Datos de la Visita
+                    </div>
+                    <div class="form-section-grid">
+                        <div>
+                            <label for="id_nombre_programa">Nombre de Programa:</label>
+                            {{ form.nombre_programa }}
+                            {% if form.nombre_programa.errors %}
+                                <div style="color: red;">{{ form.nombre_programa.errors }}</div>
+                            {% endif %}
+                        </div>
 
-            <div>
-                <label for="id_telefono_responsable">Teléfono del responsable:</label>
-                {{ form.telefono_responsable }}
-                {% if form.telefono_responsable.errors %}
-                    <div style="color: red;">{{ form.telefono_responsable.errors }}</div>
-                {% endif %}
-            </div>
+                        <div>
+                            <label for="id_numero_ficha">Número de Ficha:</label>
+                            <input type="number" id="id_numero_ficha" name="numero_ficha" min="0" max="99999999" placeholder="Ingrese el número" required class="form-control">
+                            {% if form.numero_ficha.errors %}
+                                <div style="color: red;">{{ form.numero_ficha.errors }}</div>
+                            {% endif %}
+                        </div>
 
-            <div>
-                <label for="id_cantidad_aprendices">Cantidad de Visitantes:</label>
-                <input type="number" id="id_cantidad_aprendices" name="cantidad_aprendices" min="1" placeholder="Número de Visitantes" required>
-                {% if form.cantidad_aprendices.errors %}
-                    <div style="color: red;">{{ form.cantidad_aprendices.errors }}</div>
-                {% endif %}
-            </div>
+                        <div style="grid-column: 1 / -1;">
+                            <label for="id_cantidad_aprendices">Cantidad de Visitantes:</label>
+                            <input type="number" id="id_cantidad_aprendices" name="cantidad_aprendices" min="1" placeholder="Número de Visitantes" required class="form-control">
+                            {% if form.cantidad_aprendices.errors %}
+                                <div style="color: red;">{{ form.cantidad_aprendices.errors }}</div>
+                            {% endif %}
+                        </div>
 
-            <div>
-                <label for="id_observaciones">Observaciones:</label>
-                {{ form.observaciones }}
-                {% if form.observaciones.errors %}
-                    <div style="color: red;">{{ form.observaciones.errors }}</div>
-                {% endif %}
+                        <div style="grid-column: 1 / -1;">
+                            <label for="id_observaciones">Observaciones:</label>
+                            {{ form.observaciones }}
+                            {% if form.observaciones.errors %}
+                                <div style="color: red;">{{ form.observaciones.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
             </div>
             
-            <div class="buttons">
-                <button type="submit">Crear Visita</button>
-                <a href="{% url 'core:visitas' %}"><button type="button">Cancelar</button></a>
+            <div class="buttons" style="text-align: center; margin-top: 30px;">
+                <button type="submit" class="btn btn-success">Crear Visita</button>
+                <a href="{% url 'panel_visitante:panel_responsable' %}"><button type="button" class="btn btn-secondary">Cancelar</button></a>
             </div>
         </form>
     </div>

@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Perfil - MINEGATE</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+
+        .editar-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .editar-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .card-header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .card-header p {
+            margin: 10px 0 0;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .card-body {
+            padding: 40px;
+        }
+
+        .form-section {
+            margin-bottom: 30px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .form-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .form-section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-section-title i {
+            color: #667eea;
+            font-size: 20px;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .form-control, .form-select {
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 12px 15px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.1);
+        }
+
+        .form-text {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 5px;
+        }
+
+        .info-alert {
+            background: #dbeafe;
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+
+        .info-alert i {
+            color: #3b82f6;
+            margin-right: 8px;
+        }
+
+        .info-alert p {
+            margin: 0;
+            color: #1e40af;
+            font-size: 14px;
+        }
+
+        .btn-actualizar {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .btn-actualizar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(16, 185, 129, 0.4);
+            color: white;
+        }
+
+        .btn-cancelar {
+            background: #6b7280;
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 16px;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .btn-cancelar:hover {
+            background: #4b5563;
+            color: white;
+        }
+
+        .password-info {
+            background: #fef3c7;
+            border: 1px solid #fcd34d;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 13px;
+            color: #92400e;
+        }
+
+        .readonly-field {
+            background-color: #f3f4f6;
+            cursor: not-allowed;
+        }
+
+        .field-note {
+            background: #f0f7ff;
+            border-left: 3px solid #667eea;
+            padding: 10px 15px;
+            margin-top: 10px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #1e40af;
+        }
+
+        .alert {
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+        }
+
+        .errorlist {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0 0;
+        }
+
+        .errorlist li {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="editar-container">
+        <div class="editar-card">
+            <!-- Header -->
+            <div class="card-header">
+                <h1><i class="fas fa-user-edit"></i> Editar Mi Perfil</h1>
+                <p>Actualiza tu información personal</p>
+            </div>
+
+            <!-- Body -->
+            <div class="card-body">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{% if 'error' in message.tags %}danger{% elif 'success' in message.tags %}success{% else %}info{% endif %}">
+                            <i class="fas fa-{% if 'error' in message.tags %}exclamation-circle{% elif 'success' in message.tags %}check-circle{% else %}info-circle{% endif %} me-2"></i>
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    <!-- Información Personal -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">
+                            <i class="fas fa-user"></i>
+                            Información Personal
+                        </h3>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.nombre.id_for_label }}" class="form-label">
+                                    {{ form.nombre.label }}
+                                </label>
+                                {{ form.nombre }}
+                                {% if form.nombre.errors %}
+                                    {{ form.nombre.errors }}
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.apellido.id_for_label }}" class="form-label">
+                                    {{ form.apellido.label }}
+                                </label>
+                                {{ form.apellido }}
+                                {% if form.apellido.errors %}
+                                    {{ form.apellido.errors }}
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.tipo_documento.id_for_label }}" class="form-label">
+                                    {{ form.tipo_documento.label }}
+                                </label>
+                                {{ form.tipo_documento }}
+                                {% if form.tipo_documento.errors %}
+                                    {{ form.tipo_documento.errors }}
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">
+                                    Número de Documento
+                                </label>
+                                <input type="text" class="form-control readonly-field" value="{{ visitante.documento }}" readonly>
+                                <small class="form-text">Este campo no se puede modificar</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Información de Contacto -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">
+                            <i class="fas fa-address-card"></i>
+                            Información de Contacto
+                        </h3>
+
+                        <div class="mb-3">
+                            <label for="{{ form.correo.id_for_label }}" class="form-label">
+                                {{ form.correo.label }}
+                            </label>
+                            {{ form.correo }}
+                            {% if form.correo.errors %}
+                                {{ form.correo.errors }}
+                            {% endif %}
+                            <small class="form-text">Este correo se usará para iniciar sesión</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.telefono.id_for_label }}" class="form-label">
+                                {{ form.telefono.label }}
+                            </label>
+                            {{ form.telefono }}
+                            {% if form.telefono.errors %}
+                                {{ form.telefono.errors }}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Cambiar Contraseña (Opcional) -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">
+                            <i class="fas fa-lock"></i>
+                            Cambiar Contraseña (Opcional)
+                        </h3>
+
+                        <div class="info-alert mb-3">
+                            <i class="fas fa-info-circle"></i>
+                            <p><strong>Nota:</strong> Deja estos campos en blanco si no deseas cambiar tu contraseña.</p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.password_actual.id_for_label }}" class="form-label">
+                                {{ form.password_actual.label }}
+                            </label>
+                            {{ form.password_actual }}
+                            {% if form.password_actual.errors %}
+                                {{ form.password_actual.errors }}
+                            {% endif %}
+                            <small class="form-text">{{ form.password_actual.help_text }}</small>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.nueva_password.id_for_label }}" class="form-label">
+                                    {{ form.nueva_password.label }}
+                                </label>
+                                {{ form.nueva_password }}
+                                {% if form.nueva_password.errors %}
+                                    {{ form.nueva_password.errors }}
+                                {% endif %}
+                                <small class="form-text">{{ form.nueva_password.help_text }}</small>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.confirmar_password.id_for_label }}" class="form-label">
+                                    {{ form.confirmar_password.label }}
+                                </label>
+                                {{ form.confirmar_password }}
+                                {% if form.confirmar_password.errors %}
+                                    {{ form.confirmar_password.errors }}
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="password-info">
+                            <strong><i class="fas fa-shield-alt"></i> Requisitos de seguridad:</strong>
+                            <ul style="margin: 5px 0 0; padding-left: 20px;">
+                                <li>Mínimo 8 caracteres</li>
+                                <li>Recomendado: letras mayúsculas, minúsculas, números y caracteres especiales</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Botones -->
+                    <div class="row mt-4">
+                        <div class="col-md-6 mb-3">
+                            <button type="submit" class="btn btn-actualizar">
+                                <i class="fas fa-save me-2"></i>Guardar Cambios
+                            </button>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <a href="{% url 'panel_visitante:panel_responsable' %}" class="btn btn-cancelar">
+                                <i class="fas fa-times me-2"></i>Cancelar
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

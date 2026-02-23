@@ -202,7 +202,7 @@
 
         <!-- Content -->
         <div class="content">
-            <p class="greeting">Hola,</p>
+            <p class="greeting">Hola{% if nombre_usuario %} <strong>{{ nombre_usuario }}</strong>{% endif %},</p>
 
             <p>Recibimos una solicitud para restablecer la contraseña de tu cuenta de MINEGATE. Si no fuiste tú quien realizó esta solicitud, puedes ignorar este correo de forma segura.</p>
 
@@ -234,7 +234,7 @@
 
             <!-- Important Info -->
             <div class="important-info">
-                <strong>⏱️ Vigencia:</strong> Este enlace es válido por 24 horas. Después expirará por seguridad.
+                <strong>⏱️ Vigencia:</strong> Este enlace es válido por {% if expiracion_horas %}{{ expiracion_horas }}{% else %}24{% endif %} horas. Después expirará por seguridad.
             </div>
 
             <!-- Security Note -->
@@ -250,21 +250,22 @@
             <hr class="divider">
 
             <p style="font-size: 13px; color: #666;">
-                Si no solicitaste restablecer tu contraseña, por favor contacta al equipo de soporte de MINEGATE de inmediato. Tu cuenta podría haber sido comprometida.
+                Si no solicitaste restablecer tu contraseña, por favor contacta al equipo de soporte de MINEGATE{% if email_soporte %} al correo <a href="mailto:{{ email_soporte }}" style="color: #667eea; text-decoration: none;">{{ email_soporte }}</a>{% endif %}{% if telefono_soporte %} o llama al {{ telefono_soporte }}{% endif %} de inmediato. Tu cuenta podría haber sido comprometida.
             </p>
         </div>
 
         <!-- Footer -->
         <div class="footer">
             <div class="footer-logo">MINEGATE</div>
-            <p style="margin: 10px 0;">Sistema de Gestión de Visitas - SENA</p>
+            <p style="margin: 10px 0;">Sistema de Gestión de Visitas{% if institucion %} - {{ institucion }}{% else %} - SENA{% endif %}</p>
             <div class="footer-divider">—</div>
             <p style="margin: 10px 0; font-size: 11px;">
                 Este es un correo automático. Por favor no respondas a este mensaje.
             </p>
             <p style="margin: 10px 0; font-size: 11px;">
-                <a href="#" class="footer-link">Política de Privacidad</a> | 
-                <a href="#" class="footer-link">Términos de Servicio</a>
+                {% if url_privacidad %}<a href="{{ url_privacidad }}" class="footer-link">Política de Privacidad</a>{% endif %}
+                {% if url_privacidad and url_terminos %} | {% endif %}
+                {% if url_terminos %}<a href="{{ url_terminos }}" class="footer-link">Términos de Servicio</a>{% endif %}
             </p>
         </div>
     </div>
