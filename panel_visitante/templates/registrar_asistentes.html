@@ -69,7 +69,7 @@
 
     <!-- Progreso de registro -->
     <div class="progress-section">
-        <h4><i class="fas fa-chart-pie me-2" style="color: #667eea;"></i>Progreso de Registro</h4>
+        <h4><i class="fas fa-chart-pie me-2" style="color: #00af00;"></i>Progreso de Registro</h4>
         <div class="progress-bar-custom">
             {% widthratio asistentes_actuales max_asistentes 100 as progress_percent %}
             <div class="progress-fill {% if asistentes_actuales >= max_asistentes %}full{% endif %}" style="width: {{ progress_percent }}%;">
@@ -150,7 +150,7 @@
             {% for asistente in asistentes %}
                 <div class="asistente-item">
                     <div class="asistente-info">
-                        <h5><i class="fas fa-user me-2" style="color: #667eea;"></i>{{ asistente.nombre_completo }}</h5>
+                        <h5><i class="fas fa-user me-2" style="color: #00af00;"></i>{{ asistente.nombre_completo }}</h5>
                         <p>
                             <i class="fas fa-id-card me-1"></i>{{ asistente.get_tipo_documento_display }}: {{ asistente.numero_documento }}
                             {% if asistente.correo %} | <i class="fas fa-envelope me-1"></i>{{ asistente.correo }}{% endif %}
