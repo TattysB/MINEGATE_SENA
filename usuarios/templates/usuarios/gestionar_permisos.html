@@ -1,0 +1,736 @@
+{% extends "core/panel_administrativo.html" %}
+{% load static %}
+ {% block content %} 
+<link rel="stylesheet" href="{% static 'css/gestionar_permisos.css' %}" />
+
+<style>
+  /* ===== ESTILOS ADICIONALES PARA GESTIÓN DE PERMISOS ===== */
+  
+  /* Botón Crear Usuario */
+  .btn-crear-usuario {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.85rem 1.5rem;
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 1rem;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    transition: all 0.3s ease;
+  }
+  
+  .btn-crear-usuario:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+    color: white;
+  }
+  
+  /* Badges de Estado Cuenta */
+  .badge-activo {
+    background-color: #28a745;
+    color: white;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  
+  .badge-inactivo {
+    background-color: #dc3545;
+    color: white;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  
+  /* ===== BOTONES DE ACCIONES PROFESIONALES ===== */
+  .acciones-usuario {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .btn-accion {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    gap: 4px;
+  }
+  
+  .btn-accion:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+  
+  /* Botón Ver */
+  .btn-ver {
+    background-color: #e3f2fd;
+    color: #1976d2;
+    border: 1px solid #90caf9;
+  }
+  
+  .btn-ver:hover {
+    background-color: #bbdefb;
+    color: #1565c0;
+  }
+  
+  /* Botón Editar */
+  .btn-editar {
+    background-color: #fff3e0;
+    color: #e65100;
+    border: 1px solid #ffcc80;
+  }
+  
+  .btn-editar:hover {
+    background-color: #ffe0b2;
+    color: #d84315;
+  }
+  
+  /* Botón Toggle Estado */
+  .btn-toggle {
+    background-color: #f3e5f5;
+    color: #7b1fa2;
+    border: 1px solid #ce93d8;
+  }
+  
+  .btn-toggle:hover {
+    background-color: #e1bee7;
+    color: #6a1b9a;
+  }
+  
+  /* Botón Eliminar */
+  .btn-eliminar {
+    background-color: #ffebee;
+    color: #c62828;
+    border: 1px solid #ef9a9a;
+  }
+  
+  .btn-eliminar:hover {
+    background-color: #ffcdd2;
+    color: #b71c1c;
+  }
+  
+  /* Iconos en botones */
+  .btn-accion i {
+    font-size: 13px;
+  }
+  
+  /* Ajuste columnas de tabla */
+  .tabla-usuarios th:nth-child(5),
+  .tabla-usuarios td:nth-child(5),
+  .tabla-usuarios th:nth-child(6),
+  .tabla-usuarios td:nth-child(6) {
+    text-align: center;
+  }
+  
+  /* Estilos para el modal de toggle */
+  #encabezadoToggle {
+    transition: background 0.3s ease;
+  }
+  
+  /* Responsive */
+  @media (max-width: 992px) {
+    .seccion-acciones-principales {
+      justify-content: center !important;
+    }
+    
+    .btn-crear-usuario {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>
+
+<div class="contenedor-permisos">
+  <!-- Mensajes -->
+  {% if messages %}
+  <div class="mensajes">
+    {% for message in messages %}
+    <div class="alerta alerta-{{ message.tags }}">
+      <span>{{ message }}</span>
+      <button
+        type="button"
+        class="btn-cerrar-alerta"
+        onclick="this.parentElement.style.display = 'none'"
+      >
+        ×
+      </button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Botón Crear Usuario -->
+  <div class="seccion-acciones-principales" style="margin-bottom: 1.5rem; display: flex; justify-content: flex-end;">
+    <a href="{% url 'usuarios:crear_usuario_permisos' %}" class="btn-crear-usuario">
+      ➕ Crear Nuevo Usuario
+    </a>
+  </div>
+
+  <!-- Tarjetas de Estadísticas -->
+  <div class="seccion-estadisticas">
+    <div class="titulo-seccion">📈 Estadísticas de Usuarios</div>
+    <div class="grid-estadisticas">
+      <div class="tarjeta-estadistica total">
+        <div class="numero-estadistica">{{ total_usuarios }}</div>
+        <div class="texto-estadistica">Total de Usuarios</div>
+      </div>
+      <div class="tarjeta-estadistica aprobado">
+        <div class="numero-estadistica">{{ usuarios_activos }}</div>
+        <div class="texto-estadistica">Activos</div>
+      </div>
+      <div class="tarjeta-estadistica rechazado">
+        <div class="numero-estadistica">{{ usuarios_inactivos }}</div>
+        <div class="texto-estadistica">Inactivos</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros y Búsqueda -->
+  <div class="seccion-filtros">
+    <div class="titulo-seccion">🔍 Filtros</div>
+    <form
+      id="formFiltros"
+      class="formulario-filtros"
+      onsubmit="return filtrarUsuarios(event);"
+    >
+      <div class="grupo-filtros">
+        <div class="filtro-botones">
+          <button
+            type="button"
+            class="btn-filtro {% if filtro_actual == 'todos' or not filtro_actual %}activo{% endif %}"
+            data-filtro="todos"
+            onclick="aplicarFiltro('todos')"
+          >
+            Todos
+          </button>
+          <button
+            type="button"
+            class="btn-filtro {% if filtro_actual == 'activos' %}activo{% endif %}"
+            data-filtro="activos"
+            onclick="aplicarFiltro('activos')"
+          >
+            Activos
+          </button>
+          <button
+            type="button"
+            class="btn-filtro {% if filtro_actual == 'inactivos' %}activo{% endif %}"
+            data-filtro="inactivos"
+            onclick="aplicarFiltro('inactivos')"
+          >
+            Inactivos
+          </button>
+        </div>
+        <div class="busqueda">
+          <input
+            type="text"
+            id="inputBusqueda"
+            name="buscar"
+            placeholder="Buscar por usuario, email, documento..."
+            value="{{ buscar }}"
+            class="input-busqueda"
+          />
+          <input
+            type="hidden"
+            id="filtroActual"
+            name="filtro"
+            value="{{ filtro_actual|default:'todos' }}"
+          />
+          <button type="submit" class="btn-buscar">🔍 Buscar</button>
+          <button type="button" class="btn-limpiar" onclick="limpiarBusqueda()">
+            Limpiar
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Tabla de Usuarios -->
+  <div class="seccion-tabla">
+    <div class="titulo-seccion">
+      👥 Lista de Usuarios{% if perfiles %} ({{ perfiles.count }}){% endif %}
+    </div>
+    {% if perfiles %}
+    <div class="tabla-responsiva">
+      <table class="tabla-usuarios">
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Documento</th>
+            <th>Email</th>
+            <th>Fecha Registro</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for perfil in perfiles %}
+          <tr
+            class="fila-usuario {% if perfil.user.is_active %}aprobado{% else %}rechazado{% endif %}"
+            data-usuario-id="{{ perfil.user.id }}"
+          >
+            <td class="datos-usuario">
+              <div class="nombre-usuario">
+                {{ perfil.user.get_full_name|default:perfil.user.username }}
+              </div>
+              <div class="username">@{{ perfil.user.username }}</div>
+            </td>
+            <td>
+              <span class="documento">{{ perfil.documento }}</span>
+            </td>
+            <td>
+              <span class="email">{{ perfil.user.email }}</span>
+            </td>
+            <td>
+              <span class="fecha"
+                >{{ perfil.user.date_joined|date:"d/m/Y H:i" }}</span
+              >
+            </td>
+            <td>
+              {% if perfil.user.is_active %}
+              <span class="badge badge-activo">✓ ACTIVO</span>
+              {% else %}
+              <span class="badge badge-inactivo">✗ INACTIVO</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="acciones-usuario">
+                <a 
+                  href="{% url 'usuarios:detalle_usuario_permisos' perfil.user.id %}"
+                  class="btn-accion btn-ver"
+                  title="Ver detalles"
+                >
+                  👁️
+                </a>
+                <a 
+                  href="{% url 'usuarios:editar_usuario' perfil.user.id %}?next={% url 'usuarios:gestionar_permisos' %}"
+                  class="btn-accion btn-editar"
+                  title="Editar usuario"
+                >
+                  ✏️
+                </a>
+                <button
+                  type="button"
+                  class="btn-accion btn-toggle"
+                  onclick="abrirModalToggleEstado('{{ perfil.user.id }}', '{{ perfil.user.get_full_name|default:perfil.user.username }}', {{ perfil.user.is_active|yesno:'true,false' }})"
+                  title="{% if perfil.user.is_active %}Desactivar{% else %}Activar{% endif %} usuario"
+                >
+                  {% if perfil.user.is_active %}⏸️{% else %}▶️{% endif %}
+                </button>
+                <button
+                  type="button"
+                  class="btn-accion btn-eliminar"
+                  onclick="abrirModalEliminar('{{ perfil.user.id }}', '{{ perfil.user.get_full_name|default:perfil.user.username }}', '{{ perfil.documento }}')"
+                  title="Eliminar usuario"
+                >
+                  🗑️
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="sin-resultados">
+      <p>📋 No se encontraron usuarios con los criterios seleccionados.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Modales -->
+  
+  <!-- Modal Eliminar Usuario -->
+  <div id="modalEliminar" class="modal">
+    <div class="modal-contenido">
+      <div class="modal-encabezado modal-encabezado-eliminar">
+        <h2>🗑️ Eliminar Usuario</h2>
+        <button class="modal-cerrar" onclick="cerrarModal('modalEliminar')">
+          &times;
+        </button>
+      </div>
+      <div class="modal-cuerpo">
+        <div class="alerta-eliminar">
+          <span class="icono-alerta">⚠️</span>
+          <p><strong>¡Atención!</strong> Esta acción no se puede deshacer.</p>
+        </div>
+        <p>¿Estás seguro de que deseas eliminar permanentemente a:</p>
+        <div class="info-usuario-eliminar">
+          <p><strong>Nombre:</strong> <span id="usuarioEliminar"></span></p>
+          <p>
+            <strong>Documento:</strong> <span id="documentoEliminar"></span>
+          </p>
+        </div>
+        <p class="texto-advertencia">
+          El usuario será eliminado del sistema junto con todos sus datos
+          asociados.
+        </p>
+      </div>
+      <div class="modal-pie">
+        <button
+          class="btn-modal btn-cancelar"
+          onclick="cerrarModal('modalEliminar')"
+        >
+          Cancelar
+        </button>
+        <form id="formEliminar" method="POST" style="display: inline">
+          {% csrf_token %}
+          <button
+            type="submit"
+            class="btn-modal btn-confirmar btn-confirmar-eliminar"
+          >
+            Sí, Eliminar
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Toggle Estado Usuario -->
+  <div id="modalToggleEstado" class="modal">
+    <div class="modal-contenido">
+      <div class="modal-encabezado" id="encabezadoToggle">
+        <h2 id="tituloToggle">⏸️ Cambiar Estado</h2>
+        <button class="modal-cerrar" onclick="cerrarModal('modalToggleEstado')">
+          &times;
+        </button>
+      </div>
+      <div class="modal-cuerpo">
+        <p>¿Deseas <strong id="accionToggle">desactivar</strong> a <strong id="usuarioToggle"></strong>?</p>
+        <p class="texto-info" id="infoToggle">
+          El usuario no podrá iniciar sesión mientras su cuenta esté desactivada.
+        </p>
+      </div>
+      <div class="modal-pie">
+        <button
+          class="btn-modal btn-cancelar"
+          onclick="cerrarModal('modalToggleEstado')"
+        >
+          Cancelar
+        </button>
+        <form id="formToggleEstado" method="POST" style="display: inline">
+          {% csrf_token %}
+          <button type="submit" class="btn-modal btn-confirmar" id="btnConfirmarToggle">
+            Sí, Cambiar Estado
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script para Gestión de Permisos -->
+  <script>
+    let usuarioIdEliminar = null;
+    let usuarioIdToggle = null;
+    let filtroActualValor = '{{ filtro_actual|default:"todos" }}';
+
+    // ==================== FUNCIONES DE FILTRADO ====================
+
+    function aplicarFiltro(filtro) {
+      // Actualizar botones activos
+      document.querySelectorAll(".btn-filtro").forEach((btn) => {
+        btn.classList.remove("activo");
+        if (btn.getAttribute("data-filtro") === filtro) {
+          btn.classList.add("activo");
+        }
+      });
+
+      // Actualizar filtro actual
+      filtroActualValor = filtro;
+      document.getElementById("filtroActual").value = filtro;
+
+      // Realizar la búsqueda con el nuevo filtro
+      cargarUsuariosFiltrados(
+        filtro,
+        document.getElementById("inputBusqueda").value,
+      );
+    }
+
+    function filtrarUsuarios(event) {
+      event.preventDefault();
+      const busqueda = document.getElementById("inputBusqueda").value;
+      cargarUsuariosFiltrados(filtroActualValor, busqueda);
+      return false;
+    }
+
+    function limpiarBusqueda() {
+      document.getElementById("inputBusqueda").value = "";
+      cargarUsuariosFiltrados(filtroActualValor, "");
+    }
+
+    function cargarUsuariosFiltrados(filtro, busqueda) {
+      // Mostrar indicador de carga
+      const tablaBody = document.querySelector(".tabla-usuarios tbody");
+      if (tablaBody) {
+        tablaBody.innerHTML =
+          '<tr><td colspan="7" style="text-align: center; padding: 2rem;">⏳ Cargando...</td></tr>';
+      }
+
+      // Realizar petición AJAX
+      fetch(
+        `{% url 'usuarios:gestionar_permisos_ajax' %}?filtro=${encodeURIComponent(filtro)}&buscar=${encodeURIComponent(busqueda)}`,
+        {
+          method: "GET",
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+          },
+        },
+      )
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            // Actualizar estadísticas
+            actualizarEstadisticas(data.estadisticas);
+            // Actualizar tabla
+            actualizarTablaUsuarios(data.usuarios);
+          }
+        })
+        .catch((error) => {
+          console.error("Error al filtrar usuarios:", error);
+          if (tablaBody) {
+            tablaBody.innerHTML =
+              '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: #c62828;">❌ Error al cargar usuarios</td></tr>';
+          }
+        });
+    }
+
+    function actualizarEstadisticas(stats) {
+      document.querySelector(
+        ".tarjeta-estadistica.total .numero-estadistica",
+      ).textContent = stats.total;
+      document.querySelector(
+        ".tarjeta-estadistica.aprobado .numero-estadistica",
+      ).textContent = stats.activos;
+      document.querySelector(
+        ".tarjeta-estadistica.rechazado .numero-estadistica",
+      ).textContent = stats.inactivos;
+    }
+
+    // Función auxiliar para escapar caracteres especiales
+    function escaparHTML(texto) {
+      const div = document.createElement("div");
+      div.textContent = texto;
+      return div.innerHTML;
+    }
+
+    function actualizarTablaUsuarios(usuarios) {
+      const tablaBody = document.querySelector(".tabla-usuarios tbody");
+      const tituloSeccion = document.querySelector(
+        ".seccion-tabla .titulo-seccion",
+      );
+
+      if (!tablaBody) return;
+
+      if (usuarios.length === 0) {
+        tablaBody.innerHTML = "";
+        const sinResultados = document.querySelector(".sin-resultados");
+        if (sinResultados) {
+          sinResultados.style.display = "block";
+        } else {
+          tablaBody.closest(".seccion-tabla").innerHTML +=
+            '<div class="sin-resultados"><p>📋 No se encontraron usuarios con los criterios seleccionados.</p></div>';
+        }
+        if (tituloSeccion) {
+          tituloSeccion.textContent = "👥 Lista de Usuarios (0)";
+        }
+        return;
+      }
+
+      // Ocultar mensaje de sin resultados si existe
+      const sinResultados = document.querySelector(".sin-resultados");
+      if (sinResultados) {
+        sinResultados.style.display = "none";
+      }
+
+      // Actualizar título
+      if (tituloSeccion) {
+        tituloSeccion.textContent = `👥 Lista de Usuarios (${usuarios.length})`;
+      }
+
+      // Limpiar la tabla primero
+      tablaBody.innerHTML = "";
+
+      // Generar filas de la tabla
+      usuarios.forEach((usuario, index) => {
+        const estadoClass = usuario.is_active ? "aprobado" : "rechazado";
+
+        // Crear la fila
+        const tr = document.createElement("tr");
+        tr.className = `fila-usuario ${estadoClass}`;
+        tr.setAttribute("data-usuario-id", usuario.id);
+        tr.style.animationDelay = `${index * 0.05}s`;
+
+        // Celda de usuario
+        const tdUsuario = document.createElement("td");
+        tdUsuario.className = "datos-usuario";
+        tdUsuario.innerHTML = `
+                <div class="nombre-usuario">${escaparHTML(usuario.nombre || "")}</div>
+                <div class="username">@${escaparHTML(usuario.username || "")}</div>
+            `;
+        tr.appendChild(tdUsuario);
+
+        // Celda de documento
+        const tdDocumento = document.createElement("td");
+        tdDocumento.innerHTML = `<span class="documento">${escaparHTML(usuario.documento || "")}</span>`;
+        tr.appendChild(tdDocumento);
+
+        // Celda de email
+        const tdEmail = document.createElement("td");
+        tdEmail.innerHTML = `<span class="email">${escaparHTML(usuario.email || "")}</span>`;
+        tr.appendChild(tdEmail);
+
+        // Celda de fecha
+        const tdFecha = document.createElement("td");
+        tdFecha.innerHTML = `<span class="fecha">${escaparHTML(usuario.fecha_registro || "")}</span>`;
+        tr.appendChild(tdFecha);
+
+        // Celda de estado de cuenta (activo/inactivo)
+        const tdEstadoCuenta = document.createElement("td");
+        tdEstadoCuenta.style.textAlign = "center";
+        if (usuario.is_active !== false) {
+          tdEstadoCuenta.innerHTML = '<span class="badge badge-activo">✓ ACTIVO</span>';
+        } else {
+          tdEstadoCuenta.innerHTML = '<span class="badge badge-inactivo">✗ INACTIVO</span>';
+        }
+        tr.appendChild(tdEstadoCuenta);
+
+        // Celda de acciones
+        const tdAcciones = document.createElement("td");
+        const divAcciones = document.createElement("div");
+        divAcciones.className = "acciones-usuario";
+
+        // Botón Ver Detalle
+        const btnVer = document.createElement("a");
+        btnVer.href = "{% url 'usuarios:detalle_usuario_permisos' 0 %}".replace("0", usuario.id);
+        btnVer.className = "btn-accion btn-ver";
+        btnVer.title = "Ver detalles";
+        btnVer.textContent = "👁️";
+        divAcciones.appendChild(btnVer);
+
+        // Botón Editar
+        const btnEditar = document.createElement("a");
+        btnEditar.href = "{% url 'usuarios:editar_usuario' 0 %}".replace("0", usuario.id) + "?next={% url 'usuarios:gestionar_permisos' %}";
+        btnEditar.className = "btn-accion btn-editar";
+        btnEditar.title = "Editar usuario";
+        btnEditar.textContent = "✏️";
+        divAcciones.appendChild(btnEditar);
+
+        // Botón Toggle Estado
+        const btnToggle = document.createElement("button");
+        btnToggle.type = "button";
+        btnToggle.className = "btn-accion btn-toggle";
+        btnToggle.title = usuario.is_active !== false ? "Desactivar usuario" : "Activar usuario";
+        btnToggle.textContent = usuario.is_active !== false ? "⏸️" : "▶️";
+        btnToggle.onclick = function () {
+          abrirModalToggleEstado(usuario.id, usuario.nombre, usuario.is_active !== false);
+        };
+        divAcciones.appendChild(btnToggle);
+
+        const btnEliminar = document.createElement("button");
+        btnEliminar.type = "button";
+        btnEliminar.className = "btn-accion btn-eliminar";
+        btnEliminar.title = "Eliminar usuario";
+        btnEliminar.textContent = "🗑️";
+        btnEliminar.onclick = function () {
+          abrirModalEliminar(usuario.id, usuario.nombre, usuario.documento);
+        };
+        divAcciones.appendChild(btnEliminar);
+
+        tdAcciones.appendChild(divAcciones);
+        tr.appendChild(tdAcciones);
+
+        // Agregar la fila a la tabla
+        tablaBody.appendChild(tr);
+      });
+    }
+
+    // ==================== FUNCIONES DE MODALES ====================
+
+    function abrirModalEliminar(usuarioId, nombreUsuario, documento) {
+      usuarioIdEliminar = usuarioId;
+      document.getElementById("usuarioEliminar").textContent = nombreUsuario;
+      document.getElementById("documentoEliminar").textContent = documento;
+      const form = document.getElementById("formEliminar");
+      form.action = "{% url 'usuarios:eliminar_usuario_permisos' 0 %}".replace(
+        "0",
+        usuarioId,
+      );
+      abrirModal("modalEliminar");
+    }
+
+    function abrirModalToggleEstado(usuarioId, nombreUsuario, estaActivo) {
+      usuarioIdToggle = usuarioId;
+      document.getElementById("usuarioToggle").textContent = nombreUsuario;
+      
+      const tituloToggle = document.getElementById("tituloToggle");
+      const accionToggle = document.getElementById("accionToggle");
+      const infoToggle = document.getElementById("infoToggle");
+      const btnConfirmar = document.getElementById("btnConfirmarToggle");
+      const encabezado = document.getElementById("encabezadoToggle");
+      
+      if (estaActivo) {
+        tituloToggle.textContent = "⏸️ Desactivar Usuario";
+        accionToggle.textContent = "desactivar";
+        infoToggle.textContent = "El usuario no podrá iniciar sesión mientras su cuenta esté desactivada.";
+        btnConfirmar.textContent = "Sí, Desactivar";
+        encabezado.style.background = "#ffc107";
+      } else {
+        tituloToggle.textContent = "▶️ Activar Usuario";
+        accionToggle.textContent = "activar";
+        infoToggle.textContent = "El usuario podrá iniciar sesión nuevamente una vez activada su cuenta.";
+        btnConfirmar.textContent = "Sí, Activar";
+        encabezado.style.background = "#28a745";
+      }
+      
+      const form = document.getElementById("formToggleEstado");
+      form.action = "{% url 'usuarios:toggle_estado_usuario' 0 %}".replace(
+        "0",
+        usuarioId,
+      );
+      abrirModal("modalToggleEstado");
+    }
+
+    function abrirModal(modalId) {
+      const modal = document.getElementById(modalId);
+      modal.style.display = "flex";
+    }
+
+    function cerrarModal(modalId) {
+      const modal = document.getElementById(modalId);
+      modal.style.display = "none";
+    }
+
+    // Cerrar modal si se hace clic fuera del contenido
+    window.addEventListener("click", function (event) {
+      if (event.target.classList.contains("modal")) {
+        event.target.style.display = "none";
+      }
+    });
+
+    // Auto-cerrar alertas después de 5 segundos
+    document.addEventListener("DOMContentLoaded", function () {
+      const alertas = document.querySelectorAll(".alerta");
+      alertas.forEach((alerta) => {
+        setTimeout(() => {
+          alerta.style.display = "none";
+        }, 5000);
+      });
+    });
+  </script>
+</div>
+
+{% endblock %}

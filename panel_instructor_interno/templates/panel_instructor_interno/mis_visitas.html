@@ -1,0 +1,142 @@
+{% extends "master.html" %}
+{% load static %}
+
+{% block title %}Mis Visitas Internas - MINEGATE
+  <!-- BOTÓN VOLVER -->
+  <div class="container pb-4">
+    <a href="{% url 'panel_instructor_interno:panel' %}" class="btn btn-outline-success">
+      <i class="fas fa-arrow-left me-2"></i>Volver al Panel
+    </a>
+  </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  :root { --sena-verde: #39a900; --sena-verde-oscuro: #2d8600; }
+  .page-header { background: linear-gradient(135deg, #1a5c00, var(--sena-verde)); color: white; padding: 2rem 0; }
+  .page-header h2 { font-weight: 800; margin: 0; }
+  .breadcrumb-nav a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.85rem; }
+  .breadcrumb-nav span { color: rgba(255,255,255,0.5); margin: 0 6px; }
+
+  .filter-bar { background: white; border-radius: 12px; padding: 1rem 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.06); margin-bottom: 1.5rem; }
+
+  .visita-card {
+    background: white; border-radius: 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    margin-bottom: 1rem; overflow: hidden;
+    border-left: 5px solid #e9ecef; transition: all 0.2s;
+  }
+  .visita-card:hover { transform: translateX(4px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+  .visita-card.pendiente { border-left-color: #f59e0b; }
+  .visita-card.confirmada { border-left-color: #10b981; }
+  .visita-card.rechazada { border-left-color: #ef4444; }
+  .visita-card.enviada_coordinacion { border-left-color: #6366f1; }
+  .visita-card.aprobada_inicial { border-left-color: #10b981; }
+  .visita-card.documentos_enviados { border-left-color: #3b82f6; }
+  .visita-card.en_revision_documentos { border-left-color: #8b5cf6; }
+
+  .visita-card-inner { padding: 1.2rem 1.5rem; display: flex; align-items: center; gap: 1.5rem; }
+  .visita-id { font-size: 1.5rem; font-weight: 900; color: #d1d5db; min-width: 50px; text-align: center; }
+  .visita-data { flex: 1; }
+  .visita-data h6 { margin: 0 0 3px; font-size: 0.95rem; font-weight: 700; color: #111827; }
+  .visita-data small { color: #6b7280; font-size: 0.8rem; }
+  .estado-pill { padding: 4px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+  .ep-pendiente { background:#fef3c7; color:#92400e; }
+  .ep-confirmada { background:#d1fae5; color:#065f46; }
+  .ep-rechazada { background:#fee2e2; color:#991b1b; }
+  .ep-enviada_coordinacion { background:#ede9fe; color:#5b21b6; }
+  .ep-aprobada_inicial { background:#d1fae5; color:#065f46; }
+  .ep-documentos_enviados { background:#dbeafe; color:#1e3a8a; }
+  .ep-en_revision_documentos { background:#ede9fe; color:#5b21b6; }
+
+  .btn-detalle { background: var(--sena-verde); color:white; border:none; padding:6px 16px; border-radius:50px; font-size:0.8rem; font-weight:700; text-decoration:none; transition:all 0.2s; }
+  .btn-detalle:hover { background: var(--sena-verde-oscuro); color:white; }
+  .empty-state { text-align:center; padding:3rem; color:#9ca3af; }
+  .empty-state i { font-size:3rem; margin-bottom:1rem; opacity:0.4; }
+</style>
+{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<div class="page-header">
+  <div class="container">
+    <div class="breadcrumb-nav mb-2">
+      <a href="{% url 'panel_instructor_interno:panel' %}"><i class="fas fa-home me-1"></i>Mi Panel</a>
+      <span>›</span><span style="color:rgba(255,255,255,0.9)">Mis Visitas</span>
+    </div>
+    <h2><i class="fas fa-list-alt me-3"></i>Mis Visitas Internas</h2>
+  </div>
+</div>
+
+<div class="container py-4">
+
+  <!-- Filtros -->
+  <div class="filter-bar">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-5">
+        <label class="form-label small fw-bold">Buscar</label>
+        <input type="text" name="buscar" class="form-control form-control-sm" placeholder="Nombre programa o ficha..." value="{{ buscar }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small fw-bold">Estado</label>
+        <select name="estado" class="form-select form-select-sm">
+          <option value="">Todos los estados</option>
+          {% for val, label in estados %}
+            <option value="{{ val }}" {% if val == estado_filtrado %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-success btn-sm flex-fill"><i class="fas fa-search me-1"></i>Filtrar</button>
+        <a href="{% url 'panel_instructor_interno:mis_visitas' %}" class="btn btn-outline-secondary btn-sm">Limpiar</a>
+      </div>
+    </form>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <p class="mb-0 text-muted small">{{ visitas|length }} visita{{ visitas|length|pluralize:"s" }} encontrada{{ visitas|length|pluralize:"s" }}</p>
+    <a href="{% url 'panel_instructor_interno:reservar_visita' %}" class="btn btn-success btn-sm">
+      <i class="fas fa-plus me-1"></i>Nueva Visita
+    </a>
+  </div>
+
+  {% if visitas %}
+    {% for visita in visitas %}
+    <div class="visita-card {{ visita.estado }}">
+      <div class="visita-card-inner">
+        <div class="visita-id">#{{ visita.id }}</div>
+        <div class="visita-data">
+          <h6>{{ visita.nombre_programa }}</h6>
+          <small>Ficha {{ visita.numero_ficha }} &nbsp;·&nbsp; {{ visita.cantidad_aprendices }} aprendices &nbsp;·&nbsp; {{ visita.fecha_solicitud|date:"d M Y" }}</small>
+        </div>
+        <span class="estado-pill ep-{{ visita.estado }}">
+          {% if visita.estado == 'pendiente' %}<i class="fas fa-clock me-1"></i>Pendiente
+          {% elif visita.estado == 'enviada_coordinacion' %}<i class="fas fa-paper-plane me-1"></i>En Coordinación
+          {% elif visita.estado == 'aprobada_inicial' %}<i class="fas fa-check me-1"></i>Aprobada
+          {% elif visita.estado == 'confirmada' %}<i class="fas fa-check-double me-1"></i>Confirmada
+          {% elif visita.estado == 'rechazada' %}<i class="fas fa-times me-1"></i>Rechazada
+          {% else %}{{ visita.get_estado_display }}{% endif %}
+        </span>
+        <a href="{% url 'panel_instructor_interno:detalle_visita' visita.pk %}" class="btn-detalle">
+          <i class="fas fa-eye me-1"></i>Ver
+        </a>
+      </div>
+    </div>
+    <div class="d-flex justify-content-between align-items-center">
+      <a href="{% url 'panel_instructor_interno:panel' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Volver al Panel
+      </a>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+      <i class="fas fa-clipboard-list d-block"></i>
+      <p>No se encontraron visitas con los filtros seleccionados.</p>
+      <a href="{% url 'panel_instructor_interno:reservar_visita' %}" class="btn btn-success mt-2">
+        <i class="fas fa-plus me-2"></i>Reservar primera visita
+      </a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

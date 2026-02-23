@@ -1,0 +1,143 @@
+<div class="calendar-page">
+  <style>
+    /* Estilos inline seguros — no crean archivos nuevos */
+    .calendar-header{ text-align:center; margin-bottom:16px }
+    .calendar-header h1{ color:#1f7f55; margin:0; font-size:22px; font-weight:700 }
+    .calendar-header .subtitle{ color:#516b57; margin:6px 0 0; font-size:13px }
+    .calendar-card{ background:#fff; border-radius:12px; padding:18px; box-shadow:0 8px 20px rgba(20,90,60,0.04); }
+    table.calendar-table{ width:100%; border-collapse:separate; border-spacing:10px }
+    table.calendar-table th{ color:#6b8b76; font-weight:700; padding:8px 6px; font-size:13px }
+    table.calendar-table td{ background:#fff; border-radius:8px; padding:8px 6px; min-width:56px; min-height:56px; color:#234537 }
+    td.other-month{ background:#f7f7f7; color:#bdbdbd }
+    td.disabled{ background:#f3f3f3; color:#bfbfbf; pointer-events:none }
+    td.available{ background:#eaf9ef; border:2px solid #19a974; color:#0b5b39; font-weight:700 }
+    td.no-available{ background:#f3f6f3; color:#9aa79a; opacity:0.95; pointer-events:none }
+    .legend{ text-align:center; margin-top:10px; color:#556b5b }
+    .legend .dot{ display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px }
+    .nav{ background:#fff; border:1px solid #eee; border-radius:50%; width:36px; height:36px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer }
+    .btn.blue{ background:linear-gradient(180deg,#17884b,#0f6b39); color:#fff; padding:12px 20px; border-radius:10px; border:none }
+    @media(max-width:720px){ .calendar-card{ padding:14px } }
+  </style>
+
+  <header class="calendar-header">
+    <h1>Sistema de Gestión de Visitas</h1>
+    <p class="subtitle">SENA - CENTRO MINERO</p>
+  </header>
+
+  <main class="calendar-card" data-year="{{ year }}" data-month="{{ month }}">
+    <div class="card-top">
+      <button id="prev" class="nav">‹</button>
+      <h2 id="month-title">{{ month_name }} {{ year }}</h2>
+      <button id="next" class="nav">›</button>
+    </div>
+
+    <table class="calendar-table">
+      <thead>
+        <tr>
+          <th>Dom</th><th>Lun</th><th>Mar</th><th>Mié</th><th>Jue</th><th>Vie</th><th>Sáb</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for week in weeks %}
+          <tr>
+            {% for day in week %}
+              {% with daystr=day.date|date:"Y-m-d" %}
+                {% if day.is_other_month %}
+                  <td class="other-month" data-date="{{ day.date|date:'Y-m-d' }}">{{ day.date.day }}</td>
+                {% elif day.is_sunday %}
+                  <td class="disabled" data-date="{{ day.date|date:'Y-m-d' }}">{{ day.date.day }}</td>
+                {% elif day.is_today %}
+                  <td class="today{% if daystr in available_dates %} available{% else %} no-available{% endif %}" data-date="{{ day.date|date:'Y-m-d' }}">{{ day.date.day }}</td>
+                {% else %}
+                  <td class="{% if daystr in available_dates %}available{% else %}no-available{% endif %}" data-date="{{ day.date|date:'Y-m-d' }}">{{ day.date.day }}</td>
+                {% endif %}
+              {% endwith %}
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <!-- botones eliminados: Visita Externa / Visita Interna -->
+  </main>
+
+  <section class="availability-config">
+    <h3>Configurar Días y Horarios Disponibles</h3>
+    <form method="post" action="{% url 'calendario:save_availability' %}" id="availabilityForm">
+      {% csrf_token %}
+      <div class="fields">
+        <label>Fecha inicio:
+          <input type="date" id="startDate" name="start_date" required>
+        </label>
+        <label>Fecha fin:
+          <input type="date" id="endDate" name="end_date" required>
+        </label>
+      </div>
+      <div class="fields">
+        <label>Horarios (HH:MM separados por comas):
+          <input type="text" id="timesText" name="times_text" placeholder="08:00,09:00,10:30">
+        </label>
+      </div>
+      <button type="submit" class="btn blue" id="saveAvailBtn">Guardar Disponibilidades</button>
+    </form>
+    <p class="note">Las fechas marcadas en el calendario aparecerán como <span class="dot available"></span> disponibles.</p>
+  </section>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', function(){
+      var form = document.getElementById('availabilityForm');
+      var timesText = document.getElementById('timesText');
+      var startDate = document.getElementById('startDate');
+      var endDate = document.getElementById('endDate');
+      var saveBtn = document.getElementById('saveAvailBtn');
+
+      function canEnable(){
+          return startDate.value && endDate.value && timesText.value.trim();
+      }
+      function refresh(){ if(canEnable()){ saveBtn.disabled = false } else { saveBtn.disabled = true } }
+      timesText.addEventListener('input', refresh);
+      startDate.addEventListener('change', refresh);
+      endDate.addEventListener('change', refresh);
+
+        form.addEventListener('submit', function(e){
+          e.preventDefault();
+          var val = timesText.value.trim();
+          if(!val){ alert('Ingrese al menos un horario en formato HH:MM separado por comas.'); return false; }
+          var parts = val.split(',').map(function(s){return s.trim();}).filter(Boolean);
+          var data = new FormData(); data.append('start_date', startDate.value); data.append('end_date', endDate.value);
+          parts.forEach(function(p){ data.append('times', p); });
+          function getCookie(name){ var v = document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)'); return v ? v.pop() : ''; }
+          fetch(form.action, { method:'POST', headers:{ 'X-Requested-With':'XMLHttpRequest', 'X-CSRFToken':getCookie('csrftoken'), 'Accept':'application/json' }, body:data })
+          .then(function(res){ return res.json(); })
+          .then(function(json){
+            if(json.available_dates){
+              var avail = new Set(json.available_dates || []);
+              // Para cada celda de fecha en el calendario visible: marcar disponible o deshabilitar
+              document.querySelectorAll('table.calendar-table td[data-date]').forEach(function(td){
+                // mantener intactas las celdas de otro mes y las ya deshabilitadas (domingos)
+                if(td.classList.contains('other-month') || td.classList.contains('disabled')){
+                  return;
+                }
+                var d = td.getAttribute('data-date');
+                if(avail.has(d)){
+                  td.classList.remove('no-available');
+                  td.classList.add('available');
+                  td.style.pointerEvents = 'auto';
+                } else {
+                  td.classList.remove('available');
+                  td.classList.add('no-available');
+                  td.style.pointerEvents = 'none';
+                }
+              });
+              saveBtn.textContent='Guardado';
+              setTimeout(function(){ saveBtn.textContent='Guardar Disponibilidades'; },1600);
+            } else {
+              alert('Disponibilidades guardadas.');
+            }
+          })
+          .catch(function(err){ console.error(err); alert('Error al guardar disponibilidades.'); });
+        });
+      refresh();
+  });
+    </script>
+</div>
