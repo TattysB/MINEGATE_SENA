@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Work Sans', Arial, Helvetica, sans-serif; background-color: #f3f4f6;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%); color: white; padding: 30px; border-radius: 15px 15px 0 0; text-align: center;">
+            <h1 style="margin: 0; font-size: 28px;">📋 Solicitud de Visita</h1>
+            <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Requiere aprobación de coordinación</p>
+        </div>
+        
+        <!-- Content -->
+        <div style="background: white; padding: 30px; border-radius: 0 0 15px 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 0 8px 8px 0; margin-bottom: 25px;">
+                <p style="margin: 0; color: #92400e; font-weight: 600;">
+                    ⚠️ Se ha recibido una nueva solicitud de visita que requiere su revisión y aprobación.
+                </p>
+            </div>
+            
+            <h2 style="color: #1f2937; margin: 0 0 20px 0; font-size: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+                📄 Detalles de la Solicitud
+            </h2>
+            
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+                <tr>
+                    <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280; width: 40%;">🏷️ Tipo de Visita:</td>
+                    <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; font-weight: 600;">{{ tipo_visita }}</td>
+                </tr>
+                {% if programa %}
+                <tr>
+                    <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280;">🏫 Programa:</td>
+                    <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; font-weight: 600;">{{ programa }}</td>
+                </tr>
+                {% endif %}
+                {% if institucion %}
+                <tr>
+                    <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280;">🏢 Institución:</td>
+                    <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; font-weight: 600;">{{ institucion }}</td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280;">👤 Responsable:</td>
+                    <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">{{ responsable }}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280;">📧 Correo:</td>
+                    <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
+                        <a href="mailto:{{ correo_responsable }}" style="color: #3b82f6;">{{ correo_responsable }}</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280;">📱 Teléfono:</td>
+                    <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">{{ telefono_responsable }}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280;">👥 Cantidad:</td>
+                    <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
+                        <span style="background: #dbeafe; color: #1e40af; padding: 5px 12px; border-radius: 15px; font-weight: bold;">
+                            {{ cantidad }} personas
+                        </span>
+                    </td>
+                </tr>
+            </table>
+            
+            <div style="background: #ecfdf5; border: 1px solid #10b981; padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 25px;">
+                <p style="margin: 0 0 10px 0; color: #065f46; font-weight: 600;">
+                    Para aprobar o rechazar esta solicitud, ingrese al panel administrativo:
+                </p>
+                <p style="margin: 0; font-size: 14px; color: #047857;">
+                    La solicitud está marcada como "Enviada a coordinación" y esperando su decisión.
+                </p>
+            </div>
+            
+            <!-- Footer -->
+            <div style="text-align: center; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                <p style="color: #6b7280; margin: 0; font-size: 12px;">
+                    Este correo fue enviado desde el sistema MineGate SENA
+                </p>
+                <p style="color: #9ca3af; margin: 5px 0 0 0; font-size: 11px;">
+                    Sistema de Gestión de Visitas a la Mina Didáctica
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

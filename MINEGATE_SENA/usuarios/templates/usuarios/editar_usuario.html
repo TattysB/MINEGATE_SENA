@@ -1,0 +1,420 @@
+{% extends "core/panel_administrativo.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'usuarios/css/editar_usuario.css' %}" />
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css"
+/>
+
+{% load bootstrap5 %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css" />
+<link rel="stylesheet" href="{% static 'css/editar_usuario.css' %}" />
+
+{% endblock %}
+
+{% block content %}
+<nav class="navbar sticky-top">
+    <div class="container">
+        <a class="navbar-brand" >
+            <img src="{% static 'img/LogoMine.png' %}" alt="Logo MINEGATE" class="navbar-logo">
+            MINEGATE
+        </a>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<main class="main-content">
+    <div class="container page-wrapper">
+        <!-- Header Section -->
+        <div class="header-section">
+            <div class="header-content">
+                <h1 class="page-title">
+                    <i class="bi {% if es_perfil_propio %}bi-person-circle{% else %}bi-pencil-square{% endif %}"></i>
+                    {% if es_perfil_propio %}Mi Perfil{% else %}Editar Usuario{% endif %}
+                </h1>
+                <p class="page-subtitle">Actualiza tu información personal de forma segura</p>
+            </div>
+        </div>
+        {% endif %}
+        <form method="post" enctype="multipart/form-data" novalidate>
+          {% csrf_token %}
+          {% if next_url %}
+          <input type="hidden" name="next" value="{{ next_url }}">
+          {% endif %}
+
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <!-- Edit Card -->
+                <div class="edit-user-card">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">
+                            <i class="bi bi-pencil-square"></i>
+                            Información del Usuario
+                        </h3>
+                    </div>
+                    
+                    <div class="card-body">
+                        {% if messages %}
+                        <div class="alerts-container">
+                            {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                <i class="bi bi-check-circle"></i>
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        {% if form_usuario.errors or form_perfil.errors %}
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <div class="alert-content-header">
+                                <i class="bi bi-exclamation-circle"></i> 
+                                <strong>Por favor revisa los siguientes errores:</strong>
+                            </div>
+                            {% if form_usuario.errors %}
+                            <ul class="error-list">
+                                {% for field, errors in form_usuario.errors.items %}
+                                {% for error in errors %}
+                                <li><strong>{{ field|title }}:</strong> {{ error }}</li>
+                                {% endfor %}
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+                            {% if form_perfil.errors %}
+                            <ul class="error-list">
+                                {% for field, errors in form_perfil.errors.items %}
+                                {% for error in errors %}
+                                <li><strong>{{ field|title }}:</strong> {{ error }}</li>
+                                {% endfor %}
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        {% endif %}
+
+                        <form method="post" enctype="multipart/form-data" novalidate>
+                            {% csrf_token %}
+
+                            <!-- Sección: Datos Personales -->
+                            <div class="form-section">
+                                <h5 class="section-title">
+                                    <span class="section-icon">👤</span>
+                                    Datos Personales
+                                </h5>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label class="form-label">
+                                                {{ form_usuario.first_name.label }}
+                                                <span class="required">*</span>
+                                            </label>
+                                            {% if form_usuario.first_name.errors %}
+                                                {{ form_usuario.first_name }}
+                                                <div class="invalid-feedback d-block">
+                                                    {% for error in form_usuario.first_name.errors %}
+                                                    <i class="bi bi-exclamation-circle"></i> {{ error }}<br />
+                                                    {% endfor %}
+                                                </div>
+                                            {% else %}
+                                                {{ form_usuario.first_name }}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label class="form-label">
+                                                {{ form_usuario.last_name.label }}
+                                                <span class="required">*</span>
+                                            </label>
+                                            {% if form_usuario.last_name.errors %}
+                                                {{ form_usuario.last_name }}
+                                                <div class="invalid-feedback d-block">
+                                                    {% for error in form_usuario.last_name.errors %}
+                                                    <i class="bi bi-exclamation-circle"></i> {{ error }}<br />
+                                                    {% endfor %}
+                                                </div>
+                                            {% else %}
+                                                {{ form_usuario.last_name }}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label class="form-label">
+                                                {{ form_usuario.email.label }}
+                                                <span class="required">*</span>
+                                            </label>
+                                            {% if form_usuario.email.errors %}
+                                                {{ form_usuario.email }}
+                                                <div class="invalid-feedback d-block">
+                                                    {% for error in form_usuario.email.errors %}
+                                                    <i class="bi bi-exclamation-circle"></i> {{ error }}<br />
+                                                    {% endfor %}
+                                                </div>
+                                            {% else %}
+                                                {{ form_usuario.email }}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sección: Información Adicional -->
+                            {% if form_perfil %}
+                            <div class="form-section">
+                                <h5 class="section-title">
+                                    <span class="section-icon">📋</span>
+                                    Información Adicional
+                                </h5>
+
+                                {% if perfil.documento %}
+                                <div class="form-group">
+                                    <label class="form-label">Número de Documento</label>
+                                    <div class="document-display">
+                                        <i class="bi bi-card-text"></i>
+                                        <span>{{ perfil.documento }}</span>
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                {% for field in form_perfil %}
+                                {% if field.name == 'foto_perfil' %}
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        {{ field.label }}
+                                        {% if field.field.required %}<span class="required">*</span>{% endif %}
+                                    </label>
+                                    {{ field }}
+                                    
+                                    <div class="image-preview-container">
+                                        <small class="image-preview-label">
+                                            <i class="bi bi-crop"></i> Ajusta tu foto de perfil:
+                                        </small>
+                                        <div class="image-preview-wrapper">
+                                            <img id="cropperPreview" 
+                                                src="{% if perfil.foto_perfil %}{{ perfil.foto_perfil.url }}{% else %}{% static 'core/img/usuario.png' %}{% endif %}" 
+                                                alt="Vista previa">
+                                        </div>
+                                    </div>
+                                    
+                                    <input type="hidden" name="crop_x" id="crop_x" />
+                                    <input type="hidden" name="crop_y" id="crop_y" />
+                                    <input type="hidden" name="crop_w" id="crop_w" />
+                                    <input type="hidden" name="crop_h" id="crop_h" />
+                                    
+                                    {% if field.errors %}
+                                    <div class="invalid-feedback d-block">{{ field.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                {% else %}
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        {{ field.label }}
+                                        {% if field.field.required %}<span class="required">*</span>{% endif %}
+                                    </label>
+                                    {{ field }}
+                                    {% if field.errors %}
+                                    <div class="invalid-feedback d-block">{{ field.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+
+                            <!-- Buttons Section -->
+                            <div class="button-section">
+                                <a href="{% url 'core:panel_administrativo' %}" class="btn btn-outline-success">
+                                    <i class="bi bi-arrow-left-circle"></i> Volver al Panel
+                                </a>
+                                <a href="{% if es_perfil_propio %}{% url 'core:panel_administrativo' %}{% else %}{% url 'usuarios:lista_usuario' %}{% endif %}" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle"></i> Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-success-primary">
+                                    <i class="bi bi-check-circle"></i> 
+                                    {% if es_perfil_propio %}Guardar Cambios{% else %}Actualizar Usuario{% endif %}
+                                </button>
+                            </div>
+
+                            <div class="form-footer">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle"></i>
+                                    Los campos marcados con <span class="required">*</span> son obligatorios.
+                                </small>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Info Card -->
+                <div class="info-saved-card">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">
+                            <i class="bi bi-check-circle"></i> Información Guardada
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <div class="info-icon">👤</div>
+                                <div class="info-content">
+                                    <span class="info-label">Nombre</span>
+                                    <p class="info-value">{{ usuario.first_name }}</p>
+                                </div>
+                            </div>
+
+                            <div class="info-item">
+                                <div class="info-icon">👤</div>
+                                <div class="info-content">
+                                    <span class="info-label">Apellido</span>
+                                    <p class="info-value">{{ usuario.last_name }}</p>
+                                </div>
+                            </div>
+
+                            <div class="info-item full-width">
+                                <div class="info-icon">✉️</div>
+                                <div class="info-content">
+                                    <span class="info-label">Correo Electrónico</span>
+                                    <p class="info-value">{{ usuario.email }}</p>
+                                </div>
+                            </div>
+
+                            <div class="info-item full-width">
+                                <div class="info-icon">🆔</div>
+                                <div class="info-content">
+                                    <span class="info-label">Documento</span>
+                                    <p class="info-value">{{ perfil.documento }}</p>
+                                </div>
+                            </div>
+
+                            {% if perfil.foto_perfil %}
+                            <div class="info-item full-width">
+                                <div class="info-content">
+                                    <span class="info-label">Foto de Perfil</span>
+                                    <div class="profile-image-container">
+                                        <img src="{{ perfil.foto_perfil.url }}" alt="Foto de perfil" class="profile-image">
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="row">
+              <div class="col-md-12 mb-3">
+                <label class="form-abel">
+                  {{ field.label }} {% if field.field.required %}<span
+                    class="text-danger"
+                    >*</span
+                  >{% endif %}
+                </label>
+                {{ field }} {% if field.errors %}
+                <div class="text-danger">{{ field.errors }}</div>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %} {% endfor %}
+          </div>
+          {% endif %}
+
+          <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+            <a
+              href="{% if next_url %}{{ next_url }}{% else %}{% url 'core:panel_administrativo' %}{% endif %}"
+              class="btn btn-outline-success me-md-2"
+            >
+              <i class="bi bi-arrow-left-circle"></i> Volver
+            </a>
+            <a
+              href="{% if next_url %}{{ next_url }}{% elif es_perfil_propio %}{% url 'core:panel_administrativo' %}{% else %}{% url 'usuarios:gestionar_permisos' %}{% endif %}"
+              class="btn btn-secondary me-md-2"
+            >
+              <i class="bi bi-x-circle"></i> Cancelar
+            </a>
+            <button type="submit" class="btn btn-warning text-dark">
+              <i class="bi bi-save"></i> {% if es_perfil_propio %}Guardar
+              Cambios{% else %}Actualizar Usuario{% endif %}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
+<script>
+  // Script para tabs
+  document.addEventListener('DOMContentLoaded', function() {
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', function() {
+        const tabId = this.getAttribute('data-tab');
+        
+        // Remover clase active de todos
+        tabBtns.forEach(b => b.classList.remove('active'));
+        tabContents.forEach(c => c.classList.remove('active'));
+        
+        // Agregar clase active al clickeado
+        this.classList.add('active');
+        document.getElementById(tabId).classList.add('active');
+      });
+    });
+  });
+
+  // Script original del cropper
+  (function () {
+    const input = document.getElementById("id_foto_perfil");
+    const preview = document.getElementById("cropperPreview");
+    const form = document.querySelector("form");
+    let cropper = null;
+
+    function setCropData() {
+      if (!cropper) return;
+      const data = cropper.getData(true);
+      document.getElementById("crop_x").value = data.x || 0;
+      document.getElementById("crop_y").value = data.y || 0;
+      document.getElementById("crop_w").value = data.width || 0;
+      document.getElementById("crop_h").value = data.height || 0;
+    }
+
+    if (input && preview) {
+      input.addEventListener("change", function (e) {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (evt) {
+          preview.src = evt.target.result;
+          if (cropper) cropper.destroy();
+          cropper = new Cropper(preview, {
+            aspectRatio: 1,
+            viewMode: 1,
+            autoCropArea: 1,
+            responsive: true,
+          });
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    if (form) {
+      form.addEventListener("submit", setCropData);
+    }
+  })();
+</script>
+{% endblock %}

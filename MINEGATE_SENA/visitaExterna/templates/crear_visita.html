@@ -1,0 +1,89 @@
+{% extends "master.html" %}
+{% load static %}
+
+{% block title %}Crear Visita Externa - MINEGATE{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/crear_visita.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="form-container">
+        <h1>Crear Nueva Visita Externa</h1>
+    
+        <form method="POST">
+            {% csrf_token %}
+            
+            <div>
+                <label for="id_nombre">Nombre de la Institución:</label>
+                {{ form.nombre }}
+                {% if form.nombre.errors %}
+                    <div style="color: red;">{{ form.nombre.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div>
+                <label for="id_nombre_responsable">Nombre del Responsable:</label>
+                {{ form.nombre_responsable }}
+                {% if form.nombre_responsable.errors %}
+                    <div style="color: red;">{{ form.nombre_responsable.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div>
+                <label for="id_tipo_documento_responsable">Tipo de Documento:</label>
+                {{ form.tipo_documento_responsable }}
+                {% if form.tipo_documento_responsable.errors %}
+                    <div style="color: red;">{{ form.tipo_documento_responsable.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div>
+                <label for="id_documento_responsable">Documento del Responsable:</label>
+                {{ form.documento_responsable }}
+                {% if form.documento_responsable.errors %}
+                    <div style="color: red;">{{ form.documento_responsable.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div>
+                <label for="id_correo_responsable">Correo del Responsable:</label>
+                {{ form.correo_responsable }}
+                {% if form.correo_responsable.errors %}
+                    <div style="color: red;">{{ form.correo_responsable.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div>
+                <label for="id_telefono_responsable">Teléfono del Responsable:</label>
+                {{ form.telefono_responsable }}
+                {% if form.telefono_responsable.errors %}
+                    <div style="color: red;">{{ form.telefono_responsable.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div>
+                <label for="id_cantidad_visitantes">Cantidad de Visitantes:</label>
+                {{ form.cantidad_visitantes }}
+                {% if form.cantidad_visitantes.errors %}
+                    <div style="color: red;">{{ form.cantidad_visitantes.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div>
+                <label for="id_observacion">Observación:</label>
+                {{ form.observacion }}
+                {% if form.observacion.errors %}
+                    <div style="color: red;">{{ form.observacion.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="buttons">
+                <button type="submit">Crear Visita</button>
+                <a href="{% url 'core:visitas' %}"><button type="button">Cancelar</button></a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

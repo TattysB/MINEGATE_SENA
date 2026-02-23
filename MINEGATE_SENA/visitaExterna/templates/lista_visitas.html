@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Visitas Externas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Work Sans', sans-serif; background-color: #f5f5f5; padding: 20px; }
+    .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    h1 { color: #333; margin-bottom: 30px; text-align: center; }
+    .btn-crear { margin-bottom: 20px; text-align: center; }
+    .btn-crear a { text-decoration: none; }
+    .btn-crear button { padding: 12px 30px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; transition: 0.3s; }
+    .btn-crear button:hover { background-color: #45a049; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+    th { background-color: #4CAF50; color: white; }
+    tr:nth-child(even) { background-color: #f2f2f2; }
+    tr:hover { background-color: #e8f5e9; }
+    .btn-action { padding: 6px 12px; margin: 2px; border: none; border-radius: 4px; font-size: 14px; cursor: pointer; transition: 0.3s; }
+    .btn-editar { background-color: #2196F3; color: white; }
+    .btn-editar:hover { background-color: #0b7dda; }
+    .btn-eliminar { background-color: #f44336; color: white; }
+    .btn-eliminar:hover { background-color: #da190b; }
+    a { text-decoration: none; }
+    .sin-datos { text-align: center; color: #999; padding: 40px; }
+  </style>
+</head>
+<body>
+
+{% block title %}Visitas Externas{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/lista_visitas.css' %}">
+<style>
+    .navbar, .footer { display: none !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h1>Lista de Visitas Externas</h1>
+  <div class="btn-crear"><a href="{% url 'visitaExterna:crear_visita' %}"><button>+ Crear Nueva Visita</button></a></div>
+
+  <div class="filtros-box">
+    <form method="GET" class="filtros-form">
+      <div class="filtro-campo">
+        <label for="buscar_institucion">Buscar por Nombre de Institución:</label>
+        <input type="text" id="buscar_institucion" name="nombre_institucion" value="{{ request.GET.nombre_institucion }}" placeholder="Ingrese el nombre">
+      </div>
+      <div class="filtro-campo">
+        <label for="buscar_responsable">Buscar por Nombre del Responsable:</label>
+        <input type="text" id="buscar_responsable" name="nombre_responsable" value="{{ request.GET.nombre_responsable }}" placeholder="Ingrese el nombre">
+      </div>
+      <div class="filtro-campo">
+        <label for="filtrar_documento">Filtrar por Documento del Responsable:</label>
+        <input type="text" id="filtrar_documento" name="documento_responsable" value="{{ request.GET.documento_responsable }}" placeholder="Ingrese el documento">
+      </div>
+      <div class="filtros-botones">
+        <button type="submit" class="btn-buscar">Buscar</button>
+        <a href="{% url 'visitaExterna:visita_externa' %}"><button type="button" class="btn-limpiar">Limpiar</button></a>
+      </div>
+    </form>
+  </div>
+
+{% if visitas %}
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nombre de la Institución</th>
+        <th>Responsable</th>
+        <th>Documento</th>
+        <th>Correo Electrónico</th>
+        <th>Teléfono</th>
+        <th>Cantidad de Visitantes</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for visita in visitas %}
+        <tr>
+          <td>{{ visita.id }}</td>
+          <td>{{ visita.nombre }}</td>
+          <td>{{ visita.nombre_responsable }}</td>
+          <td>{{ visita.documento_responsable }}</td>
+          <td>{{ visita.correo_responsable }}</td>
+          <td>{{ visita.telefono_responsable }}</td>
+          <td>{{ visita.cantidad_visitantes }}</td>
+          <td>
+            <a href="detalle_visita/{{ visita.id }}"><button class="btn-action btn-detalle">Ver Detalle</button></a>
+            <a href="{% url 'visitaExterna:editar_visita' visita.id %}"><button class="btn-action btn-editar">Editar</button></a>
+            <a href="{% url 'visitaExterna:eliminar_visita' visita.id %}"><button class="btn-action btn-eliminar">Eliminar</button></a>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p class="sin-datos">No hay visitas externas registradas.</p>
+{% endif %}
+</div>
+{% endblock %}
