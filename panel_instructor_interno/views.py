@@ -48,6 +48,8 @@ def panel_instructor_interno(request):
     context = {
         'correo': correo,
         'documento': documento,
+        'nombre': request.session.get('responsable_nombre', ''),
+        'apellido': request.session.get('responsable_apellido', ''),
         'visitas': visitas[:5],
         'total_programas': Programa.objects.filter(activo=True).count(),
         'total_fichas': Ficha.objects.filter(activa=True).count(),
@@ -61,6 +63,14 @@ def panel_instructor_interno(request):
 @instructor_interno_required
 def reservar_visita_interna(request):
     correo, documento = get_sesion_instructor(request)
+    
+    # Obtener datos adicionales de la sesión
+    nombre = request.session.get('responsable_nombre', '')
+    apellido = request.session.get('responsable_apellido', '')
+    tipo_documento = request.session.get('responsable_tipo_documento', 'CC')
+    telefono = request.session.get('responsable_telefono', '')
+    nombre_completo = f"{nombre} {apellido}".strip()
+    
     if request.method == 'POST':
         form = VisitaInternaInstructorForm(request.POST)
         if form.is_valid():
@@ -73,8 +83,11 @@ def reservar_visita_interna(request):
             return redirect('panel_instructor_interno:mis_visitas')
     else:
         form = VisitaInternaInstructorForm(initial={
-            'correo_responsable': correo,
+            'responsable': nombre_completo,
+            'tipo_documento_responsable': tipo_documento,
             'documento_responsable': documento,
+            'correo_responsable': correo,
+            'telefono_responsable': telefono,
         })
     fichas = Ficha.objects.filter(activa=True).select_related('programa')
     programas = Programa.objects.filter(activo=True)
