@@ -33,7 +33,6 @@
     }
 </style>
 
-
 {% if estado_no_aprobado %}
 <!-- Visita no aprobada -->
 <div class="registro-header" style="background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);">
@@ -134,7 +133,7 @@
 
     <!-- Progreso -->
     <div class="progress-box">
-        <h5><i class="fas fa-chart-pie me-2" style="color: #667eea;"></i>Progreso de Registro</h5>
+        <h5><i class="fas fa-chart-pie me-2" style="color: #00af00;"></i>Progreso de Registro</h5>
         <div class="progress-bar-custom">
             {% widthratio asistentes_actuales max_asistentes 100 as progress_percent %}
             <div class="progress-fill {% if asistentes_actuales >= max_asistentes %}full{% endif %}"
@@ -457,7 +456,7 @@
 
         setTimeout(() => {
             btn.innerHTML = originalText;
-            btn.style.background = '#667eea';
+            btn.style.background = '#00af00';
         }, 2000);
     }
 

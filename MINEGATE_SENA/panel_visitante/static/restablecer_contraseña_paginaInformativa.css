@@ -33,15 +33,15 @@
 }
 
 .reset-steps {
-	background: #e8f4f8;
-	border-left: 4px solid #3498db;
+	background: #e8f5e9;
+	border-left: 4px solid #00af00;
 	padding: 15px;
 	margin-bottom: 30px;
 	border-radius: 4px;
 }
 
 .reset-steps h3 {
-	color: #2980b9;
+	color: #1b5e20;
 	margin-top: 0;
 	font-size: 16px;
 }
@@ -81,8 +81,8 @@
 .form-group input:focus,
 .form-group textarea:focus {
 	outline: none;
-	border-color: #3498db;
-	box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+	border-color: #00af00;
+	box-shadow: 0 0 0 3px rgba(0, 175, 0, 0.1);
 }
 
 .password-strength {
@@ -135,11 +135,11 @@
 }
 
 .requirement.valid .requirement-check {
-	background: #27ae60;
+	background: #00af00;
 }
 
 .requirement.valid {
-	color: #27ae60;
+	color: #00af00;
 }
 
 .button-group {
@@ -163,14 +163,14 @@
 }
 
 .btn-primary {
-	background: #3498db;
+	background: #00af00;
 	color: white;
 }
 
 .btn-primary:hover {
-	background: #2980b9;
+	background: #008c00;
 	transform: translateY(-2px);
-	box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+	box-shadow: 0 4px 8px rgba(0, 175, 0, 0.3);
 }
 
 .btn-secondary {
@@ -230,7 +230,7 @@
 }
 
 .back-link a {
-	color: #3498db;
+	color: #00af00;
 	text-decoration: none;
 	font-size: 14px;
 }
@@ -243,7 +243,7 @@
 	display: inline-block;
 	width: 20px;
 	height: 20px;
-	background: #3498db;
+	background: #00af00;
 	color: white;
 	border-radius: 50%;
 	text-align: center;

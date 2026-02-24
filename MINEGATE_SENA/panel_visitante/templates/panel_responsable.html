@@ -415,7 +415,7 @@
     <!-- Botón para nueva visita -->
     <div class="text-center mt-5">
         {% if rol == 'interno' %}
-            <a href="{% url 'visitaInterna:crear_visita_interna' %}" class="btn btn-lg btn-primary" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; text-decoration: none;">
+            <a href="{% url 'visitaInterna:crear_visita_interna' %}" class="btn btn-lg btn-primary" style="background: linear-gradient(135deg, #00af00 0%, #008c00 100%); color: white; border: none; text-decoration: none;">
                 <i class="fas fa-plus-circle me-2"></i>Solicitar Nueva Visita Interna
             </a>
         {% elif rol == 'externo' %}
@@ -442,7 +442,7 @@ function copiarEnlace(inputId) {
         
         setTimeout(function() {
             btn.innerHTML = originalHtml;
-            btn.style.background = '#667eea';
+            btn.style.background = '#00af00';
         }, 2000);
     }).catch(function(err) {
         // Fallback para navegadores antiguos
