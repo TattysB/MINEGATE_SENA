@@ -76,15 +76,15 @@
     }
     
     .enlace-compartir {
-        background: linear-gradient(135deg, #667eea10 0%, #764ba210 100%);
-        border: 2px dashed #667eea;
+        background: linear-gradient(135deg, #00af0010 0%, #008c0010 100%);
+        border: 2px dashed #00af00;
         border-radius: 15px;
         padding: 20px;
         margin-bottom: 30px;
     }
     
     .enlace-compartir h5 {
-        color: #667eea;
+        color: #00af00;
         margin-bottom: 15px;
     }
     
@@ -103,7 +103,7 @@
     }
     
     .btn-copiar {
-        background: #667eea;
+        background: #00af00;
         color: white;
         border: none;
         padding: 12px 20px;
@@ -113,7 +113,7 @@
     }
     
     .btn-copiar:hover {
-        background: #5a67d8;
+        background: #008c00;
     }
     
     .progress-box {
@@ -288,7 +288,7 @@
     }
     
     .asistentes-lista h4 i {
-        color: #667eea;
+        color: #00af00;
     }
     
     .asistente-card {
@@ -563,7 +563,7 @@
 
     <!-- Progreso -->
     <div class="progress-box">
-        <h5><i class="fas fa-chart-pie me-2" style="color: #667eea;"></i>Progreso de Registro</h5>
+        <h5><i class="fas fa-chart-pie me-2" style="color: #00af00;"></i>Progreso de Registro</h5>
         <div class="progress-bar-custom">
             {% widthratio asistentes_actuales max_asistentes 100 as progress_percent %}
             <div class="progress-fill {% if asistentes_actuales >= max_asistentes %}full{% endif %}" style="width: {% if progress_percent %}{{ progress_percent }}{% else %}0{% endif %}%;">
@@ -628,7 +628,7 @@
                 </div>
             </div>
             
-            <h5 class="mt-4 mb-3"><i class="fas fa-file-upload me-2" style="color: #667eea;"></i>Documentos</h5>
+            <h5 class="mt-4 mb-3"><i class="fas fa-file-upload me-2" style="color: #00af00;"></i>Documentos</h5>
             
             <div class="form-row">
                 <div class="form-group">
@@ -676,7 +676,7 @@
                 <div class="asistente-card">
                     <div class="asistente-info">
                         <h5>
-                            <i class="fas fa-user me-2" style="color: #667eea;"></i>
+                            <i class="fas fa-user me-2" style="color: #00af00;"></i>
                             {{ asistente.nombre_completo }}
                         </h5>
                         <p>
@@ -746,7 +746,7 @@
         
         setTimeout(() => {
             btn.innerHTML = originalText;
-            btn.style.background = '#667eea';
+            btn.style.background = '#00af00';
         }, 2000);
     }
     

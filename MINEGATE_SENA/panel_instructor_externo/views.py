@@ -47,6 +47,8 @@ def panel_instructor_externo(request):
     context = {
         'correo': correo,
         'documento': documento,
+        'nombre': request.session.get('responsable_nombre', ''),
+        'apellido': request.session.get('responsable_apellido', ''),
         'visitas': visitas,
         'total_visitas': visitas.count(),
         'visitas_pendientes': visitas.filter(estado='pendiente').count(),
@@ -60,6 +62,14 @@ def panel_instructor_externo(request):
 @instructor_externo_required
 def reservar_visita_externa(request):
     correo, documento = get_sesion_instructor(request)
+    
+    # Obtener datos adicionales de la sesión
+    nombre = request.session.get('responsable_nombre', '')
+    apellido = request.session.get('responsable_apellido', '')
+    tipo_documento = request.session.get('responsable_tipo_documento', 'CC')
+    telefono = request.session.get('responsable_telefono', '')
+    nombre_completo = f"{nombre} {apellido}".strip()
+    
     if request.method == 'POST':
         form = VisitaExternaInstructorForm(request.POST)
         if form.is_valid():
@@ -72,8 +82,11 @@ def reservar_visita_externa(request):
             return redirect('panel_instructor_externo:panel')
     else:
         form = VisitaExternaInstructorForm(initial={
-            'correo_responsable': correo,
+            'nombre_responsable': nombre_completo,
+            'tipo_documento_responsable': tipo_documento,
             'documento_responsable': documento,
+            'correo_responsable': correo,
+            'telefono_responsable': telefono,
         })
     context = {'form': form, 'correo': correo, 'titulo': 'Reservar Visita Externa'}
     return render(request, 'panel_instructor_externo/reservar_visita.html', context)

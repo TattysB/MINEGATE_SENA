@@ -17,7 +17,7 @@
 }
 
 .login-header {
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    background: linear-gradient(135deg, #00af00 0%, #008c00 100%);
     color: white;
     padding: 30px;
     text-align: center;
@@ -26,7 +26,7 @@
 .login-header i {
     font-size: 3rem;
     margin-bottom: 15px;
-    color: #ffc107;
+    color: #b3ff00;
 }
 
 .login-header h2 {
@@ -57,7 +57,7 @@
 
 .form-group label i {
     margin-right: 8px;
-    color: #667eea;
+    color: #00af00;
 }
 
 .form-control {
@@ -72,14 +72,14 @@
 
 .form-control:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    border-color: #00af00;
+    box-shadow: 0 0 0 3px rgba(0, 175, 0, 0.2);
 }
 
 .btn-login {
     width: 100%;
     padding: 15px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #00af00 0%, #008c00 100%);
     border: none;
     border-radius: 10px;
     color: white;
@@ -91,7 +91,7 @@
 
 .btn-login:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 10px 30px rgba(0, 175, 0, 0.4);
 }
 
 .login-footer {
@@ -101,7 +101,7 @@
 }
 
 .login-footer a {
-    color: #667eea;
+    color: #00af00;
     text-decoration: none;
     font-weight: 500;
 }
@@ -146,7 +146,7 @@
 }
 
 .recovery-link a {
-    color: #667eea;
+    color: #00af00;
     text-decoration: none;
     font-weight: 500;
 }
@@ -185,20 +185,20 @@
 }
 
 .role-option input[type="radio"]:checked + .role-label {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #00af00 0%, #008c00 100%);
     color: white;
-    border-color: #667eea;
+    border-color: #00af00;
     transform: scale(1.02);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 5px 15px rgba(0, 175, 0, 0.3);
 }
 
 .role-label:hover {
-    border-color: #667eea;
-    background-color: #f0f4ff;
+    border-color: #00af00;
+    background-color: #e8f5e9;
 }
 
 .role-option input[type="radio"]:checked + .role-label:hover {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #00af00 0%, #008c00 100%);
     color: white;
 }
 

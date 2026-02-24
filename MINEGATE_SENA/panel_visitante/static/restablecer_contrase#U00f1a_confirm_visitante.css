@@ -63,7 +63,7 @@
 
 .form-group label i {
 	margin-right: 8px;
-	color: #667eea;
+	color: #00af00;
 }
 
 .password-strength {
@@ -108,8 +108,8 @@
 
 .form-control:focus {
 	outline: none;
-	border-color: #667eea;
-	box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+	border-color: #00af00;
+	box-shadow: 0 0 0 3px rgba(0, 175, 0, 0.2);
 }
 
 .form-errors {
@@ -132,7 +132,7 @@
 .btn-reset {
 	width: 100%;
 	padding: 15px;
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	background: linear-gradient(135deg, #00af00 0%, #008c00 100%);
 	border: none;
 	border-radius: 10px;
 	color: white;
@@ -144,7 +144,7 @@
 
 .btn-reset:hover {
 	transform: translateY(-2px);
-	box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+	box-shadow: 0 10px 30px rgba(0, 175, 0, 0.4);
 }
 
 .btn-reset:disabled {
@@ -202,7 +202,7 @@
 	right: 15px;
 	background: none;
 	border: none;
-	color: #667eea;
+	color: #00af00;
 	font-size: 1.2rem;
 	cursor: pointer;
 	transition: all 0.3s ease;
@@ -210,7 +210,7 @@
 }
 
 .toggle-password-btn:hover {
-	color: #764ba2;
+	color: #008c00;
 	transform: scale(1.1);
 }
 
