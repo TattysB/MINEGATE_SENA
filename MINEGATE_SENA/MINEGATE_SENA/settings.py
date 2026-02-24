@@ -211,3 +211,6 @@ AUTH_PASSWORD_VALIDATORS = [
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
+
+# Configuración de marcos (iframes)
+X_FRAME_OPTIONS = 'SAMEORIGIN'
