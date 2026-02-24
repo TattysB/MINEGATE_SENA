@@ -28,6 +28,12 @@ def panel_administrativo(request):
             messages.error(request, "Tu cuenta está inactiva. Contacta al administrador.")
             return redirect("usuarios:login")
 
+    # Redirigir instructores a sus paneles correspondientes
+    if request.user.groups.filter(name='instructor_interno').exists():
+        return redirect('panel_instructor_interno:panel')
+    if request.user.groups.filter(name='instructor_externo').exists():
+        return redirect('panel_instructor_externo:panel')
+
     context = {
         "es_superusuario": request.user.is_superuser,
         "perfil": getattr(request.user, "perfil", None),
