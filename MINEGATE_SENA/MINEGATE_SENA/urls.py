@@ -34,7 +34,7 @@ urlpatterns = [
     path('visita_externa/', include('visitaExterna.urls')),
     # Paneles de instructores
     path('instructor/interno/', include('panel_instructor_interno.urls')),
-    path('instructor/externo/', include('panel_instructor_externo.urls')),
+    path('instructor/externo/', include('panel_instructor_externo.urls')),    
     
 ]
 
