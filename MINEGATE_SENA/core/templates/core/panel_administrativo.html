@@ -917,12 +917,19 @@
 
       if (v.estado === 'documentos_enviados') {
         acciones += `<button onclick="verDetalleVisita('${v.tipo}', ${v.id})" style="background:#f59e0b;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;font-weight:600;">📄 Revisar Docs</button>`;
-        acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'iniciar_revision')" style="background:#3b82f6;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">🔍 Iniciar Revisión</button>`;
+        acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'iniciar_revision')" style="background:#3b82f6;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">🔍 Finalizar Revisión</button>`;
       }
 
       if (v.estado === 'en_revision_documentos') {
         acciones += `<button onclick="verDetalleVisita('${v.tipo}', ${v.id})" style="background:#f59e0b;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;font-weight:600;">📄 Revisar Docs</button>`;
-        acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'confirmar_visita')" style="background:#10b981;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">✅✅ Confirmar</button>`;
+
+        if (v.puede_confirmar) {
+          acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'confirmar_visita')" style="background:#10b981;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">✅✅ Confirmar</button>`;
+        } else if (v.tiene_rechazos) {
+          acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'rechazar')" style="background:#ef4444;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">❌ Rechazar por Documentos</button>`;
+        } else {
+          acciones += `<button onclick="mAlert('No se puede confirmar la visita aún. Asegúrese de que todos los asistentes tengan sus documentos aprobados.', 'warning')" style="background:#10b981;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;opacity:0.5;" title="Documentos pendientes de aprobación">⚠️ Confirmar</button>`;
+        }
       }
 
       return acciones;
@@ -930,7 +937,8 @@
 
     // Filtrar visitas
     function filtrarVisitas() {
-      cargarVisitas();
+      const val = document.getElementById('filtroEstadoVisita').value;
+      filtrarPorEstado(val);
     }
 
     // Mostrar visitas aprobadas con botón volver
@@ -1144,15 +1152,18 @@
               let botonesDoc = '';
               if (a.documento_adicional) {
                 botonesDoc += `
-                    <div style="display:flex;gap:4px;align-items:center;">
-                      <button onclick="visualizarDocumento('${a.documento_adicional}', 'Doc. Adicional - ${a.nombre_completo}')" 
-                              style="background:#8b5cf6;color:white;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;font-size:11px;display:inline-flex;align-items:center;gap:4px;font-weight:500;">
-                        <i class="ri-eye-line"></i> 📎 Doc. Adicional
-                      </button>
-                      <a href="${a.documento_adicional}" download style="background:#6b7280;color:white;padding:5px 8px;border-radius:6px;text-decoration:none;font-size:11px;display:inline-flex;align-items:center;" title="Descargar">
-                        <i class="ri-download-line"></i>
-                      </a>
-                    </div>`;
+                      <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
+                        <div style="display:flex;gap:4px;align-items:center;">
+                          <button onclick="visualizarDocumento('${a.documento_adicional}', 'Doc. Adicional - ${a.nombre_completo}', {estado: '${a.estado === 'documentos_aprobados' ? 'aprobado' : 'pendiente'}'})" 
+                                  style="background:#8b5cf6;color:white;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;font-size:11px;display:inline-flex;align-items:center;gap:4px;font-weight:500;">
+                            <i class="ri-eye-line"></i> 📎 Doc. Adicional
+                          </button>
+                          <a href="${a.documento_adicional}" download style="background:#6b7280;color:white;padding:5px 8px;border-radius:6px;text-decoration:none;font-size:11px;display:inline-flex;align-items:center;" title="Descargar">
+                            <i class="ri-download-line"></i>
+                          </a>
+                        </div>
+                        ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:10px;padding:2px 8px;border-radius:6px;font-weight:600;">Aprobado</span>' : (a.estado === 'documentos_rechazados' ? '<span style="background:#fee2e2;color:#991b1b;font-size:10px;padding:2px 8px;border-radius:6px;font-weight:600;">Rechazado</span>' : '')}
+                      </div>`;
               }
               // Documentos subidos (nuevo modelo)
               if (a.documentos_subidos && a.documentos_subidos.length > 0) {
@@ -1165,14 +1176,16 @@
                   }
 
                   botonesDoc += `
-                      <div style="display:flex;gap:4px;align-items:center;margin-bottom:2px;">
-                        <button onclick="visualizarDocumento('${ds.url}', '${ds.titulo} - ${a.nombre_completo}', {id: ${ds.id}})" 
-                                style="background:#059669;color:white;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;font-size:11px;display:inline-flex;align-items:center;gap:4px;font-weight:500;">
-                          <i class="ri-eye-line"></i> 📋 ${ds.titulo}
-                        </button>
-                        <a href="${ds.download_url || ds.url}" download style="background:#6b7280;color:white;padding:5px 8px;border-radius:6px;text-decoration:none;font-size:11px;display:inline-flex;align-items:center;" title="Descargar">
-                          <i class="ri-download-line"></i>
-                        </a>
+                      <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
+                        <div style="display:flex;gap:4px;align-items:center;">
+                          <button onclick="visualizarDocumento('${ds.url}', '${ds.titulo} - ${a.nombre_completo}', {id: ${ds.id}, estado: '${ds.estado}'})" 
+                                  style="background:#059669;color:white;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;font-size:11px;display:inline-flex;align-items:center;gap:4px;font-weight:500;">
+                            <i class="ri-eye-line"></i> 📋 ${ds.titulo}
+                          </button>
+                          <a href="${ds.download_url || ds.url}" download style="background:#6b7280;color:white;padding:5px 8px;border-radius:6px;text-decoration:none;font-size:11px;display:inline-flex;align-items:center;" title="Descargar">
+                            <i class="ri-download-line"></i>
+                          </a>
+                        </div>
                         ${badgeDoc}
                       </div>`;
                 });
@@ -1211,7 +1224,7 @@
                       </div>
                       ${accionesHtml}
                     </div>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center;">
+                    <div style="display:flex;flex-direction:column;gap:6px;width:100%;margin-top:8px;">
                       ${botonesDoc}
                     </div>
                     ${obsHtml}
@@ -1319,8 +1332,35 @@
 
       if (extraOptions && extraOptions.id) {
         footer.style.display = 'flex';
-        btnAprobar.onclick = () => revisarDocumentoIndividual(extraOptions.id, 'aprobado');
-        btnRechazar.onclick = () => revisarDocumentoIndividual(extraOptions.id, 'rechazado');
+        // Si ya tiene un estado (aprobado o rechazado), ocultar los botones y mostrar el estado
+        if (extraOptions.estado && extraOptions.estado !== 'pendiente') {
+          btnAprobar.style.setProperty('display', 'none', 'important');
+          btnRechazar.style.setProperty('display', 'none', 'important');
+
+          // Crear o actualizar un badge de estado en el footer
+          let statusBadge = document.getElementById('statusBadgeViewer');
+          if (!statusBadge) {
+            statusBadge = document.createElement('span');
+            statusBadge.id = 'statusBadgeViewer';
+            footer.appendChild(statusBadge);
+          }
+          statusBadge.style.display = 'inline-block';
+          if (extraOptions.estado === 'aprobado') {
+            statusBadge.innerHTML = '<i class="ri-checkbox-circle-line"></i> DOCUMENTO APROBADO';
+            statusBadge.style.cssText = 'background:#10b981;color:white;padding:8px 20px;border-radius:8px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;';
+          } else {
+            statusBadge.innerHTML = '<i class="ri-close-circle-line"></i> DOCUMENTO RECHAZADO';
+            statusBadge.style.cssText = 'background:#ef4444;color:white;padding:8px 20px;border-radius:8px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;';
+          }
+        } else {
+          btnAprobar.style.setProperty('display', 'flex', 'important');
+          btnRechazar.style.setProperty('display', 'flex', 'important');
+          const statusBadge = document.getElementById('statusBadgeViewer');
+          if (statusBadge) statusBadge.style.setProperty('display', 'none', 'important');
+
+          btnAprobar.onclick = () => revisarDocumentoIndividual(extraOptions.id, 'aprobado');
+          btnRechazar.onclick = () => revisarDocumentoIndividual(extraOptions.id, 'rechazado');
+        }
       } else {
         footer.style.display = 'none';
       }
@@ -1457,28 +1497,34 @@
               if (a.documento_identidad) {
                 tieneDocs = true;
                 botonesDoc += `
-                    <div style="display:flex;gap:4px;">
-                      <button onclick="visualizarDocumento('${a.documento_identidad}', 'Documento de Identidad - ${a.nombre_completo}')" 
-                              style="background:#3b82f6;color:white;padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:5px;font-weight:500;">
-                        <i class="ri-eye-line"></i> 🪪 Doc. Identidad
-                      </button>
-                      <a href="${a.documento_identidad}" download style="background:#6b7280;color:white;padding:7px 10px;border-radius:6px;text-decoration:none;font-size:12px;display:inline-flex;align-items:center;" title="Descargar">
-                        <i class="ri-download-line"></i>
-                      </a>
-                    </div>`;
+                      <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
+                        <div style="display:flex;gap:4px;align-items:center;">
+                          <button onclick="visualizarDocumento('${a.documento_identidad}', 'Documento de Identidad - ${a.nombre_completo}', {estado: '${a.estado === 'documentos_aprobados' ? 'aprobado' : 'pendiente'}'})" 
+                                  style="background:#3b82f6;color:white;padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:5px;font-weight:500;">
+                            <i class="ri-eye-line"></i> 🪪 Doc. Identidad
+                          </button>
+                          <a href="${a.documento_identidad}" download style="background:#6b7280;color:white;padding:7px 10px;border-radius:6px;text-decoration:none;font-size:12px;display:inline-flex;align-items:center;" title="Descargar">
+                            <i class="ri-download-line"></i>
+                          </a>
+                        </div>
+                        ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (a.estado === 'documentos_rechazados' ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Rechazado</span>' : '')}
+                      </div>`;
               }
               if (a.documento_adicional) {
                 tieneDocs = true;
                 botonesDoc += `
-                    <div style="display:flex;gap:4px;">
-                      <button onclick="visualizarDocumento('${a.documento_adicional}', 'Documento Adicional - ${a.nombre_completo}')" 
-                              style="background:#8b5cf6;color:white;padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:5px;font-weight:500;">
-                        <i class="ri-eye-line"></i> 📎 Ver Doc. Adicional
-                      </button>
-                      <a href="${a.documento_adicional}" download style="background:#6b7280;color:white;padding:7px 10px;border-radius:6px;text-decoration:none;font-size:12px;display:inline-flex;align-items:center;" title="Descargar">
-                        <i class="ri-download-line"></i>
-                      </a>
-                    </div>`;
+                      <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
+                        <div style="display:flex;gap:4px;align-items:center;">
+                          <button onclick="visualizarDocumento('${a.documento_adicional}', 'Documento Adicional - ${a.nombre_completo}', {estado: '${a.estado === 'documentos_aprobados' ? 'aprobado' : 'pendiente'}'})" 
+                                  style="background:#8b5cf6;color:white;padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:5px;font-weight:500;">
+                            <i class="ri-eye-line"></i> 📎 Ver Doc. Adicional
+                          </button>
+                          <a href="${a.documento_adicional}" download style="background:#6b7280;color:white;padding:7px 10px;border-radius:6px;text-decoration:none;font-size:12px;display:inline-flex;align-items:center;" title="Descargar">
+                            <i class="ri-download-line"></i>
+                          </a>
+                        </div>
+                        ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (a.estado === 'documentos_rechazados' ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Rechazado</span>' : '')}
+                      </div>`;
               }
               // Documentos subidos (nuevo modelo)
               if (a.documentos_subidos && a.documentos_subidos.length > 0) {
@@ -1492,19 +1538,19 @@
                   }
 
                   botonesDoc += `
-                      <div style="display:flex;gap:4px;flex-direction:column;">
+                      <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
                         <div style="display:flex;gap:4px;align-items:center;">
-                          <button onclick="visualizarDocumento('${ds.url}', '${ds.titulo} - ${a.nombre_completo}', {id: ${ds.id}})" 
+                          <button onclick="visualizarDocumento('${ds.url}', '${ds.titulo} - ${a.nombre_completo}', {id: ${ds.id}, estado: '${ds.estado}'})" 
                                   style="background:#059669;color:white;padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:5px;font-weight:500;">
                             <i class="ri-eye-line"></i> 📋 ${ds.titulo}
                           </button>
                           <a href="${ds.download_url || ds.url}" download style="background:#6b7280;color:white;padding:7px 10px;border-radius:6px;text-decoration:none;font-size:12px;display:inline-flex;align-items:center;" title="Descargar">
                             <i class="ri-download-line"></i>
                           </a>
-                          ${badgeDoc}
                         </div>
-                        ${ds.observaciones_revision ? `<div style="font-size:10px;color:#991b1b;font-style:italic;margin-left:4px;">❌ ${ds.observaciones_revision}</div>` : ''}
-                      </div>`;
+                        ${badgeDoc}
+                      </div>
+                      ${ds.observaciones_revision ? `<div style="font-size:10px;color:#991b1b;font-style:italic;margin-left:4px;margin-top:-2px;margin-bottom:6px;">❌ ${ds.observaciones_revision}</div>` : ''}`;
                 });
               }
 
@@ -1530,16 +1576,41 @@
               // Botones de acción aprobar/rechazar
               let accionesDocHtml = '';
               if (a.estado === 'pendiente_documentos' && tieneDocs) {
+                let btnAprobarMask = '';
+                // Cálculo de respaldo por si fallan las banderas del backend
+                const hasRechazos = a.tiene_rechazos || a.documentos_subidos.some(ds => ds.estado === 'rechazado');
+                const hasAprobaciones = a.tiene_aprobaciones || a.documentos_subidos.some(ds => ds.estado === 'aprobado');
+                const allAprobados = a.todos_aprobados || (tieneDocs && a.documentos_subidos.every(ds => ds.estado === 'aprobado'));
+
+                if (hasRechazos) {
+                  btnAprobarMask = `
+                    <button onclick="mAlert('No se puede aprobar masivamente porque existen documentos rechazados. El asistente debe corregir los archivos o debe marcarlos todos individualmente.', 'warning')" 
+                            style="background:#9ca3af;color:white;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px;opacity:0.7;">
+                      <i class="ri-forbid-line"></i> Rechazos detectados
+                    </button>`;
+                } else if (!hasAprobaciones) {
+                  btnAprobarMask = `
+                    <button onclick="mAlert('Debe revisar y aprobar al menos un documento individualmente antes de poder aprobar todos masivamente.', 'info')" 
+                            style="background:#6b7280;color:white;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px;opacity:0.7;">
+                      <i class="ri-information-line"></i> Revisar primero
+                    </button>`;
+                } else {
+                  const btnText = allAprobados ? 'Aprobación Final' : 'Aprobar Documentos';
+                  const btnColor = allAprobados ? '#10b981' : '#10b981'; // Mismo verde o ligeramente distinto
+                  btnAprobarMask = `
+                    <button onclick="event.stopPropagation();aprobarDocRevision('${tipo}', ${a.id})" 
+                            style="background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px;transition:all .2s;box-shadow:0 2px 6px rgba(16,185,129,0.3);">
+                      <i class="ri-check-double-line"></i> ${btnText}
+                    </button>`;
+                }
+
                 accionesDocHtml = `
                     <div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px dashed #d1d5db;align-items:center;">
                       <span style="font-size:12px;font-weight:600;color:#374151;">Acción:</span>
-                      <button onclick="event.stopPropagation();aprobarDocRevision('${tipo}', ${a.id})" 
-                              style="background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px;transition:all .2s;box-shadow:0 2px 6px rgba(16,185,129,0.3);">
-                        <i class="ri-check-line"></i> Aprobar Documentos
-                      </button>
+                      ${btnAprobarMask}
                       <button onclick="event.stopPropagation();rechazarDocRevision('${tipo}', ${a.id}, '${a.nombre_completo.replace(/'/g, "\\'")}')" 
                               style="background:linear-gradient(135deg,#ef4444,#dc2626);color:white;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px;transition:all .2s;box-shadow:0 2px 6px rgba(239,68,68,0.3);">
-                        <i class="ri-close-line"></i> Rechazar
+                        <i class="ri-close-line"></i> Rechazar Todo
                       </button>
                     </div>`;
               }
@@ -1566,7 +1637,7 @@
                         </div>
                       </div>
                     </div>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                    <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start;width:100%;margin-top:8px;">
                       ${botonesDoc}
                     </div>
                     ${accionesDocHtml}
@@ -1655,15 +1726,21 @@
 
     // Ejecutar acción sobre visita
     async function accionVisita(tipo, id, accion) {
+      let observaciones = '';
       if (accion === 'rechazar') {
-        const ok = await mConfirm('¿Estás seguro de <strong>rechazar</strong> esta visita?', {
+        observaciones = await mPrompt('Ingrese el motivo del rechazo de esta visita:', {
           title: 'Rechazar Visita',
           icon: '<i class="ri-close-circle-line"></i>',
           iconClass: 'cm-error',
-          confirmText: 'Sí, rechazar',
-          confirmClass: 'cm-btn-danger'
+          confirmText: 'Rechazar',
+          confirmClass: 'cm-btn-danger',
+          placeholder: 'Escriba el motivo aquí...'
         });
-        if (!ok) return;
+        if (observaciones === null) return;
+        if (observaciones.trim() === '') {
+          mAlert('Debe proporcionar un motivo para rechazar la visita.', 'warning');
+          return;
+        }
       }
       if (accion === 'aprobar') {
         const ok = await mConfirm('¿Estás seguro de <strong>aprobar</strong> esta visita?', {
@@ -1676,11 +1753,11 @@
         if (!ok) return;
       }
       if (accion === 'iniciar_revision') {
-        const ok = await mConfirm('¿Iniciar la revisión de documentos de esta visita?', {
-          title: 'Iniciar Revisión',
+        const ok = await mConfirm('¿Desea finalizar la revisión de esta visita?', {
+          title: 'Finalizar Revisión',
           icon: '<i class="ri-search-eye-line"></i>',
           iconClass: 'cm-info',
-          confirmText: 'Iniciar',
+          confirmText: 'Finalizar',
           confirmClass: 'cm-btn-primary'
         });
         if (!ok) return;
@@ -1696,11 +1773,15 @@
         if (!ok) return;
       }
 
+      const formData = new FormData();
+      formData.append('observaciones', observaciones);
+
       fetch(`/gestion/api/visitas/${tipo}/${id}/${accion}/`, {
         method: 'POST',
         headers: {
           'X-CSRFToken': '{{ csrf_token }}'
-        }
+        },
+        body: formData
       })
         .then(response => response.json())
         .then(data => {
