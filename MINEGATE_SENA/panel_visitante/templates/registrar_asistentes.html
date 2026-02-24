@@ -89,19 +89,53 @@
         </div>
     {% endif %}
 
+    <!-- Documentos para descargar -->
+    {% if documentos_por_categoria %}
+    <div class="form-card" style="border-left: 4px solid #667eea;">
+        <h4><i class="fas fa-download" style="color: #667eea;"></i> Documentos Requeridos para el registro de asistentes</h4>
+        <p style="color: #666; margin-bottom: 25px;">Descargue, diligencie y tenga listos los siguientes documentos antes de registrar a los asistentes.</p>
+        {% for categoria, docs in documentos_por_categoria.items %}
+        <div style="margin-bottom: 20px;">
+            <h5 style="color: #333; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #e5e7eb;">{{ categoria }}</h5>
+            {% for doc in docs %}
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: #f8f9fa; border-radius: 10px; margin-bottom: 8px; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 200px;">
+                    <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% elif doc.extension == '.jpg' or doc.extension == '.jpeg' or doc.extension == '.png' %}file-image{% else %}file-alt{% endif %}"
+                       style="font-size: 1.5rem; color: {% if doc.extension == '.pdf' %}#dc2626{% elif doc.extension == '.doc' or doc.extension == '.docx' %}#2563eb{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}#059669{% else %}#667eea{% endif %};"></i>
+                    <div>
+                        <strong style="color: #333;">{{ doc.titulo }}</strong><br>
+                        <small style="color: #888;">{{ doc.nombre_archivo }} &middot; {{ doc.tamaño_legible }}</small>
+                        {% if doc.descripcion %}<br><small style="color: #666;">{{ doc.descripcion }}</small>{% endif %}
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button type="button" onclick="verDocumento('{% url 'documentos:ver_documento_inline' doc.id %}', '{{ doc.titulo }}', '{{ doc.extension }}', '{% url 'documentos:descargar_documento_publico' doc.id %}')"
+                       style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 8px 18px; border-radius: 8px; border: none; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; cursor: pointer;">
+                        <i class="fas fa-eye"></i> Ver
+                    </button>
+                    <a href="{% url 'documentos:descargar_documento_publico' doc.id %}"
+                       style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 8px 18px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
+                        <i class="fas fa-download"></i> Descargar
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <!-- Formulario para agregar asistente -->
     <div class="form-card">
         <h4><i class="fas fa-plus-circle"></i> Agregar Nuevo Asistente</h4>
         
-        <form method="POST">
+        <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
-            
             <div class="form-row">
                 <div class="form-group">
                     <label>Nombre Completo <span class="required">*</span></label>
                     <input type="text" name="nombre_completo" class="form-control" placeholder="Nombre completo del asistente" required {% if not puede_agregar %}disabled{% endif %}>
                 </div>
-                
                 <div class="form-group">
                     <label>Tipo de Documento <span class="required">*</span></label>
                     <select name="tipo_documento" class="form-control" required {% if not puede_agregar %}disabled{% endif %}>
@@ -114,26 +148,41 @@
                     </select>
                 </div>
             </div>
-            
             <div class="form-row">
                 <div class="form-group">
                     <label>Número de Documento <span class="required">*</span></label>
                     <input type="text" name="numero_documento" class="form-control" placeholder="Número de documento" required {% if not puede_agregar %}disabled{% endif %}>
                 </div>
-                
                 <div class="form-group">
                     <label>Correo Electrónico</label>
                     <input type="email" name="correo" class="form-control" placeholder="correo@ejemplo.com" {% if not puede_agregar %}disabled{% endif %}>
                 </div>
             </div>
-            
             <div class="form-row">
                 <div class="form-group">
                     <label>Teléfono</label>
                     <input type="text" name="telefono" class="form-control" placeholder="Número de teléfono" {% if not puede_agregar %}disabled{% endif %}>
                 </div>
             </div>
-            
+            <hr>
+            <div class="form-group">
+                <h5 style="margin-bottom:10px;">Subir Archivos Requeridos <span class="required">*</span></h5>
+                {% for categoria, docs in documentos_por_categoria.items %}
+                    <div style="margin-bottom: 18px;">
+                        <strong>{{ categoria }}</strong>
+                        {% for doc in docs %}
+                            <div class="form-group" style="margin-bottom:16px;">
+                                <label style="font-weight:500; margin-bottom:6px;">
+                                    <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% elif doc.extension == '.jpg' or doc.extension == '.jpeg' or doc.extension == '.png' %}file-image{% else %}file-alt{% endif %}"
+                                       style="font-size: 1.2rem; color: {% if doc.extension == '.pdf' %}#dc2626{% elif doc.extension == '.doc' or doc.extension == '.docx' %}#2563eb{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}#059669{% else %}#667eea{% endif %}; margin-right:8px;"></i>
+                                    {{ doc.titulo }} <span class="required">*</span>
+                                </label>
+                                <input type="file" name="documento_{{ doc.id }}" class="form-control" required {% if not puede_agregar %}disabled{% endif %} style="max-width:100%;">
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+            </div>
             <div class="text-end mt-4">
                 <button type="submit" class="btn-submit" {% if not puede_agregar %}disabled{% endif %}>
                     <i class="fas fa-user-plus"></i> Agregar Asistente
@@ -187,4 +236,53 @@
         {% endif %}
     </div>
 </div>
+
+<!-- Modal Visualizar Documento -->
+<div id="modalVerDoc" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.75); overflow-y:auto;">
+    <div style="background:#fff; margin:2% auto; padding:20px; border-radius:12px; width:92%; max-width:960px; height:90vh; display:flex; flex-direction:column; box-shadow:0 8px 40px rgba(0,0,0,0.4);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid #e5e7eb;">
+            <h5 style="margin:0; color:#1f2937; font-size:16px;" id="tituloModalDoc"><i class="fas fa-file me-2" style="color:#667eea;"></i></h5>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <a id="enlaceDescarga" href="#" download style="background:#667eea; color:white; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:13px; display:inline-flex; align-items:center; gap:4px; font-weight:600;">
+                    <i class="fas fa-download"></i> Descargar
+                </a>
+                <button onclick="cerrarModalDoc()" style="background:#ef4444; color:white; border:none; font-size:18px; cursor:pointer; width:36px; height:36px; border-radius:6px; display:flex; align-items:center; justify-content:center;">&times;</button>
+            </div>
+        </div>
+        <div id="cuerpoModalDoc" style="flex:1; overflow:auto; border:1px solid #e5e7eb; border-radius:8px; background:#f0f0f0; display:flex; align-items:center; justify-content:center;">
+        </div>
+    </div>
+</div>
+
+<script>
+function verDocumento(urlViewer, titulo, extension, urlDescarga) {
+    document.getElementById('tituloModalDoc').innerHTML = '<i class="fas fa-file me-2" style="color:#667eea;"></i>' + titulo;
+    document.getElementById('enlaceDescarga').href = urlDescarga;
+    const cuerpo = document.getElementById('cuerpoModalDoc');
+    const imgExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    if (extension === '.pdf' || imgExts.includes(extension)) {
+        cuerpo.innerHTML = '<iframe src="' + urlViewer + '" style="width:100%; height:100%; min-height:600px; border:none;"></iframe>';
+    } else {
+        cuerpo.innerHTML = '<div style="text-align:center; padding:50px; color:#6b7280;">'
+            + '<i class="fas fa-file-alt" style="font-size:64px; color:#9ca3af; display:block; margin-bottom:20px;"></i>'
+            + '<p style="font-size:16px; margin-bottom:20px;">Vista previa no disponible para este tipo de archivo.</p>'
+            + '<a href="' + urlDescarga + '" download style="background:#667eea; color:white; padding:12px 28px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:8px;">'
+            + '<i class="fas fa-download"></i> Descargar</a></div>';
+    }
+    document.getElementById('modalVerDoc').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+function cerrarModalDoc() {
+    document.getElementById('modalVerDoc').style.display = 'none';
+    document.getElementById('cuerpoModalDoc').innerHTML = '';
+    document.body.style.overflow = '';
+}
+document.getElementById('modalVerDoc').addEventListener('click', function(e) {
+    if (e.target === this) cerrarModalDoc();
+});
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') cerrarModalDoc();
+});
+</script>
+
 {% endblock %}
