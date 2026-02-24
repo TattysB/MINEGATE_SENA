@@ -11,25 +11,42 @@ from django.urls import reverse
 from datetime import datetime
 from visitaInterna.models import VisitaInterna, AsistenteVisitaInterna
 from visitaExterna.models import VisitaExterna, AsistenteVisitaExterna
-from .forms import RegistroVisitanteForm, PasswordResetRequestForm, PasswordResetConfirmForm
+from .forms import RegistroVisitanteForm, PasswordResetRequestForm, PasswordResetConfirmForm, ActualizarPerfilForm, CambiarContrasenaForm
 from .models import RegistroVisitante
 from django.conf import settings
 
 
+
+def _redirect_segun_rol(request, tipo=None, visita_id=None):
+    """
+    Redirige al panel correcto según el rol de la sesión.
+    Si se pasa tipo y visita_id, intenta ir al detalle de la visita.
+    """
+    rol = request.session.get('responsable_rol')
+    if rol == 'interno':
+        if tipo and visita_id:
+            from django.urls import reverse
+            return redirect(reverse('panel_instructor_interno:detalle_visita', args=[visita_id]))
+        return redirect('panel_instructor_interno:panel')
+    elif rol == 'externo':
+        if tipo and visita_id:
+            from django.urls import reverse
+            return redirect(reverse('panel_instructor_externo:detalle_visita', args=[visita_id]))
+        return redirect('panel_instructor_externo:panel')
+    else:
+        return redirect('panel_visitante:panel_responsable')
+
+
 def login_responsable(request):
     """
-    Login para responsables de visitas usando correo y documento.
+    Login para responsables de visitas usando solo documento y contraseña.
     """
     if request.method == 'POST':
-        correo = request.POST.get('correo', '').strip()
         documento = request.POST.get('documento', '').strip()
         contrasena = request.POST.get('contrasena', '')
-        rol = request.POST.get('rol', 'interno')
 
         visitante = RegistroVisitante.objects.filter(
-            correo__iexact=correo,
-            documento=documento,
-            rol=rol
+            documento=documento
         ).first()
 
         if visitante and visitante.check_password(contrasena):
@@ -37,18 +54,26 @@ def login_responsable(request):
             request.session['responsable_correo'] = visitante.correo
             request.session['responsable_documento'] = visitante.documento
             request.session['responsable_rol'] = visitante.rol
+            request.session['responsable_nombre'] = visitante.nombre
+            request.session['responsable_apellido'] = visitante.apellido
+            request.session['responsable_tipo_documento'] = visitante.tipo_documento
+            request.session['responsable_telefono'] = visitante.telefono
             request.session['responsable_autenticado'] = True
             request.session.modified = True
             
             messages.success(
                 request,
-                f'Bienvenido {correo}. Accediendo a tu panel...'
+                f'Bienvenido {visitante.nombre} {visitante.apellido}. Accediendo a tu panel...'
             )
-            return redirect('panel_visitante:panel_responsable')
+            # Redirigir al panel de instructor según el rol
+            if visitante.rol == 'interno':
+                return redirect('panel_instructor_interno:panel')
+            else:
+                return redirect('panel_instructor_externo:panel')
 
         messages.error(
             request,
-            'Credenciales invalidas. Verifica correo, documento, rol y contrasena.',
+            'Credenciales invalidas. Verifica tu documento y contrasena.',
         )
     
     return render(request, 'login_responsable.html')
@@ -66,15 +91,19 @@ def registro_visita(request):
 
         if form.is_valid():
             visitante = RegistroVisitante(
-                correo=form.cleaned_data['correo'],
+                nombre=form.cleaned_data['nombre'],
+                apellido=form.cleaned_data['apellido'],
+                tipo_documento=form.cleaned_data['tipo_documento'],
                 documento=form.cleaned_data['documento'],
+                telefono=form.cleaned_data['telefono'],
+                correo=form.cleaned_data['correo'],
                 rol=form.cleaned_data['rol'],
             )
             visitante.set_password(form.cleaned_data['password1'])
             visitante.save()
             messages.success(
                 request,
-                f'Cuenta creada exitosamente como usuario {visitante.get_rol_display()}. Ya puedes iniciar sesion con tus credenciales.',
+                f'Cuenta creada exitosamente para {visitante.nombre} {visitante.apellido}. Ya puedes iniciar sesion con tus credenciales.',
             )
             return redirect('panel_visitante:login_responsable')
     else:
@@ -172,12 +201,12 @@ def registrar_asistentes(request, tipo, visita_id):
         max_asistentes = visita.cantidad_visitantes
     else:
         messages.error(request, 'Tipo de visita no válido.')
-        return redirect('panel_visitante:panel_responsable')
+        return _redirect_segun_rol(request)
     
     # Verificar que la visita esté aprobada inicialmente para registro de asistentes
     if visita.estado not in ['aprobada_inicial', 'documentos_enviados', 'en_revision_documentos']:
         messages.error(request, 'Solo puede registrar asistentes en visitas aprobadas.')
-        return redirect('panel_visitante:panel_responsable')
+        return _redirect_segun_rol(request)
     
     # Verificar límite de asistentes
     asistentes_actuales = asistentes.count()
@@ -252,7 +281,7 @@ def eliminar_asistente(request, tipo, asistente_id):
         # Verificar que el responsable tenga acceso a esta visita
         if visita.correo_responsable.lower() != correo.lower() or visita.documento_responsable != documento:
             messages.error(request, 'No tiene permiso para esta acción.')
-            return redirect('panel_visitante:panel_responsable')
+            return _redirect_segun_rol(request)
         visita_id = visita.id
         asistente.delete()
     elif tipo == 'externa':
@@ -260,12 +289,12 @@ def eliminar_asistente(request, tipo, asistente_id):
         visita = asistente.visita
         if visita.correo_responsable.lower() != correo.lower() or visita.documento_responsable != documento:
             messages.error(request, 'No tiene permiso para esta acción.')
-            return redirect('panel_visitante:panel_responsable')
+            return _redirect_segun_rol(request)
         visita_id = visita.id
         asistente.delete()
     else:
         messages.error(request, 'Tipo de visita no válido.')
-        return redirect('panel_visitante:panel_responsable')
+        return _redirect_segun_rol(request)
     
     messages.success(request, 'Asistente eliminado correctamente.')
     return redirect('panel_visitante:registrar_asistentes', tipo=tipo, visita_id=visita_id)
@@ -288,32 +317,32 @@ def enviar_solicitud_final(request, tipo, visita_id):
         visita = get_object_or_404(VisitaInterna, id=visita_id)
         if visita.correo_responsable.lower() != correo.lower() or visita.documento_responsable != documento:
             messages.error(request, 'No tiene permiso para esta acción.')
-            return redirect('panel_visitante:panel_responsable')
+            return _redirect_segun_rol(request)
     elif tipo == 'externa':
         visita = get_object_or_404(VisitaExterna, id=visita_id)
         if visita.correo_responsable.lower() != correo.lower() or visita.documento_responsable != documento:
             messages.error(request, 'No tiene permiso para esta acción.')
-            return redirect('panel_visitante:panel_responsable')
+            return _redirect_segun_rol(request)
     else:
         messages.error(request, 'Tipo de visita no válido.')
-        return redirect('panel_visitante:panel_responsable')
+        return _redirect_segun_rol(request)
     
     # Verificar que la visita esté en estado aprobada_inicial
     if visita.estado != 'aprobada_inicial':
         messages.error(request, 'Solo puede enviar la solicitud final cuando la visita esté aprobada inicialmente.')
-        return redirect('panel_visitante:panel_responsable')
+        return _redirect_segun_rol(request, tipo, visita_id)
     
     # Verificar que haya al menos un asistente registrado
     if visita.asistentes.count() == 0:
         messages.error(request, 'Debe registrar al menos un asistente antes de enviar la solicitud final.')
-        return redirect('panel_visitante:panel_responsable')
+        return _redirect_segun_rol(request, tipo, visita_id)
     
     # Cambiar el estado a documentos_enviados
     visita.estado = 'documentos_enviados'
     visita.save()
     
     messages.success(request, '¡Solicitud final enviada correctamente! El administrador revisará los documentos de los asistentes.')
-    return redirect('panel_visitante:panel_responsable')
+    return _redirect_segun_rol(request, tipo, visita_id)
 
 
 def restablecer_contraseña(request):
@@ -441,3 +470,86 @@ def contraseña_actualizada_view(request):
     Vista que se muestra después de actualizar la contraseña
     """
     return render(request, 'contraseña_actualizada_visitante.html')
+
+
+def actualizar_perfil(request):
+    """
+    Vista para que el usuario actualice sus datos personales y contraseña
+    """
+    # Verificar que el usuario esté autenticado
+    if not request.session.get('responsable_autenticado'):
+        messages.warning(request, 'Debe iniciar sesión para acceder a esta página.')
+        return redirect('panel_visitante:login_responsable')
+    
+    documento = request.session.get('responsable_documento')
+    visitante = RegistroVisitante.objects.filter(documento=documento).first()
+    
+    if not visitante:
+        messages.error(request, 'No se encontró el usuario.')
+        return redirect('panel_visitante:login_responsable')
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'actualizar_datos':
+            form_perfil = ActualizarPerfilForm(request.POST, current_user=visitante)
+            form_contrasena = CambiarContrasenaForm()
+            
+            if form_perfil.is_valid():
+                visitante.nombre = form_perfil.cleaned_data['nombre']
+                visitante.apellido = form_perfil.cleaned_data['apellido']
+                visitante.tipo_documento = form_perfil.cleaned_data['tipo_documento']
+                visitante.telefono = form_perfil.cleaned_data['telefono']
+                visitante.correo = form_perfil.cleaned_data['correo']
+                visitante.save()
+                
+                # Actualizar sesión
+                request.session['responsable_nombre'] = visitante.nombre
+                request.session['responsable_apellido'] = visitante.apellido
+                request.session['responsable_tipo_documento'] = visitante.tipo_documento
+                request.session['responsable_telefono'] = visitante.telefono
+                request.session['responsable_correo'] = visitante.correo
+                request.session.modified = True
+                
+                messages.success(request, '✅ Tus datos han sido actualizados exitosamente.')
+                return redirect('panel_visitante:actualizar_perfil')
+        
+        elif action == 'cambiar_contrasena':
+            form_perfil = ActualizarPerfilForm(initial={
+                'nombre': visitante.nombre,
+                'apellido': visitante.apellido,
+                'tipo_documento': visitante.tipo_documento,
+                'telefono': visitante.telefono,
+                'correo': visitante.correo,
+            }, current_user=visitante)
+            form_contrasena = CambiarContrasenaForm(request.POST)
+            
+            if form_contrasena.is_valid():
+                contrasena_actual = form_contrasena.cleaned_data['contrasena_actual']
+                
+                if visitante.check_password(contrasena_actual):
+                    nueva_contrasena = form_contrasena.cleaned_data['nueva_contrasena']
+                    visitante.set_password(nueva_contrasena)
+                    visitante.save()
+                    
+                    messages.success(request, '🔒 Tu contraseña ha sido actualizada exitosamente.')
+                    return redirect('panel_visitante:actualizar_perfil')
+                else:
+                    messages.error(request, 'La contraseña actual es incorrecta.')
+    else:
+        form_perfil = ActualizarPerfilForm(initial={
+            'nombre': visitante.nombre,
+            'apellido': visitante.apellido,
+            'tipo_documento': visitante.tipo_documento,
+            'telefono': visitante.telefono,
+            'correo': visitante.correo,
+        }, current_user=visitante)
+        form_contrasena = CambiarContrasenaForm()
+    
+    context = {
+        'form_perfil': form_perfil,
+        'form_contrasena': form_contrasena,
+        'visitante': visitante,
+        'titulo': 'Actualizar Perfil',
+    }
+    return render(request, 'actualizar_perfil.html', context)
