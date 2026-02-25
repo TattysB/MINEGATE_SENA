@@ -4,6 +4,7 @@
 {% block title %}Reservar Visita Externa - MINEGATE{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}">
 <style>
   :root { --ext-azul: #0ea5e9; --ext-azul-oscuro: #0284c7; }
   .page-header { background: linear-gradient(135deg, #0c4a6e, var(--ext-azul)); color: white; padding: 2rem 0; }
@@ -18,6 +19,118 @@
   .form-control:focus, .form-select:focus { border-color: var(--ext-azul); box-shadow: 0 0 0 3px rgba(14,165,233,0.12); }
   .btn-submit { background: var(--ext-azul); border: none; color: white; padding: 0.75rem 2.5rem; border-radius: 50px; font-weight: 700; font-size: 1rem; transition: all 0.2s; }
   .btn-submit:hover { background: var(--ext-azul-oscuro); transform: translateY(-1px); color: white; }
+  
+  /* Estilos del calendario embebido */
+  #calendarioContainer {
+    min-height: 200px;
+  }
+  #calendarioContainer .calendar-page {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding: 0;
+  }
+  #calendarioContainer .calendar-card {
+    flex: 1;
+    min-width: 300px;
+    max-width: 420px;
+    position: relative;
+    padding: 15px;
+  }
+  #calendarioContainer .card-top {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 15px;
+    position: relative;
+  }
+  #calendarioContainer .card-top .nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    border: 1px solid #e5e7eb;
+    background: #f9fafb;
+    border-radius: 50%;
+    font-size: 20px;
+    font-weight: bold;
+    color: #374151;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    z-index: 10;
+  }
+  #calendarioContainer .card-top .nav:hover {
+    background: var(--ext-azul);
+    color: white;
+    border-color: var(--ext-azul);
+  }
+  #calendarioContainer .card-top #prevSel { left: 0; }
+  #calendarioContainer .card-top #nextSel { right: 0; }
+  #calendarioContainer .availability-config {
+    flex: 1;
+    min-width: 260px;
+    max-width: 380px;
+    padding: 15px;
+  }
+  #calendarioContainer .availability-config h3 {
+    margin: 0 0 10px 0;
+    font-size: 1rem;
+    color: var(--ext-azul);
+  }
+  #calendarioContainer .calendar-table td.available { cursor: pointer; }
+  #calendarioContainer .calendar-table td.disabled { cursor: not-allowed; }
+  #calendarioContainer .legend { margin-top: 10px; padding: 8px 0; }
+  #calendarioContainer #horariosList .horario-chip {
+    display: inline-block;
+    padding: 8px 16px;
+    margin: 5px;
+    background: #f3f4f6;
+    border: 2px solid #d1d5db;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+  }
+  #calendarioContainer #horariosList .horario-chip:hover {
+    border-color: var(--ext-azul);
+    background: #f0f9ff;
+  }
+  #calendarioContainer #horariosList .horario-chip.selected {
+    background: var(--ext-azul);
+    color: white;
+    border-color: var(--ext-azul);
+  }
+  
+  /* Resumen de selección */
+  .seleccion-resumen {
+    background: #f0f9ff;
+    border: 2px solid #bae6fd;
+    border-radius: 12px;
+    padding: 15px 20px;
+    margin-top: 15px;
+    display: none;
+  }
+  .seleccion-resumen.visible { display: block; }
+  .seleccion-resumen h4 {
+    margin: 0 0 8px 0;
+    font-size: 1rem;
+    color: #0c4a6e;
+  }
+  .seleccion-resumen p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #374151;
+  }
+  .seleccion-resumen .fecha-hora {
+    font-weight: 700;
+    color: var(--ext-azul);
+  }
 </style>
 {% endblock %}
 
@@ -46,6 +159,30 @@
 
   <form method="POST">
     {% csrf_token %}
+    
+    <!-- Campos ocultos para fecha y hora -->
+    {{ form.fecha_visita }}
+    {{ form.hora_inicio }}
+    {{ form.hora_fin }}
+
+    <!-- Selección de Fecha y Horario -->
+    <div class="form-card">
+      <div class="form-card-header">
+        <i class="fas fa-calendar-alt"></i>Fecha y Horario de la Visita
+      </div>
+      <div class="form-card-body">
+        <p class="text-muted mb-3">Selecciona un día disponible (verde) y luego elige el horario que prefieras.</p>
+        <div id="calendarioContainer">
+          <p class="text-center py-4"><i class="fas fa-spinner fa-spin me-2"></i>Cargando calendario...</p>
+        </div>
+        
+        <div class="seleccion-resumen" id="resumenSeleccion">
+          <h4><i class="fas fa-check-circle me-2 text-success"></i>Fecha y horario seleccionados</h4>
+          <p>Fecha: <span class="fecha-hora" id="resumenFecha">-</span></p>
+          <p>Horario: <span class="fecha-hora" id="resumenHorario">-</span></p>
+        </div>
+      </div>
+    </div>
 
     <!-- Datos de la Institución -->
     <div class="form-card">
@@ -112,10 +249,183 @@
       <a href="{% url 'panel_instructor_externo:panel' %}" class="btn btn-outline-secondary">
         <i class="fas fa-arrow-left me-2"></i>Volver al Panel
       </a>
-      <button type="submit" class="btn-submit btn">
+      <button type="submit" class="btn-submit btn" id="btnEnviar">
         <i class="fas fa-paper-plane me-2"></i>Enviar Solicitud
       </button>
     </div>
   </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const container = document.getElementById('calendarioContainer');
+  let selectedDate = null;
+  let selectedHorario = null;
+  
+  // Cargar calendario inicial
+  loadCalendario();
+  
+  function loadCalendario(year, month) {
+    let url = '/calendario/seleccion/';
+    if (year && month) {
+      url = '/calendario/seleccion/' + year + '/' + month + '/';
+    }
+    
+    fetch(url, {
+      headers: {'X-Requested-With': 'XMLHttpRequest'}
+    })
+    .then(r => r.text())
+    .then(html => {
+      container.innerHTML = html;
+      initCalendarioEvents();
+    })
+    .catch(err => {
+      container.innerHTML = '<p class="text-danger">Error al cargar el calendario</p>';
+    });
+  }
+  
+  function initCalendarioEvents() {
+    const page = container.querySelector('#calendarioSeleccionPage');
+    if (!page) return;
+    
+    const cardEl = page.querySelector('.calendar-card');
+    const year = parseInt(cardEl.getAttribute('data-year'));
+    const month = parseInt(cardEl.getAttribute('data-month'));
+    
+    // Navegación de meses
+    const prev = page.querySelector('#prevSel');
+    const next = page.querySelector('#nextSel');
+    
+    if (prev) {
+      prev.addEventListener('click', function() {
+        let y = year, m = month - 1;
+        if (m < 1) { m = 12; y -= 1; }
+        loadCalendario(y, m);
+      });
+    }
+    
+    if (next) {
+      next.addEventListener('click', function() {
+        let y = year, m = month + 1;
+        if (m > 12) { m = 1; y += 1; }
+        loadCalendario(y, m);
+      });
+    }
+    
+    // Click en días
+    const table = page.querySelector('.calendar-table');
+    if (table) {
+      table.addEventListener('click', function(e) {
+        const td = e.target.closest('td');
+        if (!td || !td.classList.contains('available')) return;
+        
+        // Quitar selección anterior
+        page.querySelectorAll('td.selected-day').forEach(el => el.classList.remove('selected-day'));
+        td.classList.add('selected-day');
+        
+        selectedDate = td.getAttribute('data-date');
+        selectedHorario = null;
+        updateResumen();
+        loadHorarios(selectedDate);
+      });
+    }
+  }
+  
+  function loadHorarios(dateStr) {
+    const horarioHint = container.querySelector('#horarioHint');
+    const horariosList = container.querySelector('#horariosList');
+    
+    if (horarioHint) horarioHint.textContent = 'Cargando horarios...';
+    if (horariosList) {
+      horariosList.innerHTML = '';
+      horariosList.style.display = 'none';
+    }
+    
+    fetch('/calendario/horarios/' + dateStr + '/', {
+      headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'}
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (!data.ok) {
+        if (horarioHint) horarioHint.textContent = 'Error: ' + (data.error || 'No se pudieron cargar');
+        return;
+      }
+      
+      if (!data.ranges || !data.ranges.length) {
+        if (horarioHint) horarioHint.textContent = 'No hay horarios configurados para este día.';
+        return;
+      }
+      
+      const horarioTitle = container.querySelector('#horarioTitle');
+      if (horarioTitle) horarioTitle.textContent = 'Horarios disponibles para ' + formatDate(dateStr);
+      if (horarioHint) horarioHint.textContent = 'Selecciona el horario que prefieras:';
+      
+      if (horariosList) {
+        horariosList.innerHTML = data.ranges.map(r => 
+          '<span class="horario-chip" data-start="' + r.start + '" data-end="' + r.end + '">' + r.label + '</span>'
+        ).join('');
+        horariosList.style.display = 'block';
+        
+        // Event listeners para chips
+        horariosList.querySelectorAll('.horario-chip').forEach(chip => {
+          chip.addEventListener('click', function() {
+            horariosList.querySelectorAll('.horario-chip').forEach(c => c.classList.remove('selected'));
+            this.classList.add('selected');
+            selectedHorario = {
+              start: this.getAttribute('data-start'),
+              end: this.getAttribute('data-end'),
+              label: this.textContent
+            };
+            updateResumen();
+            updateFormFields();
+          });
+        });
+      }
+    })
+    .catch(err => {
+      if (horarioHint) horarioHint.textContent = 'Error al cargar horarios.';
+    });
+  }
+  
+  function formatDate(dateStr) {
+    const parts = dateStr.split('-');
+    const months = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    return parseInt(parts[2]) + ' de ' + months[parseInt(parts[1])] + ' de ' + parts[0];
+  }
+  
+  function updateResumen() {
+    const resumen = document.getElementById('resumenSeleccion');
+    const resumenFecha = document.getElementById('resumenFecha');
+    const resumenHorario = document.getElementById('resumenHorario');
+    
+    if (selectedDate && selectedHorario) {
+      resumen.classList.add('visible');
+      resumenFecha.textContent = formatDate(selectedDate);
+      resumenHorario.textContent = selectedHorario.label;
+    } else {
+      resumen.classList.remove('visible');
+    }
+  }
+  
+  function updateFormFields() {
+    if (selectedDate) {
+      document.getElementById('id_fecha_visita').value = selectedDate;
+    }
+    if (selectedHorario) {
+      document.getElementById('id_hora_inicio').value = selectedHorario.start;
+      document.getElementById('id_hora_fin').value = selectedHorario.end;
+    }
+  }
+  
+  // Validación antes de enviar
+  document.getElementById('btnEnviar').addEventListener('click', function(e) {
+    if (!selectedDate || !selectedHorario) {
+      e.preventDefault();
+      alert('Por favor selecciona una fecha y un horario para la visita.');
+      container.scrollIntoView({ behavior: 'smooth' });
+    }
+  });
+});
+</script>
 {% endblock %}

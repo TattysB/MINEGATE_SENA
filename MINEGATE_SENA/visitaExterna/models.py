@@ -3,6 +3,7 @@ from django.conf import settings
 from django.utils import timezone
 import uuid
 
+
 class VisitaExterna(models.Model):
     ESTADO_CHOICES = [
         ('pendiente', 'Pendiente de revisión'),
@@ -32,6 +33,12 @@ class VisitaExterna(models.Model):
     correo_responsable = models.EmailField(verbose_name="Correo Electrónico del responsable")
     telefono_responsable = models.CharField(max_length=20, verbose_name="Teléfono del responsable")
     cantidad_visitantes = models.IntegerField(verbose_name="Cantidad de Visitantes")
+    
+    # Campos de fecha y horario de la visita
+    fecha_visita = models.DateField(verbose_name="Fecha de la visita", null=True, blank=True)
+    hora_inicio = models.TimeField(verbose_name="Hora de inicio", null=True, blank=True)
+    hora_fin = models.TimeField(verbose_name="Hora de fin", null=True, blank=True)
+    
     observacion = models.TextField(verbose_name="Observación", blank=True)
     
     def save(self, *args, **kwargs):

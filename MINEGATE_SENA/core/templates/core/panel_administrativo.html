@@ -85,10 +85,6 @@
           </a>
         </li>
 
-        <li data-content="nuevavisita">
-          <i class="ri-add-circle-line icon-visit"></i><span>Nueva Visita</span>
-        </li>
-
         <li data-content="gestionvisitas" style="position:relative;">
           <i class="ri-calendar-check-line icon-visit-management"></i><span>Gestión de Visitas</span>
           <span id="sidebarBadgeDocs"
@@ -169,10 +165,34 @@
       <!-- Sección Gestión de Visitas -->
       <div id="seccion-gestion-visitas" class="contenido-seccion" style="display: none;">
         <div style="padding: 20px;">
-          <h2 style="color: #1f2937; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-            <i class="ri-calendar-check-line" style="color: #8b5cf6;"></i>
-            Gestión de Visitas
-          </h2>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+            <h2 style="color: #1f2937; margin: 0; display: flex; align-items: center; gap: 10px;">
+              <i class="ri-calendar-check-line" style="color: #8b5cf6;"></i>
+              Gestión de Visitas
+            </h2>
+            <button id="btnNuevaVisita" onclick="mostrarCalendarioNuevaVisita()" 
+              style="padding: 12px 24px; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); transition: all 0.2s;">
+              <i class="ri-add-circle-line"></i> Nueva Visita
+            </button>
+          </div>
+
+          <!-- Contenedor del Calendario de Selección (oculto por defecto) -->
+          <div id="contenedorCalendarioNuevaVisita" style="display: none; margin-bottom: 25px;">
+            <div style="background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); padding: 20px; border: 2px solid #10b981;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0; color: #1f2937; font-size: 18px; display: flex; align-items: center; gap: 8px;">
+                  <i class="ri-calendar-check-line" style="color: #10b981;"></i> Seleccionar Fecha y Horario
+                </h3>
+                <button onclick="ocultarCalendarioNuevaVisita()" 
+                  style="background: #f3f4f6; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; color: #6b7280;">
+                  ×
+                </button>
+              </div>
+              <div id="calendarioNuevaVisitaContent">
+                <!-- Aquí se carga el calendario dinámicamente -->
+              </div>
+            </div>
+          </div>
 
           <!-- Tabs para tipo de visita -->
           <div style="display: flex; gap: 10px; margin-bottom: 20px;">
@@ -743,13 +763,15 @@
             if (!main) return;
             // Guardar el contenido previo para poder restaurarlo cuando se navegue a otra sección
             if (!window._previousMainHTML) window._previousMainHTML = main.innerHTML;
-            main.innerHTML = '<div class="calendar-page">' + html + '</div>';
+            main.innerHTML = html;
             // marcar main para aplicar estilos específicos cuando el calendario esté dentro del panel
             main.classList.add('calendar-in-panel');
             ensureScript("{% static 'calendario/js/calendario.js' %}")
               .then(() => {
                 const newContainer = main.querySelector('.calendar-card');
+                const page = main.querySelector('.calendar-page');
                 if (window.initCalendar && newContainer) window.initCalendar(newContainer);
+                if (window.initAvailabilityControls && page) window.initAvailabilityControls(page);
                 // desplazar scroll al inicio del calendario
                 if (typeof main.scrollIntoView === 'function') main.scrollIntoView({ behavior: 'smooth' });
               });
@@ -779,6 +801,224 @@
         }
       });
       cargarVisitas();
+    }
+
+    // ========================================
+    // FUNCIONES PARA NUEVA VISITA
+    // ========================================
+    
+    // Variables globales para el calendario de selección
+    let calendarioSeleccion_selectedDate = null;
+    let calendarioSeleccion_selectedHorario = null;
+    
+    function initCalendarioSeleccionEvents(container) {
+      if (!container) return;
+      console.log('Inicializando eventos del calendario de selección');
+      
+      const prev = container.querySelector('#prevSel');
+      const next = container.querySelector('#nextSel');
+      const cardEl = container.querySelector('.calendar-card');
+      const year = parseInt(cardEl.getAttribute('data-year'));
+      const month = parseInt(cardEl.getAttribute('data-month'));
+      const horarioTitle = container.querySelector('#horarioTitle');
+      const horarioHint = container.querySelector('#horarioHint');
+      const horariosList = container.querySelector('#horariosList');
+      const btnContinuar = container.querySelector('#btnContinuarVisita');
+      
+      // Reset
+      calendarioSeleccion_selectedDate = null;
+      calendarioSeleccion_selectedHorario = null;
+
+      function fetchMonth(y, m) {
+        const url = '/calendario/seleccion/' + y + '/' + m + '/';
+        return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(r => r.text());
+      }
+
+      function goTo(y, m) {
+        const contenedor = document.getElementById('calendarioNuevaVisitaContent');
+        if (contenedor) {
+          fetchMonth(y, m).then(html => {
+            contenedor.innerHTML = html;
+            const newContainer = contenedor.querySelector('#calendarioSeleccionPage');
+            if (newContainer) initCalendarioSeleccionEvents(newContainer);
+          });
+        }
+      }
+
+      if (prev) {
+        prev.onclick = function() {
+          let y = year, m = month - 1;
+          if (m < 1) { m = 12; y -= 1; }
+          goTo(y, m);
+        };
+      }
+      if (next) {
+        next.onclick = function() {
+          let y = year, m = month + 1;
+          if (m > 12) { m = 1; y += 1; }
+          goTo(y, m);
+        };
+      }
+
+      // Click en días disponibles
+      const table = container.querySelector('.calendar-table');
+      if (table) {
+        table.onclick = function(e) {
+          const td = e.target.closest('td');
+          if (!td) return;
+          
+          // Solo procesar días disponibles
+          if (!td.classList.contains('available')) {
+            console.log('Día no disponible:', td.getAttribute('data-date'));
+            return;
+          }
+          
+          console.log('Día seleccionado:', td.getAttribute('data-date'));
+          
+          // Quitar selección anterior
+          container.querySelectorAll('td.selected-day').forEach(el => el.classList.remove('selected-day'));
+          td.classList.add('selected-day');
+          
+          calendarioSeleccion_selectedDate = td.getAttribute('data-date');
+          calendarioSeleccion_selectedHorario = null;
+          if (btnContinuar) btnContinuar.style.display = 'none';
+          
+          // Cargar horarios
+          loadHorarios(calendarioSeleccion_selectedDate);
+        };
+      }
+
+      function loadHorarios(dateStr) {
+        console.log('Cargando horarios para:', dateStr);
+        if (horarioHint) horarioHint.textContent = 'Cargando horarios...';
+        if (horariosList) {
+          horariosList.innerHTML = '';
+          horariosList.style.display = 'none';
+        }
+        
+        const url = '/calendario/horarios/' + dateStr + '/';
+        console.log('URL:', url);
+        
+        fetch(url, {
+          headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+        })
+        .then(r => {
+          console.log('Response status:', r.status);
+          return r.json();
+        })
+        .then(data => {
+          console.log('Datos recibidos:', data);
+          
+          if (!data.ok) {
+            if (horarioHint) horarioHint.textContent = 'Error: ' + (data.error || 'No se pudieron cargar');
+            return;
+          }
+          
+          if (!data.ranges || !data.ranges.length) {
+            if (horarioHint) horarioHint.textContent = 'No hay horarios configurados para este día.';
+            return;
+          }
+          
+          if (horarioTitle) horarioTitle.textContent = 'Horarios disponibles para ' + dateStr;
+          if (horarioHint) horarioHint.textContent = 'Selecciona el horario que prefieras:';
+          
+          if (horariosList) {
+            horariosList.innerHTML = data.ranges.map(r => 
+              '<span class="horario-chip" data-start="' + r.start + '" data-end="' + r.end + '">' + r.label + '</span>'
+            ).join('');
+            horariosList.style.display = 'block';
+            
+            // Event listeners para chips
+            horariosList.querySelectorAll('.horario-chip').forEach(chip => {
+              chip.onclick = function() {
+                horariosList.querySelectorAll('.horario-chip').forEach(c => c.classList.remove('selected'));
+                this.classList.add('selected');
+                calendarioSeleccion_selectedHorario = {
+                  start: this.getAttribute('data-start'),
+                  end: this.getAttribute('data-end'),
+                  label: this.textContent
+                };
+                if (btnContinuar) btnContinuar.style.display = 'inline-block';
+              };
+            });
+          }
+        })
+        .catch(err => {
+          console.error('Error al cargar horarios:', err);
+          if (horarioHint) horarioHint.textContent = 'Error al cargar horarios.';
+        });
+      }
+
+      // Botón continuar
+      if (btnContinuar) {
+        btnContinuar.onclick = function() {
+          if (!calendarioSeleccion_selectedDate || !calendarioSeleccion_selectedHorario) {
+            alert('Por favor selecciona una fecha y un horario.');
+            return;
+          }
+          sessionStorage.setItem('visita_fecha', calendarioSeleccion_selectedDate);
+          sessionStorage.setItem('visita_horario_inicio', calendarioSeleccion_selectedHorario.start);
+          sessionStorage.setItem('visita_horario_fin', calendarioSeleccion_selectedHorario.end);
+          sessionStorage.setItem('visita_horario_label', calendarioSeleccion_selectedHorario.label);
+          
+          alert('Fecha: ' + calendarioSeleccion_selectedDate + '\nHorario: ' + calendarioSeleccion_selectedHorario.label + '\n\nDatos guardados.');
+        };
+      }
+      
+      console.log('Calendario de selección inicializado correctamente');
+    }
+    
+    function mostrarCalendarioNuevaVisita() {
+      const contenedor = document.getElementById('contenedorCalendarioNuevaVisita');
+      const contenido = document.getElementById('calendarioNuevaVisitaContent');
+      
+      if (!contenedor || !contenido) return;
+      
+      contenedor.style.display = 'block';
+      contenido.innerHTML = `
+        <div style="text-align: center; padding: 30px;">
+          <i class="ri-loader-4-line" style="font-size: 40px; color: #10b981; animation: spin 1s linear infinite;"></i>
+          <p style="color: #6b7280; margin-top: 10px;">Cargando calendario...</p>
+        </div>
+      `;
+      
+      // Cargar el calendario de selección
+      fetch('/calendario/seleccion/', {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+      .then(response => response.text())
+      .then(html => {
+        contenido.innerHTML = html;
+        // Inicializar el calendario
+        const calendarioContainer = contenido.querySelector('#calendarioSeleccionPage');
+        if (calendarioContainer) {
+          initCalendarioSeleccionEvents(calendarioContainer);
+        }
+      })
+      .catch(err => {
+        console.error('Error al cargar calendario:', err);
+        contenido.innerHTML = `
+          <div style="text-align: center; padding: 30px;">
+            <i class="ri-error-warning-line" style="font-size: 40px; color: #ef4444;"></i>
+            <p style="color: #6b7280; margin-top: 10px;">Error al cargar el calendario.</p>
+            <button onclick="mostrarCalendarioNuevaVisita()" style="margin-top: 10px; padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer;">
+              Reintentar
+            </button>
+          </div>
+        `;
+      });
+      
+      // Scroll suave al calendario
+      setTimeout(() => {
+        contenedor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+    
+    function ocultarCalendarioNuevaVisita() {
+      const contenedor = document.getElementById('contenedorCalendarioNuevaVisita');
+      if (contenedor) {
+        contenedor.style.display = 'none';
+      }
     }
 
     // Función para cargar visitas
