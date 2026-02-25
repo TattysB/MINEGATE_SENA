@@ -127,7 +127,10 @@
 						<label for="{{ form.password1.id_for_label }}">
 							<i class="fas fa-lock"></i> Contrasena
 						</label>
-						{{ form.password1 }}
+						<div class="password-wrapper">
+							{{ form.password1 }}
+							<i class="fas fa-eye toggle-password" id="togglePassword1"></i>
+						</div>
 						<div id="password-requirements" style="display: none; margin-top: 10px; padding: 12px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #6c757d;">
 							<div style="font-weight: 600; margin-bottom: 8px; color: #495057;">
 								<i class="fas fa-shield-alt"></i> Requisitos de seguridad:
@@ -149,7 +152,10 @@
 						<label for="{{ form.password2.id_for_label }}">
 							<i class="fas fa-lock"></i> Confirmar contrasena
 						</label>
-						{{ form.password2 }}
+						<div class="password-wrapper">
+							{{ form.password2 }}
+							<i class="fas fa-eye toggle-password" id="togglePassword2"></i>
+						</div>
 						{% if form.password2.errors %}
 							<span class="field-error">{{ form.password2.errors|striptags }}</span>
 						{% endif %}
@@ -217,6 +223,36 @@ document.addEventListener('DOMContentLoaded', function() {
 				element.innerHTML = element.innerHTML.replace('fa-check-circle', 'fa-times-circle');
 			}
 		}
+	}
+
+	// Toggle mostrar/ocultar contraseña - Campo 1
+	const togglePassword1 = document.getElementById('togglePassword1');
+	const password1Input = document.querySelector('input[name="password1"]');
+	
+	if (togglePassword1 && password1Input) {
+		togglePassword1.addEventListener('click', function() {
+			const type = password1Input.getAttribute('type') === 'password' ? 'text' : 'password';
+			password1Input.setAttribute('type', type);
+			
+			// Cambiar icono
+			this.classList.toggle('fa-eye');
+			this.classList.toggle('fa-eye-slash');
+		});
+	}
+
+	// Toggle mostrar/ocultar contraseña - Campo 2
+	const togglePassword2 = document.getElementById('togglePassword2');
+	const password2Input = document.querySelector('input[name="password2"]');
+	
+	if (togglePassword2 && password2Input) {
+		togglePassword2.addEventListener('click', function() {
+			const type = password2Input.getAttribute('type') === 'password' ? 'text' : 'password';
+			password2Input.setAttribute('type', type);
+			
+			// Cambiar icono
+			this.classList.toggle('fa-eye');
+			this.classList.toggle('fa-eye-slash');
+		});
 	}
 });
 </script>

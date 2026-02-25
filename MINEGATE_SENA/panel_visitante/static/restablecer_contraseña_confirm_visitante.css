@@ -17,7 +17,7 @@
 }
 
 .reset-header {
-	background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+	background: linear-gradient(135deg, #00af00 0%, #008c00 100%);
 	color: white;
 	padding: 30px;
 	text-align: center;
@@ -26,7 +26,7 @@
 .reset-header i {
 	font-size: 3rem;
 	margin-bottom: 15px;
-	color: #ffc107;
+	color: #ffffff;
 }
 
 .reset-header h2 {
@@ -153,36 +153,20 @@
 }
 
 .requirements-box {
-	background: #f9fafb;
-	border: 1px solid #e5e7eb;
-	border-radius: 10px;
-	padding: 15px;
-	margin-bottom: 25px;
-}
-
-.requirements-box h4 {
-	margin: 0 0 12px;
-	color: #374151;
-	font-size: 0.95rem;
-}
-
-.requirements-box p {
-	margin: 8px 0;
-	color: #666;
-	font-size: 0.85rem;
+	display: none;
 }
 
 .info-box {
-	background: #d1ecf1;
-	border: 1px solid #bee5eb;
+	background: #f0f7ff;
+	border: 1px solid #bfdbfe;
 	border-radius: 10px;
 	padding: 15px;
 	margin-bottom: 25px;
-	color: #0c5460;
+	color: #1e40af;
 }
 
 .info-box i {
-	color: #0c5460;
+	color: #1e40af;
 	margin-right: 8px;
 }
 

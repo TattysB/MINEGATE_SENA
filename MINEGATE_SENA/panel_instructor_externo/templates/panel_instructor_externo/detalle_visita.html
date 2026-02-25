@@ -1,9 +1,13 @@
-{% extends "master.html" %}
 {% load static %}
 
-{% block title %}Detalle Visita #{{ visita.id }} - MINEGATE{% endblock %}
-
-{% block extra_css %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalle Visita #{{ visita.id }} - MINEGATE</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <style>
   :root { --ext-azul: #0ea5e9; --ext-oscuro: #0c4a6e; }
   .page-header { background: linear-gradient(135deg, var(--ext-oscuro), var(--ext-azul)); color: white; padding: 2rem 0; }
@@ -52,10 +56,8 @@
   .info-box-aprobada { background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:1rem 1.3rem; font-size:0.88rem; color:#166534; }
   .info-box-enviado { background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; padding:1rem 1.3rem; font-size:0.88rem; color:#1e40af; }
 </style>
-{% endblock %}
-
-{% block content %}
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
 
 <div class="page-header">
   <div class="container">
@@ -97,16 +99,6 @@
         </div>
 
         {% if estado != 'rechazada' %}
-        <div class="timeline-step {% if estado not in 'pendiente,enviada_coordinacion' %}done{% endif %}">
-          <div class="step-circle {% if estado == 'enviada_coordinacion' %}active{% elif estado not in 'pendiente,enviada_coordinacion' %}done{% endif %}">
-            <i class="fas fa-paper-plane"></i>
-          </div>
-          <div class="step-info {% if estado == 'enviada_coordinacion' %}active{% elif estado not in 'pendiente,enviada_coordinacion' %}done{% endif %}">
-            <h6>Enviada a coordinación</h6>
-            <small>El equipo revisa la solicitud</small>
-          </div>
-        </div>
-
         <div class="timeline-step {% if estado in 'documentos_enviados,en_revision_documentos,confirmada' %}done{% endif %}">
           <div class="step-circle {% if estado == 'aprobada_inicial' %}active{% elif estado in 'documentos_enviados,en_revision_documentos,confirmada' %}done{% endif %}">
             <i class="fas fa-check"></i>
@@ -275,4 +267,7 @@
   </div>
 
 </div>
-{% endblock %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

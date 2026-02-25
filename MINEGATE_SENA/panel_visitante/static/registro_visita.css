@@ -26,7 +26,8 @@
 .login-header i {
 	font-size: 3rem;
 	margin-bottom: 15px;
-	color: #b3ff00;
+	color: white;
+	display: block;
 }
 
 .login-header h2 {
@@ -234,4 +235,28 @@
 .role-text {
 	display: block;
 	font-size: 0.95rem;
+}
+
+/* Wrapper para campo de contraseña con ícono */
+.password-wrapper {
+	position: relative;
+	display: flex;
+	align-items: center;
+}
+
+.password-wrapper input {
+	padding-right: 45px;
+}
+
+.toggle-password {
+	position: absolute;
+	right: 15px;
+	cursor: pointer;
+	color: #666;
+	font-size: 1.2rem;
+	transition: color 0.3s ease;
+}
+
+.toggle-password:hover {
+	color: #00af00;
 }

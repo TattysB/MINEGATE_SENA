@@ -135,7 +135,7 @@ def logout_responsable(request):
     request.session.pop("responsable_documento", None)
     request.session.pop("responsable_autenticado", None)
     messages.success(request, "Sesión cerrada correctamente.")
-    return redirect("core:visitas")
+    return redirect("panel_visitante:login_responsable")
 
 
 def panel_responsable(request):
