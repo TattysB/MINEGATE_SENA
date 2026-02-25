@@ -171,5 +171,18 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Auto-cerrar alertas después de 5 segundos
+  document.addEventListener('DOMContentLoaded', function() {
+    const alerts = document.querySelectorAll('.alert');
+    alerts.forEach(function(alert) {
+      setTimeout(function() {
+        // Usar Bootstrap para hacer fade out
+        const bsAlert = new bootstrap.Alert(alert);
+        bsAlert.close();
+      }, 5000); // 5000 milisegundos = 5 segundos
+    });
+  });
+</script>
 </body>
 </html>
