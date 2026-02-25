@@ -19,6 +19,7 @@ from visitaExterna.models import (
     HistorialAccionVisitaExterna,
 )
 from documentos.models import DocumentoSubidoAsistente
+from calendario.models import ReservaHorario
 
 ESTADOS_APROBADAS = [
     "aprobada_inicial",
@@ -357,6 +358,13 @@ def api_accion_visita(request, tipo, visita_id, accion):
     if accion == "aprobar":
         visita.estado = "aprobada_inicial"
         visita.save()
+        
+        # Crear reserva de horario para bloquear el día/horario
+        if tipo == "interna":
+            ReservaHorario.crear_reserva_interna(visita)
+        else:
+            ReservaHorario.crear_reserva_externa(visita)
+        
         registrar_accion(
             "aprobacion_inicial",
             f"Visita aprobada inicialmente por {request.user.username}",
@@ -402,6 +410,10 @@ def api_accion_visita(request, tipo, visita_id, accion):
             )
         visita.estado = "confirmada"
         visita.save()
+        
+        # Confirmar la reserva de horario (cambiar a estado 'confirmada')
+        ReservaHorario.confirmar_reserva(visita, tipo)
+        
         registrar_accion(
             "confirmacion",
             f"Visita confirmada definitivamente por {request.user.username}",

@@ -34,6 +34,12 @@ class VisitaInterna(models.Model):
     correo_responsable = models.EmailField(max_length=254, verbose_name="Correo del responsable", default="")
     telefono_responsable = models.CharField(max_length=20, verbose_name="Teléfono del responsable", default="")
     cantidad_aprendices = models.PositiveIntegerField(verbose_name="Cantidad de aprendices", default=0, validators=[MaxValueValidator(99999999)])
+    
+    # Campos de fecha y horario de la visita
+    fecha_visita = models.DateField(verbose_name="Fecha de la visita", null=True, blank=True)
+    hora_inicio = models.TimeField(verbose_name="Hora de inicio", null=True, blank=True)
+    hora_fin = models.TimeField(verbose_name="Hora de fin", null=True, blank=True)
+    
     observaciones = models.TextField(verbose_name="Observaciones", blank=True, default="")
     
     def save(self, *args, **kwargs):
