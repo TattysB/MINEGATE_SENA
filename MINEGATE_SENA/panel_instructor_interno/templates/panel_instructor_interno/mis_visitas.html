@@ -100,7 +100,7 @@
     {% for visita in visitas %}
     <div class="visita-card {{ visita.estado }}">
       <div class="visita-card-inner">
-        <div class="visita-id">#{{ visita.id }}</div>
+        <div class="visita-id">{{ visita.id }}</div>
         <div class="visita-data">
           <h6>{{ visita.nombre_programa }}</h6>
           <small>Ficha {{ visita.numero_ficha }} &nbsp;·&nbsp; {{ visita.cantidad_aprendices }} aprendices &nbsp;·&nbsp; {{ visita.fecha_solicitud|date:"d M Y" }}</small>
