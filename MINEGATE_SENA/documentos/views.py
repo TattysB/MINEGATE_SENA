@@ -512,6 +512,16 @@ def revisar_documento_asistente_api(request, documento_subido_id):
     doc.observaciones_revision = observaciones
     doc.save()
 
+    # Sincronizar estado del asistente si hay un rechazo
+    if estado == "rechazado":
+        asistente = doc.asistente_interna or doc.asistente_externa
+        if asistente:
+            asistente.estado = "documentos_rechazados"
+            # Si no hay observaciones en el asistente, copiar la del documento
+            if not asistente.observaciones_revision:
+                asistente.observaciones_revision = f"Documento '{doc.documento_requerido.titulo}' rechazado: {observaciones}"
+            asistente.save()
+
     return JsonResponse(
         {
             "success": True,
