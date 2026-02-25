@@ -76,4 +76,40 @@
         </div>
     </div>
 </div>
+
+<!-- Modal de Sesión Cerrada Correctamente -->
+<div class="modal fade" id="sessionClosedModal" tabindex="-1" aria-labelledby="sessionClosedLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-5">
+                <div style="font-size: 3rem; color: #28a745; margin-bottom: 1rem;">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h4 class="modal-title mb-3" id="sessionClosedLabel">¡Sesión Cerrada!</h4>
+                <p class="text-muted mb-0">Tu sesión se ha cerrado correctamente. Hasta pronto.</p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center pb-4">
+                <button type="button" class="btn btn-success" data-bs-dismiss="modal">
+                    <i class="fas fa-check me-2"></i>Entendido
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Mostrar modal si hay mensaje de cierre exitoso
+    document.addEventListener('DOMContentLoaded', function() {
+        const messages = document.querySelectorAll('.alert');
+        messages.forEach(function(alert) {
+            const text = alert.textContent;
+            if (text.includes('Sesión cerrada correctamente')) {
+                alert.style.display = 'none';
+                const modal = new bootstrap.Modal(document.getElementById('sessionClosedModal'));
+                modal.show();
+            }
+        });
+    });
+</script>
+
 {% endblock %}
