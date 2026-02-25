@@ -48,12 +48,15 @@
                     <label for="contrasena">
                         <i class="fas fa-lock"></i> Contraseña
                     </label>
-                    <input type="password" 
-                           class="form-control" 
-                           id="contrasena" 
-                           name="contrasena" 
-                           placeholder="Ingrese su contraseña"
-                           required>
+                    <div class="password-wrapper">
+                        <input type="password" 
+                               class="form-control" 
+                               id="contrasena" 
+                               name="contrasena" 
+                               placeholder="Ingrese su contraseña"
+                               required>
+                        <i class="fas fa-eye toggle-password" id="togglePassword"></i>
+                    </div>
                 </div>
                 
                 <button type="submit" class="btn-login">
@@ -97,8 +100,28 @@
     </div>
 </div>
 
+<!-- Modal de Credenciales Inválidas -->
+<div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-5">
+                <div style="font-size: 3rem; color: #dc3545; margin-bottom: 1rem;">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+                <h4 class="modal-title mb-3" id="errorLabel">Credenciales Inválidas</h4>
+                <p class="text-muted mb-0" id="errorMessage">Verifica tu documento y contraseña.</p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center pb-4">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+                    <i class="fas fa-check me-2"></i>Entendido
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-    // Mostrar modal si hay mensaje de cierre exitoso
+    // Mostrar modal si hay mensaje de cierre exitoso o error
     document.addEventListener('DOMContentLoaded', function() {
         const messages = document.querySelectorAll('.alert');
         messages.forEach(function(alert) {
@@ -107,8 +130,29 @@
                 alert.style.display = 'none';
                 const modal = new bootstrap.Modal(document.getElementById('sessionClosedModal'));
                 modal.show();
+            } else if (alert.classList.contains('alert-danger')) {
+                // Ocultar alerta de error y mostrar modal
+                alert.style.display = 'none';
+                const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                document.getElementById('errorMessage').textContent = text.trim();
+                errorModal.show();
             }
         });
+
+        // Toggle mostrar/ocultar contraseña
+        const togglePassword = document.getElementById('togglePassword');
+        const passwordInput = document.getElementById('contrasena');
+        
+        if (togglePassword && passwordInput) {
+            togglePassword.addEventListener('click', function() {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                
+                // Cambiar icono
+                this.classList.toggle('fa-eye');
+                this.classList.toggle('fa-eye-slash');
+            });
+        }
     });
 </script>
 
