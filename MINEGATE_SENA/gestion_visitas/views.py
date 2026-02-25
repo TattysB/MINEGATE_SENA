@@ -69,6 +69,11 @@ def api_listar_visitas(request):
                     ),
                     "cantidad": v.cantidad_aprendices,
                     "estado": v.estado,
+                    "tiene_rechazos": v.asistentes.filter(estado="documentos_rechazados").exists(),
+                    "puede_confirmar": (
+                        v.asistentes.exists() and 
+                        not v.asistentes.exclude(estado="documentos_aprobados").exists()
+                    ),
                     "fecha_solicitud": (
                         v.fecha_solicitud.strftime("%d/%m/%Y %H:%M")
                         if v.fecha_solicitud
@@ -135,6 +140,11 @@ def api_listar_visitas(request):
                     ),
                     "cantidad": v.cantidad_visitantes,
                     "estado": v.estado,
+                    "tiene_rechazos": v.asistentes.filter(estado="documentos_rechazados").exists(),
+                    "puede_confirmar": (
+                        v.asistentes.exists() and 
+                        not v.asistentes.exclude(estado="documentos_aprobados").exists()
+                    ),
                     "fecha_solicitud": (
                         v.fecha_solicitud.strftime("%d/%m/%Y %H:%M")
                         if v.fecha_solicitud
@@ -369,9 +379,15 @@ def api_accion_visita(request, tipo, visita_id, accion):
         )
 
     elif accion == "rechazar":
+        observaciones = request.POST.get("observaciones", "")
         visita.estado = "rechazada"
         visita.save()
-        registrar_accion("rechazo", f"Visita rechazada por {request.user.username}")
+        registrar_accion(
+            "rechazo",
+            f"Visita rechazada por {request.user.username}. Motivo: {observaciones}"
+            if observaciones
+            else f"Visita rechazada por {request.user.username}",
+        )
         return JsonResponse({"success": True, "message": "❌ Visita rechazada"})
 
     elif accion == "iniciar_revision":
@@ -389,7 +405,7 @@ def api_accion_visita(request, tipo, visita_id, accion):
             f"Revisión de documentos iniciada por {request.user.username}",
         )
         return JsonResponse(
-            {"success": True, "message": "🔍 Revisión de documentos iniciada"}
+            {"success": True, "message": " ✔️ Se ha finalizado la revisión de documentos"}
         )
 
     elif accion == "confirmar_visita":
@@ -400,6 +416,19 @@ def api_accion_visita(request, tipo, visita_id, accion):
                     "error": "La visita debe estar en revisión de documentos para confirmarla",
                 }
             )
+
+        # Verificar que todos los asistentes tengan documentos aprobados
+        asistentes_sin_aprobar = visita.asistentes.exclude(
+            estado="documentos_aprobados"
+        ).count()
+        if asistentes_sin_aprobar > 0:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": f"No se puede confirmar la visita. Hay {asistentes_sin_aprobar} asistente(s) con documentos pendientes o rechazados.",
+                }
+            )
+
         visita.estado = "confirmada"
         visita.save()
         registrar_accion(
@@ -427,6 +456,24 @@ def api_revisar_documento_asistente(request, tipo, asistente_id, accion):
     observaciones = request.POST.get("observaciones", "")
 
     if accion == "aprobar":
+        # Restricción: No se puede aprobar masivamente si hay rechazos parciales
+        if asistente.documentos_subidos.filter(estado="rechazado").exists():
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "No se puede aprobar masivamente porque hay documentos rechazados. Corrija o apruebe individualmente.",
+                }
+            )
+
+        # Restricción: Debe haber al menos un documento aprobado individualmente
+        if not asistente.documentos_subidos.filter(estado="aprobado").exists():
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Debe revisar y aprobar al menos un documento individualmente antes de aprobar el resto.",
+                }
+            )
+
         asistente.estado = "documentos_aprobados"
         asistente.observaciones_revision = observaciones
         asistente.save()
