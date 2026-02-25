@@ -207,6 +207,30 @@
 		margin-top: 0.25rem;
 	}
 	
+	/* Wrapper para campo de contraseña con ícono */
+	.password-wrapper {
+		position: relative;
+		display: flex;
+		align-items: center;
+	}
+	
+	.password-wrapper .form-control {
+		padding-right: 45px;
+	}
+	
+	.toggle-password {
+		position: absolute;
+		right: 15px;
+		cursor: pointer;
+		color: #666;
+		font-size: 1.2rem;
+		transition: color 0.3s ease;
+	}
+	
+	.toggle-password:hover {
+		color: var(--sena-verde);
+	}
+	
 	@media (max-width: 768px) {
 		.form-row {
 			grid-template-columns: 1fr;
@@ -350,7 +374,10 @@
 			
 			<div class="form-group">
 				<label for="id_contrasena_actual">Contraseña Actual</label>
-				{{ form_contrasena.contrasena_actual }}
+				<div class="password-wrapper">
+					{{ form_contrasena.contrasena_actual }}
+					<i class="fas fa-eye toggle-password" id="togglePasswordActual"></i>
+				</div>
 				{% if form_contrasena.contrasena_actual.errors %}
 					<ul class="errorlist">
 						{% for error in form_contrasena.contrasena_actual.errors %}
@@ -363,7 +390,10 @@
 			<div class="form-row">
 				<div class="form-group">
 					<label for="id_nueva_contrasena">Nueva Contraseña</label>
-					{{ form_contrasena.nueva_contrasena }}
+					<div class="password-wrapper">
+						{{ form_contrasena.nueva_contrasena }}
+						<i class="fas fa-eye toggle-password" id="togglePasswordNueva"></i>
+					</div>
 					<div id="password-requirements-perfil" style="display: none; margin-top: 10px; padding: 12px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #6c757d;">
 						<div style="font-weight: 600; margin-bottom: 8px; color: #495057;">
 							<i class="fas fa-shield-alt"></i> Requisitos de seguridad:
@@ -387,7 +417,10 @@
 				
 				<div class="form-group">
 					<label for="id_confirmar_contrasena">Confirmar Nueva Contraseña</label>
-					{{ form_contrasena.confirmar_contrasena }}
+					<div class="password-wrapper">
+						{{ form_contrasena.confirmar_contrasena }}
+						<i class="fas fa-eye toggle-password" id="togglePasswordConfirmar"></i>
+					</div>
 					{% if form_contrasena.confirmar_contrasena.errors %}
 						<ul class="errorlist">
 							{% for error in form_contrasena.confirmar_contrasena.errors %}
@@ -447,6 +480,51 @@ document.addEventListener('DOMContentLoaded', function() {
 			
 			// Validar carácter especial
 			validateRequirement('req-special-perfil', /[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\;'`~]/.test(password));
+		});
+	}
+	
+	// Toggle mostrar/ocultar contraseña - Contraseña Actual
+	const togglePasswordActual = document.getElementById('togglePasswordActual');
+	const passwordActualInput = document.querySelector('input[name="contrasena_actual"]');
+	
+	if (togglePasswordActual && passwordActualInput) {
+		togglePasswordActual.addEventListener('click', function() {
+			const type = passwordActualInput.getAttribute('type') === 'password' ? 'text' : 'password';
+			passwordActualInput.setAttribute('type', type);
+			
+			// Cambiar icono
+			this.classList.toggle('fa-eye');
+			this.classList.toggle('fa-eye-slash');
+		});
+	}
+	
+	// Toggle mostrar/ocultar contraseña - Nueva Contraseña
+	const togglePasswordNueva = document.getElementById('togglePasswordNueva');
+	const passwordNuevaInput = document.querySelector('input[name="nueva_contrasena"]');
+	
+	if (togglePasswordNueva && passwordNuevaInput) {
+		togglePasswordNueva.addEventListener('click', function() {
+			const type = passwordNuevaInput.getAttribute('type') === 'password' ? 'text' : 'password';
+			passwordNuevaInput.setAttribute('type', type);
+			
+			// Cambiar icono
+			this.classList.toggle('fa-eye');
+			this.classList.toggle('fa-eye-slash');
+		});
+	}
+	
+	// Toggle mostrar/ocultar contraseña - Confirmar Contraseña
+	const togglePasswordConfirmar = document.getElementById('togglePasswordConfirmar');
+	const passwordConfirmarInput = document.querySelector('input[name="confirmar_contrasena"]');
+	
+	if (togglePasswordConfirmar && passwordConfirmarInput) {
+		togglePasswordConfirmar.addEventListener('click', function() {
+			const type = passwordConfirmarInput.getAttribute('type') === 'password' ? 'text' : 'password';
+			passwordConfirmarInput.setAttribute('type', type);
+			
+			// Cambiar icono
+			this.classList.toggle('fa-eye');
+			this.classList.toggle('fa-eye-slash');
 		});
 	}
 	
