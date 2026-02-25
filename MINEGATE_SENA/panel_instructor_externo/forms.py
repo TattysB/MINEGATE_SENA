@@ -18,6 +18,9 @@ class VisitaExternaInstructorForm(forms.ModelForm):
             'correo_responsable',
             'telefono_responsable',
             'cantidad_visitantes',
+            'fecha_visita',
+            'hora_inicio',
+            'hora_fin',
             'observacion',
         ]
         widgets = {
@@ -48,6 +51,15 @@ class VisitaExternaInstructorForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'Cantidad de visitantes',
                 'min': '1',
+            }),
+            'fecha_visita': forms.HiddenInput(attrs={
+                'id': 'id_fecha_visita',
+            }),
+            'hora_inicio': forms.HiddenInput(attrs={
+                'id': 'id_hora_inicio',
+            }),
+            'hora_fin': forms.HiddenInput(attrs={
+                'id': 'id_hora_fin',
             }),
             'observacion': forms.Textarea(attrs={
                 'class': 'form-control',

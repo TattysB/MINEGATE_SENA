@@ -19,7 +19,7 @@
       const main = document.getElementById('mainContent');
       if(main){
         fetchMonth(y,m).then(html => {
-          main.innerHTML = '<div class="calendar-page">' + html + '</div>';
+          main.innerHTML = html;
           // re-inicializar calendar en el nuevo contenido
           const page = main.querySelector('.calendar-page');
           const newContainer = main.querySelector('.calendar-card');
@@ -55,47 +55,319 @@
     var root = container || document;
     var form = root.querySelector('#availabilityForm');
     if(!form) return;
-    var timesText = root.querySelector('#timesText');
-    var startDate = root.querySelector('#startDate');
-    var endDate = root.querySelector('#endDate');
+    var startTime = root.querySelector('#startTime');
+    var endTime = root.querySelector('#endTime');
+    var addRangeBtn = root.querySelector('#addRangeBtn');
+    var selectedDatesSummary = root.querySelector('#selectedDatesSummary');
+    var rangesList = root.querySelector('#rangesList');
+    var dayEditor = root.querySelector('#dayEditor');
+    var dayEditorTitle = root.querySelector('#dayEditorTitle');
+    var dayEditorHint = root.querySelector('#dayEditorHint');
+    var daySlotsList = root.querySelector('#daySlotsList');
+    var replaceDayBtn = root.querySelector('#replaceDayBtn');
+    var clearDayBtn = root.querySelector('#clearDayBtn');
     var saveBtn = root.querySelector('#saveAvailBtn');
-    if(!startDate || !endDate || !timesText || !saveBtn){ return; }
+    if(!startTime || !endTime || !addRangeBtn || !selectedDatesSummary || !rangesList || !saveBtn){ return; }
 
-    function canEnable(){ return startDate.value && endDate.value && timesText.value.trim(); }
-    function refresh(){ if(canEnable()) saveBtn.disabled = false; else saveBtn.disabled = true; }
-    if(timesText) timesText.addEventListener('input', refresh);
-    if(startDate) startDate.addEventListener('change', refresh);
-    if(endDate) endDate.addEventListener('change', refresh);
+    var dayFetchBase = form.getAttribute('data-day-fetch-base') || '/calendario/day/';
+    var dayUpdateUrl = form.getAttribute('data-day-update-url') || '/calendario/day/update/';
+    var dayDeleteUrl = form.getAttribute('data-day-delete-url') || '/calendario/day/delete/';
+
+    var selectedDates = new Set();
+    var ranges = [];
+    var currentDay = null;
+    var currentDayRanges = [];
+
+    function getCookie(name){ var v = document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)'); return v ? v.pop() : ''; }
+
+    function setCellAvailability(dateStr, available){
+      var td = root.querySelector('table.calendar-table td[data-date="' + dateStr + '"]');
+      if(!td) return;
+      if(td.classList.contains('other-month') || td.classList.contains('disabled')) return;
+      if(available){
+        td.classList.remove('no-available');
+        td.classList.add('available');
+      } else {
+        td.classList.remove('available');
+        td.classList.add('no-available');
+      }
+    }
+
+    function sortDates(list){
+      return list.slice().sort(function(a,b){ return a.localeCompare(b); });
+    }
+
+    function renderSelectedDates(){
+      var items = sortDates(Array.from(selectedDates));
+      if(!items.length){
+        selectedDatesSummary.textContent = 'Selecciona uno o varios días del calendario (lunes a sábado).';
+        return;
+      }
+      selectedDatesSummary.innerHTML = '<strong>Días seleccionados:</strong> ' + items.join(', ');
+    }
+
+    function renderRanges(){
+      if(!ranges.length){
+        rangesList.textContent = 'Agrega al menos un horario de inicio y fin.';
+        return;
+      }
+      rangesList.innerHTML = '<strong>Horarios:</strong> ' + ranges.map(function(r, idx){
+        return '<span class="range-chip">' + r + ' <button type="button" data-remove-range="' + idx + '">×</button></span>';
+      }).join(' ');
+      rangesList.querySelectorAll('button[data-remove-range]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var index = parseInt(this.getAttribute('data-remove-range'), 10);
+          if(index >= 0){
+            ranges.splice(index, 1);
+            renderRanges();
+            refresh();
+          }
+        });
+      });
+    }
+
+    function renderDayEditorDisabled(text){
+      if(!dayEditor) return;
+      dayEditor.classList.add('is-disabled');
+      if(dayEditorTitle) dayEditorTitle.textContent = 'Edición del día';
+      if(dayEditorHint) dayEditorHint.textContent = text || 'Selecciona un único día para ver, editar o eliminar su disponibilidad.';
+      if(daySlotsList) daySlotsList.innerHTML = '';
+    }
+
+    function renderDaySlots(){
+      if(!dayEditor || !daySlotsList || !dayEditorHint || !dayEditorTitle) return;
+      if(!currentDay){
+        renderDayEditorDisabled();
+        return;
+      }
+
+      dayEditor.classList.remove('is-disabled');
+      dayEditorTitle.textContent = 'Edición del día ' + currentDay;
+
+      if(!currentDayRanges.length){
+        dayEditorHint.textContent = 'Este día no tiene horarios guardados. Agrega rangos y usa “Reemplazar día con horarios agregados”.';
+        daySlotsList.innerHTML = '<span class="empty-day">Sin horarios</span>';
+        setCellAvailability(currentDay, false);
+        return;
+      }
+
+      dayEditorHint.textContent = 'Puedes eliminar un rango individual (×), eliminar todo el día o reemplazar con nuevos rangos.';
+      daySlotsList.innerHTML = currentDayRanges.map(function(r){
+        return '<span class="range-chip day-time-chip">' + r.label + ' <button type="button" data-remove-range-day="' + r.label + '">×</button></span>';
+      }).join(' ');
+
+      daySlotsList.querySelectorAll('button[data-remove-range-day]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          removeSingleRange(this.getAttribute('data-remove-range-day'));
+        });
+      });
+
+      setCellAvailability(currentDay, true);
+    }
+
+    function loadDayAvailability(dateStr){
+      if(!dateStr || !dayEditor) return;
+      dayEditor.classList.remove('is-disabled');
+      if(dayEditorTitle) dayEditorTitle.textContent = 'Edición del día ' + dateStr;
+      if(dayEditorHint) dayEditorHint.textContent = 'Cargando horarios...';
+      if(daySlotsList) daySlotsList.innerHTML = '';
+
+      fetch(dayFetchBase + dateStr + '/', { headers: { 'X-Requested-With':'XMLHttpRequest', 'Accept':'application/json' } })
+        .then(function(res){ return res.json(); })
+        .then(function(json){
+          if(!json || !json.ok){
+            throw new Error('No fue posible cargar horarios del día');
+          }
+          currentDay = dateStr;
+          currentDayRanges = (json.ranges || []).slice();
+          renderDaySlots();
+        })
+        .catch(function(err){
+          console.error(err);
+          if(dayEditorHint) dayEditorHint.textContent = 'Error al cargar horarios del día.';
+        });
+    }
+
+    function refreshDayEditorForSelection(){
+      if(selectedDates.size !== 1){
+        currentDay = null;
+        currentDayRanges = [];
+        renderDayEditorDisabled('Selecciona un único día para ver, editar o eliminar su disponibilidad.');
+        return;
+      }
+      var dateStr = Array.from(selectedDates)[0];
+      loadDayAvailability(dateStr);
+    }
+
+    function removeSingleRange(rangeLabel){
+      if(!currentDay || !rangeLabel) return;
+      var data = new FormData();
+      data.append('date', currentDay);
+      data.append('range', rangeLabel);
+      fetch(dayDeleteUrl, {
+        method: 'POST',
+        headers: { 'X-Requested-With':'XMLHttpRequest', 'X-CSRFToken': getCookie('csrftoken'), 'Accept':'application/json' },
+        body: data
+      })
+      .then(function(res){ return res.json(); })
+      .then(function(json){
+        if(!json || !json.ok){ throw new Error('No se pudo eliminar rango'); }
+        currentDayRanges = (json.ranges || []).slice();
+        renderDaySlots();
+      })
+      .catch(function(err){ console.error(err); alert('No se pudo eliminar el rango.'); });
+    }
+
+    function canEnable(){ return selectedDates.size > 0 && ranges.length > 0; }
+    function refresh(){ saveBtn.disabled = !canEnable(); }
+
+    var calendarTable = root.querySelector('table.calendar-table');
+    if(calendarTable){
+      calendarTable.addEventListener('click', function(ev){
+        var td = ev.target.closest('td[data-date]');
+        if(!td || !calendarTable.contains(td)) return;
+        if(td.classList.contains('other-month') || td.classList.contains('disabled')) return;
+        var d = td.getAttribute('data-date');
+        if(!d) return;
+        if(selectedDates.has(d)){
+          selectedDates.delete(d);
+          td.classList.remove('selected-day');
+        } else {
+          selectedDates.add(d);
+          td.classList.add('selected-day');
+        }
+        renderSelectedDates();
+        refreshDayEditorForSelection();
+        refresh();
+      });
+    }
+
+    addRangeBtn.addEventListener('click', function(){
+      var s = (startTime.value || '').trim();
+      var e = (endTime.value || '').trim();
+      if(!s || !e){
+        alert('Selecciona hora de inicio y hora fin.');
+        return;
+      }
+      if(s >= e){
+        alert('La hora fin debe ser mayor que la hora inicio.');
+        return;
+      }
+      var key = s + '-' + e;
+      if(ranges.indexOf(key) === -1){
+        ranges.push(key);
+      }
+      renderRanges();
+      refresh();
+    });
+
+    if(replaceDayBtn){
+      replaceDayBtn.addEventListener('click', function(){
+        if(selectedDates.size !== 1){
+          alert('Selecciona un único día para reemplazar su disponibilidad.');
+          return;
+        }
+        if(!ranges.length){
+          alert('Agrega al menos un rango antes de reemplazar el día.');
+          return;
+        }
+        var day = Array.from(selectedDates)[0];
+        var data = new FormData();
+        data.append('date', day);
+        ranges.forEach(function(r){ data.append('ranges', r); });
+        fetch(dayUpdateUrl, {
+          method: 'POST',
+          headers: { 'X-Requested-With':'XMLHttpRequest', 'X-CSRFToken': getCookie('csrftoken'), 'Accept':'application/json' },
+          body: data
+        })
+        .then(function(res){ return res.json(); })
+        .then(function(json){
+          if(!json || !json.ok){ throw new Error('No se pudo reemplazar disponibilidad'); }
+          currentDay = day;
+          currentDayRanges = (json.ranges || []).slice();
+          setCellAvailability(day, currentDayRanges.length > 0);
+          ranges = [];
+          renderRanges();
+          renderDaySlots();
+          refresh();
+        })
+        .catch(function(err){ console.error(err); alert('Error al reemplazar disponibilidad del día.'); });
+      });
+    }
+
+    if(clearDayBtn){
+      clearDayBtn.addEventListener('click', function(){
+        if(selectedDates.size !== 1){
+          alert('Selecciona un único día para quitar su disponibilidad.');
+          return;
+        }
+        var day = Array.from(selectedDates)[0];
+        var data = new FormData();
+        data.append('date', day);
+        fetch(dayDeleteUrl, {
+          method: 'POST',
+          headers: { 'X-Requested-With':'XMLHttpRequest', 'X-CSRFToken': getCookie('csrftoken'), 'Accept':'application/json' },
+          body: data
+        })
+        .then(function(res){ return res.json(); })
+        .then(function(json){
+          if(!json || !json.ok){ throw new Error('No se pudo eliminar disponibilidad del día'); }
+          currentDay = day;
+          currentDayRanges = [];
+          setCellAvailability(day, false);
+          renderDaySlots();
+        })
+        .catch(function(err){ console.error(err); alert('Error al quitar la disponibilidad del día.'); });
+      });
+    }
+
+    if(startTime) startTime.addEventListener('change', refresh);
+    if(endTime) endTime.addEventListener('change', refresh);
 
     form.addEventListener('submit', function(e){
       e.preventDefault();
-      var val = timesText.value.trim();
-      if(!val){ alert('Ingrese al menos un horario en formato HH:MM separado por comas.'); return false; }
-      var parts = val.split(',').map(function(s){return s.trim();}).filter(Boolean);
-      var data = new FormData(); data.append('start_date', startDate.value); data.append('end_date', endDate.value);
-      parts.forEach(function(p){ data.append('times', p); });
-      function getCookie(name){ var v = document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)'); return v ? v.pop() : ''; }
+      if(!selectedDates.size){ alert('Selecciona al menos un día del calendario.'); return false; }
+      if(!ranges.length){ alert('Agrega al menos un horario con inicio y fin.'); return false; }
+
+      var data = new FormData();
+      Array.from(selectedDates).forEach(function(d){ data.append('dates', d); });
+      ranges.forEach(function(r){ data.append('ranges', r); });
       fetch(form.action, { method:'POST', headers:{ 'X-Requested-With':'XMLHttpRequest', 'X-CSRFToken':getCookie('csrftoken'), 'Accept':'application/json' }, body:data })
       .then(function(res){ return res.json(); })
       .then(function(json){
         if(json.available_dates){
-          var avail = new Set(json.available_dates || []);
+          var avail = new Set();
+          root.querySelectorAll('table.calendar-table td[data-date].available').forEach(function(td){
+            var d0 = td.getAttribute('data-date');
+            if(d0){ avail.add(d0); }
+          });
+          (json.available_dates || []).forEach(function(d){ avail.add(d); });
+
           // Para cada celda visible del calendario: marcar disponible o deshabilitar
-          document.querySelectorAll('table.calendar-table td[data-date]').forEach(function(td){
+          root.querySelectorAll('table.calendar-table td[data-date]').forEach(function(td){
             if(td.classList.contains('other-month') || td.classList.contains('disabled')) return;
             var d = td.getAttribute('data-date');
             if(avail.has(d)){
               td.classList.remove('no-available');
               td.classList.add('available');
-              td.style.pointerEvents = 'auto';
             } else {
               td.classList.remove('available');
               td.classList.add('no-available');
-              td.style.pointerEvents = 'none';
             }
+            td.classList.remove('selected-day');
           });
+
+          selectedDates.clear();
+          ranges = [];
+          renderSelectedDates();
+          renderRanges();
+          renderDayEditorDisabled();
+          root.querySelectorAll('table.calendar-table td.selected-day').forEach(function(td){ td.classList.remove('selected-day'); });
+          if(startTime) startTime.value = '';
+          if(endTime) endTime.value = '';
           saveBtn.textContent = 'Guardado';
           setTimeout(function(){ saveBtn.textContent = 'Guardar Disponibilidades'; }, 1600);
+          refresh();
         } else {
           alert('Disponibilidades guardadas.');
         }
@@ -104,6 +376,9 @@
     });
 
     // initial state
+    renderSelectedDates();
+    renderRanges();
+    renderDayEditorDisabled();
     refresh();
   }
 
@@ -112,8 +387,9 @@
   // Auto-init en carga normal de página
   document.addEventListener('DOMContentLoaded', function(){
     const container = document.querySelector('.calendar-card');
+    const page = document.querySelector('.calendar-page');
     if(container) initCalendar(container);
     // Inicializar controles de disponibilidad en carga normal
-    if(container && window.initAvailabilityControls){ window.initAvailabilityControls(container); }
+    if(page && window.initAvailabilityControls){ window.initAvailabilityControls(page); }
   });
 })();
