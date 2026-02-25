@@ -43,6 +43,11 @@ function cargarContenido(section) {
     const seccionVisitas = document.getElementById('seccion-gestion-visitas');
     if (seccionVisitas) {
       seccionVisitas.style.display = 'block';
+      // Ocultar el calendario de nueva visita si estaba abierto
+      const calendarioNuevaVisita = document.getElementById('contenedorCalendarioNuevaVisita');
+      if (calendarioNuevaVisita) {
+        calendarioNuevaVisita.style.display = 'none';
+      }
       // Cargar visitas al mostrar la sección
       if (typeof cargarVisitas === 'function') {
         cargarVisitas();
