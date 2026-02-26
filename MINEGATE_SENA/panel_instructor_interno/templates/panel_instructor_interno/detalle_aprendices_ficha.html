@@ -1,0 +1,166 @@
+{% extends "master.html" %}
+{% load static %}
+
+{% block title %}Aprendices - Ficha {{ ficha.numero }} - MINEGATE{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2 class="mb-1">
+                <i class="bi bi-people-fill"></i> Aprendices de la Ficha {{ ficha.numero }}
+            </h2>
+            <p class="text-muted mb-3">
+                {{ ficha.programa.nombre }} | Jornada: {{ ficha.get_jornada_display }}
+            </p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a 
+                href="{% url 'panel_instructor_interno:crear_aprendiz' ficha.id %}" 
+                class="btn btn-success"
+            >
+                <i class="bi bi-plus-circle"></i> Agregar Aprendiz
+            </a>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">Total</h5>
+                    <h3 class="card-text">{{ stats.total }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title text-success">Activos</h5>
+                    <h3 class="card-text text-success">{{ stats.activos }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title text-warning">Inactivos</h5>
+                    <h3 class="card-text text-warning">{{ stats.inactivos }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title text-danger">Retirados</h5>
+                    <h3 class="card-text text-danger">{{ stats.retirados }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtro por estado -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <form method="GET" class="input-group">
+                <select name="estado" class="form-select" onchange="this.form.submit()">
+                    <option value="">Todos los estados</option>
+                    <option value="activo" {% if estado_filtro == 'activo' %}selected{% endif %}>Activos</option>
+                    <option value="inactivo" {% if estado_filtro == 'inactivo' %}selected{% endif %}>Inactivos</option>
+                    <option value="retirado" {% if estado_filtro == 'retirado' %}selected{% endif %}>Retirados</option>
+                </select>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de aprendices -->
+    {% if aprendices %}
+    <div class="table-responsive">
+        <table class="table table-hover table-bordered">
+            <thead class="table-primary">
+                <tr>
+                    <th><i class="bi bi-person"></i> Nombre</th>
+                    <th><i class="bi bi-hash"></i> Documento</th>
+                    <th><i class="bi bi-envelope"></i> Correo</th>
+                    <th><i class="bi bi-telephone"></i> Teléfono</th>
+                    <th class="text-center"><i class="bi bi-toggle2-on"></i> Estado</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for aprendiz in aprendices %}
+                <tr>
+                    <td>
+                        <strong>{{ aprendiz.get_nombre_completo }}</strong>
+                        <br>
+                        <small class="text-muted">{{ aprendiz.get_tipo_documento_display }}: {{ aprendiz.numero_documento }}</small>
+                    </td>
+                    <td>{{ aprendiz.numero_documento }}</td>
+                    <td>
+                        <a href="mailto:{{ aprendiz.correo }}">{{ aprendiz.correo }}</a>
+                    </td>
+                    <td>{{ aprendiz.telefono|default:"---" }}</td>
+                    <td class="text-center">
+                        {% if aprendiz.estado == 'activo' %}
+                            <span class="badge bg-success">{{ aprendiz.get_estado_display }}</span>
+                        {% elif aprendiz.estado == 'inactivo' %}
+                            <span class="badge bg-warning">{{ aprendiz.get_estado_display }}</span>
+                        {% else %}
+                            <span class="badge bg-danger">{{ aprendiz.get_estado_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <a 
+                            href="{% url 'panel_instructor_interno:editar_aprendiz' aprendiz.id %}" 
+                            class="btn btn-sm btn-warning"
+                            title="Editar"
+                        >
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a 
+                            href="{% url 'panel_instructor_interno:eliminar_aprendiz' aprendiz.id %}" 
+                            class="btn btn-sm btn-danger"
+                            title="Eliminar"
+                        >
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% else %}
+    <div class="alert alert-info" role="alert">
+        <i class="bi bi-info-circle"></i> 
+        No hay aprendices registrados. <a href="{% url 'panel_instructor_interno:crear_aprendiz' ficha.id %}">Agregar aprendiz</a>
+    </div>
+    {% endif %}
+
+    <!-- Botón regresar -->
+    <div class="mt-4">
+        <a href="{% url 'panel_instructor_interno:listar_fichas_aprendices' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Volver al listado
+        </a>
+    </div>
+</div>
+
+<style>
+    .table thead {
+        font-weight: 600;
+    }
+    
+    .badge {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.6rem;
+    }
+    
+    .btn-sm {
+        padding: 0.35rem 0.45rem;
+        font-size: 0.8rem;
+    }
+</style>
+{% endblock %}

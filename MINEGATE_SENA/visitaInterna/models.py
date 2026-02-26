@@ -113,6 +113,21 @@ class AsistenteVisitaInterna(models.Model):
     # Observaciones del revisor
     observaciones_revision = models.TextField(blank=True, verbose_name="Observaciones de revisión")
     
+    # Campos para QR
+    qr_generado = models.BooleanField(
+        default=False,
+        verbose_name="QR Generado"
+    )
+    fecha_envio_qr = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de Envío del QR"
+    )
+    email_qr_enviado = models.BooleanField(
+        default=False,
+        verbose_name="Email con QR Enviado"
+    )
+    
     class Meta:
         verbose_name = "Asistente de Visita Interna"
         verbose_name_plural = "Asistentes de Visitas Internas"

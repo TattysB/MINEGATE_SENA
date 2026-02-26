@@ -1,0 +1,46 @@
+{% extends "master.html" %}
+{% load static %}
+
+{% block title %}Confirmar Eliminación - MINEGATE{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-danger">
+                <div class="card-body">
+                    <h4 class="card-title text-danger mb-3">
+                        <i class="bi bi-exclamation-triangle"></i> Confirmar Eliminación
+                    </h4>
+
+                    <div class="alert alert-warning" role="alert">
+                        <p class="mb-0">
+                            ¿Está seguro de que desea eliminar el aprendiz <strong>{{ aprendiz.get_nombre_completo }}</strong>?
+                        </p>
+                        <p class="mb-0 mt-2 text-muted">
+                            <small>{{ aprendiz.numero_documento }}</small>
+                        </p>
+                    </div>
+
+                    <p class="text-muted mb-4">
+                        Esta acción no se puede deshacer.
+                    </p>
+
+                    <form method="POST">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash"></i> Sí, Eliminar
+                        </button>
+                        <a 
+                            href="{% url 'panel_instructor_interno:detalle_aprendices_ficha' ficha.id %}" 
+                            class="btn btn-outline-secondary"
+                        >
+                            <i class="bi bi-x"></i> Cancelar
+                        </a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,191 @@
+{% extends "master.html" %}
+{% load static %}
+
+{% block title %}
+    {% if aprendiz %}Editar{% else %}Crear{% endif %} Aprendiz - MINEGATE
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    {% if aprendiz %}
+        <h2 class="mb-4"><i class="bi bi-pencil"></i> Editar Aprendiz</h2>
+    {% else %}
+        <h2 class="mb-4"><i class="bi bi-plus-circle"></i> Agregar Nuevo Aprendiz</h2>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-subtitle mb-3 text-muted">
+                        Ficha {{ ficha.numero }} - {{ ficha.programa.nombre }}
+                    </h5>
+
+                    <form method="POST">
+                        {% csrf_token %}
+
+                        <!-- Información personal -->
+                        <h6 class="mt-4 mb-3"><i class="bi bi-person-fill"></i> Información Personal</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="nombre" class="form-label">Nombre *</label>
+                                    <input 
+                                        type="text" 
+                                        class="form-control" 
+                                        id="nombre" 
+                                        name="nombre" 
+                                        value="{% if aprendiz %}{{ aprendiz.nombre }}{% endif %}"
+                                        required
+                                    >
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="apellido" class="form-label">Apellido *</label>
+                                    <input 
+                                        type="text" 
+                                        class="form-control" 
+                                        id="apellido" 
+                                        name="apellido" 
+                                        value="{% if aprendiz %}{{ aprendiz.apellido }}{% endif %}"
+                                        required
+                                    >
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Documento -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="tipo_documento" class="form-label">Tipo de Documento *</label>
+                                    <select 
+                                        class="form-select" 
+                                        id="tipo_documento" 
+                                        name="tipo_documento" 
+                                        required
+                                    >
+                                        {% for value, label in tipos_documento_choices %}
+                                            <option 
+                                                value="{{ value }}" 
+                                                {% if aprendiz and aprendiz.tipo_documento == value %}selected{% endif %}
+                                            >
+                                                {{ label }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="numero_documento" class="form-label">Número de Documento *</label>
+                                    <input 
+                                        type="text" 
+                                        class="form-control" 
+                                        id="numero_documento" 
+                                        name="numero_documento" 
+                                        value="{% if aprendiz %}{{ aprendiz.numero_documento }}{% endif %}"
+                                        required
+                                    >
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contacto -->
+                        <h6 class="mt-4 mb-3"><i class="bi bi-envelope"></i> Información de Contacto</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="correo" class="form-label">Correo Electrónico *</label>
+                                    <input 
+                                        type="email" 
+                                        class="form-control" 
+                                        id="correo" 
+                                        name="correo" 
+                                        value="{% if aprendiz %}{{ aprendiz.correo }}{% endif %}"
+                                        required
+                                    >
+                                    <small class="text-muted">En este correo se enviarán los QR de acceso</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="telefono" class="form-label">Teléfono</label>
+                                    <input 
+                                        type="tel" 
+                                        class="form-control" 
+                                        id="telefono" 
+                                        name="telefono" 
+                                        value="{% if aprendiz %}{{ aprendiz.telefono }}{% endif %}"
+                                    >
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Estado -->
+                        <h6 class="mt-4 mb-3"><i class="bi bi-toggle2-on"></i> Estado</h6>
+                        <div class="mb-3">
+                            <label for="estado" class="form-label">Estado *</label>
+                            <select 
+                                class="form-select" 
+                                id="estado" 
+                                name="estado" 
+                                required
+                            >
+                                {% for value, label in estados_choices %}
+                                    <option 
+                                        value="{{ value }}" 
+                                        {% if aprendiz and aprendiz.estado == value %}selected{% elif not aprendiz and value == 'activo' %}selected{% endif %}
+                                    >
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="mt-5">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> 
+                                {% if aprendiz %}Actualizar{% else %}Crear{% endif %} Aprendiz
+                            </button>
+                            <a 
+                                href="{% url 'panel_instructor_interno:detalle_aprendices_ficha' ficha.id %}" 
+                                class="btn btn-outline-secondary"
+                            >
+                                <i class="bi bi-x"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel informativo -->
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h6 class="card-title"><i class="bi bi-info-circle"></i> Información</h6>
+                    <ul class="small">
+                        <li>El correo es <strong>obligatorio</strong></li>
+                        <li>Se enviará un QR a este correo después de registrar la visita</li>
+                        <li>El número de documento debe ser único en la ficha</li>
+                        <li>Los datos se pueden editar en cualquier momento</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="card-title"><i class="bi bi-bookmark"></i> Ficha Actual</h6>
+                    <p class="mb-0">
+                        <strong>{{ ficha.numero }}</strong><br>
+                        <small class="text-muted">{{ ficha.programa.nombre }}</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -23,4 +23,11 @@ urlpatterns = [
     path('fichas/crear/', views.crear_ficha, name='crear_ficha'),
     path('fichas/<int:pk>/editar/', views.editar_ficha, name='editar_ficha'),
     path('fichas/<int:pk>/eliminar/', views.eliminar_ficha, name='eliminar_ficha'),
+    
+    # Módulo: Gestionar Aprendices por Ficha
+    path('aprendices/', views.listar_fichas_aprendices, name='listar_fichas_aprendices'),
+    path('aprendices/<int:pk>/', views.detalle_aprendices_ficha, name='detalle_aprendices_ficha'),
+    path('aprendices/crear/<int:ficha_id>/', views.crear_aprendiz, name='crear_aprendiz'),
+    path('aprendices/<int:pk>/editar/', views.editar_aprendiz, name='editar_aprendiz'),
+    path('aprendices/<int:pk>/eliminar/', views.eliminar_aprendiz, name='eliminar_aprendiz'),
 ]
