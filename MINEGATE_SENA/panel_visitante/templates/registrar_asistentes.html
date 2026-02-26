@@ -22,7 +22,31 @@
         <p>{% if tipo == 'interna' %}Visita Interna{% else %}Visita Externa{% endif %} #{{ visita.id }}</p>
     </div>
 </div>
+        {% if not puede_agregar %}
+        <div id="modalArchivosFinales" style="display:block;position:fixed;z-index:9999;left:0;top:0;width:100%;height:100%;background-color:rgba(0,0,0,0.5);">
+            <div style="background:#fff;padding:32px 24px;border-radius:12px;max-width:600px;margin:80px auto;box-shadow:0 8px 32px rgba(0,0,0,0.2);position:relative;">
+                <button onclick="document.getElementById('modalArchivosFinales').style.display='none';" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:1.5rem;color:#888;cursor:pointer;">&times;</button>
+                <h2 style="color:#145A32;margin-bottom:18px;"><i class="fas fa-folder-open me-2"></i> Archivos finales</h2>
+                <p style="color:#333;margin-bottom:18px;">Suba los archivos requeridos para finalizar el proceso:</p>
+                <form method="post" enctype="multipart/form-data" id="formArchivosFinales">
+                    {% csrf_token %}
+                    {% for categoria, docs in documentos_por_categoria.items %}
+                        {% if categoria == '📝 ATS' or categoria == '📜 Formato Inducción y Reinducción' or categoria == '🤸🏻‍♂️ Charla de Seguridad y Calestenia' %}
+                            <h4 style="margin-top:18px;color:#228B22;">{{ categoria }}</h4>
+                            {% for doc in docs %}
+                                <div style="margin-bottom:12px;">
+                                    <label style="font-weight:600;color:#333;">{{ doc.titulo }}</label>
+                                    <input type="file" name="archivo_final_{{ doc.id }}" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" style="display:block;margin-top:6px;">
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endfor %}
+                    <button type="submit" style="background:linear-gradient(90deg,#228B22,#2ecc40);color:#fff;font-weight:bold;padding:10px 28px;border:none;border-radius:8px;margin-top:18px;">Subir archivos finales</button>
+                </form>
+            </div>
+        </div>
 
+        {% endif %}
 <div class="container pb-5">
     {% if messages %}
         {% for message in messages %}
@@ -87,6 +111,30 @@
             <h5>Límite de asistentes alcanzado</h5>
             <p class="mb-0">Ya ha registrado el número máximo de asistentes permitidos para esta visita.</p>
         </div>
+        {% if mostrar_archivos_finales %}
+        <div id="modalArchivosFinales" style="display:block;position:fixed;z-index:9999;left:0;top:0;width:100%;height:100%;background-color:rgba(0,0,0,0.5);">
+            <div style="background:#fff;padding:32px 24px;border-radius:12px;max-width:600px;margin:80px auto;box-shadow:0 8px 32px rgba(0,0,0,0.2);position:relative;">
+                <button onclick="document.getElementById('modalArchivosFinales').style.display='none';" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:1.5rem;color:#888;cursor:pointer;">&times;</button>
+                <h2 style="color:#145A32;margin-bottom:18px;"><i class="fas fa-folder-open me-2"></i> Archivos finales</h2>
+                <p style="color:#333;margin-bottom:18px;">Suba los archivos requeridos para finalizar el proceso:</p>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {% for categoria, docs in documentos_por_categoria.items %}
+                        {% if categoria == '📝 ATS' or categoria == '📜 Formato Inducción y Reinducción' or categoria == '🤸🏻‍♂️ Charla de Seguridad y Calestenia' %}
+                            <h4 style="margin-top:18px;color:#228B22;">{{ categoria }}</h4>
+                            {% for doc in docs %}
+                                <div style="margin-bottom:12px;">
+                                    <label style="font-weight:600;color:#333;">{{ doc.titulo }}</label>
+                                    <input type="file" name="archivo_final_{{ doc.id }}" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" style="display:block;margin-top:6px;">
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endfor %}
+                    <button type="submit" style="background:linear-gradient(90deg,#228B22,#2ecc40);color:#fff;font-weight:bold;padding:10px 28px;border:none;border-radius:8px;margin-top:18px;">Subir archivos finales</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
     {% endif %}
 
     <!-- Documentos para descargar -->
@@ -168,19 +216,21 @@
             <div class="form-group">
                 <h5 style="margin-bottom:10px;">Subir Archivos Requeridos <span class="required">*</span></h5>
                 {% for categoria, docs in documentos_por_categoria.items %}
-                    <div style="margin-bottom: 18px;">
-                        <strong>{{ categoria }}</strong>
-                        {% for doc in docs %}
-                            <div class="form-group" style="margin-bottom:16px;">
-                                <label style="font-weight:500; margin-bottom:6px;">
-                                    <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% elif doc.extension == '.jpg' or doc.extension == '.jpeg' or doc.extension == '.png' %}file-image{% else %}file-alt{% endif %}"
-                                       style="font-size: 1.2rem; color: {% if doc.extension == '.pdf' %}#dc2626{% elif doc.extension == '.doc' or doc.extension == '.docx' %}#2563eb{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}#059669{% else %}#667eea{% endif %}; margin-right:8px;"></i>
-                                    {{ doc.titulo }} <span class="required">*</span>
-                                </label>
-                                <input type="file" name="documento_{{ doc.id }}" class="form-control" required {% if not puede_agregar %}disabled{% endif %} style="max-width:100%;">
-                            </div>
-                        {% endfor %}
-                    </div>
+                    {% if categoria == '👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud' %}
+                        <div style="margin-bottom: 18px;">
+                            <strong>{{ categoria }}</strong>
+                            {% for doc in docs %}
+                                <div class="form-group" style="margin-bottom:16px;">
+                                    <label style="font-weight:500; margin-bottom:6px;">
+                                        <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% elif doc.extension == '.jpg' or doc.extension == '.jpeg' or doc.extension == '.png' %}file-image{% else %}file-alt{% endif %}"
+                                           style="font-size: 1.2rem; color: {% if doc.extension == '.pdf' %}#dc2626{% elif doc.extension == '.doc' or doc.extension == '.docx' %}#2563eb{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}#059669{% else %}#667eea{% endif %}; margin-right:8px;"></i>
+                                        {{ doc.titulo }} <span class="required">*</span>
+                                    </label>
+                                    <input type="file" name="documento_{{ doc.id }}" class="form-control" required {% if not puede_agregar %}disabled{% endif %} style="max-width:100%;">
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
                 {% endfor %}
             </div>
             <div class="text-end mt-4">
