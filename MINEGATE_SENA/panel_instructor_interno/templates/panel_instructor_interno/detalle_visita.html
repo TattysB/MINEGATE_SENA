@@ -103,16 +103,6 @@
         </div>
 
         {% if estado != 'rechazada' %}
-        <div class="timeline-step {% if estado not in 'pendiente,enviada_coordinacion' %}done{% endif %}">
-          <div class="step-circle {% if estado == 'enviada_coordinacion' %}active{% elif estado not in 'pendiente,enviada_coordinacion' %}done{% endif %}">
-            <i class="fas fa-paper-plane"></i>
-          </div>
-          <div class="step-info {% if estado == 'enviada_coordinacion' %}active{% elif estado not in 'pendiente,enviada_coordinacion' %}done{% endif %}">
-            <h6>Enviada a coordinación</h6>
-            <small>El equipo administrativo revisa la solicitud</small>
-          </div>
-        </div>
-
         <div class="timeline-step {% if estado in 'documentos_enviados,en_revision_documentos,confirmada' %}done{% endif %}">
           <div class="step-circle {% if estado == 'aprobada_inicial' %}active{% elif estado in 'documentos_enviados,en_revision_documentos,confirmada' %}done{% endif %}">
             <i class="fas fa-check"></i>

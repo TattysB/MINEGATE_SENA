@@ -279,7 +279,7 @@
 			
 			<div class="form-row">
 				<div class="form-group">
-					<label for="id_nombre">Nombre</label>
+					<label for="id_nombre">Nombres</label>
 					{{ form_perfil.nombre }}
 					{% if form_perfil.nombre.errors %}
 						<ul class="errorlist">
@@ -291,7 +291,7 @@
 				</div>
 				
 				<div class="form-group">
-					<label for="id_apellido">Apellido</label>
+					<label for="id_apellido">Apellidos</label>
 					{{ form_perfil.apellido }}
 					{% if form_perfil.apellido.errors %}
 						<ul class="errorlist">
@@ -305,15 +305,11 @@
 			
 			<div class="form-row">
 				<div class="form-group">
-					<label for="id_tipo_documento">Tipo de Documento</label>
-					{{ form_perfil.tipo_documento }}
-					{% if form_perfil.tipo_documento.errors %}
-						<ul class="errorlist">
-							{% for error in form_perfil.tipo_documento.errors %}
-								<li>{{ error }}</li>
-							{% endfor %}
-						</ul>
-					{% endif %}
+					<label>Tipo de Documento</label>
+					<input type="text" class="form-control" value="{{ visitante.get_tipo_documento_display }}" readonly style="background-color: #f3f4f6; cursor: not-allowed;">
+					<small style="color: #6b7280; font-size: 0.8rem; margin-top: 0.25rem; display: block;">
+						<i class="fas fa-lock"></i> El tipo de documento no puede ser modificado
+					</small>
 				</div>
 				
 				<div class="form-group">
@@ -328,7 +324,7 @@
 			<div class="form-row">
 				<div class="form-group">
 					<label for="id_telefono">Teléfono</label>
-					{{ form_perfil.telefono }}
+					<input type="tel" name="telefono" id="id_telefono" class="form-control" maxlength="10" pattern="\d{1,10}" placeholder="Ingrese el número" value="{{ form_perfil.telefono.value|default:'' }}" required>
 					{% if form_perfil.telefono.errors %}
 						<ul class="errorlist">
 							{% for error in form_perfil.telefono.errors %}
@@ -385,6 +381,11 @@
 						{% endfor %}
 					</ul>
 				{% endif %}
+				<div style="text-align: center; margin: 1rem 0 0; padding: 1rem 0;">
+					<a href="{% url 'panel_visitante:restablecer_contraseña' %}" style="color: #00af00; text-decoration: none; font-weight: 600;">
+						<i class="fas fa-key me-1"></i>¿Olvidaste tu contraseña actual?
+					</a>
+				</div>
 			</div>
 			
 			<div class="form-row">

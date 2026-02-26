@@ -65,7 +65,7 @@
 
 					<div class="form-group">
 						<label for="{{ form.nombre.id_for_label }}">
-							<i class="fas fa-user"></i> Nombre
+							<i class="fas fa-user"></i> Nombres
 						</label>
 						{{ form.nombre }}
 						{% if form.nombre.errors %}
@@ -75,7 +75,7 @@
 
 					<div class="form-group">
 						<label for="{{ form.apellido.id_for_label }}">
-							<i class="fas fa-user"></i> Apellido
+							<i class="fas fa-user"></i> Apellidos
 						</label>
 						{{ form.apellido }}
 						{% if form.apellido.errors %}
@@ -107,7 +107,7 @@
 						<label for="{{ form.telefono.id_for_label }}">
 							<i class="fas fa-phone"></i> Telefono
 						</label>
-						{{ form.telefono }}
+						<input type="tel" name="telefono" id="id_telefono" class="form-control" maxlength="10" pattern="\d{1,10}" placeholder="Ingrese el número" required>
 						{% if form.telefono.errors %}
 							<span class="field-error">{{ form.telefono.errors|striptags }}</span>
 						{% endif %}
