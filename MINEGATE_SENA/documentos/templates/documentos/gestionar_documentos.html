@@ -1,11 +1,10 @@
-<div id="seccion-documentos" class="contenido-seccion" style="display: none;">
   {% csrf_token %}
   <div class="docs-contenedor">
     <h2 class="docs-titulo">
       <i class="ri-file-search-line"></i>
       Gestión de Documentos
     </h2>
-
+<div id="seccion-documentos" class="contenido-seccion" style="display: none;">
     <!-- Zona de carga de archivos -->
     <div id="zonaSubida" class="docs-zona-subida"
          ondragover="event.preventDefault(); this.classList.add('drag-over');"
@@ -40,7 +39,7 @@
     </div>
 
     <!-- Filtros y búsqueda -->
-    <div class="docs-filtros">
+    <div class="docs-filtros" style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
       <select id="filtroCategoria" onchange="cargarDocumentos()" class="docs-filtro-select">
         <option value="">📂 Todas las categorías</option>
         <option value="EPP Necesarios">👷🏻‍♂️ EPP Necesarios</option>
@@ -53,12 +52,19 @@
       <input type="text" id="buscarDocumento" placeholder="Buscar por nombre o categoría..."
              onkeyup="cargarDocumentos()"
              class="docs-filtro-input">
-      <button onclick="cargarDocumentos()" class="docs-btn-actualizar">
-        <i class="ri-refresh-line"></i> Actualizar
+      <button onclick="document.getElementById('inputArchivosDocumentos').click();" class="docs-btn-actualizar" style="height: 40px; min-width: 140px; display: flex; align-items: center; justify-content: center; background: linear-gradient(90deg, #2ecc40 0%, #27ae60 100%); color: #fff; font-weight: bold; border: none; box-shadow: 0 2px 8px rgba(46,204,64,0.2);">
+        <i class="fas fa-arrow-up" style="margin-right: 6px;"></i> Subir archivos
+      </button>
+      <button onclick="cargarDocumentos()" class="docs-btn-actualizar" style="height: 40px; min-width: 140px; display: flex; align-items: center; justify-content: center;">
+        <i class="ri-refresh-line" style="margin-right: 6px;"></i> Actualizar
       </button>
       <span id="contadorDocs" class="docs-contador"></span>
     </div>
 
+      
+       
+        <span id="contadorDocs" class="docs-contador"></span>
+      </div>
     <!-- Tabla de documentos -->
     <div class="docs-tabla-contenedor">
       <div class="docs-tabla-scroll">
