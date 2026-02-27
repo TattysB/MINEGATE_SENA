@@ -162,13 +162,14 @@ body.underline-links a {
 }
 
 /* Cursor grande */
-body.big-cursor { 
-    cursor: url('https://cur.cursors-4u.net/others/oth-3/oth208.cur'), auto !important; 
+body.big-cursor,
+body.big-cursor * { 
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 24 24'%3E%3Cpath fill='%23000000' stroke='%23ffffff' stroke-width='1.5' d='M5.5 3.21V20.8l4.86-4.86h6.78L5.5 3.21z'/%3E%3C/svg%3E") 0 0, auto !important; 
 }
 
 body.big-cursor a, 
 body.big-cursor button { 
-    cursor: inherit !important; 
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 24 24'%3E%3Cpath fill='%23000000' stroke='%23ffffff' stroke-width='1.5' d='M5.5 3.21V20.8l4.86-4.86h6.78L5.5 3.21z'/%3E%3C/svg%3E") 0 0, pointer !important; 
 }
 
 /* Espaciado de letras */
