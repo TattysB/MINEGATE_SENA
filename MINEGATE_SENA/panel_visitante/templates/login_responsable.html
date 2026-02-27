@@ -168,7 +168,7 @@
     }
 </style>
 
-<!-- Modal de Éxito -->
+<!-- Modal de Proceso Completado -->
 <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border: none; border-radius: 16px;">
@@ -176,8 +176,28 @@
                 <div style="font-size: 4rem; color: #28a745; margin-bottom: 1.5rem; animation: scaleIn 0.5s ease;">
                     <i class="fas fa-check-circle"></i>
                 </div>
-                <h4 class="modal-title mb-2" id="successLabel" style="font-size: 1.5rem; font-weight: 700; color: #1a202c;">¡Cuenta Creada!</h4>
-                <p id="successMessage" style="color: #718096; font-size: 0.95rem; margin-bottom: 0;">Tu cuenta ha sido creada exitosamente.</p>
+                <h4 class="modal-title mb-2" id="successLabel" style="font-size: 1.5rem; font-weight: 700; color: #1a202c;">¡Proceso Completado!</h4>
+                <p id="successMessage" style="color: #718096; font-size: 0.95rem; margin-bottom: 0;">El proceso se completo correctamente.</p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center pb-4" style="background: transparent;">
+                <button type="button" class="btn" data-bs-dismiss="modal" style="background: #28a745; color: white; padding: 0.6rem 2rem; border-radius: 8px; font-weight: 600; border: none;">
+                    <i class="fas fa-check me-2"></i>Entendido
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Cuenta Creada -->
+<div class="modal fade" id="accountCreatedModal" tabindex="-1" aria-labelledby="accountCreatedLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border: none; border-radius: 16px;">
+            <div class="modal-body text-center py-5" style="padding: 3rem 2rem !important;">
+                <div style="font-size: 4rem; color: #28a745; margin-bottom: 1.5rem; animation: scaleIn 0.5s ease;">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h4 class="modal-title mb-2" id="accountCreatedLabel" style="font-size: 1.5rem; font-weight: 700; color: #1a202c;">¡Cuenta Creada!</h4>
+                <p id="accountCreatedMessage" style="color: #718096; font-size: 0.95rem; margin-bottom: 0;">Tu cuenta ha sido creada exitosamente.</p>
             </div>
             <div class="modal-footer border-0 justify-content-center pb-4" style="background: transparent;">
                 <button type="button" class="btn" data-bs-dismiss="modal" style="background: #28a745; color: white; padding: 0.6rem 2rem; border-radius: 8px; font-weight: 600; border: none;">
@@ -213,17 +233,22 @@
     document.addEventListener('DOMContentLoaded', function() {
         const messages = document.querySelectorAll('.alert');
         messages.forEach(function(alert) {
-            const text = alert.textContent;
+            const text = alert.textContent.trim();
             if (text.includes('Sesión cerrada correctamente')) {
                 alert.style.display = 'none';
                 const modal = new bootstrap.Modal(document.getElementById('sessionClosedModal'));
                 modal.show();
             } else if (alert.classList.contains('alert-success')) {
-                // Ocultar alerta de éxito y mostrar modal
                 alert.style.display = 'none';
-                const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-                document.getElementById('successMessage').textContent = text.trim();
-                successModal.show();
+                if (text.toLowerCase().includes('cuenta creada')) {
+                    const accountCreatedModal = new bootstrap.Modal(document.getElementById('accountCreatedModal'));
+                    document.getElementById('accountCreatedMessage').textContent = text;
+                    accountCreatedModal.show();
+                } else {
+                    const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                    document.getElementById('successMessage').textContent = text;
+                    successModal.show();
+                }
             } else if (alert.classList.contains('alert-danger')) {
                 // Ocultar alerta de error y mostrar modal
                 alert.style.display = 'none';
