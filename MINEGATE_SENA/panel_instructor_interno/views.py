@@ -77,9 +77,9 @@ def reservar_visita_interna(request):
             visita = form.save(commit=False)
             visita.correo_responsable = correo
             visita.documento_responsable = documento
-            visita.estado = 'pendiente'
+            visita.estado = 'enviada_coordinacion'
             visita.save()
-            messages.success(request, '✅ Solicitud de visita interna enviada. Queda pendiente de revisión.')
+            messages.success(request, '✅ Solicitud de visita interna enviada. Queda pendiente de aprobación por coordinación.')
             return redirect('panel_instructor_interno:mis_visitas')
     else:
         form = VisitaInternaInstructorForm(initial={
