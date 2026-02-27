@@ -29,9 +29,35 @@ ESTADOS_APROBADAS = [
 ]
 
 
+def es_coordinador(user):
+    return user.groups.filter(name="coordinador").exists()
+
+
+def es_administrador_panel(user):
+    return user.is_superuser or (user.is_staff and not es_coordinador(user))
+
+
+def tiene_aprobacion_previa_coordinacion(visita, tipo):
+    if tipo == "interna":
+        return HistorialAccionVisitaInterna.objects.filter(
+            visita=visita,
+            tipo_accion="aprobacion",
+            usuario__groups__name="coordinador",
+        ).exists()
+
+    return HistorialAccionVisitaExterna.objects.filter(
+        visita=visita,
+        tipo_accion="aprobacion",
+        usuario__groups__name="coordinador",
+    ).exists()
+
+
 @login_required(login_url="usuarios:login")
 def api_listar_visitas(request):
     """API para listar visitas internas y externas"""
+    if not es_administrador_panel(request.user):
+        return JsonResponse({"success": False, "error": "No autorizado"}, status=403)
+
     tipo = request.GET.get("tipo", "internas")
     estado = request.GET.get("estado", "todos")
     buscar = request.GET.get("buscar", "")
@@ -192,6 +218,9 @@ def api_listar_visitas(request):
 @login_required(login_url="usuarios:login")
 def api_detalle_visita(request, tipo, visita_id):
     """API para obtener detalle de una visita"""
+    if not es_administrador_panel(request.user):
+        return JsonResponse({"success": False, "error": "No autorizado"}, status=403)
+
     if tipo == "interna":
         visita = get_object_or_404(VisitaInterna, pk=visita_id)
         asistentes = []
@@ -366,18 +395,62 @@ def api_accion_visita(request, tipo, visita_id, accion):
             )
 
     if accion == "aprobar":
+        if es_coordinador(request.user):
+            if visita.estado != "enviada_coordinacion":
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "error": "La visita no está pendiente de revisión por coordinación",
+                    }
+                )
+
+            visita.estado = "pendiente"
+            visita.save()
+            registrar_accion(
+                "aprobacion",
+                f"Solicitud aprobada por coordinación ({request.user.username}). Pendiente aprobación administrativa.",
+            )
+            return JsonResponse(
+                {
+                    "success": True,
+                    "message": "✅ Solicitud aprobada por coordinación. Ahora está pendiente de aprobación del administrador.",
+                }
+            )
+
+        if not es_administrador_panel(request.user):
+            return JsonResponse(
+                {"success": False, "error": "No autorizado para aprobar esta visita"},
+                status=403,
+            )
+
+        if visita.estado != "pendiente":
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "La visita debe estar pendiente de aprobación administrativa",
+                }
+            )
+
+        if not tiene_aprobacion_previa_coordinacion(visita, tipo):
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "La visita debe ser aprobada primero por coordinación antes de la aprobación administrativa.",
+                }
+            )
+
         visita.estado = "aprobada_inicial"
         visita.save()
-        
+
         # Crear reserva de horario para bloquear el día/horario
         if tipo == "interna":
             ReservaHorario.crear_reserva_interna(visita)
         else:
             ReservaHorario.crear_reserva_externa(visita)
-        
+
         registrar_accion(
-            "aprobacion_inicial",
-            f"Visita aprobada inicialmente por {request.user.username}",
+            "aprobacion",
+            f"Visita aprobada administrativamente por {request.user.username}",
         )
         return JsonResponse(
             {
@@ -388,6 +461,29 @@ def api_accion_visita(request, tipo, visita_id, accion):
 
     elif accion == "rechazar":
         observaciones = request.POST.get("observaciones", "")
+
+        if es_coordinador(request.user):
+            if visita.estado != "enviada_coordinacion":
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "error": "La visita no está pendiente de revisión por coordinación",
+                    }
+                )
+        elif es_administrador_panel(request.user):
+            if visita.estado != "pendiente":
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "error": "La visita no está pendiente de aprobación administrativa",
+                    }
+                )
+        else:
+            return JsonResponse(
+                {"success": False, "error": "No autorizado para rechazar esta visita"},
+                status=403,
+            )
+
         visita.estado = "rechazada"
         visita.save()
         registrar_accion(
@@ -399,6 +495,12 @@ def api_accion_visita(request, tipo, visita_id, accion):
         return JsonResponse({"success": True, "message": "❌ Visita rechazada"})
 
     elif accion == "iniciar_revision":
+        if not es_administrador_panel(request.user):
+            return JsonResponse(
+                {"success": False, "error": "No autorizado para esta acción"},
+                status=403,
+            )
+
         if visita.estado != "documentos_enviados":
             return JsonResponse(
                 {
@@ -417,6 +519,12 @@ def api_accion_visita(request, tipo, visita_id, accion):
         )
 
     elif accion == "confirmar_visita":
+        if not es_administrador_panel(request.user):
+            return JsonResponse(
+                {"success": False, "error": "No autorizado para esta acción"},
+                status=403,
+            )
+
         if visita.estado not in ["documentos_enviados", "en_revision_documentos"]:
             return JsonResponse(
                 {
@@ -457,6 +565,9 @@ def api_accion_visita(request, tipo, visita_id, accion):
 @login_required(login_url="usuarios:login")
 def api_revisar_documento_asistente(request, tipo, asistente_id, accion):
     """API para revisar documentos de asistentes"""
+    if not es_administrador_panel(request.user):
+        return JsonResponse({"success": False, "error": "No autorizado"}, status=403)
+
     if request.method != "POST":
         return JsonResponse({"success": False, "error": "Método no permitido"})
 
@@ -522,6 +633,9 @@ def api_revisar_documento_asistente(request, tipo, asistente_id, accion):
 @login_required(login_url="usuarios:login")
 def api_visitas_aprobadas(request):
     """API para listar visitas aprobadas (para mostrarVisitasAprobadas en el JS)"""
+    if not es_administrador_panel(request.user):
+        return JsonResponse({"success": False, "error": "No autorizado"}, status=403)
+
     tipo = request.GET.get("tipo", "internas")
     visitas_data = []
 
@@ -576,6 +690,9 @@ def api_visitas_aprobadas(request):
 @login_required(login_url="usuarios:login")
 def api_documentos_revision(request):
     """API que devuelve todos los asistentes con sus documentos, filtrando por tipo y estado_asistente"""
+    if not es_administrador_panel(request.user):
+        return JsonResponse({"success": False, "error": "No autorizado"}, status=403)
+
     tipo = request.GET.get("tipo", "internas")
     estado_asistente = request.GET.get("estado_asistente", "")
 

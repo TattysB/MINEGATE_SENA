@@ -42,14 +42,14 @@ def crear_visita(request):
   if request.method == 'POST':
     form = VisitaExternaForm(request.POST)
     if form.is_valid():
-      # Crear la visita con estado pendiente (revisión admin)
+      # Crear la visita con estado enviada a coordinación (primera revisión)
       visita = form.save(commit=False)
       # Usar los datos de la sesión para correo y documento
       visita.correo_responsable = correo_responsable
       visita.documento_responsable = documento_responsable
-      visita.estado = 'pendiente'  # Pendiente de revisión por administrador
+      visita.estado = 'enviada_coordinacion'  # Primera revisión por coordinador
       visita.save()
-      messages.success(request, '✅ Su solicitud de visita ha sido enviada y está pendiente de revisión por el administrador.')
+      messages.success(request, '✅ Su solicitud de visita ha sido enviada y está pendiente de revisión por coordinación.')
       return redirect('panel_visitante:panel_responsable')
   else:
     form = VisitaExternaForm()

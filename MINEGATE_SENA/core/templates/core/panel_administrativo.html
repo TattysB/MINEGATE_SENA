@@ -54,7 +54,7 @@
             </div>
 
             <div class="user-info">
-              <span class="user-role">Administrador</span>
+              <span class="user-role">{{ panel_role_label|default:"Administrador" }}</span>
               <span class="user-name" id="userName">Admin</span>
             </div>
             <i class="ri-arrow-down-s-line dropdown-icon"></i>
@@ -74,6 +74,15 @@
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
       <ul>
+        {% if solo_coordinador %}
+        <li data-content="gestionvisitas">
+          <a href="{% url 'coordinador:panel' %}" class="sidebar-link"
+            style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;width:100%">
+            <i class="ri-calendar-check-line icon-visit-management"></i>
+            <span>Gestión de Visitas</span>
+          </a>
+        </li>
+        {% else %}
         <li data-content="Panel_principal">
           <i class="ri-dashboard-line icon-dashboard"></i><span>Panel principal</span>
         </li>
@@ -117,6 +126,7 @@
         <li data-content="Reportes">
           <i class="ri-bar-chart-line icon-reports"></i><span>Reportes</span>
         </li>
+        {% endif %}
       </ul>
       <button id="logout" class="logout-button" onclick="abrirModalCerrarSesion(event)">
         <li data-content="cerrar" style="display: flex; align-items: center; width: 100%">
@@ -162,6 +172,7 @@
 
       {% endblock %}
 
+      {% if not solo_coordinador %}
       <!-- Sección Gestión de Visitas -->
       <div id="seccion-gestion-visitas" class="contenido-seccion" style="display: none;">
         <div style="padding: 20px;">
@@ -211,6 +222,7 @@
             <select id="filtroEstadoVisita" onchange="filtrarVisitas()"
               style="padding: 10px 15px; border: 1px solid #d1d5db; border-radius: 8px; background: white;">
               <option value="todos">Todos los estados</option>
+              <option value="enviada_coordinacion">🕒 Pendiente aprobación por coordinación</option>
               <option value="pendiente">⏳ Pendientes</option>
               <option value="aprobadas">✅ Aprobadas</option>
               <option value="aprobada_inicial">✅ Aprobadas (registro habilitado)</option>
@@ -392,6 +404,7 @@
 
       <!-- Sección Gestión de Documentos (include) -->
       {% include 'documentos/gestionar_documentos.html' %}
+      {% endif %}
 
     </main>
   </div>
@@ -505,12 +518,13 @@
       // Get user info from page (you can replace with dynamic data)
       const user = {
         name: "{{ user.username }}" || "Usuario",
-        role: "Administrador", // This can be dynamically set
+        role: "{{ panel_role_label|default:'Administrador' }}",
       };
 
       if (userNameEl) userNameEl.textContent = user.name;
       if (userRoleEl) userRoleEl.textContent = user.role;
 
+      {% if not solo_coordinador %}
       // Verificar documentos pendientes al cargar la página
       function verificarDocsPendientes() {
         fetch('/gestion/api/visitas/?tipo=internas&estado=todos&buscar=')
@@ -537,6 +551,7 @@
       verificarDocsPendientes();
       // Revisar cada 30 segundos
       setInterval(verificarDocsPendientes, 30000);
+      {% endif %}
 
       const hamburgerBtn = document.getElementById("hamburgerBtn");
       const sidebar = document.getElementById("sidebar");
@@ -781,6 +796,7 @@
     })();
   </script>
 
+  {% if not solo_coordinador %}
   <!-- Script para Gestión de Visitas -->
   <script>
     // Variables globales
@@ -1126,6 +1142,7 @@
     // Obtener badge de estado
     function getEstadoBadge(estado) {
       const badges = {
+        'enviada_coordinacion': '<span style="background:#ede9fe;color:#5b21b6;padding:4px 10px;border-radius:20px;font-size:11px;">🕒 Pendiente coordinación</span>',
         'pendiente': '<span style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:20px;font-size:11px;">⏳ Pendiente</span>',
         'aprobada_inicial': '<span style="background:#bbf7d0;color:#166534;padding:4px 10px;border-radius:20px;font-size:11px;">✅ Aprobada Inicial</span>',
         'documentos_enviados': '<span style="background:#dbeafe;color:#1e40af;padding:4px 10px;border-radius:20px;font-size:11px;">📄 Docs Enviados</span>',
@@ -1149,6 +1166,11 @@
     // Obtener botones de acciones
     function getAccionesVisita(v) {
       let acciones = `<button onclick="verDetalleVisita('${v.tipo}', ${v.id})" style="background:#6b7280;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">👁️ Ver</button>`;
+
+      if (v.estado === 'enviada_coordinacion') {
+        acciones += `<span style="display:inline-block;background:#ede9fe;color:#5b21b6;padding:5px 10px;border-radius:5px;margin:2px;font-size:11px;">🕒 Esperando coordinación</span>`;
+        return acciones;
+      }
 
       if (v.estado === 'pendiente') {
         acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'aprobar')" style="background:#10b981;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">✅ Aprobar</button>`;
@@ -2120,6 +2142,7 @@
       }
     }
   </script>
+  {% endif %}
 
   <!-- Modal Personalizado de Alertas/Confirmaciones -->
   <div id="customModal" class="cm-overlay">

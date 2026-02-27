@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     # Paneles de instructores
     'panel_instructor_interno',
     'panel_instructor_externo',
+    'coordinador',
 ]
 
 MIDDLEWARE = [
