@@ -469,7 +469,13 @@
             </div>
 
             <!-- Espacio vacío para alineación -->
-            <div class="campo"></div>
+            <div class="campo">
+                <label for="rol_usuario">Rol del Usuario <span class="requerido">*</span></label>
+                <select name="rol_usuario" id="rol_usuario" required>
+                    <option value="administrador" {% if rol_actual == 'administrador' %}selected{% endif %}>Administrador</option>
+                    <option value="coordinador" {% if rol_actual == 'coordinador' %}selected{% endif %}>Coordinador</option>
+                </select>
+            </div>
 
             <!-- Password -->
             <div class="campo">

@@ -29,10 +29,16 @@ def panel_administrativo(request):
             return redirect("usuarios:login")
 
     # Redirigir instructores a sus paneles correspondientes
+    if request.user.groups.filter(name='coordinador').exists():
+        return redirect('coordinador:panel')
     if request.user.groups.filter(name='instructor_interno').exists():
         return redirect('panel_instructor_interno:panel')
     if request.user.groups.filter(name='instructor_externo').exists():
         return redirect('panel_instructor_externo:panel')
+
+    if not (request.user.is_superuser or request.user.is_staff):
+        messages.error(request, "No tienes permisos para acceder al panel administrativo.")
+        return redirect("core:index")
 
     context = {
         "es_superusuario": request.user.is_superuser,
