@@ -89,7 +89,7 @@ def reservar_visita_interna(request):
             'correo_responsable': correo,
             'telefono_responsable': telefono,
         })
-    fichas = Ficha.objects.x|filter(activa=True).select_related('programa')
+    fichas = Ficha.objects.filter(activa=True).select_related('programa')    
     programas = Programa.objects.filter(activo=True)
     context = {
         'form': form, 'fichas': fichas, 'programas': programas,
