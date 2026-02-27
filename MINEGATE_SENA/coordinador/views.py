@@ -73,7 +73,7 @@ def calendario_coordinador(request, year=None, month=None):
 		"fechas_confirmadas": fechas_confirmadas,
 		"include_assets": request.headers.get("x-requested-with") != "XMLHttpRequest",
 	}
-	return render(request, "coordinador/calendario_readonly.html", context)
+	return render(request, "coordinador/calendario_coordinador.html", context)
 
 
 @login_required(login_url="usuarios:login")

@@ -66,8 +66,8 @@
   async function loadCalendar(year, month) {
     const container = document.getElementById('calendarReadonlyContainer');
     const url = year && month
-      ? `/coordinador/calendario/${year}/${month}/`
-      : '/coordinador/calendario/';
+      ? `/coordinador/calendario_coordinador/${year}/${month}/`
+      : '/coordinador/calendario_coordinador/';
 
     const fetchOptions = year && month
       ? { headers: { 'X-Requested-With': 'XMLHttpRequest' } }

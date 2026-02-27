@@ -6,8 +6,8 @@ app_name = "coordinador"
 
 urlpatterns = [
     path("panel/", views.panel_coordinador, name="panel"),
-    path("calendario/", views.calendario_coordinador, name="calendario"),
-    path("calendario/<int:year>/<int:month>/", views.calendario_coordinador, name="calendario_mes"),
+    path("calendario_coordinador/", views.calendario_coordinador, name="calendario_coordinador"),
+    path("calendario_coordinador/<int:year>/<int:month>/", views.calendario_coordinador, name="calendario_coordinador_mes"),
     path("api/resumen-dia/<str:day>/", views.resumen_dia_coordinador, name="resumen_dia"),
     path("api/solicitudes/", views.api_solicitudes_coordinacion, name="api_solicitudes"),
     path(
