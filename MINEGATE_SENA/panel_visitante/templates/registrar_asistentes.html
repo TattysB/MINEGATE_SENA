@@ -1,11 +1,28 @@
-{% extends "master.html" %}
 {% load static %}
+{% load bootstrap5 %}
 
-{% block title %}Registrar Asistentes - MINEGATE{% endblock %}
-
-{% block content %}
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-<link rel="stylesheet" href="{% static 'registrar_asistentes.css' %}">
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Registrar Asistentes - MINEGATE</title>
+    {% bootstrap_css %}
+    {% bootstrap_javascript %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'registrar_asistentes.css' %}">
+    <style>
+        html, body {
+            height: 100%;
+            font-family: 'Work Sans', sans-serif;
+        }
+    </style>
+</head>
+<body>
 
 <div class="page-header">
     <div class="container">
@@ -334,5 +351,5 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') cerrarModalDoc();
 });
 </script>
-
-{% endblock %}
+</body>
+</html>

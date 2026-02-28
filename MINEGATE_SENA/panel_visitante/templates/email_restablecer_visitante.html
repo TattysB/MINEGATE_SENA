@@ -5,267 +5,216 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+            font-family: Arial, Helvetica, sans-serif;
             line-height: 1.6;
             color: #333;
-            background: #f9fafb;
+            background: #f3f4f6;
+            margin: 0;
+            padding: 24px 12px;
         }
 
         .email-container {
-            max-width: 600px;
+            max-width: 520px;
             margin: 0 auto;
-            background: white;
-            border-radius: 8px;
+            background: #ffffff;
+            border-radius: 18px;
             overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.2);
         }
 
-        .header {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            padding: 30px;
-            color: white;
+        .email-header {
+            background: linear-gradient(135deg, #00af00 0%, #008c00 100%);
+            padding: 28px 24px;
+            color: #ffffff;
             text-align: center;
         }
 
-        .header h1 {
+        .email-header h1 {
             margin: 0;
-            font-size: 28px;
+            font-size: 22px;
             font-weight: 700;
         }
 
-        .header p {
-            margin: 10px 0 0;
+        .email-header p {
+            margin: 8px 0 0;
             opacity: 0.9;
-            font-size: 14px;
+            font-size: 13px;
         }
 
-        .lock-icon {
-            font-size: 48px;
-            margin-bottom: 15px;
+        .icon-circle {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #ffffff;
+            color: #00af00;
+            display: block;
+            text-align: center;
+            line-height: 48px;
+            font-size: 22px;
+            font-weight: 700;
+            margin: 0 auto 12px;
+            font-family: Arial, Helvetica, sans-serif;
         }
 
-        .content {
-            padding: 40px 30px;
+        .email-body {
+            padding: 28px 26px;
         }
 
-        .greeting {
-            font-size: 16px;
-            margin-bottom: 20px;
-            color: #333;
+        .info-box {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 10px;
+            padding: 14px;
+            margin: 16px 0 20px;
+            color: #1e40af;
+            font-size: 13px;
         }
 
-        .message {
-            background: #e8f5e9;
-            border-left: 4px solid #00af00;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 4px;
-            color: #1b5e20;
-            font-size: 14px;
+        .highlight-box {
+            background: #f0fdf4;
+            border-left: 4px solid #10b981;
+            padding: 12px 14px;
+            border-radius: 8px;
+            color: #166534;
+            font-size: 13px;
+            margin: 18px 0;
         }
 
         .button-container {
             text-align: center;
-            margin: 35px 0;
+            margin: 22px 0 10px;
         }
 
         .reset-button {
             background: linear-gradient(135deg, #00af00 0%, #008c00 100%);
-            color: white;
-            padding: 15px 50px;
-            border-radius: 8px;
+            color: #ffffff;
+            padding: 13px 26px;
+            border-radius: 10px;
             text-decoration: none;
-            font-weight: 600;
-            font-size: 16px;
+            font-weight: 700;
+            font-size: 14px;
             display: inline-block;
-            transition: transform 0.3s ease;
         }
 
-        .reset-button:hover {
-            transform: translateY(-2px);
+        .steps {
+            margin: 16px 0;
+            padding: 0;
+            list-style: none;
+            font-size: 13px;
+            color: #374151;
+        }
+
+        .steps li {
+            margin: 6px 0;
+        }
+
+        .warning-box {
+            background: #fef3c7;
+            border: 1px solid #fcd34d;
+            border-radius: 10px;
+            padding: 12px 14px;
+            color: #92400e;
+            font-size: 12px;
+            margin: 18px 0;
         }
 
         .alternative-link {
             background: #f3f4f6;
             border: 1px solid #e5e7eb;
-            border-radius: 6px;
-            padding: 15px;
-            margin-top: 20px;
+            border-radius: 10px;
+            padding: 14px;
             text-align: center;
-        }
-
-        .alternative-link p {
-            margin: 0 0 10px;
-            font-size: 13px;
-            color: #666;
+            font-size: 12px;
+            color: #6b7280;
+            margin: 18px 0;
         }
 
         .alternative-link a {
             color: #00af00;
             text-decoration: none;
             word-break: break-all;
-            font-size: 12px;
             font-family: monospace;
+            font-size: 11px;
         }
 
-        .divider {
-            border: none;
-            border-top: 1px solid #e5e7eb;
-            margin: 30px 0;
-        }
-
-        .instructions {
-            background: #fef3c7;
-            border: 1px solid #fcd34d;
-            border-radius: 6px;
-            padding: 15px;
-            margin: 20px 0;
-        }
-
-        .instructions h3 {
-            margin: 0 0 10px;
-            color: #92400e;
-            font-size: 14px;
-        }
-
-        .instructions ol {
-            margin: 0;
-            padding-left: 20px;
-            color: #78350f;
-            font-size: 13px;
-        }
-
-        .instructions li {
-            margin: 5px 0;
-        }
-
-        .security-note {
+        .danger-box {
             background: #fee2e2;
             border: 1px solid #fecaca;
-            border-radius: 6px;
-            padding: 15px;
-            margin: 20px 0;
+            border-radius: 10px;
+            padding: 12px 14px;
             color: #991b1b;
-            font-size: 13px;
-        }
-
-        .security-note strong {
-            display: block;
-            margin-bottom: 8px;
+            font-size: 12px;
+            margin: 18px 0;
         }
 
         .footer {
             background: #f9fafb;
-            padding: 30px;
+            padding: 18px 20px;
             text-align: center;
             border-top: 1px solid #e5e7eb;
-            font-size: 12px;
+            font-size: 11px;
             color: #6b7280;
-        }
-
-        .footer-logo {
-            font-weight: 700;
-            color: #1a1a2e;
-            margin-bottom: 10px;
-        }
-
-        .footer-link {
-            color: #667eea;
-            text-decoration: none;
-            margin: 0 10px;
-        }
-
-        .footer-divider {
-            margin: 15px 0;
-            opacity: 0.5;
-        }
-
-        .important-info {
-            background: #f0fdf4;
-            border-left: 4px solid #10b981;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 4px;
-            color: #166534;
-            font-size: 13px;
         }
     </style>
 </head>
 <body>
     <div class="email-container">
-        <!-- Header -->
-        <div class="header">
-            <div class="lock-icon">🔐</div>
+        <div class="email-header">
+            <div class="icon-circle">&#10003;</div>
             <h1>Recuperación de Contraseña</h1>
             <p>MINEGATE - Sistema de Gestión de Visitas</p>
         </div>
 
-        <!-- Content -->
-        <div class="content">
-            <p class="greeting">Hola,</p>
+        <div class="email-body">
+            <p style="margin: 0 0 10px;">Hola,</p>
+            <p style="margin: 0 0 12px;">
+                Recibimos una solicitud para restablecer la contraseña de tu cuenta de MINEGATE. Si no fuiste tú quien realizó esta solicitud, puedes ignorar este correo de forma segura.
+            </p>
 
-            <p>Recibimos una solicitud para restablecer la contraseña de tu cuenta de MINEGATE. Si no fuiste tú quien realizó esta solicitud, puedes ignorar este correo de forma segura.</p>
-
-            <div class="message">
-                <strong>✓ Tu solicitud es segura:</strong> Este enlace es único y solo puede ser utilizado una vez para restablecer tu contraseña.
+            <div class="info-box">
+                Tu solicitud es segura: este enlace es único y solo puede ser utilizado una vez.
             </div>
 
-            <!-- Reset Button -->
             <div class="button-container">
-                <a href="{{ reset_url }}" class="reset-button">RESTABLECER CONTRASEÑA</a>
+                <a href="{{ reset_url }}" class="reset-button" style="color: #ffffff;">RESTABLECER CONTRASEÑA</a>
             </div>
 
-            <!-- Instructions -->
-            <div class="instructions">
-                <h3>📋 Pasos a seguir:</h3>
-                <ol>
-                    <li>Haz clic en el botón "RESTABLECER CONTRASEÑA" arriba</li>
-                    <li>Ingresa una contraseña nueva y segura</li>
-                    <li>Confirma tu nueva contraseña</li>
-                    <li>¡Ya puedes iniciar sesión con tus nuevas credenciales!</li>
-                </ol>
+            <div class="warning-box">
+                <strong>Pasos a seguir:</strong>
+                <ul class="steps">
+                    <li>1. Haz clic en el botón "RESTABLECER CONTRASEÑA"</li>
+                    <li>2. Ingresa una contraseña nueva y segura</li>
+                    <li>3. Confirma tu nueva contraseña</li>
+                    <li>4. Ya puedes iniciar sesión con tus nuevas credenciales</li>
+                </ul>
             </div>
 
-            <!-- Alternative Link -->
             <div class="alternative-link">
-                <p><strong>Si el botón no funciona, copia y pega este enlace en tu navegador:</strong></p>
+                <p style="margin: 0 0 8px;"><strong>Si el botón no funciona, copia y pega este enlace:</strong></p>
                 <a href="{{ reset_url }}">{{ reset_url }}</a>
             </div>
 
-            <!-- Important Info -->
-            <div class="important-info">
-                <strong>⏱️ Vigencia:</strong> Este enlace es válido por 24 horas. Después expirará por seguridad.
+            <div class="highlight-box">
+                <strong>Vigencia:</strong> Este enlace es válido por 24 horas. Después expirará por seguridad.
             </div>
 
-            <!-- Security Note -->
-            <div class="security-note">
-                <strong>🔒 Seguridad Importante:</strong>
-                <ul style="margin: 0; padding-left: 15px;">
-                    <li>Nunca compartas este enlace con otros usuarios</li>
-                    <li>Crea una contraseña fuerte (mayúsculas, minúsculas, números, caracteres especiales)</li>
+            <div class="danger-box">
+                <strong>Seguridad importante:</strong>
+                <ul style="margin: 6px 0 0; padding-left: 16px;">
+                    <li>No compartas este enlace con otros usuarios</li>
+                    <li>Usa una contraseña fuerte (mayúsculas, minúsculas, números y caracteres especiales)</li>
                     <li>No respondas a este correo con tu contraseña</li>
                 </ul>
             </div>
 
-            <hr class="divider">
-
-            <p style="font-size: 13px; color: #666;">
-                Si no solicitaste restablecer tu contraseña, por favor contacta al equipo de soporte de MINEGATE de inmediato. Tu cuenta podría haber sido comprometida.
+            <p style="font-size: 12px; color: #6b7280; margin: 12px 0 0;">
+                Si no solicitaste restablecer tu contraseña, por favor contacta al equipo de soporte de MINEGATE de inmediato.
             </p>
         </div>
 
-        <!-- Footer -->
         <div class="footer">
-            <div class="footer-logo">MINEGATE</div>
-            <p style="margin: 10px 0;">Sistema de Gestión de Visitas - SENA</p>
-            <div class="footer-divider">—</div>
-            <p style="margin: 10px 0; font-size: 11px;">
-                Este es un correo automático. Por favor no respondas a este mensaje.
-            </p>
-            <p style="margin: 10px 0; font-size: 11px;">
-                <a href="#" class="footer-link">Política de Privacidad</a> | 
-                <a href="#" class="footer-link">Términos de Servicio</a>
-            </p>
+            MINEGATE - Sistema de Gestión de Visitas - SENA
+            <div style="margin-top: 6px;">Este es un correo automático. No respondas a este mensaje.</div>
         </div>
     </div>
 </body>
