@@ -19,6 +19,5 @@ urlpatterns = [
         "rechazar_usuario/<int:usuario_id>/", views.rechazar_usuario, name="rechazar_usuario"
     ),
     path('protocolos/', views.protocolos, name='protocolos'),
-    path('protocolos/', views.protocolos, name='protocolos'),
     path('visitas/', views.visitas, name='visitas'),
 ]
