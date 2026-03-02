@@ -431,58 +431,50 @@ def password_reset_request_view(request):
             email = form.cleaned_data["email"]
 
             # Buscar usuarios con ese email
-            users = User.objects.filter(email=email)
+            users = User.objects.filter(email__iexact=email)
 
-            if users.exists():
-                for user in users:
-                    # Generar token y uid
-                    token = default_token_generator.make_token(user)
-                    uid = urlsafe_base64_encode(force_bytes(user.pk))
+            for user in users:
+                # Generar token y uid
+                token = default_token_generator.make_token(user)
+                uid = urlsafe_base64_encode(force_bytes(user.pk))
 
-                    # Construir URL de reset
-                    reset_url = request.build_absolute_uri(
-                        reverse(
-                            "usuarios:restablecer_contraseña",
-                            kwargs={"uidb64": uid, "token": token},
-                        )
+                # Construir URL de reset
+                reset_url = request.build_absolute_uri(
+                    reverse(
+                        "usuarios:restablecer_contraseña",
+                        kwargs={"uidb64": uid, "token": token},
                     )
-
-                    # Preparar contexto para el template HTML
-                    email_context = {
-                        "nombre": user.first_name or user.username,
-                        "reset_url": reset_url,
-                        "year": datetime.now().year,
-                    }
-
-                    # Renderizar template HTML
-                    html_content = render_to_string(
-                        "usuarios/email_recuperacion.html", email_context
-                    )
-                    text_content = strip_tags(html_content)
-
-                    # Enviar correo HTML
-                    subject = "🔐 Recuperación de Contraseña - MineGate SENA"
-                    email = EmailMultiAlternatives(
-                        subject=subject,
-                        body=text_content,
-                        from_email=settings.DEFAULT_FROM_EMAIL,
-                        to=[user.email],
-                    )
-                    email.attach_alternative(html_content, "text/html")
-                    email.send()
-
-                messages.success(
-                    request,
-                    "Se ha enviado un correo con instrucciones para restablecer tu contraseña.",
                 )
-                return redirect("usuarios:correo_enviado")
-            else:
-                # Por seguridad, mostrar el mismo mensaje aunque no exista el email
-                messages.success(
-                    request,
-                    "Si el correo existe en nuestro sistema, recibirás instrucciones para restablecer tu contraseña.",
+
+                # Preparar contexto para el template HTML
+                email_context = {
+                    "nombre": user.first_name or user.username,
+                    "reset_url": reset_url,
+                    "year": datetime.now().year,
+                }
+
+                # Renderizar template HTML
+                html_content = render_to_string(
+                    "usuarios/email_recuperacion.html", email_context
                 )
-                return redirect("usuarios:correo_enviado")
+                text_content = strip_tags(html_content)
+
+                # Enviar correo HTML
+                subject = "🔐 Recuperación de Contraseña - MineGate SENA"
+                email = EmailMultiAlternatives(
+                    subject=subject,
+                    body=text_content,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    to=[user.email],
+                )
+                email.attach_alternative(html_content, "text/html")
+                email.send()
+
+            messages.success(
+                request,
+                "Se ha enviado un correo con instrucciones para restablecer tu contraseña.",
+            )
+            return redirect("usuarios:correo_enviado")
     else:
         form = PasswordResetRequestForm()
 
