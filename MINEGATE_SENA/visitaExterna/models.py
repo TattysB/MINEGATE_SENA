@@ -147,24 +147,3 @@ class HistorialAccionVisitaExterna(models.Model):
     
     def __str__(self):
         return f"{self.get_tipo_accion_display()} - {self.visita} - {self.fecha_hora.strftime('%d/%m/%Y %H:%M')}"
-
-
-class RegistroEnvioCoordinacionExterna(models.Model):
-    """Registro de cada envío a coordinación"""
-    visita = models.ForeignKey(VisitaExterna, on_delete=models.CASCADE, related_name='envios_coordinacion', verbose_name="Visita")
-    correo_destino = models.EmailField(verbose_name="Correo destino")
-    usuario_remitente = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name="Remitente")
-    fecha_envio = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de envío")
-    estado_resultado = models.CharField(max_length=20, choices=[
-        ('enviado', 'Enviado exitosamente'),
-        ('fallido', 'Fallo en envío'),
-    ], default='enviado', verbose_name="Estado")
-    ip_address = models.GenericIPAddressField(null=True, blank=True, verbose_name="IP")
-    
-    class Meta:
-        verbose_name = "Registro de Envío a Coordinación"
-        verbose_name_plural = "Registros de Envíos a Coordinación"
-        ordering = ['-fecha_envio']
-    
-    def __str__(self):
-        return f"Envío a {self.correo_destino} - {self.fecha_envio.strftime('%d/%m/%Y %H:%M')}"

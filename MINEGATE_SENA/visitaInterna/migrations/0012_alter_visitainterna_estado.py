@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('visitaInterna', '0011_registroenviocoordinacioninterna'),
+        ('visitaInterna', '0010_visitainterna_fecha_solicitud_and_more'),
     ]
 
     operations = [
