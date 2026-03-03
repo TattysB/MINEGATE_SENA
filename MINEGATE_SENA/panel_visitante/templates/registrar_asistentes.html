@@ -1,11 +1,15 @@
-{% extends "master.html" %}
-{% load static %}
-
-{% block title %}Registrar Asistentes - MINEGATE{% endblock %}
-
-{% block content %}
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-<link rel="stylesheet" href="{% static 'registrar_asistentes.css' %}">
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Asistentes - MINEGATE</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'registrar_asistentes.css' %}">
+</head>
+<body>
 
 <div class="page-header">
     <div class="container">
@@ -241,6 +245,40 @@
         </form>
     </div>
 
+    <!-- Asistentes previos disponibles -->
+    {% if tiene_asistentes_previos %}
+    <div class="form-card" style="border-left: 4px solid #10b981; background: #f0fdf4;">
+        <h4><i class="fas fa-history" style="color: #10b981;"></i> Asistentes de Visitas Anteriores</h4>
+        <p style="color: #666; margin-bottom: 15px;">Puede reutilizar asistentes de visitas anteriores del mismo programa o institución. Haga clic en "Reutilizar" para agregar.</p>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px;">
+            {% for asistente_prev in asistentes_previos %}
+                <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb; display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                        <h6 style="margin: 0 0 8px 0; color: #1f2937; font-weight: 600;">{{ asistente_prev.1 }}</h6>
+                        <p style="margin: 4px 0; font-size: 0.85rem; color: #6b7280;">
+                            <i class="fas fa-id-card me-1"></i>{{ asistente_prev.2 }}: {{ asistente_prev.3 }}
+                        </p>
+                        {% if asistente_prev.4 %}
+                            <p style="margin: 4px 0; font-size: 0.85rem; color: #6b7280;">
+                                <i class="fas fa-envelope me-1"></i>{{ asistente_prev.4 }}
+                            </p>
+                        {% endif %}
+                        {% if asistente_prev.5 %}
+                            <p style="margin: 4px 0; font-size: 0.85rem; color: #6b7280;">
+                                <i class="fas fa-phone me-1"></i>{{ asistente_prev.5 }}
+                            </p>
+                        {% endif %}
+                    </div>
+                    <a href="{% url 'panel_visitante:copiar_asistente_previo' tipo=tipo visita_id=visita.id asistente_previo_id=asistente_prev.0 %}" 
+                       style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; margin-top: 10px; border: none; cursor: pointer; text-align: center; justify-content: center;">
+                        <i class="fas fa-check-circle"></i> Reutilizar
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Lista de asistentes registrados -->
     <div class="asistentes-list">
         <h4><i class="fas fa-users"></i> Asistentes Registrados ({{ asistentes_actuales }})</h4>
@@ -255,10 +293,26 @@
                             {% if asistente.correo %} | <i class="fas fa-envelope me-1"></i>{{ asistente.correo }}{% endif %}
                             {% if asistente.telefono %} | <i class="fas fa-phone me-1"></i>{{ asistente.telefono }}{% endif %}
                         </p>
+                        <div style="margin-top: 8px;">
+                            {% if asistente.documentos_subidos.exists %}
+                                <span style="display: inline-block; background: #d1fae5; color: #065f46; padding: 4px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600;">
+                                    <i class="fas fa-check-circle me-1"></i>Documento de salud cargado
+                                </span>
+                            {% else %}
+                                <span style="display: inline-block; background: #fee2e2; color: #991b1b; padding: 4px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600;">
+                                    <i class="fas fa-exclamation-circle me-1"></i>Pendiente documento de salud
+                                </span>
+                            {% endif %}
+                        </div>
                     </div>
-                    <a href="{% url 'panel_visitante:eliminar_asistente' tipo=tipo asistente_id=asistente.id %}" class="btn-delete" onclick="return confirm('¿Está seguro de eliminar este asistente?')">
-                        <i class="fas fa-trash-alt me-1"></i>Eliminar
-                    </a>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" class="btn-edit" onclick="abrirModalActualizarDoc({{ asistente.id }}, '{{ asistente.nombre_completo }}', '{{ tipo }}')">
+                            <i class="fas fa-edit me-1"></i>Actualizar
+                        </button>
+                        <a href="{% url 'panel_visitante:eliminar_asistente' tipo=tipo asistente_id=asistente.id %}" class="btn-delete" onclick="return confirm('¿Está seguro de eliminar este asistente?')">
+                            <i class="fas fa-trash-alt me-1"></i>Eliminar
+                        </a>
+                    </div>
                 </div>
             {% endfor %}
         {% else %}
@@ -287,52 +341,171 @@
     </div>
 </div>
 
-<!-- Modal Visualizar Documento -->
-<div id="modalVerDoc" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.75); overflow-y:auto;">
-    <div style="background:#fff; margin:2% auto; padding:20px; border-radius:12px; width:92%; max-width:960px; height:90vh; display:flex; flex-direction:column; box-shadow:0 8px 40px rgba(0,0,0,0.4);">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid #e5e7eb;">
-            <h5 style="margin:0; color:#1f2937; font-size:16px;" id="tituloModalDoc"><i class="fas fa-file me-2" style="color:#667eea;"></i></h5>
-            <div style="display:flex; gap:8px; align-items:center;">
-                <a id="enlaceDescarga" href="#" download style="background:#667eea; color:white; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:13px; display:inline-flex; align-items:center; gap:4px; font-weight:600;">
-                    <i class="fas fa-download"></i> Descargar
-                </a>
-                <button onclick="cerrarModalDoc()" style="background:#ef4444; color:white; border:none; font-size:18px; cursor:pointer; width:36px; height:36px; border-radius:6px; display:flex; align-items:center; justify-content:center;">&times;</button>
+<!-- Modal Actualizar Documento Asistente -->
+<div id="modalActualizarDoc" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.75); overflow-y:auto;">
+    <div style="background:#fff; margin:5% auto; padding:32px 24px; border-radius:12px; width:92%; max-width:500px; box-shadow:0 8px 40px rgba(0,0,0,0.4);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:12px; border-bottom:1px solid #e5e7eb;">
+            <h5 style="margin:0; color:#1f2937; font-size:18px;" id="tituloModalDoc">
+                <i class="fas fa-file-upload me-2" style="color:#667eea;"></i>Actualizar Documento de Salud
+            </h5>
+            <button onclick="cerrarModalActualizarDoc()" style="background:none; border:none; font-size:24px; color:#999; cursor:pointer; padding:0; width:32px; height:32px; display:flex; align-items:center; justify-content:center;">&times;</button>
+        </div>
+        <div style="margin-bottom:16px; padding:12px; background:#f0f9ff; border-left:4px solid #3b82f6; border-radius:6px;">
+            <p style="margin:0; color:#333; font-size:14px;">
+                <i class="fas fa-info-circle me-2" style="color:#3b82f6;"></i>
+                <strong>Asistente:</strong> <span id="nombreAsistenteModal" style="color:#1f2937; font-weight:600;"></span>
+            </p>
+        </div>
+        <form method="POST" enctype="multipart/form-data" id="formActualizarDoc">
+            {% csrf_token %}
+            <div style="margin-bottom:18px;">
+                <label style="font-weight:600; color:#333; display:block; margin-bottom:8px;">
+                    <i class="fas fa-file-pdf me-1" style="color:#dc2626;"></i>
+                    Formato Auto Reporte de Condiciones de Salud <span style="color:#dc2626;">*</span>
+                </label>
+                <input type="file" id="inputDocSalud" name="documento_salud_" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required style="padding:10px; border:2px solid #e5e7eb; border-radius:8px; font-size:14px;">
+                <small style="color:#6b7280; display:block; margin-top:6px;">
+                    Formatos aceptados: PDF, JPG, PNG, DOC, DOCX (Máx. 10MB)
+                </small>
             </div>
-        </div>
-        <div id="cuerpoModalDoc" style="flex:1; overflow:auto; border:1px solid #e5e7eb; border-radius:8px; background:#f0f0f0; display:flex; align-items:center; justify-content:center;">
-        </div>
+            <div style="display:flex; gap:10px; margin-top:24px; justify-content:flex-end;">
+                <button type="button" onclick="cerrarModalActualizarDoc()" style="background:#e5e7eb; color:#374151; font-weight:600; padding:10px 24px; border:none; border-radius:8px; cursor:pointer;">
+                    Cancelar
+                </button>
+                <button type="submit" style="background:linear-gradient(90deg,#667eea,#764ba2); color:#fff; font-weight:600; padding:10px 24px; border:none; border-radius:8px; cursor:pointer;">
+                    <i class="fas fa-check me-1"></i>Guardar Documento
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
 <script>
+var tipoVisitaGlobal = '{{ tipo }}';
+var visitaIdGlobal = {{ visita.id }};
+
+function abrirModalActualizarDoc(asistenteId, nombreAsistente, tipo) {
+    document.getElementById('nombreAsistenteModal').textContent = nombreAsistente;
+    document.getElementById('inputDocSalud').name = 'documento_salud_' + asistenteId;
+    const baseUrl = '/visitante/actualizar-documento/';
+    const actionUrl = baseUrl + tipo + '/' + asistenteId + '/';
+    document.getElementById('formActualizarDoc').action = actionUrl;
+    document.getElementById('modalActualizarDoc').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+function cerrarModalActualizarDoc() {
+    document.getElementById('modalActualizarDoc').style.display = 'none';
+    document.getElementById('inputDocSalud').value = '';
+    document.body.style.overflow = '';
+}
+
+document.getElementById('modalActualizarDoc').addEventListener('click', function(e) {
+    if (e.target === this) cerrarModalActualizarDoc();
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && document.getElementById('modalActualizarDoc').style.display === 'block') {
+        cerrarModalActualizarDoc();
+    }
+});
+</script>
+
+<style>
+.btn-edit {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-edit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-edit:active {
+    transform: translateY(0);
+}
+</style>
+
+<script>
 function verDocumento(urlViewer, titulo, extension, urlDescarga) {
-    document.getElementById('tituloModalDoc').innerHTML = '<i class="fas fa-file me-2" style="color:#667eea;"></i>' + titulo;
-    document.getElementById('enlaceDescarga').href = urlDescarga;
     const cuerpo = document.getElementById('cuerpoModalDoc');
     const imgExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    
+    // Modal para ver documento
+    const modalVerDoc = document.createElement('div');
+    modalVerDoc.id = 'modalVerDoc';
+    modalVerDoc.style.cssText = 'display:block; position:fixed; z-index:9998; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.75); overflow-y:auto;';
+    
+    const contenido = document.createElement('div');
+    contenido.style.cssText = 'background:#fff; margin:2% auto; padding:20px; border-radius:12px; width:92%; max-width:960px; height:90vh; display:flex; flex-direction:column; box-shadow:0 8px 40px rgba(0,0,0,0.4);';
+    
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid #e5e7eb;';
+    header.innerHTML = `
+        <h5 style="margin:0; color:#1f2937; font-size:16px;"><i class="fas fa-file me-2" style="color:#667eea;"></i>${titulo}</h5>
+        <div style="display:flex; gap:8px; align-items:center;">
+            <a href="${urlDescarga}" download style="background:#667eea; color:white; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:13px; display:inline-flex; align-items:center; gap:4px; font-weight:600;">
+                <i class="fas fa-download"></i> Descargar
+            </a>
+            <button style="background:#ef4444; color:white; border:none; font-size:18px; cursor:pointer; width:36px; height:36px; border-radius:6px; display:flex; align-items:center; justify-content:center;">&times;</button>
+        </div>
+    `;
+    
+    const cuerpoNuevo = document.createElement('div');
+    cuerpoNuevo.style.cssText = 'flex:1; overflow:auto; border:1px solid #e5e7eb; border-radius:8px; background:#f0f0f0; display:flex; align-items:center; justify-content:center;';
+    
     if (extension === '.pdf' || imgExts.includes(extension)) {
-        cuerpo.innerHTML = '<iframe src="' + urlViewer + '" style="width:100%; height:100%; min-height:600px; border:none;"></iframe>';
+        cuerpoNuevo.innerHTML = '<iframe src="' + urlViewer + '" style="width:100%; height:100%; min-height:600px; border:none;"></iframe>';
     } else {
-        cuerpo.innerHTML = '<div style="text-align:center; padding:50px; color:#6b7280;">'
+        cuerpoNuevo.innerHTML = '<div style="text-align:center; padding:50px; color:#6b7280;">'
             + '<i class="fas fa-file-alt" style="font-size:64px; color:#9ca3af; display:block; margin-bottom:20px;"></i>'
             + '<p style="font-size:16px; margin-bottom:20px;">Vista previa no disponible para este tipo de archivo.</p>'
             + '<a href="' + urlDescarga + '" download style="background:#667eea; color:white; padding:12px 28px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:8px;">'
             + '<i class="fas fa-download"></i> Descargar</a></div>';
     }
-    document.getElementById('modalVerDoc').style.display = 'block';
+    
+    contenido.appendChild(header);
+    contenido.appendChild(cuerpoNuevo);
+    modalVerDoc.appendChild(contenido);
+    document.body.appendChild(modalVerDoc);
+    
+    // Cerrar modal
+    header.querySelector('button').onclick = function() {
+        modalVerDoc.remove();
+        document.body.style.overflow = '';
+    };
+    
+    modalVerDoc.onclick = function(e) {
+        if (e.target === this) {
+            modalVerDoc.remove();
+            document.body.style.overflow = '';
+        }
+    };
+    
+    document.addEventListener('keydown', function handler(e) {
+        if (e.key === 'Escape') {
+            modalVerDoc.remove();
+            document.body.style.overflow = '';
+            document.removeEventListener('keydown', handler);
+        }
+    });
+    
     document.body.style.overflow = 'hidden';
 }
-function cerrarModalDoc() {
-    document.getElementById('modalVerDoc').style.display = 'none';
-    document.getElementById('cuerpoModalDoc').innerHTML = '';
-    document.body.style.overflow = '';
-}
-document.getElementById('modalVerDoc').addEventListener('click', function(e) {
-    if (e.target === this) cerrarModalDoc();
-});
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') cerrarModalDoc();
-});
 </script>
 
-{% endblock %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

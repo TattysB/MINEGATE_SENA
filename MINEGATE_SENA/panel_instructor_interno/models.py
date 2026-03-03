@@ -103,8 +103,7 @@ class Ficha(models.Model):
 class Aprendiz(models.Model):
     """
     Modelo para gestionar aprendices asociados a una ficha.
-    Solo se puede acceder a este listado después de registrar
-    la primera visita en la ficha.
+    Los aprendices se registran directamente en la ficha con sus documentos.
     """
     ficha = models.ForeignKey(
         Ficha,
@@ -149,6 +148,23 @@ class Aprendiz(models.Model):
         max_length=20,
         blank=True,
         verbose_name='Teléfono'
+    )
+    
+    # Documentos requeridos
+    documento_identidad = models.FileField(
+        upload_to='aprendices/documentos/%Y/%m/',
+        blank=True,
+        null=True,
+        verbose_name='Documento de Identidad (PDF/Imagen)',
+        help_text='PDF o imagen del documento de identidad'
+    )
+    
+    documento_adicional = models.FileField(
+        upload_to='aprendices/documentos/%Y/%m/',
+        blank=True,
+        null=True,
+        verbose_name='Documento Adicional (Opcional)',
+        help_text='PDF o imagen de documento adicional'
     )
     
     estado = models.CharField(

@@ -30,4 +30,9 @@ urlpatterns = [
     path('aprendices/crear/<int:ficha_id>/', views.crear_aprendiz, name='crear_aprendiz'),
     path('aprendices/<int:pk>/editar/', views.editar_aprendiz, name='editar_aprendiz'),
     path('aprendices/<int:pk>/eliminar/', views.eliminar_aprendiz, name='eliminar_aprendiz'),
+    
+    # Módulo: Integración con Visitas - Aprendices
+    path('api/ficha/<int:ficha_id>/aprendices/', views.obtener_aprendices_ficha_json, name='api_aprendices_ficha'),
+    path('visita/<int:visita_id>/registrar-aprendices/', views.registrar_aprendices_visita, name='registrar_aprendices_visita'),
+    path('visita/<int:visita_id>/asistente/<int:asistente_id>/eliminar/<str:tipo>/', views.eliminar_asistente_visita, name='eliminar_asistente_visita'),
 ]

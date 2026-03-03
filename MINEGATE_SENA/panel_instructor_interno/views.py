@@ -1,10 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Q
-from visitaInterna.models import VisitaInterna
+from django.http import JsonResponse
+from visitaInterna.models import VisitaInterna, AsistenteVisitaInterna
 from .models import Ficha, Programa, Aprendiz
-from .forms import VisitaInternaInstructorForm, ProgramaForm, FichaForm
-
+from .forms import VisitaInternaInstructorForm, ProgramaForm, FichaForm, AprendizForm
+from documentos.models import Documento
 
 # ==================== AUTENTICACIÓN POR SESIÓN ====================
 
@@ -89,7 +90,7 @@ def reservar_visita_interna(request):
             'correo_responsable': correo,
             'telefono_responsable': telefono,
         })
-    fichas = Ficha.objects.x|filter(activa=True).select_related('programa')
+    fichas = Ficha.objects.filter(activa=True).select_related('programa')    
     programas = Programa.objects.filter(activo=True)
     context = {
         'form': form, 'fichas': fichas, 'programas': programas,
@@ -253,30 +254,26 @@ def eliminar_ficha(request, pk):
 @instructor_interno_required
 def listar_fichas_aprendices(request):
     """
-    Lista todas las fichas que tienen visitas registradas.
-    Solo se muestran fichas con al menos una visita.
+    Lista todas las fichas con sus aprendices registrados.
     """
     correo, _ = get_sesion_instructor(request)
     
-    # Obtener fichas que tienen visitas registradas
-    fichas_con_visitas = Ficha.objects.filter(
-        numero__in=VisitaInterna.objects.values_list('numero_ficha', flat=True)
-    ).select_related('programa').order_by('-numero')
+    # Obtener fichas
+    fichas_all = Ficha.objects.select_related('programa').order_by('-numero')
     
     buscar = request.GET.get('buscar', '')
     if buscar:
-        fichas_con_visitas = fichas_con_visitas.filter(
+        fichas_all = fichas_all.filter(
             Q(numero__icontains=buscar) | Q(programa__nombre__icontains=buscar)
         )
     
-    # Agregar información de conteo de aprendices y visitas
+    # Agregar información de conteo de aprendices
     fichas_info = []
-    for ficha in fichas_con_visitas:
+    for ficha in fichas_all:
         fichas_info.append({
             'ficha': ficha,
             'total_aprendices': ficha.aprendices.count(),
             'aprendices_activos': ficha.aprendices.filter(estado='activo').count(),
-            'total_visitas': VisitaInterna.objects.filter(numero_ficha=ficha.numero).count(),
         })
     
     context = {
@@ -284,7 +281,6 @@ def listar_fichas_aprendices(request):
         'buscar': buscar,
         'total': len(fichas_info),
         'correo': correo,
-        'mensaje': 'Solo se muestran fichas que tienen visitas registradas' if not fichas_con_visitas else None
     }
     
     return render(request, 'panel_instructor_interno/listar_fichas_aprendices.html', context)
@@ -294,15 +290,10 @@ def listar_fichas_aprendices(request):
 def detalle_aprendices_ficha(request, pk):
     """
     Muestra todos los aprendices asociados a una ficha.
-    Solo accesible si la ficha tiene visitas registradas.
+    Permite crear, editar y eliminar aprendices.
     """
     correo, _ = get_sesion_instructor(request)
     ficha = get_object_or_404(Ficha, pk=pk)
-    
-    # Verificar que la ficha tenga visitas
-    if not ficha.tiene_visitas_registradas():
-        messages.warning(request, 'Esta ficha no tiene visitas registradas aún.')
-        return redirect('panel_instructor_interno:listar_fichas_aprendices')
     
     aprendices = ficha.aprendices.all().order_by('apellido', 'nombre')
     estado_filtro = request.GET.get('estado', '')
@@ -337,49 +328,33 @@ def crear_aprendiz(request, ficha_id):
     correo, _ = get_sesion_instructor(request)
     ficha = get_object_or_404(Ficha, pk=ficha_id)
     
-    # Verificar que la ficha tenga visitas
-    if not ficha.tiene_visitas_registradas():
-        messages.warning(request, 'No puedes agregar aprendices a una ficha sin visitas.')
-        return redirect('panel_instructor_interno:listar_fichas_aprendices')
+    # Obtener documentos por categoría
+    docs = Documento.objects.all()
+    documentos_por_categoria = {}
+    for doc in docs:
+        if doc.categoria not in documentos_por_categoria:
+            documentos_por_categoria[doc.categoria] = []
+        documentos_por_categoria[doc.categoria].append(doc)
     
     if request.method == 'POST':
-        try:
-            aprendiz = Aprendiz(
-                ficha=ficha,
-                nombre=request.POST.get('nombre', '').strip(),
-                apellido=request.POST.get('apellido', '').strip(),
-                tipo_documento=request.POST.get('tipo_documento', 'CC'),
-                numero_documento=request.POST.get('numero_documento', '').strip(),
-                correo=request.POST.get('correo', '').strip(),
-                telefono=request.POST.get('telefono', '').strip(),
-                estado=request.POST.get('estado', 'activo'),
-            )
-            
-            # Validación básica
-            if not aprendiz.nombre or not aprendiz.apellido:
-                messages.error(request, '❌ El nombre y apellido son obligatorios.')
-                return redirect('panel_instructor_interno:crear_aprendiz', ficha_id=ficha.id)
-            
-            if not aprendiz.numero_documento:
-                messages.error(request, '❌ El número de documento es obligatorio.')
-                return redirect('panel_instructor_interno:crear_aprendiz', ficha_id=ficha.id)
-            
-            if not aprendiz.correo:
-                messages.error(request, '❌ El correo es obligatorio.')
-                return redirect('panel_instructor_interno:crear_aprendiz', ficha_id=ficha.id)
-            
+        form = AprendizForm(request.POST, request.FILES)
+        if form.is_valid():
+            aprendiz = form.save(commit=False)
+            aprendiz.ficha = ficha
             aprendiz.save()
-            messages.success(request, f'✅ Aprendiz "{aprendiz.get_nombre_completo()}" agregado correctamente.')
+            messages.success(request, f'✅ Aprendiz "{aprendiz.get_nombre_completo()}" registrado correctamente con documentos.')
             return redirect('panel_instructor_interno:detalle_aprendices_ficha', pk=ficha.id)
-        
-        except Exception as e:
-            messages.error(request, f'❌ Error al crear aprendiz: {str(e)}')
+        else:
+            messages.error(request, '❌ Error al validar el formulario. Revisa los campos.')
+    else:
+        form = AprendizForm()
     
     context = {
+        'form': form,
         'ficha': ficha,
         'correo': correo,
-        'tipos_documento_choices': Aprendiz._meta.get_field('tipo_documento').choices,
-        'estados_choices': Aprendiz._meta.get_field('estado').choices,
+        'titulo': 'Registrar Aprendiz',
+        'documentos_por_categoria': documentos_por_categoria,
     }
     
     return render(request, 'panel_instructor_interno/form_aprendiz.html', context)
@@ -388,48 +363,38 @@ def crear_aprendiz(request, ficha_id):
 @instructor_interno_required
 def editar_aprendiz(request, pk):
     """
-    Edita un aprendiz existente.
+    Edita un aprendiz existente y sus documentos.
     """
     correo, _ = get_sesion_instructor(request)
     aprendiz = get_object_or_404(Aprendiz, pk=pk)
     ficha = aprendiz.ficha
     
+    # Obtener documentos por categoría
+    docs = Documento.objects.all()
+    documentos_por_categoria = {}
+    for doc in docs:
+        if doc.categoria not in documentos_por_categoria:
+            documentos_por_categoria[doc.categoria] = []
+        documentos_por_categoria[doc.categoria].append(doc)
+    
     if request.method == 'POST':
-        try:
-            aprendiz.nombre = request.POST.get('nombre', '').strip()
-            aprendiz.apellido = request.POST.get('apellido', '').strip()
-            aprendiz.tipo_documento = request.POST.get('tipo_documento', 'CC')
-            aprendiz.numero_documento = request.POST.get('numero_documento', '').strip()
-            aprendiz.correo = request.POST.get('correo', '').strip()
-            aprendiz.telefono = request.POST.get('telefono', '').strip()
-            aprendiz.estado = request.POST.get('estado', 'activo')
-            
-            # Validación básica
-            if not aprendiz.nombre or not aprendiz.apellido:
-                messages.error(request, '❌ El nombre y apellido son obligatorios.')
-                return redirect('panel_instructor_interno:editar_aprendiz', pk=aprendiz.id)
-            
-            if not aprendiz.numero_documento:
-                messages.error(request, '❌ El número de documento es obligatorio.')
-                return redirect('panel_instructor_interno:editar_aprendiz', pk=aprendiz.id)
-            
-            if not aprendiz.correo:
-                messages.error(request, '❌ El correo es obligatorio.')
-                return redirect('panel_instructor_interno:editar_aprendiz', pk=aprendiz.id)
-            
-            aprendiz.save()
+        form = AprendizForm(request.POST, request.FILES, instance=aprendiz)
+        if form.is_valid():
+            form.save()
             messages.success(request, f'✅ Aprendiz "{aprendiz.get_nombre_completo()}" actualizado.')
             return redirect('panel_instructor_interno:detalle_aprendices_ficha', pk=ficha.id)
-        
-        except Exception as e:
-            messages.error(request, f'❌ Error al actualizar aprendiz: {str(e)}')
+        else:
+            messages.error(request, '❌ Error al validar el formulario.')
+    else:
+        form = AprendizForm(instance=aprendiz)
     
     context = {
+        'form': form,
         'aprendiz': aprendiz,
         'ficha': ficha,
         'correo': correo,
-        'tipos_documento_choices': Aprendiz._meta.get_field('tipo_documento').choices,
-        'estados_choices': Aprendiz._meta.get_field('estado').choices,
+        'titulo': 'Editar Aprendiz',
+        'documentos_por_categoria': documentos_por_categoria,
     }
     
     return render(request, 'panel_instructor_interno/form_aprendiz.html', context)
@@ -458,3 +423,227 @@ def eliminar_aprendiz(request, pk):
     
     return render(request, 'panel_instructor_interno/confirmar_eliminar_aprendiz.html', context)
 
+
+# ==================== MÓDULO: INTEGRACIÓN CON VISITAS - APRENDICES ====================
+
+@instructor_interno_required
+def obtener_aprendices_ficha_json(request, ficha_id):
+    """
+    Retorna lista JSON de aprendices de una ficha.
+    Usado para prellenar datos en formulario de visitas.
+    """
+    try:
+        ficha = get_object_or_404(Ficha, pk=ficha_id)
+        aprendices = ficha.aprendices.filter(estado='activo').values(
+            'id', 'nombre', 'apellido', 'tipo_documento', 'numero_documento', 'correo', 'telefono'
+        )
+        return JsonResponse({
+            'success': True,
+            'aprendices': list(aprendices),
+            'total': aprendices.count(),
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e),
+        }, status=400)
+
+
+@instructor_interno_required
+def registrar_aprendices_visita(request, visita_id):
+    """
+    Permite registrar rápidamente aprendices de una ficha en una visita.
+    Automáticamente trae sus datos y documentos.
+    """
+    correo, _ = get_sesion_instructor(request)
+    visita = get_object_or_404(VisitaInterna, pk=visita_id, correo_responsable__iexact=correo)
+    
+    # Obtener la ficha de la visita
+    try:
+        ficha = Ficha.objects.get(numero=visita.numero_ficha)
+    except Ficha.DoesNotExist:
+        messages.error(request, '❌ No se encontró la ficha asociada a esta visita.')
+        return redirect('panel_instructor_interno:detalle_visita', pk=visita_id)
+    
+    if request.method == 'POST':
+        # Obtener lista de IDs de aprendices seleccionados
+        aprendices_ids = request.POST.getlist('aprendices[]')
+        aprendices_registrados = 0
+        aprendices_duplicados = 0
+        
+        from documentos.models import DocumentoSubidoAsistente, Documento
+        
+        for aprendiz_id in aprendices_ids:
+            try:
+                aprendiz = get_object_or_404(Aprendiz, pk=aprendiz_id, ficha=ficha)
+                
+                # Verificar si ya está registrado en esta visita
+                if AsistenteVisitaInterna.objects.filter(
+                    visita=visita, 
+                    numero_documento=aprendiz.numero_documento
+                ).exists():
+                    aprendices_duplicados += 1
+                    continue
+                
+                # Registrar como asistente con datos automáticos
+                asistente = AsistenteVisitaInterna.objects.create(
+                    visita=visita,
+                    nombre_completo=aprendiz.get_nombre_completo(),
+                    tipo_documento=aprendiz.tipo_documento,
+                    numero_documento=aprendiz.numero_documento,
+                    correo=aprendiz.correo,
+                    telefono=aprendiz.telefono,
+                    estado='pendiente_documentos',
+                )
+                
+                # Cargar documentos del aprendiz automáticamente
+                # Buscar el documento "Formato Auto Reporte Condiciones de Salud"
+                if aprendiz.documento_adicional:
+                    try:
+                        doc_salud = Documento.objects.filter(
+                            categoria="Formato Auto Reporte Condiciones de Salud"
+                        ).first()
+                        if doc_salud:
+                            DocumentoSubidoAsistente.objects.create(
+                                documento_requerido=doc_salud,
+                                asistente_interna=asistente,
+                                archivo=aprendiz.documento_adicional,
+                            )
+                    except Exception as e:
+                        # Silenciar si falla, pero continuar con el registro
+                        pass
+                
+                aprendices_registrados += 1
+            except Exception as e:
+                messages.warning(request, f'⚠️ Error al registrar aprendiz: {str(e)}')
+        
+        if aprendices_registrados > 0:
+            messages.success(
+                request, 
+                f'✅ {aprendices_registrados} aprendiz(ces) registrado(s) en la visita con documentos.'
+            )
+        if aprendices_duplicados > 0:
+            messages.warning(
+                request,
+                f'⚠️ {aprendices_duplicados} aprendiz(ces) ya estaban registrados.'
+            )
+        
+        return redirect('panel_instructor_interno:detalle_visita', pk=visita_id)
+    
+    # GET - Mostrar formulario
+    aprendices = ficha.aprendices.filter(estado='activo').order_by('apellido', 'nombre')
+    
+    # Identificar cuáles ya están registrados
+    ya_registrados = list(AsistenteVisitaInterna.objects.filter(
+        visita=visita
+    ).values_list('numero_documento', flat=True))
+    
+    context = {
+        'visita': visita,
+        'ficha': ficha,
+        'aprendices': aprendices,
+        'ya_registrados': ya_registrados,
+        'total_aprendices': aprendices.count(),
+        'aprendices_registrados': AsistenteVisitaInterna.objects.filter(visita=visita).count(),
+        'correo': correo,
+    }
+    
+    return render(request, 'panel_instructor_interno/registrar_aprendices_visita.html', context)
+
+# ==================== FUNCIÓN DE APOYO (Para evitar repetir código) ====================
+
+def obtener_documentos_por_categoria():
+    docs = Documento.objects.all()
+    resultado = {}
+    for d in docs:
+        # Solo agregar si el documento tiene un archivo físico asociado
+        if d.archivo:
+            cat_nombre = str(d.categoria) if d.categoria else "General"
+            if cat_nombre not in resultado:
+                resultado[cat_nombre] = []
+            resultado[cat_nombre].append(d)
+    return resultado
+
+# ==================== MÓDULO: GESTIONAR APRENDICES (ACTUALIZADO) ====================
+
+@instructor_interno_required
+def crear_aprendiz(request, ficha_id):
+    correo, _ = get_sesion_instructor(request)
+    ficha = get_object_or_404(Ficha, pk=ficha_id)
+    
+    # --- INTEGRACIÓN DE DOCUMENTOS ---
+    docs_cat = obtener_documentos_por_categoria()
+    
+    if request.method == 'POST':
+        form = AprendizForm(request.POST, request.FILES)
+        if form.is_valid():
+            aprendiz = form.save(commit=False)
+            aprendiz.ficha = ficha
+            aprendiz.save()
+            messages.success(request, f'✅ Aprendiz "{aprendiz.get_nombre_completo()}" registrado correctamente.')
+            return redirect('panel_instructor_interno:detalle_aprendices_ficha', pk=ficha.id)
+        else:
+            messages.error(request, '❌ Error al validar el formulario. Revisa los campos.')
+    else:
+        form = AprendizForm()
+    
+    context = {
+        'form': form,
+        'ficha': ficha,
+        'correo': correo,
+        'titulo': 'Registrar Aprendiz',
+        'documentos_por_categoria': docs_cat,  # <-- ESTO ACTIVA LAS SECCIONES EN EL HTML
+    }
+    return render(request, 'panel_instructor_interno/form_aprendiz.html', context)
+
+
+@instructor_interno_required
+def editar_aprendiz(request, pk):
+    correo, _ = get_sesion_instructor(request)
+    aprendiz = get_object_or_404(Aprendiz, pk=pk)
+    ficha = aprendiz.ficha
+    
+    # --- INTEGRACIÓN DE DOCUMENTOS ---
+    docs_cat = obtener_documentos_por_categoria()
+    
+    if request.method == 'POST':
+        form = AprendizForm(request.POST, request.FILES, instance=aprendiz)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'✅ Aprendiz "{aprendiz.get_nombre_completo()}" actualizado.')
+            return redirect('panel_instructor_interno:detalle_aprendices_ficha', pk=ficha.id)
+        else:
+            messages.error(request, '❌ Error al validar el formulario.')
+    else:
+        form = AprendizForm(instance=aprendiz)
+    
+    context = {
+        'form': form,
+        'aprendiz': aprendiz,
+        'ficha': ficha,
+        'correo': correo,
+        'titulo': 'Editar Aprendiz',
+        'documentos_por_categoria': docs_cat, # <-- ESTO ACTIVA LAS SECCIONES EN EL HTML
+    }
+    return render(request, 'panel_instructor_interno/form_aprendiz.html', context)
+
+
+@instructor_interno_required
+def eliminar_asistente_visita(request, visita_id, asistente_id, tipo):
+    """
+    Elimina un asistente desde el detalle de una visita del instructor.
+    Redirige de vuelta a la visita, no a visitante.
+    """
+    correo, _ = get_sesion_instructor(request)
+    visita = get_object_or_404(VisitaInterna, pk=visita_id, correo_responsable__iexact=correo)
+    
+    # Verificar que el asistente pertenece a esta visita
+    if tipo == "interna":
+        asistente = get_object_or_404(AsistenteVisitaInterna, pk=asistente_id, visita=visita)
+        nombre = asistente.nombre_completo
+        asistente.delete()
+    else:
+        return redirect('panel_instructor_interno:detalle_visita', pk=visita_id)
+    
+    messages.success(request, f'🗑️ Asistente "{nombre}" eliminado de la visita.')
+    return redirect('panel_instructor_interno:detalle_visita', pk=visita_id)

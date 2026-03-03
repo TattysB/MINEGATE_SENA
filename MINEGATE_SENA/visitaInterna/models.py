@@ -128,6 +128,24 @@ class AsistenteVisitaInterna(models.Model):
         verbose_name="Email con QR Enviado"
     )
     
+    # Campos para reutilización de asistentes
+    puede_reutilizar = models.BooleanField(
+        default=True,
+        verbose_name="Puede reutilizarse en futuras visitas"
+    )
+    es_reutilizado = models.BooleanField(
+        default=False,
+        verbose_name="Es una copia de un asistente anterior"
+    )
+    visita_original = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="copias",
+        verbose_name="Asistente original (si es reutilizado)"
+    )
+    
     class Meta:
         verbose_name = "Asistente de Visita Interna"
         verbose_name_plural = "Asistentes de Visitas Internas"

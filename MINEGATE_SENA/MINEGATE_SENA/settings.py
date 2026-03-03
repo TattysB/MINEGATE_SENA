@@ -47,7 +47,6 @@ INSTALLED_APPS = [
     'gestion_visitas',
     'panel_visitante',
     'documentos',
-    # Paneles de instructores
     'panel_instructor_interno',
     'panel_instructor_externo',
 ]
