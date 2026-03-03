@@ -1,5 +1,5 @@
 ﻿from django.contrib import admin
-from .models import VisitaInterna, AsistenteVisitaInterna, HistorialAccionVisitaInterna, RegistroEnvioCoordinacionInterna
+from .models import VisitaInterna, AsistenteVisitaInterna, HistorialAccionVisitaInterna
 
 
 @admin.register(VisitaInterna)
@@ -20,9 +20,3 @@ class AsistenteVisitaInternaAdmin(admin.ModelAdmin):
 class HistorialAccionVisitaInternaAdmin(admin.ModelAdmin):
     list_display = ['visita', 'tipo_accion', 'usuario', 'fecha_hora']
     list_filter = ['tipo_accion', 'fecha_hora']
-
-
-@admin.register(RegistroEnvioCoordinacionInterna)
-class RegistroEnvioCoordinacionInternaAdmin(admin.ModelAdmin):
-    list_display = ['visita', 'correo_destino', 'fecha_envio', 'estado_resultado']
-    list_filter = ['estado_resultado', 'fecha_envio']

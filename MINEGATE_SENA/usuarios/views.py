@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate, update_session_auth_hash
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, User
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib import messages
 from django.views.decorators.cache import never_cache
@@ -17,6 +17,18 @@ from .models import PerfilUsuario
 # ==================== VISTAS DE AUTENTICACIÓN ====================
 
 
+def resolver_panel_por_rol(user):
+    if user.groups.filter(name="instructor_interno").exists():
+        return "panel_instructor_interno:panel"
+    if user.groups.filter(name="instructor_externo").exists():
+        return "panel_instructor_externo:panel"
+    if user.groups.filter(name="coordinador").exists():
+        return "coordinador:panel"
+    if user.is_superuser or user.is_staff:
+        return "core:panel_administrativo"
+    return "core:index"
+
+
 @csrf_protect
 @never_cache
 def login_view(request):
@@ -24,9 +36,9 @@ def login_view(request):
     Vista para el inicio de sesión de usuarios
     Verifica que el usuario esté aprobado antes de permitir el acceso
     """
-    # Si el usuario ya está autenticado, redirigir al panel administrativo
+    # Si el usuario ya está autenticado, redirigir según rol
     if request.user.is_authenticated:
-        return redirect("core:panel_administrativo")
+        return redirect(resolver_panel_por_rol(request.user))
 
     if request.method == "POST":
         form = LoginForm(request, data=request.POST)
@@ -65,8 +77,8 @@ def login_view(request):
                         user.get_full_name() or user.username
                     )
 
-                    # Redirigir a la página de bienvenida
-                    next_url = request.GET.get("next", "core:panel_administrativo")
+                    # Redirigir a la página de bienvenida según rol
+                    next_url = request.GET.get("next") or resolver_panel_por_rol(user)
                     request.session["redirect_after_welcome"] = next_url
 
                     messages.success(
@@ -377,14 +389,14 @@ def bienvenida_view(request):
         "welcome_name", request.user.get_full_name() or request.user.username
     )
     redirect_url_name = request.session.get(
-        "redirect_after_welcome", "core:panel_administrativo"
+        "redirect_after_welcome", resolver_panel_por_rol(request.user)
     )
 
     # Convertir el nombre de la URL a una URL absoluta
     try:
         redirect_url = reverse(redirect_url_name)
     except:
-        redirect_url = reverse("core:panel_administrativo")
+        redirect_url = reverse(resolver_panel_por_rol(request.user))
 
     # Limpiar las variables de sesión
     if "welcome_name" in request.session:
@@ -419,58 +431,50 @@ def password_reset_request_view(request):
             email = form.cleaned_data["email"]
 
             # Buscar usuarios con ese email
-            users = User.objects.filter(email=email)
+            users = User.objects.filter(email__iexact=email)
 
-            if users.exists():
-                for user in users:
-                    # Generar token y uid
-                    token = default_token_generator.make_token(user)
-                    uid = urlsafe_base64_encode(force_bytes(user.pk))
+            for user in users:
+                # Generar token y uid
+                token = default_token_generator.make_token(user)
+                uid = urlsafe_base64_encode(force_bytes(user.pk))
 
-                    # Construir URL de reset
-                    reset_url = request.build_absolute_uri(
-                        reverse(
-                            "usuarios:restablecer_contraseña",
-                            kwargs={"uidb64": uid, "token": token},
-                        )
+                # Construir URL de reset
+                reset_url = request.build_absolute_uri(
+                    reverse(
+                        "usuarios:restablecer_contraseña",
+                        kwargs={"uidb64": uid, "token": token},
                     )
-
-                    # Preparar contexto para el template HTML
-                    email_context = {
-                        "nombre": user.first_name or user.username,
-                        "reset_url": reset_url,
-                        "year": datetime.now().year,
-                    }
-
-                    # Renderizar template HTML
-                    html_content = render_to_string(
-                        "usuarios/email_recuperacion.html", email_context
-                    )
-                    text_content = strip_tags(html_content)
-
-                    # Enviar correo HTML
-                    subject = "🔐 Recuperación de Contraseña - MineGate SENA"
-                    email = EmailMultiAlternatives(
-                        subject=subject,
-                        body=text_content,
-                        from_email=settings.DEFAULT_FROM_EMAIL,
-                        to=[user.email],
-                    )
-                    email.attach_alternative(html_content, "text/html")
-                    email.send()
-
-                messages.success(
-                    request,
-                    "Se ha enviado un correo con instrucciones para restablecer tu contraseña.",
                 )
-                return redirect("usuarios:correo_enviado")
-            else:
-                # Por seguridad, mostrar el mismo mensaje aunque no exista el email
-                messages.success(
-                    request,
-                    "Si el correo existe en nuestro sistema, recibirás instrucciones para restablecer tu contraseña.",
+
+                # Preparar contexto para el template HTML
+                email_context = {
+                    "nombre": user.first_name or user.username,
+                    "reset_url": reset_url,
+                    "year": datetime.now().year,
+                }
+
+                # Renderizar template HTML
+                html_content = render_to_string(
+                    "usuarios/email_recuperacion.html", email_context
                 )
-                return redirect("usuarios:correo_enviado")
+                text_content = strip_tags(html_content)
+
+                # Enviar correo HTML
+                subject = "🔐 Recuperación de Contraseña - MineGate SENA"
+                email = EmailMultiAlternatives(
+                    subject=subject,
+                    body=text_content,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    to=[user.email],
+                )
+                email.attach_alternative(html_content, "text/html")
+                email.send()
+
+            messages.success(
+                request,
+                "Se ha enviado un correo con instrucciones para restablecer tu contraseña.",
+            )
+            return redirect("usuarios:correo_enviado")
     else:
         form = PasswordResetRequestForm()
 
@@ -735,10 +739,12 @@ def crear_usuario_permisos_view(request):
         
         # Obtener si el usuario debe estar activo
         usuario_activo = request.POST.get('usuario_activo', 'on') == 'on'
+        rol_usuario = request.POST.get('rol_usuario', 'administrador')
         
         if form.is_valid():
             user = form.save(commit=False)
             user.is_active = usuario_activo
+            user.is_staff = rol_usuario == 'administrador'
             user.save()
             
             # Obtener o crear el perfil
@@ -751,10 +757,16 @@ def crear_usuario_permisos_view(request):
                     documento=form.cleaned_data.get('documento', ''),
                     telefono=form.cleaned_data.get('telefono', '')
                 )
+
+            # Limpiar grupos de rol y asignar el nuevo
+            user.groups.remove(*Group.objects.filter(name__in=['coordinador']))
+            if rol_usuario == 'coordinador':
+                group_coordinador, _ = Group.objects.get_or_create(name='coordinador')
+                user.groups.add(group_coordinador)
             
             messages.success(
                 request,
-                f'✓ Usuario {user.get_full_name() or user.username} creado exitosamente.'
+                f'✓ Usuario {user.get_full_name() or user.username} creado exitosamente como {rol_usuario}.'
             )
             return redirect('usuarios:gestionar_permisos')
         else:
@@ -766,6 +778,7 @@ def crear_usuario_permisos_view(request):
     context = {
         'form': form,
         'titulo': 'Crear Nuevo Usuario',
+        'rol_actual': request.POST.get('rol_usuario', 'administrador') if request.method == 'POST' else 'administrador',
     }
     return render(request, 'usuarios/crear_usuario_permisos.html', context)
 

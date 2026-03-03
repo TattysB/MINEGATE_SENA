@@ -10,25 +10,33 @@ urlpatterns = [
     path("bienvenida/", views.bienvenida_view, name="bienvenida"),
     # Recuperación de contraseña
     path(
-        "recuperar-contraseña/",
+        "recuperar_contrasena/",
         views.password_reset_request_view,
         name="solicitar_recuperacion",
     ),
     path(
-        "recuperar-contraseña/correo-enviado/",
+        "recuperar_contrasena/correo_enviado/",
         views.password_reset_done_view,
         name="correo_enviado",
     ),
     path(
-        "recuperar-contraseña/<uidb64>/<token>/",
+        "recuperar_contrasena/<uidb64>/<token>/",
         views.password_reset_confirm_view,
         name="restablecer_contraseña",
     ),
     path(
-        "recuperar-contraseña/completado/",
+        "recuperar_contrasena/completado/",
         views.password_reset_complete_view,
         name="contraseña_actualizada",
     ),
+    path("recuperar_contraseña/", views.password_reset_request_view),
+    path("recuperar_contraseña/correo_enviado/", views.password_reset_done_view),
+    path("recuperar_contraseña/<uidb64>/<token>/", views.password_reset_confirm_view),
+    path("recuperar_contraseña/completado/", views.password_reset_complete_view),
+    path("recuperar-contraseña/", views.password_reset_request_view),
+    path("recuperar-contraseña/correo-enviado/", views.password_reset_done_view),
+    path("recuperar-contraseña/<uidb64>/<token>/", views.password_reset_confirm_view),
+    path("recuperar-contraseña/completado/", views.password_reset_complete_view),
     # Perfil de usuario
     path("perfil/", views.perfil_view, name="perfil"),
     path(

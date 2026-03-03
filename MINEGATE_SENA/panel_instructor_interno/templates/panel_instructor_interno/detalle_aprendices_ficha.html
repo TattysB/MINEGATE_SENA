@@ -1,4 +1,5 @@
 {% load static %}
+{% load accesibility_tags %}
 
 <!DOCTYPE html>
 <html lang="es">
@@ -251,5 +252,6 @@ function verDocumento(urlDocumento, titulo) {
     document.body.style.overflow = 'hidden';
 }
 </script>
+{% accessibility_widget %}
 </body>
 </html>
