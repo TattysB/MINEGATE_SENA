@@ -1,13 +1,18 @@
 /* .navbar-logo moved to global styles.css */
 /* Estilos para la sección principal (Hero Section) */
 .hero-section {
-    background: url('../img/cM.JPG') no-repeat center center;
-    background-size: cover;
-    color: white; /* Color del texto sobre la imagen */
-    padding: 150px 20px; /* Espaciado interno */
+    background-color: #222;
+    /* Fondo oscuro por defecto */
+    color: white;
+    /* Color del texto sobre la imagen */
+    padding: 150px 20px;
+    /* Espaciado interno */
     text-align: center;
     position: relative;
-    /* Oscurecer la imagen para que el texto se lea mejor */
+    overflow: hidden;
+    /* Para que el carrusel no sobresalga */
+    min-height: 80vh;
+    /* Restaura la altura visual completa del panorama */
 }
 
 .hero-section::before {
@@ -17,34 +22,85 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.5); /* Capa oscura semitransparente */
+    background: rgba(66, 60, 60, 0.473);
+    /* Capa oscura semitransparente */
     z-index: 1;
 }
 
 .hero-content {
-    position: relative; /* Asegura que el contenido esté sobre la capa oscura */
+    position: relative;
+    /* Asegura que el contenido esté sobre la capa oscura */
     z-index: 2;
     max-width: 900px;
     margin: 0 auto;
 }
 
 .hero-content h1 {
-    font-size: 3em;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 4em;
+    /* Más grande el título */
+    font-weight: 700;
+    /* Bold para títulos */
     margin-bottom: 20px;
     line-height: 1.2;
 }
 
 .hero-content .subtitle {
-    font-size: 1.5em;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 1.8em;
+    /* Más grande el subtítulo */
     margin-bottom: 40px;
-    font-weight: 300;
+    font-weight: 400;
+    /* Regular / Medium */
+}
+
+/* Aplicando Work Sans a los textos genéricos del hero */
+.sicam-tagline,
+.sicam-invitation,
+.sicam-description p,
+.carousel-caption * {
+    font-family: 'Work Sans', sans-serif;
+    color: #ffffff !important;
+    /* Fuerza el color blanco puro y radiante */
+    text-shadow: 2px 2px 5px rgba(0, 0, 0, 1), 0px 0px 20px rgba(0, 0, 0, 0.9), 0px 0px 30px rgba(0, 0, 0, 0.8) !important;
+    /* Sombras 100% negras, gruesas y difuminadas para garantizar contraste extremo */
+    font-weight: 700;
+    /* Engruesa ligeramente todo el texto para darle más solidez frente a la imagen */
+}
+
+.sicam-tagline {
+    font-size: 1.5em;
+    /* Un poco más grande */
+}
+
+.sicam-invitation {
+    font-size: 1.7em;
+    /* Un poco más grande */
+}
+
+.sicam-description p {
+    font-size: 2.2em;
+    /* Tamaño aún más grande para la tercera imagen */
+}
+
+/* Efecto hover interactivo para la tarjeta del mapa */
+.map-card-hover {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-radius: 2.5rem !important;
+    /* Esquinas muy redondeadas tipo óvalo */
+}
+
+.map-card-hover:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 1rem 3rem rgba(9, 53, 2, 0.525) !important;
 }
 
 /* Estilos de Botones CTA */
 .cta-buttons {
     display: flex;
     justify-content: center;
-    gap: 20px; /* Espacio entre los botones */
+    gap: 20px;
+    /* Espacio entre los botones */
     margin-top: 30px;
 }
 
@@ -57,7 +113,8 @@
 }
 
 .btn-primary {
-    background-color: #58af22; /* Amarillo/Naranja de seguridad */
+    background-color: #58af22;
+    /* Amarillo/Naranja de seguridad */
     color: #1a1a1a;
     border: 2px solid #58af22;
 }
@@ -78,93 +135,134 @@
 
 /* Estilos para la sección de valor */
 
-/* Estilos para la Sección de Características (Doble Propuesta) */
-.features-section {
-    padding: 60px 20px;
-    background-color: #f8f9fa; /* Fondo ligeramente gris */
-    text-align: center;
-}
-
-.features-section h2 {
-    font-size: 2.2em;
-    margin-bottom: 40px;
+/* Estilos para la Sección de Protocolos de Seguridad (Light Theme) */
+.security-protocols-section {
+    background-color: #ffffff;
+    /* Fondo blanco */
     color: #1a1a1a;
 }
 
-.features-container {
-    display: flex;
-    justify-content: center;
-    gap: 30px;
-    max-width: 1100px;
-    margin: 0 auto;
-    flex-wrap: wrap; /* Para que funcione bien en móviles */
+.protocol-card {
+    background-color: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 1.5rem;
+    transition: all 0.3s ease;
+    height: 100%;
 }
 
-.feature-card {
-    background-color: white;
-    padding: 30px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    width: calc(50% - 15px); /* Dos columnas en desktop */
-    text-align: left;
+.protocol-card:hover {
+    transform: translateY(-10px);
+    background-color: #fdfdfd;
+    border-color: rgba(63, 165, 0, 0.3);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
 }
 
-.icon-header {
+.protocol-icon-wrapper {
+    width: 70px;
+    height: 70px;
+    background-color: #3fa500;
+    color: white;
+    font-size: 1.8rem;
     display: flex;
     align-items: center;
-    margin-bottom: 15px;
+    justify-content: center;
+    border-radius: 1rem;
+    margin: 0 auto;
+    transition: transform 0.3s ease;
 }
 
-.icon-header i {
-    font-size: 1.8em;
-    margin-right: 15px;
+.protocol-card:hover .protocol-icon-wrapper {
+    transform: scale(1.1) rotate(5deg);
 }
 
-/* Colores temáticos */
-.safety-focus .icon-header i {
-    color: #dc3545; /* Rojo de advertencia/seguridad */
-}
-.education-focus .icon-header i {
-    color: #007bff; /* Azul de educación/corporativo */
-}
-
-.feature-card h3 {
-    margin: 0;
-    font-size: 1.5em;
-    color: #333;
+.important-note {
+    background-color: #f1f9ec !important;
+    /* Verde muy claro */
+    border: 1px solid #cce8bc !important;
+    /* Borde verde suave */
+    border-radius: 4rem !important;
+    /* Bordes muy ovalados */
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    /* Efecto elástico para el "saltico" */
 }
 
-.feature-card ul {
-    list-style: none;
-    padding: 0;
-    margin-top: 15px;
+.important-note:hover {
+    transform: translateY(-10px) scale(1.01);
+    /* El "saltico" */
+    background-color: #ebf5e6 !important;
+    border-color: #3fa500 !important;
+    box-shadow: 0 10px 25px rgba(63, 165, 0, 0.15);
 }
 
-.feature-card ul li {
-    padding: 8px 0;
-    border-bottom: 1px dashed #eee;
-    color: #555;
+.important-icon-box {
+    width: 70px;
+    height: 70px;
+    background-color: #3fa500;
+    color: white;
+    font-size: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 1.5rem;
+    /* Icono con bordes redondeados */
+    flex-shrink: 0;
 }
 
-.link-more {
-    display: inline-block;
-    margin-top: 20px;
-    color: #007bff;
-    text-decoration: none;
-    font-weight: bold;
-}
+/* Estilos para la sección de valor */
+
 
 /* Media Query para hacerlo Responsivo */
 @media (max-width: 768px) {
     .feature-card {
-        width: 100%; /* Una sola columna en móviles */
+        width: 100%;
+        /* Una sola columna en móviles */
         margin-bottom: 20px;
     }
 }
 
+/* Estilos para las Tarjetas de Características (Publicidad) */
+.card.h-100.shadow-sm {
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background-color: #ffffff;
+    border-radius: 2.5rem !important;
+    /* Bordes ovalados */
+    border: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+.card.h-100.shadow-sm:hover {
+    transform: translateY(-12px) scale(1.02);
+    /* El "saltico" más pronunciado */
+    box-shadow: 0 20px 40px rgba(63, 165, 0, 0.15) !important;
+    /* Brillo verde sutil */
+    border-color: rgba(63, 165, 0, 0.3) !important;
+}
+
+.bg-primary.bg-opacity-10,
+.bg-warning.bg-opacity-10,
+.bg-success.bg-opacity-10 {
+    transition: transform 0.3s ease;
+}
+
+.card.h-100.shadow-sm:hover .bg-primary.bg-opacity-10,
+.card.h-100.shadow-sm:hover .bg-warning.bg-opacity-10,
+.card.h-100.shadow-sm:hover .bg-success.bg-opacity-10 {
+    transform: scale(1.1) rotate(5deg);
+}
+
+.badge.bg-light.text-dark.shadow-sm {
+    transition: all 0.2s ease;
+}
+
+.badge.bg-light.text-dark.shadow-sm:hover {
+    background-color: #f0f0f0 !important;
+    transform: translateY(-2px);
+}
+
+
 /* Estilos para la Sección de Estadísticas (Cifras de Impacto) */
 .stats-section {
-    background-color: #343a40; /* Fondo oscuro (gris minero) */
+    background-color: #343a40;
+    /* Fondo oscuro (gris minero) */
     color: white;
     padding: 80px 20px;
     text-align: center;
@@ -176,11 +274,13 @@
     align-items: center;
     max-width: 1200px;
     margin: 0 auto;
-    flex-wrap: wrap; /* Para manejo en móviles */
+    flex-wrap: wrap;
+    /* Para manejo en móviles */
 }
 
 .stat-block {
-    flex-basis: 22%; /* Distribución en 4 columnas */
+    flex-basis: 22%;
+    /* Distribución en 4 columnas */
     padding: 20px;
     margin: 10px 0;
 }
@@ -188,7 +288,8 @@
 .stat-number {
     font-size: 3.5em;
     font-weight: 700;
-    color: #ffc107; /* Color de acento (Amarillo/Naranja) */
+    color: #ffc107;
+    /* Color de acento (Amarillo/Naranja) */
     margin-bottom: 5px;
 }
 
@@ -201,21 +302,25 @@
 /* Media Query para hacerlo Responsivo */
 @media (max-width: 768px) {
     .stat-block {
-        flex-basis: 45%; /* Dos columnas en tablets */
+        flex-basis: 45%;
+        /* Dos columnas en tablets */
     }
 }
 
 @media (max-width: 480px) {
     .stat-block {
-        flex-basis: 100%; /* Una sola columna en móviles */
+        flex-basis: 100%;
+        /* Una sola columna en móviles */
     }
 }
 
 /* Carousel */
 
 .carousel-item img {
-    height: 500px; /* Ajusta la altura a tu gusto */
-    object-fit: cover; /* Esto evita que la imagen se estire feo */
+    height: 500px;
+    /* Ajusta la altura a tu gusto */
+    object-fit: cover;
+    /* Esto evita que la imagen se estire feo */
 }
 
 /* Ajuste para que el carrusel se vea bien en móviles */

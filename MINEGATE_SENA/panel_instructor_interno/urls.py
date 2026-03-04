@@ -23,4 +23,16 @@ urlpatterns = [
     path('fichas/crear/', views.crear_ficha, name='crear_ficha'),
     path('fichas/<int:pk>/editar/', views.editar_ficha, name='editar_ficha'),
     path('fichas/<int:pk>/eliminar/', views.eliminar_ficha, name='eliminar_ficha'),
+    
+    # Módulo: Gestionar Aprendices por Ficha
+    path('aprendices/', views.listar_fichas_aprendices, name='listar_fichas_aprendices'),
+    path('aprendices/<int:pk>/', views.detalle_aprendices_ficha, name='detalle_aprendices_ficha'),
+    path('aprendices/crear/<int:ficha_id>/', views.crear_aprendiz, name='crear_aprendiz'),
+    path('aprendices/<int:pk>/editar/', views.editar_aprendiz, name='editar_aprendiz'),
+    path('aprendices/<int:pk>/eliminar/', views.eliminar_aprendiz, name='eliminar_aprendiz'),
+    
+    # Módulo: Integración con Visitas - Aprendices
+    path('api/ficha/<int:ficha_id>/aprendices/', views.obtener_aprendices_ficha_json, name='api_aprendices_ficha'),
+    path('visita/<int:visita_id>/registrar-aprendices/', views.registrar_aprendices_visita, name='registrar_aprendices_visita'),
+    path('visita/<int:visita_id>/asistente/<int:asistente_id>/eliminar/<str:tipo>/', views.eliminar_asistente_visita, name='eliminar_asistente_visita'),
 ]

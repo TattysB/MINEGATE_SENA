@@ -113,6 +113,39 @@ class AsistenteVisitaInterna(models.Model):
     # Observaciones del revisor
     observaciones_revision = models.TextField(blank=True, verbose_name="Observaciones de revisión")
     
+    # Campos para QR
+    qr_generado = models.BooleanField(
+        default=False,
+        verbose_name="QR Generado"
+    )
+    fecha_envio_qr = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de Envío del QR"
+    )
+    email_qr_enviado = models.BooleanField(
+        default=False,
+        verbose_name="Email con QR Enviado"
+    )
+    
+    # Campos para reutilización de asistentes
+    puede_reutilizar = models.BooleanField(
+        default=True,
+        verbose_name="Puede reutilizarse en futuras visitas"
+    )
+    es_reutilizado = models.BooleanField(
+        default=False,
+        verbose_name="Es una copia de un asistente anterior"
+    )
+    visita_original = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="copias",
+        verbose_name="Asistente original (si es reutilizado)"
+    )
+    
     class Meta:
         verbose_name = "Asistente de Visita Interna"
         verbose_name_plural = "Asistentes de Visitas Internas"
@@ -149,24 +182,3 @@ class HistorialAccionVisitaInterna(models.Model):
     
     def __str__(self):
         return f"{self.get_tipo_accion_display()} - {self.visita} - {self.fecha_hora.strftime('%d/%m/%Y %H:%M')}"
-
-
-class RegistroEnvioCoordinacionInterna(models.Model):
-    """Registro de cada envío a coordinación"""
-    visita = models.ForeignKey(VisitaInterna, on_delete=models.CASCADE, related_name='envios_coordinacion', verbose_name="Visita")
-    correo_destino = models.EmailField(verbose_name="Correo destino")
-    usuario_remitente = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name="Remitente")
-    fecha_envio = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de envío")
-    estado_resultado = models.CharField(max_length=20, choices=[
-        ('enviado', 'Enviado exitosamente'),
-        ('fallido', 'Fallo en envío'),
-    ], default='enviado', verbose_name="Estado")
-    ip_address = models.GenericIPAddressField(null=True, blank=True, verbose_name="IP")
-    
-    class Meta:
-        verbose_name = "Registro de Envío a Coordinación"
-        verbose_name_plural = "Registros de Envíos a Coordinación"
-        ordering = ['-fecha_envio']
-    
-    def __str__(self):
-        return f"Envío a {self.correo_destino} - {self.fecha_envio.strftime('%d/%m/%Y %H:%M')}"

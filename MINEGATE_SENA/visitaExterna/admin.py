@@ -1,5 +1,5 @@
 ﻿from django.contrib import admin
-from .models import VisitaExterna, AsistenteVisitaExterna, HistorialAccionVisitaExterna, RegistroEnvioCoordinacionExterna
+from .models import VisitaExterna, AsistenteVisitaExterna, HistorialAccionVisitaExterna
 
 
 @admin.register(VisitaExterna)
@@ -20,9 +20,3 @@ class AsistenteVisitaExternaAdmin(admin.ModelAdmin):
 class HistorialAccionVisitaExternaAdmin(admin.ModelAdmin):
     list_display = ['visita', 'tipo_accion', 'usuario', 'fecha_hora']
     list_filter = ['tipo_accion', 'fecha_hora']
-
-
-@admin.register(RegistroEnvioCoordinacionExterna)
-class RegistroEnvioCoordinacionExternaAdmin(admin.ModelAdmin):
-    list_display = ['visita', 'correo_destino', 'fecha_envio', 'estado_resultado']
-    list_filter = ['estado_resultado', 'fecha_envio']
