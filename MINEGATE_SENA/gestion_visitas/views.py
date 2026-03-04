@@ -20,6 +20,11 @@ from visitaExterna.models import (
 )
 from documentos.models import DocumentoSubidoAsistente
 from calendario.models import ReservaHorario
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+from django.conf import settings
+from django.urls import reverse
 
 ESTADOS_APROBADAS = [
     "aprobada_inicial",
@@ -442,6 +447,30 @@ def api_accion_visita(request, tipo, visita_id, accion):
         visita.estado = "aprobada_inicial"
         visita.save()
 
+        # Enviar correo al responsable notificando la aprobación inicial y link al panel
+        try:
+            if tipo == "interna":
+                panel_path = reverse('panel_instructor_interno:mis_visitas')
+            else:
+                panel_path = reverse('panel_instructor_externo:panel')
+            panel_url = request.build_absolute_uri(panel_path)
+
+            subject = 'Su visita ha sido aprobada inicialmente'
+            context = {
+                'responsable_nombre': getattr(visita, 'responsable', getattr(visita, 'nombre_responsable', '')),
+                'panel_url': panel_url,
+            }
+            if tipo == 'interna':
+                html_content = render_to_string('emails/aprobada_visita_interna.html', context)
+            else:
+                html_content = render_to_string('emails/aprobada_visita_externa.html', context)
+            text_content = strip_tags(html_content)
+            msg = EmailMultiAlternatives(subject, text_content, settings.DEFAULT_FROM_EMAIL, [visita.correo_responsable])
+            msg.attach_alternative(html_content, 'text/html')
+            msg.send(fail_silently=True)
+        except Exception:
+            pass
+
         # Crear reserva de horario para bloquear el día/horario
         if tipo == "interna":
             ReservaHorario.crear_reserva_interna(visita)
@@ -551,6 +580,49 @@ def api_accion_visita(request, tipo, visita_id, accion):
         # Confirmar la reserva de horario (cambiar a estado 'confirmada')
         ReservaHorario.confirmar_reserva(visita, tipo)
         
+        # Enviar correo al responsable notificando confirmación y detalles
+        try:
+            if tipo == 'interna':
+                template_name = 'emails/visita_confirmada_interna.html'
+                panel_path = reverse('panel_instructor_interno:mis_visitas')
+            else:
+                template_name = 'emails/visita_confirmada_externa.html'
+                panel_path = reverse('panel_instructor_externo:panel')
+
+            panel_url = request.build_absolute_uri(panel_path)
+
+            # Construir contexto con detalles de la visita
+            context = {
+                'responsable_nombre': getattr(visita, 'responsable', getattr(visita, 'nombre_responsable', '')),
+                'fecha_visita': visita.fecha_visita.strftime('%d/%m/%Y') if getattr(visita, 'fecha_visita', None) else (visita.fecha_solicitud.strftime('%d/%m/%Y') if visita.fecha_solicitud else 'Por definir'),
+                'hora_programada': (visita.hora_inicio.strftime('%I:%M %p') + ' - ' + visita.hora_fin.strftime('%I:%M %p')) if getattr(visita, 'hora_inicio', None) and getattr(visita, 'hora_fin', None) else 'Por definir',
+                'recomendaciones': 'Por favor llegar 10 minutos antes; traer documento de identidad; seguir instrucciones de coordinación.',
+                'panel_url': panel_url,
+            }
+
+            # Campos específicos
+            if tipo == 'interna':
+                context.update({
+                    'nombre_programa': visita.nombre_programa,
+                    'numero_ficha': visita.numero_ficha,
+                    'responsable': visita.responsable,
+                })
+            else:
+                context.update({
+                    'nombre': visita.nombre,
+                    'nombre_responsable': visita.nombre_responsable,
+                    'sede': getattr(visita, 'sede', 'No especificada'),
+                })
+
+            html_content = render_to_string(template_name, context)
+            text_content = strip_tags(html_content)
+            subject = 'Visita confirmada exitosamente'
+            msg = EmailMultiAlternatives(subject, text_content, settings.DEFAULT_FROM_EMAIL, [visita.correo_responsable])
+            msg.attach_alternative(html_content, 'text/html')
+            msg.send(fail_silently=True)
+        except Exception:
+            pass
+
         registrar_accion(
             "confirmacion",
             f"Visita confirmada definitivamente por {request.user.username}",
