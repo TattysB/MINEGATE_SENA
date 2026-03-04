@@ -1,6 +1,6 @@
 from django import forms
 from visitaInterna.models import VisitaInterna
-from .models import Ficha, Programa
+from .models import Ficha, Programa, Aprendiz
 
 
 class VisitaInternaInstructorForm(forms.ModelForm):
@@ -119,4 +119,51 @@ class FichaForm(forms.ModelForm):
             'activa': forms.CheckboxInput(attrs={
                 'class': 'form-check-input',
             }),
+        }
+
+
+class AprendizForm(forms.ModelForm):
+    class Meta:
+        model = Aprendiz
+        fields = ['nombre', 'apellido', 'tipo_documento', 'numero_documento', 'correo', 'telefono', 'documento_identidad', 'documento_adicional', 'estado']
+        widgets = {
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nombre del aprendiz',
+            }),
+            'apellido': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Apellido del aprendiz',
+            }),
+            'tipo_documento': forms.Select(attrs={
+                'class': 'form-select',
+            }),
+            'numero_documento': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Número de documento',
+            }),
+            'correo': forms.EmailInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'correo@ejemplo.com',
+            }),
+            'telefono': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Teléfono (opcional)',
+            }),
+            'documento_identidad': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': 'image/*,.pdf',
+                'required': True,
+            }),
+            'documento_adicional': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': 'image/*,.pdf',
+            }),
+            'estado': forms.Select(attrs={
+                'class': 'form-select',
+            }),
+        }
+        labels = {
+            'documento_identidad': 'Documento de Identidad ★',
+            'documento_adicional': 'Documento Adicional (Opcional)',
         }

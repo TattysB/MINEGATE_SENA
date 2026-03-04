@@ -11,6 +11,8 @@ urlpatterns = [
     path('actualizar-perfil/', views.actualizar_perfil, name='actualizar_perfil'),
     path('registrar/<str:tipo>/<int:visita_id>/', views.registrar_asistentes, name='registrar_asistentes'),
     path('eliminar/<str:tipo>/<int:asistente_id>/', views.eliminar_asistente, name='eliminar_asistente'),
+    path('actualizar-documento/<str:tipo>/<int:asistente_id>/', views.actualizar_documento_asistente, name='actualizar_documento_asistente'),
+    path('copiar-asistente/<str:tipo>/<int:visita_id>/<int:asistente_previo_id>/', views.copiar_asistente_previo, name='copiar_asistente_previo'),
     path('enviar-solicitud/<str:tipo>/<int:visita_id>/', views.enviar_solicitud_final, name='enviar_solicitud_final'),
     # Recuperación de contraseña - Nuevo patrón
     path('restablecer-contraseña/', views.restablecer_contraseña, name='restablecer_contraseña'),
