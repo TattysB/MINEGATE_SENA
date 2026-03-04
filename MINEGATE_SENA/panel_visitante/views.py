@@ -522,6 +522,28 @@ def enviar_solicitud_final(request, tipo, visita_id):
     visita.estado = "documentos_enviados"
     visita.save()
 
+    # Enviar correo al responsable informando que la solicitud final fue enviada
+    try:
+        if tipo == "interna":
+            panel_path = reverse('panel_instructor_interno:mis_visitas')
+            template_name = 'emails/solicitud_final_enviada_interna.html'
+        else:
+            panel_path = reverse('panel_instructor_externo:panel')
+            template_name = 'emails/solicitud_final_enviada_externa.html'
+        panel_url = request.build_absolute_uri(panel_path)
+        subject = 'Solicitud final enviada con éxito — documentos en revisión'
+        context = {
+            'responsable_nombre': request.session.get('responsable_nombre', ''),
+            'panel_url': panel_url,
+        }
+        html_content = render_to_string(template_name, context)
+        text_content = strip_tags(html_content)
+        msg = EmailMultiAlternatives(subject, text_content, settings.DEFAULT_FROM_EMAIL, [visita.correo_responsable])
+        msg.attach_alternative(html_content, 'text/html')
+        msg.send(fail_silently=True)
+    except Exception:
+        pass
+
     messages.success(
         request,
         "¡Solicitud final enviada correctamente! El administrador revisará los documentos de los asistentes.",
