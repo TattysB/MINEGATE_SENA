@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Visita Confirmada</title>
+
+    <!-- Fuente Work Sans -->
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  </head>
+
+  <body style="font-family:'Work Sans', Arial, Helvetica, sans-serif; background:#f4f6f8; margin:0; padding:20px;">
+    
+    <div style="max-width:700px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+      
+      <!-- Encabezado -->
+      <div style="background:linear-gradient(90deg,#00af00,#009900);color:#fff;padding:18px 24px;">
+        <h2 style="margin:0;font-size:20px">SENA</h2>
+      </div>
+
+      <div style="padding:20px 24px;">
+        
+        <h3 style="margin-top:0;color:#00af00;">
+          Su visita ha sido confirmada
+        </h3>
+
+        <p>Estimado(a) {{ responsable_nombre }},</p>
+
+        <p>
+          Nos complace informarle que su visita ha sido confirmada con éxito. 
+          A continuación encontrará los detalles:
+        </p>
+
+        <!-- Información -->
+        <div style="background:#f6fff6;border:1px solid #dff5df;padding:16px;border-radius:6px;margin:18px 0;">
+          
+          <table style="width:100%;font-size:14px;color:#333;">
+            <tr>
+              <td style="padding:6px 0;width:50%;"><strong>Programa</strong><br>{{ nombre_programa }}</td>
+              <td style="padding:6px 0;width:50%;"><strong>Ficha</strong><br>{{ numero_ficha }}</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 0;"><strong>Fecha</strong><br>{{ fecha_visita }}</td>
+              <td style="padding:6px 0;"><strong>Horario</strong><br>{{ hora_programada }}</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 0;"><strong>Responsable</strong><br>{{ responsable }}</td>
+              <td style="padding:6px 0;"><strong>Ubicación</strong><br>Centro Minero</td>
+            </tr>
+            <tr>
+              <td colspan="2" style="padding:6px 0;"><strong>Recomendaciones</strong><br>{{ recomendaciones }}</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- Bloque llamativo -->
+        <div style="background:#00af00;color:#fff;padding:16px;border-radius:6px;text-align:center;margin:20px 0;">
+          <strong style="font-size:16px;">¡Gracias por preferirnos!</strong><br>
+          <span style="font-size:14px;">
+            En MineGate trabajamos para brindarle una experiencia segura, organizada y memorable.
+          </span>
+        </div>
+
+        <p style="margin-top:18px;color:#666;font-size:13px">
+          Saludos,<br>
+          <strong>Equipo MineGate</strong>
+        </p>
+
+      </div>
+    </div>
+
+  </body>
+</html>
