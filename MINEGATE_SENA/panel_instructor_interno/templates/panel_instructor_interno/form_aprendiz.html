@@ -1,0 +1,253 @@
+{% load static %}
+{% load accesibility_tags %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if aprendiz %}Editar{% else %}Registrar{% endif %} Aprendiz - MINEGATE</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { background-color: #f8f9fa; }
+        .full-screen-container { width: 100%; padding: 30px; }
+        .form-card { background: white; border-radius: 15px; padding: 30px; margin-bottom: 20px; border: 1px solid #dee2e6; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .doc-row { 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: #f1f5f9; padding: 15px; border-radius: 10px; margin-bottom: 10px;
+        }
+        .btn-sena-green { background: #10b981; color: white; border: none; font-weight: 600; }
+        .btn-sena-green:hover { background: #059669; color: white; }
+        .form-control, .form-select { border-radius: 8px; border: 1px solid #dee2e6; }
+        .form-control:focus, .form-select:focus { border-color: #10b981; box-shadow: 0 0 0 0.2rem rgba(16, 185, 129, 0.25); }
+        .error-message { color: #dc2626; font-size: 0.875rem; margin-top: 0.25rem; }
+        .required { color: #dc2626; }
+    </style>
+</head>
+<body>
+
+<div class="full-screen-container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-dark"><i class="fas fa-{% if aprendiz %}pencil-alt{% else %}user-plus{% endif %} me-2 text-success"></i>
+            {% if aprendiz %}Editar Aprendiz{% else %}Registrar Nuevo Aprendiz{% endif %}
+        </h2>
+        <a href="{% url 'panel_instructor_interno:detalle_aprendices_ficha' ficha.id %}" class="btn btn-outline-secondary px-4">Volver</a>
+    </div>
+
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            {% for error in form.non_field_errors %}
+                <div>{{ error }}</div>
+            {% endfor %}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    {% endif %}
+
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col-xl-5">
+                <div class="form-card">
+                    <h5 class="fw-bold mb-3 border-bottom pb-2"><i class="fas fa-download me-2 text-primary"></i>Plantillas para descargar</h5>
+                    {% if documentos_por_categoria %}
+                        {% for categoria, docs in documentos_por_categoria.items %}
+                            <div class="mb-4">
+                                <span class="badge bg-secondary mb-2">{{ categoria }}</span>
+                                {% for doc in docs %}
+                                <div class="doc-row">
+                                    <div>
+                                        <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% else %}file-alt{% endif %} me-2" 
+                                           style="color: {% if doc.extension == '.pdf' %}#dc2626{% elif doc.extension == '.doc' or doc.extension == '.docx' %}#2563eb{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}#059669{% else %}#667eea{% endif %};"></i>
+                                        <span class="fw-bold">{{ doc.titulo }}</span>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" onclick="verDocumento('{% url 'documentos:ver_documento_inline' doc.id %}', '{{ doc.titulo }}', '{{ doc.extension }}', '{% url 'documentos:descargar_documento_publico' doc.id %}')" class="btn btn-sm btn-sena-green"><i class="fas fa-eye"></i></button>
+                                        <a href="{% url 'documentos:descargar_documento_publico' doc.id %}" download class="btn btn-sm btn-primary"><i class="fas fa-download"></i></a>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center py-3">No hay documentos disponibles</p>
+                    {% endif %}
+                </div>
+
+                {% if aprendiz %}
+                <div class="form-card bg-light">
+                    <h5 class="fw-bold mb-3 border-bottom pb-2"><i class="fas fa-history me-2"></i>Información de Auditoría</h5>
+                    <p class="mb-1"><strong>Creado:</strong> {{ aprendiz.fecha_creacion|date:"d/m/Y H:i" }}</p>
+                    <p class="mb-0"><strong>Actualizado:</strong> {{ aprendiz.fecha_actualizacion|date:"d/m/Y H:i" }}</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="col-xl-7">
+                <div class="form-card">
+                    <h5 class="fw-bold mb-4 border-bottom pb-2"><i class="fas fa-id-card me-2"></i>Información Personal</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Nombre <span class="required">*</span></label>
+                            {{ form.nombre }}
+                            {% if form.nombre.errors %}
+                                <div class="error-message"><i class="fas fa-times-circle me-1"></i>{{ form.nombre.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Apellido <span class="required">*</span></label>
+                            {{ form.apellido }}
+                            {% if form.apellido.errors %}
+                                <div class="error-message"><i class="fas fa-times-circle me-1"></i>{{ form.apellido.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <h5 class="fw-bold mt-5 mb-4 border-bottom pb-2"><i class="fas fa-card-list me-2"></i>Documento de Identidad</h5>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Tipo <span class="required">*</span></label>
+                            {{ form.tipo_documento }}
+                            {% if form.tipo_documento.errors %}
+                                <div class="error-message"><i class="fas fa-times-circle me-1"></i>{{ form.tipo_documento.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold">Número <span class="required">*</span></label>
+                            {{ form.numero_documento }}
+                            {% if form.numero_documento.errors %}
+                                <div class="error-message"><i class="fas fa-times-circle me-1"></i>{{ form.numero_documento.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <h5 class="fw-bold mt-5 mb-4 border-bottom pb-2"><i class="fas fa-envelope me-2"></i>Información de Contacto</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Correo <span class="required">*</span></label>
+                            {{ form.correo }}
+                            {% if form.correo.errors %}
+                                <div class="error-message"><i class="fas fa-times-circle me-1"></i>{{ form.correo.errors.0 }}</div>
+                            {% endif %}
+                            <small class="text-muted d-block mt-1"><i class="fas fa-info-circle me-1"></i>Se enviarán QR e información a este correo</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Teléfono</label>
+                            {{ form.telefono }}
+                            {% if form.telefono.errors %}
+                                <div class="error-message"><i class="fas fa-times-circle me-1"></i>{{ form.telefono.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <h5 class="fw-bold mt-5 mb-4 border-bottom pb-2"><i class="fas fa-toggle-on me-2"></i>Estado</h5>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            {{ form.estado }}
+                            {% if form.estado.errors %}
+                                <div class="error-message"><i class="fas fa-times-circle me-1"></i>{{ form.estado.errors.0 }}</div>
+                            {% endif %}
+                            <small class="text-muted d-block mt-2">Solo los aprendices activos serán utilizados en visitas</small>
+                        </div>
+                    </div>
+
+                    <h5 class="fw-bold mt-5 mb-4 border-bottom pb-2"><i class="fas fa-file-upload me-2"></i>Subida de Documentos Requeridos</h5>
+
+                    <!-- Documento Adicional (Auto Reporte de Salud) -->
+                    <div class="p-3 bg-light border rounded mb-3">
+                        <label class="form-label fw-bold mb-2">
+                            <i class="fas fa-file-pdf me-2" style="color: #dc2626;"></i>
+                            Formato Auto Reporte Condiciones de Salud (PDF)
+                        </label>
+                        {{ form.documento_adicional }}
+                        {% if form.documento_adicional.errors %}
+                            <div class="error-message"><i class="fas fa-times-circle me-1"></i>{{ form.documento_adicional.errors.0 }}</div>
+                        {% endif %}
+                        <small class="text-muted d-block mt-1">Formatos aceptados: PDF (Máx. 10MB)</small>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-5">
+                        <button type="submit" class="btn btn-lg btn-sena-green px-5">
+                            <i class="fas fa-{% if aprendiz %}check-circle{% else %}plus-circle{% endif %} me-2"></i>
+                            {% if aprendiz %}Actualizar Aprendiz{% else %}Guardar Registro{% endif %}
+                        </button>
+                        <a href="{% url 'panel_instructor_interno:detalle_aprendices_ficha' ficha.id %}" class="btn btn-lg btn-outline-secondary px-5">
+                            <i class="fas fa-times-circle me-2"></i>Cancelar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Modal para Ver Documento -->
+<script>
+function verDocumento(urlViewer, titulo, extension, urlDescarga) {
+    const imgExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    
+    const modalVerDoc = document.createElement('div');
+    modalVerDoc.id = 'modalVerDoc';
+    modalVerDoc.style.cssText = 'display:block; position:fixed; z-index:9998; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.75); overflow-y:auto;';
+    
+    const contenido = document.createElement('div');
+    contenido.style.cssText = 'background:#fff; margin:2% auto; padding:20px; border-radius:12px; width:92%; max-width:960px; height:90vh; display:flex; flex-direction:column; box-shadow:0 8px 40px rgba(0,0,0,0.4);';
+    
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid #e5e7eb;';
+    header.innerHTML = `
+        <h5 style="margin:0; color:#1f2937; font-size:16px;"><i class="fas fa-file me-2" style="color:#667eea;"></i>${titulo}</h5>
+        <div style="display:flex; gap:8px; align-items:center;">
+            <a href="${urlDescarga}" download style="background:#667eea; color:white; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:13px; display:inline-flex; align-items:center; gap:4px; font-weight:600;">
+                <i class="fas fa-download"></i> Descargar
+            </a>
+            <button style="background:#ef4444; color:white; border:none; font-size:18px; cursor:pointer; width:36px; height:36px; border-radius:6px; display:flex; align-items:center; justify-content:center;">&times;</button>
+        </div>
+    `;
+    
+    const cuerpoNuevo = document.createElement('div');
+    cuerpoNuevo.style.cssText = 'flex:1; overflow:auto; border:1px solid #e5e7eb; border-radius:8px; background:#f0f0f0; display:flex; align-items:center; justify-content:center;';
+    
+    if (extension === '.pdf' || imgExts.includes(extension)) {
+        cuerpoNuevo.innerHTML = '<iframe src="' + urlViewer + '" style="width:100%; height:100%; min-height:600px; border:none;"></iframe>';
+    } else {
+        cuerpoNuevo.innerHTML = '<div style="text-align:center; padding:50px; color:#6b7280;">'
+            + '<i class="fas fa-file-alt" style="font-size:64px; color:#9ca3af; display:block; margin-bottom:20px;"></i>'
+            + '<p style="font-size:16px; margin-bottom:20px;">Vista previa no disponible para este tipo de archivo.</p>'
+            + '<a href="' + urlDescarga + '" download style="background:#667eea; color:white; padding:12px 28px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:8px;">'
+            + '<i class="fas fa-download"></i> Descargar</a></div>';
+    }
+    
+    contenido.appendChild(header);
+    contenido.appendChild(cuerpoNuevo);
+    modalVerDoc.appendChild(contenido);
+    document.body.appendChild(modalVerDoc);
+    
+    header.querySelector('button').onclick = function() {
+        modalVerDoc.remove();
+        document.body.style.overflow = '';
+    };
+    
+    modalVerDoc.onclick = function(e) {
+        if (e.target === this) {
+            modalVerDoc.remove();
+            document.body.style.overflow = '';
+        }
+    };
+    
+    document.addEventListener('keydown', function handler(e) {
+        if (e.key === 'Escape') {
+            modalVerDoc.remove();
+            document.body.style.overflow = '';
+            document.removeEventListener('keydown', handler);
+        }
+    });
+    
+    document.body.style.overflow = 'hidden';
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% accessibility_widget %}
+</body>
+</html>

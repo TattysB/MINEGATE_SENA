@@ -3,7 +3,10 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db.models import Q
 from django.urls import reverse
+from datetime import date, timedelta
+import calendar
 from usuarios.models import PerfilUsuario
+from calendario.models import Availability
 
 
 def es_superusuario(user):
@@ -17,6 +20,92 @@ def index(request):
 
 @login_required(login_url='usuarios:login')
 def panel_administrativo(request):
+    return _render_panel_administrativo(request, seccion_activa="panel_principal")
+
+
+@login_required(login_url='usuarios:login')
+def panel_administrativo_seccion(request, seccion):
+    secciones_validas = {
+        "panel_principal",
+        "gestion_calendario",
+        "gestion_visitas",
+        "gestion_documentos",
+        "escaneo_documentos",
+        "configuracion",
+        "reportes",
+    }
+
+    if seccion not in secciones_validas:
+        messages.warning(request, "La sección solicitada no existe.")
+        return redirect("core:panel_administrativo")
+
+    return _render_panel_administrativo(request, seccion_activa=seccion)
+
+
+def _agregar_contexto_calendario(context):
+    today = date.today()
+    year = today.year
+    month = today.month
+
+    cal = calendar.Calendar(firstweekday=6)
+    month_days = list(cal.itermonthdates(year, month))
+    weeks_raw = [month_days[i:i + 7] for i in range(0, len(month_days), 7)]
+
+    weeks = []
+    for week in weeks_raw:
+        row = []
+        for day_obj in week:
+            row.append(
+                {
+                    "date": day_obj,
+                    "is_other_month": day_obj.month != month,
+                    "is_today": day_obj == today,
+                    "is_sunday": day_obj.weekday() == 6,
+                    "is_past": day_obj < today,
+                }
+            )
+        weeks.append(row)
+
+    meses_es = [
+        "",
+        "Enero",
+        "Febrero",
+        "Marzo",
+        "Abril",
+        "Mayo",
+        "Junio",
+        "Julio",
+        "Agosto",
+        "Septiembre",
+        "Octubre",
+        "Noviembre",
+        "Diciembre",
+    ]
+
+    try:
+        start_month = date(year, month, 1)
+        next_month = (start_month.replace(day=28) + timedelta(days=4)).replace(day=1)
+        end_month = next_month - timedelta(days=1)
+        available_dates = set(
+            a.date.isoformat()
+            for a in Availability.objects.filter(date__gte=today, date__lte=end_month)
+        )
+    except Exception:
+        available_dates = set()
+
+    context.update(
+        {
+            "year": year,
+            "month": month,
+            "month_name": meses_es[month],
+            "weeks": weeks,
+            "today": today,
+            "available_dates": available_dates,
+        }
+    )
+
+
+def _render_panel_administrativo(request, seccion_activa="panel_principal"):
     """
     Panel administrativo principal
     Incluye gestión de permisos solo para superusuarios
@@ -42,6 +131,7 @@ def panel_administrativo(request):
     context = {
         "es_superusuario": request.user.is_superuser,
         "perfil": getattr(request.user, "perfil", None),
+        "seccion_activa": seccion_activa,
     }
 
     # Si es superusuario, agregar datos para gestión de permisos
@@ -97,6 +187,9 @@ def panel_administrativo(request):
                 "usuarios_inactivos": usuarios_inactivos,
             }
         )
+
+    if seccion_activa == "gestion_calendario":
+        _agregar_contexto_calendario(context)
 
     return render(request, "core/panel_administrativo.html", context)
 
