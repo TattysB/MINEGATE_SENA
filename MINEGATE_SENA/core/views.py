@@ -7,6 +7,8 @@ from datetime import date, timedelta
 import calendar
 from usuarios.models import PerfilUsuario
 from calendario.models import Availability
+from visitaInterna.models import VisitaInterna
+from reportes.views import _obtener_filas_reporte
 
 
 def es_superusuario(user):
@@ -190,6 +192,18 @@ def _render_panel_administrativo(request, seccion_activa="panel_principal"):
 
     if seccion_activa == "gestion_calendario":
         _agregar_contexto_calendario(context)
+
+    if seccion_activa == "reportes":
+        filas, filtros = _obtener_filas_reporte(request)
+        context.update(
+            {
+                "filas_reportes": filas[:100],
+                "total_filas_reportes": len(filas),
+                "filtros_reportes": filtros,
+                "query_string_reportes": request.GET.urlencode(),
+                "estados_reportes": VisitaInterna.ESTADO_CHOICES,
+            }
+        )
 
     return render(request, "core/panel_administrativo.html", context)
 

@@ -99,9 +99,6 @@ def registro_visita(request):
     """
     Registro inicial de visita para responsables.
     """
-    if request.session.get("responsable_autenticado"):
-        return _redirect_segun_rol(request)
-
     if request.method == "POST":
         form = RegistroVisitanteForm(request.POST)
 
