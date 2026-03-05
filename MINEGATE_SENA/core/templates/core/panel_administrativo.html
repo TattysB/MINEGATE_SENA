@@ -272,10 +272,7 @@
         <p>Esta sección estará disponible próximamente.</p>
       </div>
       {% elif seccion_activa == 'reportes' %}
-      <div class="contenido-temporal">
-        <h2>Reportes</h2>
-        <p>Esta sección estará disponible próximamente.</p>
-      </div>
+      {% include 'reportes/panel_reportes_admin.html' %}
       {% else %}
       <div class="contenido-temporal">
         <h2>Panel principal</h2>
