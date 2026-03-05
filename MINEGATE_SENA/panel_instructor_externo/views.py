@@ -3,6 +3,10 @@ from django.contrib import messages
 from django.db.models import Q
 from visitaExterna.models import VisitaExterna
 from .forms import VisitaExternaInstructorForm
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+from django.conf import settings
 
 
 # ==================== AUTENTICACIÓN POR SESIÓN ====================
@@ -78,6 +82,26 @@ def reservar_visita_externa(request):
             visita.documento_responsable = documento
             visita.estado = 'enviada_coordinacion'
             visita.save()
+            # Enviar correo HTML de confirmación al responsable
+            try:
+                subject = 'Confirmación: solicitud de visita enviada'
+                context = {
+                    'responsable_nombre': nombre_completo,
+                    'nombre_responsable': visita.nombre_responsable,
+                    'documento_responsable': visita.documento_responsable,
+                    'nombre': visita.nombre,
+                    'fecha_solicitud': visita.fecha_solicitud.strftime('%d/%m/%Y %H:%M'),
+                    'hora_programada': (visita.hora_inicio.strftime('%I:%M %p') + ' - ' + visita.hora_fin.strftime('%I:%M %p')) if visita.hora_inicio and visita.hora_fin else 'Por definir',
+                    'sede': getattr(visita, 'sede', 'No especificada'),
+                }
+                html_content = render_to_string('emails/solicitud_visita_externa.html', context)
+                text_content = strip_tags(html_content)
+                msg = EmailMultiAlternatives(subject, text_content, settings.DEFAULT_FROM_EMAIL, [visita.correo_responsable])
+                msg.attach_alternative(html_content, 'text/html')
+                msg.send(fail_silently=True)
+            except Exception:
+                pass
+
             messages.success(request, '✅ Solicitud de visita externa enviada. Queda pendiente de aprobación por coordinación.')
             return redirect('panel_instructor_externo:panel')
     else:

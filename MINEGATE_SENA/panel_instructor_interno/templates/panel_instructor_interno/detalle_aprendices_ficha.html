@@ -1,0 +1,257 @@
+{% load static %}
+{% load accesibility_tags %}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aprendices - Ficha {{ ficha.numero }} - MINEGATE</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+</head>
+<body>
+<div class="container mt-4">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2 class="mb-1">
+                <i class="bi bi-people-fill"></i> Aprendices - Ficha {{ ficha.numero }}
+            </h2>
+            <p class="text-muted mb-3">
+                <strong>{{ ficha.programa.nombre }}</strong> | Jornada: {{ ficha.get_jornada_display }}
+            </p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a 
+                href="{% url 'panel_instructor_interno:crear_aprendiz' ficha.id %}" 
+                class="btn btn-success btn-lg"
+            >
+                <i class="bi bi-person-plus"></i> Registrar Aprendiz
+            </a>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="card-title mb-0">{{ stats.total }}</h3>
+                    <small class="text-muted">Total Aprendices</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-success">
+                <div class="card-body">
+                    <h3 class="card-title text-success mb-0">{{ stats.activos }}</h3>
+                    <small class="text-muted">Activos</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-warning">
+                <div class="card-body">
+                    <h3 class="card-title text-warning mb-0">{{ stats.inactivos }}</h3>
+                    <small class="text-muted">Inactivos</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-danger">
+                <div class="card-body">
+                    <h3 class="card-title text-danger mb-0">{{ stats.retirados }}</h3>
+                    <small class="text-muted">Retirados</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtro por estado -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <form method="GET">
+                <div class="input-group">
+                    <select name="estado" class="form-select" onchange="this.form.submit()">
+                        <option value="">📋 Todos los estados</option>
+                        <option value="activo" {% if estado_filtro == 'activo' %}selected{% endif %}>✅ Solo Activos</option>
+                        <option value="inactivo" {% if estado_filtro == 'inactivo' %}selected{% endif %}>⏸️ Solo Inactivos</option>
+                        <option value="retirado" {% if estado_filtro == 'retirado' %}selected{% endif %}>❌ Solo Retirados</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de aprendices -->
+    {% if aprendices %}
+    <div class="row">
+        {% for aprendiz in aprendices %}
+        <div class="col-md-6 mb-3">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0">{{ aprendiz.get_nombre_completo }}</h6>
+                        <small class="text-muted">
+                            {{ aprendiz.get_tipo_documento_display }}: {{ aprendiz.numero_documento }}
+                        </small>
+                    </div>
+                    <div>
+                        {% if aprendiz.estado == 'activo' %}
+                            <span class="badge bg-success">Activo</span>
+                        {% elif aprendiz.estado == 'inactivo' %}
+                            <span class="badge bg-warning">Inactivo</span>
+                        {% else %}
+                            <span class="badge bg-danger">Retirado</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2">
+                        <i class="bi bi-envelope"></i> 
+                        <a href="mailto:{{ aprendiz.correo }}">{{ aprendiz.correo }}</a>
+                    </p>
+                    {% if aprendiz.telefono %}
+                        <p class="mb-2">
+                            <i class="bi bi-telephone"></i> {{ aprendiz.telefono }}
+                        </p>
+                    {% endif %}
+                    
+                    <!-- Documentos -->
+                    {% if aprendiz.documento_identidad or aprendiz.documento_adicional %}
+                        <hr>
+                        <small class="text-muted"><i class="bi bi-file-earmark-pdf"></i> <strong>Documentos:</strong></small>
+                        <div class="mt-2">
+                            {% if aprendiz.documento_identidad %}
+                                <div class="mb-2">
+                                    <span class="badge bg-primary me-2"><i class="bi bi-file-pdf"></i> Identidad</span>
+                                    <a href="{{ aprendiz.documento_identidad.url }}" download class="btn btn-sm btn-outline-primary" title="Descargar">
+                                        <i class="bi bi-download"></i> Descargar
+                                    </a>
+                                </div>
+                            {% endif %}
+                            {% if aprendiz.documento_adicional %}
+                                <div class="mb-0">
+                                    <span class="badge bg-success me-2"><i class="bi bi-file-pdf"></i> Auto Reporte Salud</span>
+                                    <button type="button" onclick="verDocumento('{{ aprendiz.documento_adicional.url }}', 'Auto Reporte - {{ aprendiz.get_nombre_completo }}')" class="btn btn-sm btn-outline-success" title="Ver documento">
+                                        <i class="bi bi-eye"></i> Ver
+                                    </button>
+                                    <a href="{{ aprendiz.documento_adicional.url }}" download class="btn btn-sm btn-outline-success" title="Descargar">
+                                        <i class="bi bi-download"></i> Descargar
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-light d-flex gap-2">
+                    <a 
+                        href="{% url 'panel_instructor_interno:editar_aprendiz' aprendiz.id %}" 
+                        class="btn btn-sm btn-warning flex-grow-1"
+                    >
+                        <i class="bi bi-pencil"></i> Editar
+                    </a>
+                    <a 
+                        href="{% url 'panel_instructor_interno:eliminar_aprendiz' aprendiz.id %}" 
+                        class="btn btn-sm btn-danger flex-grow-1"
+                    >
+                        <i class="bi bi-trash"></i> Eliminar
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="alert alert-info" role="alert">
+        <i class="bi bi-info-circle"></i> 
+        <strong>No hay aprendices registrados en esta ficha.</strong>
+        <a href="{% url 'panel_instructor_interno:crear_aprendiz' ficha.id %}" class="alert-link">
+            Registra el primer aprendiz aquí
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- Botón regresar -->
+    <div class="mt-4 mb-4">
+        <a href="{% url 'panel_instructor_interno:listar_fichas_aprendices' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Modal para Ver Documento -->
+<script>
+function verDocumento(urlDocumento, titulo) {
+    const imgExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    const extension = urlDocumento.substring(urlDocumento.lastIndexOf('.')).toLowerCase();
+    
+    // Modal para ver documento
+    const modalVerDoc = document.createElement('div');
+    modalVerDoc.id = 'modalVerDoc';
+    modalVerDoc.style.cssText = 'display:block; position:fixed; z-index:9998; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.75); overflow-y:auto;';
+    
+    const contenido = document.createElement('div');
+    contenido.style.cssText = 'background:#fff; margin:2% auto; padding:20px; border-radius:12px; width:92%; max-width:960px; height:90vh; display:flex; flex-direction:column; box-shadow:0 8px 40px rgba(0,0,0,0.4);';
+    
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid #e5e7eb;';
+    header.innerHTML = `
+        <h5 style="margin:0; color:#1f2937; font-size:16px;"><i class="bi bi-file" style="color:#667eea;"></i> ${titulo}</h5>
+        <div style="display:flex; gap:8px; align-items:center;">
+            <a href="${urlDocumento}" download style="background:#667eea; color:white; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:13px; display:inline-flex; align-items:center; gap:4px; font-weight:600;">
+                <i class="bi bi-download"></i> Descargar
+            </a>
+            <button style="background:#ef4444; color:white; border:none; font-size:18px; cursor:pointer; width:36px; height:36px; border-radius:6px; display:flex; align-items:center; justify-content:center;">&times;</button>
+        </div>
+    `;
+    
+    const cuerpoNuevo = document.createElement('div');
+    cuerpoNuevo.style.cssText = 'flex:1; overflow:auto; border:1px solid #e5e7eb; border-radius:8px; background:#f0f0f0; display:flex; align-items:center; justify-content:center;';
+    
+    if (extension === '.pdf' || imgExts.includes(extension)) {
+        cuerpoNuevo.innerHTML = '<iframe src="' + urlDocumento + '" style="width:100%; height:100%; min-height:600px; border:none;"></iframe>';
+    } else {
+        cuerpoNuevo.innerHTML = '<div style="text-align:center; padding:50px; color:#6b7280;">'
+            + '<i class="bi bi-file-earmark" style="font-size:64px; color:#9ca3af; display:block; margin-bottom:20px;"></i>'
+            + '<p style="font-size:16px; margin-bottom:20px;">Vista previa no disponible para este tipo de archivo.</p>'
+            + '<a href="' + urlDocumento + '" download style="background:#667eea; color:white; padding:12px 28px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:8px;">'
+            + '<i class="bi bi-download"></i> Descargar</a></div>';
+    }
+    
+    contenido.appendChild(header);
+    contenido.appendChild(cuerpoNuevo);
+    modalVerDoc.appendChild(contenido);
+    document.body.appendChild(modalVerDoc);
+    
+    // Cerrar modal
+    header.querySelector('button').onclick = function() {
+        modalVerDoc.remove();
+        document.body.style.overflow = '';
+    };
+    
+    modalVerDoc.onclick = function(e) {
+        if (e.target === this) {
+            modalVerDoc.remove();
+            document.body.style.overflow = '';
+        }
+    };
+    
+    document.addEventListener('keydown', function handler(e) {
+        if (e.key === 'Escape') {
+            modalVerDoc.remove();
+            document.body.style.overflow = '';
+            document.removeEventListener('keydown', handler);
+        }
+    });
+    
+    document.body.style.overflow = 'hidden';
+}
+</script>
+{% accessibility_widget %}
+</body>
+</html>

@@ -408,6 +408,14 @@ class PasswordResetRequestForm(forms.Form):
         help_text="Ingrese el correo asociado a su cuenta",
     )
 
+    def clean_email(self):
+        email = self.cleaned_data.get("email", "").strip()
+        if not User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError(
+                "Este correo no está registrado en el sistema."
+            )
+        return email
+
 
 class PasswordResetConfirmForm(forms.Form):
     password1 = forms.CharField(

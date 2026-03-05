@@ -1,10 +1,12 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db.models import Q
+from django.urls import reverse
+from datetime import date, timedelta
+import calendar
 from usuarios.models import PerfilUsuario
-from django.http import JsonResponse
-from datetime import datetime
+from calendario.models import Availability
 
 
 def es_superusuario(user):
@@ -18,6 +20,92 @@ def index(request):
 
 @login_required(login_url='usuarios:login')
 def panel_administrativo(request):
+    return _render_panel_administrativo(request, seccion_activa="panel_principal")
+
+
+@login_required(login_url='usuarios:login')
+def panel_administrativo_seccion(request, seccion):
+    secciones_validas = {
+        "panel_principal",
+        "gestion_calendario",
+        "gestion_visitas",
+        "gestion_documentos",
+        "escaneo_documentos",
+        "configuracion",
+        "reportes",
+    }
+
+    if seccion not in secciones_validas:
+        messages.warning(request, "La sección solicitada no existe.")
+        return redirect("core:panel_administrativo")
+
+    return _render_panel_administrativo(request, seccion_activa=seccion)
+
+
+def _agregar_contexto_calendario(context):
+    today = date.today()
+    year = today.year
+    month = today.month
+
+    cal = calendar.Calendar(firstweekday=6)
+    month_days = list(cal.itermonthdates(year, month))
+    weeks_raw = [month_days[i:i + 7] for i in range(0, len(month_days), 7)]
+
+    weeks = []
+    for week in weeks_raw:
+        row = []
+        for day_obj in week:
+            row.append(
+                {
+                    "date": day_obj,
+                    "is_other_month": day_obj.month != month,
+                    "is_today": day_obj == today,
+                    "is_sunday": day_obj.weekday() == 6,
+                    "is_past": day_obj < today,
+                }
+            )
+        weeks.append(row)
+
+    meses_es = [
+        "",
+        "Enero",
+        "Febrero",
+        "Marzo",
+        "Abril",
+        "Mayo",
+        "Junio",
+        "Julio",
+        "Agosto",
+        "Septiembre",
+        "Octubre",
+        "Noviembre",
+        "Diciembre",
+    ]
+
+    try:
+        start_month = date(year, month, 1)
+        next_month = (start_month.replace(day=28) + timedelta(days=4)).replace(day=1)
+        end_month = next_month - timedelta(days=1)
+        available_dates = set(
+            a.date.isoformat()
+            for a in Availability.objects.filter(date__gte=today, date__lte=end_month)
+        )
+    except Exception:
+        available_dates = set()
+
+    context.update(
+        {
+            "year": year,
+            "month": month,
+            "month_name": meses_es[month],
+            "weeks": weeks,
+            "today": today,
+            "available_dates": available_dates,
+        }
+    )
+
+
+def _render_panel_administrativo(request, seccion_activa="panel_principal"):
     """
     Panel administrativo principal
     Incluye gestión de permisos solo para superusuarios
@@ -43,6 +131,7 @@ def panel_administrativo(request):
     context = {
         "es_superusuario": request.user.is_superuser,
         "perfil": getattr(request.user, "perfil", None),
+        "seccion_activa": seccion_activa,
     }
 
     # Si es superusuario, agregar datos para gestión de permisos
@@ -99,118 +188,43 @@ def panel_administrativo(request):
             }
         )
 
+    if seccion_activa == "gestion_calendario":
+        _agregar_contexto_calendario(context)
+
     return render(request, "core/panel_administrativo.html", context)
 
 
 @login_required(login_url="usuarios:login")
 @user_passes_test(es_superusuario, login_url="core:panel_administrativo")
 def gestionar_permisos(request):
-    """
-    Vista para que el administrador gestione los permisos de acceso de los usuarios
-    Solo accesible por superusuarios
-    """
-    # Obtener estadísticas
-    total_usuarios = PerfilUsuario.objects.count()
-    usuarios_activos = PerfilUsuario.objects.filter(user__is_active=True).count()
-    usuarios_inactivos = PerfilUsuario.objects.filter(user__is_active=False).count()
-
-    # Obtener filtros
-    filtro = request.GET.get("filtro", "todos")
-    buscar = request.GET.get("buscar", "")
-
-    # Filtrar perfiles
-    perfiles = PerfilUsuario.objects.all().select_related("user")
-
-    if filtro == "activos":
-        perfiles = perfiles.filter(user__is_active=True)
-    elif filtro == "inactivos":
-        perfiles = perfiles.filter(user__is_active=False)
-
-    # Búsqueda
-    if buscar:
-        perfiles = (
-            perfiles.filter(
-                user__username__icontains=buscar,
-            )
-            | perfiles.filter(
-                documento__icontains=buscar,
-            )
-            | perfiles.filter(
-                user__email__icontains=buscar,
-            )
-            | perfiles.filter(
-                user__first_name__icontains=buscar,
-            )
-        )
-
-    # Ordenar
-    perfiles = perfiles.order_by("-user__date_joined")
-
-    context = {
-        "perfiles": perfiles,
-        "total_usuarios": total_usuarios,
-        "usuarios_activos": usuarios_activos,
-        "usuarios_inactivos": usuarios_inactivos,
-        "filtro_actual": filtro,
-        "buscar": buscar,
-    }
-
-    return render(request, "core/gestionar_permisos.html", context)
+    """Redirige a la gestión de permisos unificada en usuarios."""
+    destino = reverse("usuarios:gestionar_permisos")
+    query_string = request.META.get("QUERY_STRING", "")
+    if query_string:
+        destino = f"{destino}?{query_string}"
+    return redirect(destino)
 
 
 @login_required(login_url="usuarios:login")
 @user_passes_test(es_superusuario, login_url="core:panel_administrativo")
 def aprobar_usuario(request, usuario_id):
-    """
-    Aprueba un usuario para acceder al sistema
-    """
-    perfil = get_object_or_404(PerfilUsuario, user_id=usuario_id)
-
-    if request.method == "POST":
-        perfil.aprobado = True
-        perfil.razon_rechazo = None
-        perfil.fecha_aprobacion = datetime.now()
-        perfil.save()
-
-        messages.success(
-            request, f"✓ Usuario {perfil.user.username} aprobado exitosamente."
-        )
-
-        # Si es AJAX, retornar JSON
-        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-            return JsonResponse({"success": True, "message": "Usuario aprobado"})
-
-    return redirect("core:gestionar_permisos")
+    """Ruta legacy: redirige a gestión de permisos unificada en usuarios."""
+    messages.info(
+        request,
+        "La aprobación de usuarios fue centralizada en el módulo de usuarios.",
+    )
+    return redirect("usuarios:gestionar_permisos")
 
 
 @login_required(login_url="usuarios:login")
 @user_passes_test(es_superusuario, login_url="core:panel_administrativo")
 def rechazar_usuario(request, usuario_id):
-    """
-    Rechaza un usuario y no le permite acceder al sistema
-    """
-    perfil = get_object_or_404(PerfilUsuario, user_id=usuario_id)
-
-    if request.method == "POST":
-        razon = request.POST.get("razon", "No se proporcionó razón")
-
-        perfil.aprobado = False
-        perfil.razon_rechazo = razon
-        perfil.fecha_aprobacion = None
-        perfil.save()
-
-        messages.warning(request, f"✗ Usuario {perfil.user.username} rechazado.")
-
-        # Si es AJAX, retornar JSON
-        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-            return JsonResponse({"success": True, "message": "Usuario rechazado"})
-
-    return redirect("core:gestionar_permisos")
-
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({'success': True, 'message': 'Usuario rechazado'})
-
-    return redirect('core:gestionar_permisos')  
+    """Ruta legacy: redirige a gestión de permisos unificada en usuarios."""
+    messages.info(
+        request,
+        "El rechazo de usuarios fue centralizado en el módulo de usuarios.",
+    )
+    return redirect("usuarios:gestionar_permisos")
 def protocolos(request):
     """Renderiza la página de Protocolos de Seguridad."""
     return render(request, 'protocolos.html')

@@ -10,6 +10,11 @@ urlpatterns = [
         "panel_administrativo/", views.panel_administrativo, name="panel_administrativo"
     ),
     path(
+        "panel_administrativo/<slug:seccion>/",
+        views.panel_administrativo_seccion,
+        name="panel_administrativo_seccion",
+    ),
+    path(
         "gestionar_permisos/", views.gestionar_permisos, name="gestionar_permisos"
     ),
     path(
@@ -18,7 +23,6 @@ urlpatterns = [
     path(
         "rechazar_usuario/<int:usuario_id>/", views.rechazar_usuario, name="rechazar_usuario"
     ),
-    path('protocolos/', views.protocolos, name='protocolos'),
     path('protocolos/', views.protocolos, name='protocolos'),
     path('visitas/', views.visitas, name='visitas'),
 ]
