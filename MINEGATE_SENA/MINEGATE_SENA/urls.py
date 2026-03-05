@@ -36,6 +36,7 @@ urlpatterns = [
     path('instructor/interno/', include('panel_instructor_interno.urls')),
     path('instructor/externo/', include('panel_instructor_externo.urls')),    
     path('coordinador/', include('coordinador.urls')),
+    path('reportes/', include('reportes.urls')),
     
 ]
 
