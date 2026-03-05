@@ -239,14 +239,14 @@
         background-color: white;
         transition: 0.3s;
         border-radius: 50%;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     }
 
-    .toggle-check input:checked + .toggle-check-slider {
+    .toggle-check input:checked+.toggle-check-slider {
         background: var(--gradient-verde);
     }
 
-    .toggle-check input:checked + .toggle-check-slider:before {
+    .toggle-check input:checked+.toggle-check-slider:before {
         transform: translateX(22px);
     }
 
@@ -360,8 +360,15 @@
     }
 
     @keyframes slideDown {
-        from { opacity: 0; transform: translateY(-20px); }
-        to { opacity: 1; transform: translateY(0); }
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     @media (max-width: 768px) {
@@ -383,7 +390,8 @@
             flex-direction: column;
         }
 
-        .btn-cancelar, .btn-guardar {
+        .btn-cancelar,
+        .btn-guardar {
             width: 100%;
             justify-content: center;
         }
@@ -400,80 +408,72 @@
     </div>
 
     <!-- Mensajes -->
-    {% if messages %}
     <div class="mensajes">
+        {% if messages %}
         {% for message in messages %}
         <div class="alerta alerta-{{ message.tags }}">
             <span>{{ message }}</span>
             <button type="button" class="btn-cerrar-alerta" onclick="this.parentElement.style.display='none'">×</button>
         </div>
         {% endfor %}
+        {% endif %}
+
+        {% if form.errors %}
+        <div class="alerta alerta-error">
+            <span>Falta algún campo en rellenar</span>
+            <button type="button" class="btn-cerrar-alerta" onclick="this.parentElement.style.display='none'">×</button>
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
 
     <!-- Formulario -->
     <form method="POST" class="formulario-crear" id="formCrearUsuario">
         {% csrf_token %}
-        
+
         <div class="grupo-campos">
             <!-- Documento -->
             <div class="campo">
                 <label for="documento">Número de Documento <span class="requerido">*</span></label>
-                <input type="text" name="documento" id="documento" 
-                       value="{{ form.documento.value|default:'' }}"
-                       placeholder="Ej: 1234567890" required>
-                {% if form.documento.errors %}
-                <span class="error-msg">{{ form.documento.errors|striptags }}</span>
-                {% endif %}
+                <input type="text" name="documento" id="documento" value="{{ form.documento.value|default:'' }}"
+                    placeholder="Ej: 1234567890" required>
             </div>
 
             <!-- Email -->
             <div class="campo">
                 <label for="email">Correo Electrónico <span class="requerido">*</span></label>
-                <input type="email" name="email" id="email" 
-                       value="{{ form.email.value|default:'' }}"
-                       placeholder="correo@ejemplo.com" required>
-                {% if form.email.errors %}
-                <span class="error-msg">{{ form.email.errors|striptags }}</span>
-                {% endif %}
+                <input type="email" name="email" id="email" value="{{ form.email.value|default:'' }}"
+                    placeholder="correo@ejemplo.com" required>
             </div>
 
             <!-- Nombre -->
             <div class="campo">
                 <label for="first_name">Nombre <span class="requerido">*</span></label>
-                <input type="text" name="first_name" id="first_name" 
-                       value="{{ form.first_name.value|default:'' }}"
-                       placeholder="Nombre" required>
-                {% if form.first_name.errors %}
-                <span class="error-msg">{{ form.first_name.errors|striptags }}</span>
-                {% endif %}
+                <input type="text" name="first_name" id="first_name" value="{{ form.first_name.value|default:'' }}"
+                    placeholder="Nombre" required>
             </div>
 
             <!-- Apellido -->
             <div class="campo">
                 <label for="last_name">Apellido <span class="requerido">*</span></label>
-                <input type="text" name="last_name" id="last_name" 
-                       value="{{ form.last_name.value|default:'' }}"
-                       placeholder="Apellido" required>
-                {% if form.last_name.errors %}
-                <span class="error-msg">{{ form.last_name.errors|striptags }}</span>
-                {% endif %}
+                <input type="text" name="last_name" id="last_name" value="{{ form.last_name.value|default:'' }}"
+                    placeholder="Apellido" required>
             </div>
 
             <!-- Teléfono -->
             <div class="campo">
                 <label for="telefono">Teléfono (opcional)</label>
-                <input type="text" name="telefono" id="telefono" 
-                       value="{{ form.telefono.value|default:'' }}"
-                       placeholder="Ej: 3001234567">
+                <input type="text" name="telefono" id="telefono" value="{{ form.telefono.value|default:'' }}"
+                    placeholder="Ej: 3001234567">
             </div>
 
             <!-- Espacio vacío para alineación -->
             <div class="campo">
                 <label for="rol_usuario">Rol del Usuario <span class="requerido">*</span></label>
                 <select name="rol_usuario" id="rol_usuario" required>
-                    <option value="administrador" {% if rol_actual == 'administrador' %}selected{% endif %}>Administrador</option>
-                    <option value="coordinador" {% if rol_actual == 'coordinador' %}selected{% endif %}>Coordinador</option>
+                    <option value="administrador" {% if rol_actual=='administrador' %}selected{% endif %}>Administrador
+                    </option>
+                    <option value="coordinador" {% if rol_actual=='coordinador' %}selected{% endif %}>Coordinador
+                    </option>
                 </select>
             </div>
 
@@ -481,30 +481,22 @@
             <div class="campo">
                 <label for="password1">Contraseña <span class="requerido">*</span></label>
                 <div class="password-field">
-                    <input type="password" name="password1" id="password1" 
-                           placeholder="Mínimo 8 caracteres" required>
+                    <input type="password" name="password1" id="password1" placeholder="Mínimo 8 caracteres" required>
                     <button type="button" class="toggle-password" onclick="togglePassword('password1')">
                         <i class="fa-solid fa-eye" id="icon-password1"></i>
                     </button>
                 </div>
-                {% if form.password1.errors %}
-                <span class="error-msg">{{ form.password1.errors|striptags }}</span>
-                {% endif %}
             </div>
 
             <!-- Confirmar Password -->
             <div class="campo">
                 <label for="password2">Confirmar Contraseña <span class="requerido">*</span></label>
                 <div class="password-field">
-                    <input type="password" name="password2" id="password2" 
-                           placeholder="Confirmar contraseña" required>
+                    <input type="password" name="password2" id="password2" placeholder="Confirmar contraseña" required>
                     <button type="button" class="toggle-password" onclick="togglePassword('password2')">
                         <i class="fa-solid fa-eye" id="icon-password2"></i>
                     </button>
                 </div>
-                {% if form.password2.errors %}
-                <span class="error-msg">{{ form.password2.errors|striptags }}</span>
-                {% endif %}
             </div>
         </div>
 
@@ -536,7 +528,7 @@
     function togglePassword(inputId) {
         const input = document.getElementById(inputId);
         const icon = document.getElementById('icon-' + inputId);
-        
+
         if (input.type === 'password') {
             input.type = 'text';
             icon.classList.remove('fa-eye');
@@ -549,7 +541,7 @@
     }
 
     // Auto-cerrar alertas después de 5 segundos
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         const alertas = document.querySelectorAll('.alerta');
         alertas.forEach(alerta => {
             setTimeout(() => {
