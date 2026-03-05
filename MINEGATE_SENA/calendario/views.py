@@ -1,0 +1,604 @@
+from django.shortcuts import render, redirect
+import calendar
+from datetime import date, datetime, timedelta
+from .models import Availability, ReservaHorario
+from django.views.decorators.http import require_POST, require_GET
+from django.http import JsonResponse
+from django.db.utils import OperationalError
+from django.db.models import Count
+import re
+import traceback
+
+
+def _serialize_day_ranges_simple(records):
+	"""Serializa los rangos de un día para mostrar al visitante"""
+	ranges = []
+	for rec in records:
+		start_label = rec.time.strftime('%H:%M')
+		if rec.end_time:
+			end_label = rec.end_time.strftime('%H:%M')
+			ranges.append({'start': start_label, 'end': end_label, 'label': f"{start_label} - {end_label}"})
+		else:
+			ranges.append({'start': start_label, 'end': start_label, 'label': start_label})
+	return sorted(ranges, key=lambda r: r['start'])
+
+
+def calendario_seleccion(request, year=None, month=None):
+	"""Vista del calendario para seleccionar una fecha disponible para nueva visita"""
+	today = date.today()
+	if year is None:
+		year = today.year
+	else:
+		year = int(year)
+	if month is None:
+		month = today.month
+	else:
+		month = int(month)
+
+	cal = calendar.Calendar(firstweekday=6)
+	month_days = list(cal.itermonthdates(year, month))
+
+	weeks_raw = [month_days[i:i+7] for i in range(0, len(month_days), 7)]
+	weeks = []
+	for week in weeks_raw:
+		row = []
+		for d in week:
+			row.append({
+				'date': d,
+				'is_other_month': d.month != month,
+				'is_today': d == today,
+				'is_sunday': d.weekday() == 6,
+				'is_past': d < today,
+			})
+		weeks.append(row)
+
+	meses_es = [
+		'', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+		'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+	]
+
+	is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+
+	# Obtener días disponibles (solo fechas futuras o de hoy)
+	try:
+		start_month = date(year, month, 1)
+		next_month = (start_month.replace(day=28) + timedelta(days=4)).replace(day=1)
+		end_month = next_month - timedelta(days=1)
+		av_qs = Availability.objects.filter(date__gte=today, date__lte=end_month)
+		available_dates = set(a.date.isoformat() for a in av_qs)
+		
+		# Obtener reservas para este mes
+		reservas_qs = ReservaHorario.objects.filter(
+			fecha__gte=today,
+			fecha__lte=end_month
+		)
+		
+		# Crear diccionario de reservas por fecha para verificar disponibilidad
+		reservas_por_fecha = {}
+		for reserva in reservas_qs:
+			fecha_str = reserva.fecha.isoformat()
+			if fecha_str not in reservas_por_fecha:
+				reservas_por_fecha[fecha_str] = []
+			reservas_por_fecha[fecha_str].append(reserva)
+		
+		# Filtrar días donde todos los horarios están reservados
+		fechas_completamente_ocupadas = set()
+		for fecha_str in list(available_dates):
+			if fecha_str in reservas_por_fecha:
+				# Obtener disponibilidades para este día
+				fecha_date = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+				disponibilidades = list(Availability.objects.filter(date=fecha_date))
+				reservas_del_dia = reservas_por_fecha[fecha_str]
+				
+				# Verificar si todos los horarios están reservados
+				todos_ocupados = True
+				for disp in disponibilidades:
+					start_time = disp.time
+					end_time = disp.end_time or disp.time
+					
+					horario_libre = True
+					for reserva in reservas_del_dia:
+						if start_time < reserva.hora_fin and end_time > reserva.hora_inicio:
+							horario_libre = False
+							break
+					
+					if horario_libre:
+						todos_ocupados = False
+						break
+				
+				if todos_ocupados:
+					fechas_completamente_ocupadas.add(fecha_str)
+		
+		# Quitar las fechas completamente ocupadas de available_dates
+		available_dates = available_dates - fechas_completamente_ocupadas
+		
+	except Exception:
+		available_dates = set()
+
+	context = {
+		'year': year,
+		'month': month,
+		'month_name': meses_es[month],
+		'weeks': weeks,
+		'today': today,
+		'available_dates': available_dates,
+		'include_assets': not is_ajax,
+		'modo_seleccion': True,
+	}
+
+	if is_ajax:
+		return render(request, 'calendario_seleccion.html', context)
+	return render(request, 'calendario_seleccion.html', context)
+
+
+@require_GET
+def horarios_disponibles(request, day):
+	"""Devuelve los horarios disponibles para un día específico, excluyendo los ya reservados"""
+	try:
+		day_date = datetime.strptime(day.strip(), '%Y-%m-%d').date()
+	except Exception:
+		return JsonResponse({'ok': False, 'error': 'Fecha inválida'}, status=400)
+
+	if day_date < date.today():
+		return JsonResponse({'ok': False, 'error': 'No se puede seleccionar fechas pasadas'}, status=400)
+
+	records = list(Availability.objects.filter(date=day_date).order_by('time', 'end_time'))
+	
+	# Obtener reservas existentes para este día (tanto pendientes como confirmadas)
+	reservas = list(ReservaHorario.objects.filter(fecha=day_date))
+	
+	# Filtrar horarios que no se superpongan con reservas existentes
+	ranges_disponibles = []
+	for rec in records:
+		start_time = rec.time
+		end_time = rec.end_time or rec.time
+		
+		# Verificar si este horario se superpone con alguna reserva
+		horario_libre = True
+		for reserva in reservas:
+			# Superposición: inicio1 < fin2 AND inicio2 < fin1
+			if start_time < reserva.hora_fin and end_time > reserva.hora_inicio:
+				horario_libre = False
+				break
+		
+		if horario_libre:
+			start_label = start_time.strftime('%H:%M')
+			if rec.end_time:
+				end_label = rec.end_time.strftime('%H:%M')
+				ranges_disponibles.append({
+					'start': start_label,
+					'end': end_label,
+					'label': f"{start_label} - {end_label}"
+				})
+			else:
+				ranges_disponibles.append({
+					'start': start_label,
+					'end': start_label,
+					'label': start_label
+				})
+	
+	ranges = sorted(ranges_disponibles, key=lambda r: r['start'])
+	
+	return JsonResponse({
+		'ok': True,
+		'date': day_date.isoformat(),
+		'date_formatted': day_date.strftime('%d de %B de %Y'),
+		'ranges': ranges,
+		'has_availability': len(ranges) > 0
+	})
+
+
+
+def calendario_mes(request, year=None, month=None):
+	today = date.today()
+	if year is None:
+		year = today.year
+	else:
+		year = int(year)
+	if month is None:
+		month = today.month
+	else:
+		month = int(month)
+
+	cal = calendar.Calendar(firstweekday=6)  # semana inicia en Domingo
+	month_days = list(cal.itermonthdates(year, month))
+
+	# Organizar en semanas (filas de 7 días) y añadir flags (hoy, otro mes, domingo)
+	weeks_raw = [month_days[i:i+7] for i in range(0, len(month_days), 7)]
+	weeks = []
+	for week in weeks_raw:
+		row = []
+		for d in week:
+			row.append({
+				'date': d,
+				'is_other_month': d.month != month,
+				'is_today': d == today,
+				'is_sunday': d.weekday() == 6,
+			})
+		weeks.append(row)
+
+	# Nombres de meses en español
+	meses_es = [
+		'', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+		'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+	]
+
+	is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+
+	context = {
+		'year': year,
+		'month': month,
+		'month_name': meses_es[month],
+		'weeks': weeks,
+		'today': today,
+		'include_assets': not is_ajax,
+	}
+
+	# Query availability for the shown month and build a set of dates
+	try:
+		start_month = date(year, month, 1)
+		# Fecha final del mes: avanzar al primer día del mes siguiente y restar uno
+		next_month = (start_month.replace(day=28) + timedelta(days=4)).replace(day=1)
+		end_month = next_month - timedelta(days=1)
+		av_qs = Availability.objects.filter(date__gte=start_month, date__lte=end_month)
+		# convertir a cadenas ISO para comparar en la plantilla
+		available_dates = set(a.date.isoformat() for a in av_qs)
+		# Unir fechas temporales guardadas en sesión (POST no-AJAX) para que
+		# el flujo de redirección muestre inmediatamente las nuevas disponibilidades.
+		try:
+			session_dates = request.session.pop('temp_available_dates', None)
+			if session_dates:
+				available_dates.update(session_dates)
+				request.session.modified = True
+		except Exception:
+			# no interrumpir el render si falla el acceso a la sesión
+			pass
+		context['available_dates'] = available_dates
+		
+		# Obtener reservas del mes para mostrar estados (pendiente/confirmada)
+		reservas_qs = ReservaHorario.objects.filter(
+			fecha__gte=start_month,
+			fecha__lte=end_month
+		)
+		# Agrupar por fecha y estado
+		fechas_pendientes = set()
+		fechas_confirmadas = set()
+		for reserva in reservas_qs:
+			fecha_str = reserva.fecha.isoformat()
+			if reserva.estado == 'pendiente':
+				fechas_pendientes.add(fecha_str)
+			elif reserva.estado == 'confirmada':
+				fechas_confirmadas.add(fecha_str)
+		
+		context['fechas_pendientes'] = fechas_pendientes
+		context['fechas_confirmadas'] = fechas_confirmadas
+		
+	except Exception:
+		context['available_dates'] = set()
+		context['fechas_pendientes'] = set()
+		context['fechas_confirmadas'] = set()
+
+	# Si la petición es AJAX, devolver la misma plantilla para inyección en el panel
+	if is_ajax:
+		return render(request, 'calendario.html', context)
+
+	return render(request, 'calendario.html', context)
+
+
+def _normalize_time_part(p):
+	if not p:
+		return None
+	s = p.lower().replace('.', '').replace('\u00A0', ' ').strip()
+	for fmt in ('%H:%M', '%I:%M %p', '%I:%M%p', '%I %p'):
+		try:
+			from datetime import datetime as _dt
+			t = _dt.strptime(s, fmt).time()
+			return t.strftime('%H:%M')
+		except Exception:
+			continue
+	m = re.match(r'^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$', s)
+	if not m:
+		return None
+	h = int(m.group(1))
+	mm = m.group(2)
+	mer = m.group(3)
+	minute = int(mm) if mm else 0
+	if mer:
+		mer = mer.lower()
+		if mer == 'pm' and h != 12:
+			h += 12
+		if mer == 'am' and h == 12:
+			h = 0
+	if h < 0 or h > 23 or minute < 0 or minute > 59:
+		return None
+	return f"{h:02d}:{minute:02d}"
+
+
+def _parse_ranges(ranges_raw):
+	ranges = []
+	for raw in ranges_raw:
+		if '-' not in raw:
+			continue
+		left, right = raw.split('-', 1)
+		start_label = _normalize_time_part(left)
+		end_label = _normalize_time_part(right)
+		if not start_label or not end_label:
+			continue
+		start_dt = datetime.strptime(start_label, '%H:%M')
+		end_dt = datetime.strptime(end_label, '%H:%M')
+		if end_dt <= start_dt:
+			continue
+		ranges.append((start_label, end_label))
+
+	seen = set()
+	ordered_ranges = []
+	for start_label, end_label in sorted(ranges):
+		key = f"{start_label}-{end_label}"
+		if key not in seen:
+			seen.add(key)
+			ordered_ranges.append((start_label, end_label))
+	return ordered_ranges
+
+
+def _serialize_day_ranges(records):
+	ranges = []
+	legacy_times = []
+	for rec in records:
+		start_label = rec.time.strftime('%H:%M')
+		if rec.end_time:
+			end_label = rec.end_time.strftime('%H:%M')
+			ranges.append({'start': start_label, 'end': end_label, 'label': f"{start_label}-{end_label}"})
+		else:
+			legacy_times.append(start_label)
+
+	# Compatibilidad con datos antiguos (slots cada 30 min): agrupar en rangos continuos
+	if legacy_times:
+		legacy_times_sorted = sorted(set(legacy_times))
+		if legacy_times_sorted:
+			group_start = legacy_times_sorted[0]
+			group_prev_dt = datetime.strptime(group_start, '%H:%M')
+			for label in legacy_times_sorted[1:]:
+				current_dt = datetime.strptime(label, '%H:%M')
+				if current_dt - group_prev_dt == timedelta(minutes=30):
+					group_prev_dt = current_dt
+					continue
+				end_label = (group_prev_dt + timedelta(minutes=30)).strftime('%H:%M')
+				ranges.append({'start': group_start, 'end': end_label, 'label': f"{group_start}-{end_label}"})
+				group_start = label
+				group_prev_dt = current_dt
+			end_label = (group_prev_dt + timedelta(minutes=30)).strftime('%H:%M')
+			ranges.append({'start': group_start, 'end': end_label, 'label': f"{group_start}-{end_label}"})
+
+	ranges_sorted = sorted(ranges, key=lambda r: (r['start'], r['end']))
+	return ranges_sorted
+
+
+def _parse_day(day_str):
+	try:
+		return datetime.strptime(day_str.strip(), '%Y-%m-%d').date()
+	except Exception:
+		return None
+
+
+@require_GET
+def day_availability(request, day):
+	day_date = _parse_day(day)
+	if not day_date:
+		return JsonResponse({'ok': False, 'error': 'Fecha inválida'}, status=400)
+
+	qs = list(Availability.objects.filter(date=day_date).order_by('time', 'end_time'))
+	ranges = _serialize_day_ranges(qs)
+	return JsonResponse({'ok': True, 'date': day_date.isoformat(), 'ranges': ranges, 'is_available': len(ranges) > 0})
+
+
+@require_POST
+def update_day_availability(request):
+	day_str = request.POST.get('date', '')
+	day_date = _parse_day(day_str)
+	if not day_date:
+		return JsonResponse({'ok': False, 'error': 'Fecha inválida'}, status=400)
+
+	if day_date.weekday() == 6:
+		return JsonResponse({'ok': False, 'error': 'No se puede configurar domingo'}, status=400)
+
+	ranges_raw = [r.strip() for r in request.POST.getlist('ranges') if r and r.strip()]
+	parsed_ranges = _parse_ranges(ranges_raw)
+
+	try:
+		Availability.objects.filter(date=day_date).delete()
+		for start_label, end_label in parsed_ranges:
+			start_value = datetime.strptime(start_label, '%H:%M').time()
+			end_value = datetime.strptime(end_label, '%H:%M').time()
+			Availability.objects.get_or_create(date=day_date, time=start_value, end_time=end_value)
+	except OperationalError as e:
+		print(f"DB Error en update_day_availability: {e}")
+		traceback.print_exc()
+		return JsonResponse({'ok': False, 'error': f'Error de base de datos: {e}'}, status=500)
+
+	records = list(Availability.objects.filter(date=day_date).order_by('time', 'end_time'))
+	ranges = _serialize_day_ranges(records)
+
+	return JsonResponse({
+		'ok': True,
+		'date': day_date.isoformat(),
+		'ranges': ranges,
+		'is_available': len(ranges) > 0,
+		'available_dates': [day_date.isoformat()] if ranges else []
+	})
+
+
+@require_POST
+def delete_day_availability(request):
+	day_str = request.POST.get('date', '')
+	day_date = _parse_day(day_str)
+	if not day_date:
+		return JsonResponse({'ok': False, 'error': 'Fecha inválida'}, status=400)
+
+	range_str = request.POST.get('range', '').strip()
+	try:
+		if range_str and '-' in range_str:
+			left, right = range_str.split('-', 1)
+			start_label = _normalize_time_part(left)
+			end_label = _normalize_time_part(right)
+			if not start_label or not end_label:
+				return JsonResponse({'ok': False, 'error': 'Rango inválido'}, status=400)
+			start_value = datetime.strptime(start_label, '%H:%M').time()
+			end_value = datetime.strptime(end_label, '%H:%M').time()
+			deleted_count, _ = Availability.objects.filter(date=day_date, time=start_value, end_time=end_value).delete()
+			# Compatibilidad con datos antiguos guardados por slots (end_time=None)
+			if not deleted_count:
+				Availability.objects.filter(date=day_date, end_time__isnull=True, time__gte=start_value, time__lt=end_value).delete()
+		else:
+			Availability.objects.filter(date=day_date).delete()
+	except OperationalError as e:
+		print(f"DB Error en delete_day_availability: {e}")
+		traceback.print_exc()
+		return JsonResponse({'ok': False, 'error': f'Error de base de datos: {e}'}, status=500)
+
+	remaining_records = list(Availability.objects.filter(date=day_date).order_by('time', 'end_time'))
+	ranges = _serialize_day_ranges(remaining_records)
+	is_available = len(ranges) > 0
+	return JsonResponse({
+		'ok': True,
+		'date': day_date.isoformat(),
+		'ranges': ranges,
+		'is_available': is_available,
+		'available_dates': [day_date.isoformat()] if is_available else []
+	})
+
+
+@require_POST
+def save_availability(request):
+	is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.accepts('application/json')
+
+	def json_or_redirect(payload):
+		if is_ajax:
+			return JsonResponse(payload)
+		return redirect('calendario:index')
+
+	def normalize_part(p):
+		return _normalize_time_part(p)
+
+	# Nuevo formato: dates[] + ranges[] (HH:MM-HH:MM)
+	dates_raw = [d for d in request.POST.getlist('dates') if d and d.strip()]
+	ranges_raw = [r for r in request.POST.getlist('ranges') if r and r.strip()]
+
+	if dates_raw and ranges_raw:
+		parsed_dates = []
+		for ds in dates_raw:
+			try:
+				d = datetime.strptime(ds.strip(), '%Y-%m-%d').date()
+			except ValueError:
+				continue
+			# Sólo lunes a sábado
+			if d.weekday() == 6:
+				continue
+			parsed_dates.append(d)
+
+		parsed_ranges = _parse_ranges(ranges_raw)
+
+		if not parsed_dates or not parsed_ranges:
+			return json_or_redirect({'created': 0, 'available_dates': [], 'debug': {'received_dates': dates_raw, 'received_ranges': ranges_raw}})
+
+		created = 0
+		created_dates = set()
+		for current_date in sorted(set(parsed_dates)):
+			for start_label, end_label in parsed_ranges:
+				try:
+					start_value = datetime.strptime(start_label, '%H:%M').time()
+					end_value = datetime.strptime(end_label, '%H:%M').time()
+					_, was_created = Availability.objects.get_or_create(date=current_date, time=start_value, end_time=end_value)
+					if was_created:
+						created += 1
+					created_dates.add(current_date.isoformat())
+				except OperationalError as e:
+					print(f"DB Error al guardar: {e}")
+					traceback.print_exc()
+				except Exception as e:
+					print(f"Error al guardar disponibilidad: {e}")
+					traceback.print_exc()
+
+		if is_ajax:
+			return JsonResponse({'created': created, 'available_dates': sorted(list(created_dates))})
+
+		if created and hasattr(request, 'session'):
+			request.session['temp_available_dates'] = sorted(list(created_dates))
+			request.session.modified = True
+
+		return redirect('calendario:index')
+
+	# Formato anterior (compatibilidad): start_date, end_date, times[] o times_text
+	start = request.POST.get('start_date')
+	end = request.POST.get('end_date')
+	times = request.POST.getlist('times')
+	parts = []
+	times_list = [p for p in times if p and p.strip()]
+	if times_list:
+		parts.extend(times_list)
+	times_text = request.POST.get('times_text', '')
+	if times_text and not parts:
+		parts.extend([p.strip() for p in times_text.split(',') if p.strip()])
+
+	parsed_times = []
+	for p in parts:
+		np = normalize_part(p)
+		if np:
+			parsed_times.append(np)
+
+	seen = set()
+	times = []
+	for t in parsed_times:
+		if t not in seen:
+			seen.add(t)
+			times.append(t)
+
+	if not (start and end and times):
+		return json_or_redirect({'created': 0, 'available_dates': [], 'debug': {'start': start, 'end': end, 'received_parts': parts, 'parsed_times': times}})
+
+	try:
+		start_d = datetime.strptime(start, '%Y-%m-%d').date()
+		end_d = datetime.strptime(end, '%Y-%m-%d').date()
+	except ValueError:
+		return redirect('calendario:index')
+
+	if end_d < start_d:
+		end_d = start_d
+
+	current = start_d
+	created = 0
+	created_dates = set()
+	while current <= end_d:
+		for t in times:
+			t_val = None
+			if not t:
+				continue
+			p = t.strip().replace('.', '').replace('\u00A0', ' ')
+			for fmt in ('%H:%M', '%I:%M %p', '%I:%M%p'):
+				try:
+					_tt = datetime.strptime(p, fmt).time()
+					t_val = _tt
+					break
+				except Exception:
+					continue
+			if not t_val:
+				continue
+			try:
+				_, was_created = Availability.objects.get_or_create(date=current, time=t_val, end_time=None)
+				if was_created:
+					created += 1
+				created_dates.add(current.isoformat())
+			except OperationalError:
+				created += 1
+				created_dates.add(current.isoformat())
+			except Exception:
+				continue
+		current += timedelta(days=1)
+
+	if is_ajax:
+		return JsonResponse({'created': created, 'available_dates': sorted(list(created_dates))})
+
+	if created and request and hasattr(request, 'session'):
+		request.session['temp_available_dates'] = sorted(list(created_dates))
+		request.session.modified = True
+
+	return redirect('calendario:index')

@@ -1,0 +1,60 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'calendario/css/calendario_seleccion.css' %}">
+
+<div class="calendar-page" id="calendarioSeleccionPage">
+
+  <main class="calendar-card" data-year="{{ year }}" data-month="{{ month }}">
+    <div class="card-top">
+      <button id="prevSel" class="nav" title="Mes anterior">‹</button>
+      <h2 id="month-title">{{ month_name }} {{ year }}</h2>
+      <button id="nextSel" class="nav" title="Mes siguiente">›</button>
+    </div>
+
+    <table class="calendar-table">
+      <thead>
+        <tr>
+          <th>Dom</th><th>Lun</th><th>Mar</th><th>Mié</th><th>Jue</th><th>Vie</th><th>Sáb</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for week in weeks %}
+          <tr>
+            {% for day in week %}
+              {% with daystr=day.date|date:"Y-m-d" %}
+                {% if day.is_other_month %}
+                  <td class="other-month" data-date="{{ daystr }}">{{ day.date.day }}</td>
+                {% elif day.is_sunday %}
+                  <td class="disabled" data-date="{{ daystr }}">{{ day.date.day }}</td>
+                {% elif day.is_past %}
+                  <td class="disabled" data-date="{{ daystr }}">{{ day.date.day }}</td>
+                {% elif daystr in available_dates %}
+                  <td class="available{% if day.is_today %} today{% endif %}" data-date="{{ daystr }}">{{ day.date.day }}</td>
+                {% else %}
+                  <td class="no-available{% if day.is_today %} today{% endif %}" data-date="{{ daystr }}">{{ day.date.day }}</td>
+                {% endif %}
+              {% endwith %}
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="legend">
+      <span><span class="dot available"></span>Disponible</span>
+      <span><span class="dot selected"></span>Seleccionado</span>
+      <span><span class="dot today-dot"></span>Hoy</span>
+    </div>
+  </main>
+
+  <section class="availability-config">
+    <h3 id="horarioTitle">Seleccionar Horario</h3>
+    <div class="selection-box" id="horarioHintBox">
+      <p id="horarioHint">Selecciona un día disponible (verde) para ver los horarios.</p>
+    </div>
+    <div id="horariosList" class="selection-box day-slots" style="display: none;"></div>
+    <button type="button" class="btn blue" id="btnContinuarVisita" style="display: none;">
+      Continuar con la solicitud
+    </button>
+  </section>
+
+</div>

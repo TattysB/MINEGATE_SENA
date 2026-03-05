@@ -45,6 +45,23 @@ class PerfilUsuario(models.Model):
         help_text="Fecha de nacimiento"
     )
     
+    aprobado = models.BooleanField(
+        default=False,
+        help_text="El usuario solo puede acceder al sistema si está aprobado por el administrador"
+    )
+    
+    razon_rechazo = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Razón por la cual se rechazó el acceso del usuario"
+    )
+    
+    fecha_aprobacion = models.DateTimeField(
+        null=True, 
+        blank=True,
+        help_text="Fecha en que se aprobó el acceso del usuario"
+    )
+    
     fecha_actualizacion = models.DateTimeField(auto_now=True)
     
     class Meta:
@@ -65,9 +82,17 @@ class PerfilUsuario(models.Model):
 def crear_perfil_usuario(sender, instance, created, **kwargs):
     """
     Crea automáticamente un perfil cuando se crea un usuario
+    Solo si el perfil no existe ya (evita duplicados con el formulario de registro)
     """
     if created:
-        PerfilUsuario.objects.create(user=instance)
+        # Solo crear si no existe ya un perfil para este usuario
+        if not hasattr(instance, 'perfil'):
+            try:
+                PerfilUsuario.objects.get(user=instance)
+            except PerfilUsuario.DoesNotExist:
+                # Solo crear para usuarios que no vienen del registro
+                # (superusuarios creados desde consola, etc.)
+                pass
 
 @receiver(post_save, sender=User)
 def guardar_perfil_usuario(sender, instance, **kwargs):

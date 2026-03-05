@@ -1,0 +1,101 @@
+{% load static %}
+{% if include_assets %}
+<link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}">
+{% endif %}
+
+<div class="calendar-page">
+
+  <header class="calendar-header">
+    <h1>Sistema de Gestión de Visitas</h1>
+    <p class="subtitle">SENA - CENTRO MINERO</p>
+  </header>
+
+  <main class="calendar-card" data-year="{{ year }}" data-month="{{ month }}">
+    <div class="card-top">
+      <button id="prev" class="nav">‹</button>
+      <h2 id="month-title">{{ month_name }} {{ year }}</h2>
+      <button id="next" class="nav">›</button>
+    </div>
+
+    <table class="calendar-table">
+      <thead>
+        <tr>
+          <th>Dom</th><th>Lun</th><th>Mar</th><th>Mié</th><th>Jue</th><th>Vie</th><th>Sáb</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for week in weeks %}
+          <tr>
+            {% for day in week %}
+              {% with daystr=day.date|date:"Y-m-d" %}
+                {% if day.is_other_month %}
+                  <td class="other-month" data-date="{{ day.date|date:'Y-m-d' }}">{{ day.date.day }}</td>
+                {% elif day.is_sunday %}
+                  <td class="disabled" data-date="{{ day.date|date:'Y-m-d' }}">{{ day.date.day }}</td>
+                {% elif daystr in fechas_confirmadas %}
+                  <td class="occupied{% if day.is_today %} today{% endif %}" data-date="{{ day.date|date:'Y-m-d' }}" title="Día ocupado - Visita confirmada">{{ day.date.day }}</td>
+                {% elif daystr in fechas_pendientes %}
+                  <td class="pending{% if day.is_today %} today{% endif %}" data-date="{{ day.date|date:'Y-m-d' }}" title="Pendiente por revisión">{{ day.date.day }}</td>
+                {% elif day.is_today %}
+                  <td class="today{% if daystr in available_dates %} available{% else %} no-available{% endif %}" data-date="{{ day.date|date:'Y-m-d' }}">{{ day.date.day }}</td>
+                {% else %}
+                  <td class="{% if daystr in available_dates %}available{% else %}no-available{% endif %}" data-date="{{ day.date|date:'Y-m-d' }}">{{ day.date.day }}</td>
+                {% endif %}
+              {% endwith %}
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="legend">
+      <span><span class="dot available"></span>Disponible</span>
+      <span><span class="dot pending"></span>Pendiente por revisar</span>
+      <span><span class="dot occupied"></span>Ocupado</span>
+      <span><span class="dot selected"></span>Seleccionado</span>
+    </div>
+
+    <!-- botones eliminados: Visita Externa / Visita Interna -->
+  </main>
+
+  <section class="availability-config">
+    <h3>Configurar Días y Horarios Disponibles</h3>
+    <form method="post" action="{% url 'calendario:save_availability' %}" id="availabilityForm"
+      data-day-fetch-base="{% url 'calendario:index' %}day/"
+      data-day-update-url="{% url 'calendario:update_day_availability' %}"
+      data-day-delete-url="{% url 'calendario:delete_day_availability' %}">
+      {% csrf_token %}
+      <div class="fields">
+        <label>Hora inicio:
+          <input type="time" id="startTime" step="60">
+        </label>
+        <label>Hora fin:
+          <input type="time" id="endTime" step="60">
+        </label>
+        <button type="button" class="btn blue btn-inline" id="addRangeBtn">Agregar horario</button>
+      </div>
+      <div id="selectedDatesSummary" class="selection-box">
+        Selecciona uno o varios días del calendario (lunes a sábado).
+      </div>
+      <div id="rangesList" class="selection-box">Agrega al menos un horario de inicio y fin.</div>
+
+      <div id="dayEditor" class="selection-box day-editor is-disabled">
+        <h4 id="dayEditorTitle">Edición del día</h4>
+        <p id="dayEditorHint">Selecciona un único día para ver, editar o eliminar su disponibilidad.</p>
+        <div id="daySlotsList" class="day-slots"></div>
+        <div class="day-editor-actions">
+          <button type="button" class="btn blue btn-inline" id="replaceDayBtn">Reemplazar día con horarios agregados</button>
+          <button type="button" class="btn danger btn-inline" id="clearDayBtn">Quitar toda la disponibilidad del día</button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn blue" id="saveAvailBtn">Guardar Disponibilidades</button>
+    </form>
+    <p class="note">Las fechas con disponibilidad se marcan en <span class="dot available"></span> verde y el día de hoy con un punto <span class="dot today-dot"></span>.</p>
+  </section>
+
+</div>
+
+{% if include_assets %}
+<script src="{% static 'calendario/js/calendario.js' %}" defer></script>
+{% endif %}

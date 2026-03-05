@@ -1,0 +1,554 @@
+{% extends "core/panel_administrativo.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/gestionar_permisos.css' %}" />
+
+<style>
+    /* === VARIABLES CONSISTENTES === */
+    :root {
+        --sena-verde-primario: #00b000;
+        --sena-verde-oscuro: #185027;
+        --sena-verde-claro: #2CC295;
+        --sena-verde-suave: #e8f5e9;
+        --gradient-verde: linear-gradient(135deg, var(--sena-verde-primario), var(--sena-verde-oscuro));
+        --blanco: #ffffff;
+        --gris-claro: #f8fafc;
+        --gris-borde: #e2e8f0;
+        --texto-oscuro: #1e293b;
+        --texto-secundario: #64748b;
+        --sombra-suave: 0 4px 15px rgba(0, 176, 0, 0.1);
+        --sombra-media: 0 8px 25px rgba(0, 176, 0, 0.15);
+        --transicion: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        --borde-radio: 12px;
+        --borde-radio-lg: 16px;
+    }
+
+    .contenedor-crear-usuario {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 1.5rem;
+    }
+
+    .header-crear {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--sena-verde-suave);
+    }
+
+    .header-crear h1 {
+        color: var(--sena-verde-oscuro);
+        font-size: 1.5rem;
+        margin: 0;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-volver {
+        padding: 0.75rem 1.5rem;
+        background: var(--gris-claro);
+        color: var(--texto-secundario);
+        border: 2px solid var(--gris-borde);
+        border-radius: 25px;
+        cursor: pointer;
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 600;
+        transition: var(--transicion);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-volver:hover {
+        background: var(--sena-verde-suave);
+        border-color: var(--sena-verde-claro);
+        color: var(--sena-verde-oscuro);
+        transform: translateY(-2px);
+    }
+
+    .formulario-crear {
+        background: var(--blanco);
+        padding: 2rem;
+        border-radius: var(--borde-radio-lg);
+        box-shadow: var(--sombra-suave);
+        border: 1px solid var(--gris-borde);
+        transition: var(--transicion);
+    }
+
+    .formulario-crear:hover {
+        box-shadow: var(--sombra-media);
+    }
+
+    .grupo-campos {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .campo {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .campo.campo-completo {
+        grid-column: span 2;
+    }
+
+    .campo label {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--texto-oscuro);
+        font-size: 0.9rem;
+    }
+
+    .campo label .requerido {
+        color: #dc3545;
+    }
+
+    .campo input,
+    .campo select {
+        padding: 0.85rem 1rem;
+        border: 2px solid var(--gris-borde);
+        border-radius: var(--borde-radio);
+        font-size: 0.95rem;
+        transition: var(--transicion);
+        background: var(--blanco);
+    }
+
+    .campo input:focus,
+    .campo select:focus {
+        outline: none;
+        border-color: var(--sena-verde-primario);
+        box-shadow: 0 0 0 3px rgba(0, 176, 0, 0.15);
+    }
+
+    .campo input.error {
+        border-color: #dc3545;
+    }
+
+    .campo .error-msg {
+        color: #dc3545;
+        font-size: 0.8rem;
+        margin-top: 0.35rem;
+        font-weight: 500;
+    }
+
+    .password-field {
+        position: relative;
+    }
+
+    .password-field input {
+        width: 100%;
+        padding-right: 50px;
+    }
+
+    .toggle-password {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--texto-secundario);
+        padding: 8px;
+        transition: var(--transicion);
+        border-radius: 50%;
+    }
+
+    .toggle-password:hover {
+        color: var(--sena-verde-primario);
+        background: var(--sena-verde-suave);
+    }
+
+    .opciones-adicionales {
+        background: var(--sena-verde-suave);
+        padding: 1.5rem;
+        border-radius: var(--borde-radio);
+        margin: 1.5rem 0;
+        border: 1px solid rgba(0, 176, 0, 0.2);
+    }
+
+    .opciones-adicionales h3 {
+        margin: 0 0 1rem 0;
+        font-size: 1rem;
+        color: var(--sena-verde-oscuro);
+        font-weight: 700;
+    }
+
+    .opcion-check {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+        padding: 0.75rem;
+        background: var(--blanco);
+        border-radius: 8px;
+        border: 1px solid var(--gris-borde);
+        transition: var(--transicion);
+    }
+
+    .opcion-check:hover {
+        border-color: var(--sena-verde-claro);
+    }
+
+    .opcion-check:last-child {
+        margin-bottom: 0;
+    }
+
+    /* Toggle Switch para opciones */
+    .toggle-check {
+        position: relative;
+        width: 48px;
+        height: 26px;
+        flex-shrink: 0;
+    }
+
+    .toggle-check input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .toggle-check-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: #ccc;
+        transition: 0.3s;
+        border-radius: 26px;
+    }
+
+    .toggle-check-slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: 0.3s;
+        border-radius: 50%;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .toggle-check input:checked+.toggle-check-slider {
+        background: var(--gradient-verde);
+    }
+
+    .toggle-check input:checked+.toggle-check-slider:before {
+        transform: translateX(22px);
+    }
+
+    .opcion-texto {
+        flex: 1;
+    }
+
+    .opcion-texto label {
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--texto-oscuro);
+        display: block;
+        margin-bottom: 0.25rem;
+    }
+
+    .opcion-texto .descripcion {
+        font-size: 0.8rem;
+        color: var(--texto-secundario);
+        line-height: 1.4;
+    }
+
+    .botones-accion {
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 2px solid var(--sena-verde-suave);
+    }
+
+    .btn-cancelar {
+        padding: 0.85rem 2rem;
+        background: var(--blanco);
+        color: var(--texto-secundario);
+        border: 2px solid var(--gris-borde);
+        border-radius: 25px;
+        cursor: pointer;
+        font-size: 0.95rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: var(--transicion);
+    }
+
+    .btn-cancelar:hover {
+        background: #fee2e2;
+        border-color: #fca5a5;
+        color: #c62828;
+    }
+
+    .btn-guardar {
+        padding: 0.85rem 2rem;
+        background: var(--gradient-verde);
+        color: var(--blanco);
+        border: none;
+        border-radius: 25px;
+        cursor: pointer;
+        font-size: 0.95rem;
+        font-weight: 700;
+        transition: var(--transicion);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        box-shadow: var(--sombra-suave);
+    }
+
+    .btn-guardar:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--sombra-media);
+    }
+
+    .mensajes {
+        margin-bottom: 1.5rem;
+    }
+
+    .alerta {
+        padding: 1rem 1.25rem;
+        border-radius: var(--borde-radio);
+        margin-bottom: 0.75rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        animation: slideDown 0.4s ease-out;
+    }
+
+    .alerta-error {
+        background: linear-gradient(135deg, #ffcdd2, #ef9a9a);
+        color: #b71c1c;
+        border-left: 4px solid #c62828;
+    }
+
+    .alerta-success {
+        background: linear-gradient(135deg, #c8e6c9, #a5d6a7);
+        color: #1b5e20;
+        border-left: 4px solid #2e7d32;
+    }
+
+    .btn-cerrar-alerta {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: inherit;
+        opacity: 0.7;
+        transition: var(--transicion);
+    }
+
+    .btn-cerrar-alerta:hover {
+        opacity: 1;
+        transform: scale(1.2);
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .grupo-campos {
+            grid-template-columns: 1fr;
+        }
+
+        .campo.campo-completo {
+            grid-column: span 1;
+        }
+
+        .header-crear {
+            flex-direction: column;
+            gap: 1rem;
+            text-align: center;
+        }
+
+        .botones-accion {
+            flex-direction: column;
+        }
+
+        .btn-cancelar,
+        .btn-guardar {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+
+<div class="contenedor-crear-usuario">
+    <!-- Header -->
+    <div class="header-crear">
+        <h1>➕ Crear Nuevo Usuario</h1>
+        <a href="{% url 'usuarios:gestionar_permisos' %}" class="btn-volver">
+            ← Volver
+        </a>
+    </div>
+
+    <!-- Mensajes -->
+    <div class="mensajes">
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alerta alerta-{{ message.tags }}">
+            <span>{{ message }}</span>
+            <button type="button" class="btn-cerrar-alerta" onclick="this.parentElement.style.display='none'">×</button>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        {% if form.errors %}
+        <div class="alerta alerta-error">
+            <span>Falta algún campo en rellenar</span>
+            <button type="button" class="btn-cerrar-alerta" onclick="this.parentElement.style.display='none'">×</button>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Formulario -->
+    <form method="POST" class="formulario-crear" id="formCrearUsuario">
+        {% csrf_token %}
+
+        <div class="grupo-campos">
+            <!-- Documento -->
+            <div class="campo">
+                <label for="documento">Número de Documento <span class="requerido">*</span></label>
+                <input type="text" name="documento" id="documento" value="{{ form.documento.value|default:'' }}"
+                    placeholder="Ej: 1234567890" required>
+            </div>
+
+            <!-- Email -->
+            <div class="campo">
+                <label for="email">Correo Electrónico <span class="requerido">*</span></label>
+                <input type="email" name="email" id="email" value="{{ form.email.value|default:'' }}"
+                    placeholder="correo@ejemplo.com" required>
+            </div>
+
+            <!-- Nombre -->
+            <div class="campo">
+                <label for="first_name">Nombre <span class="requerido">*</span></label>
+                <input type="text" name="first_name" id="first_name" value="{{ form.first_name.value|default:'' }}"
+                    placeholder="Nombre" required>
+            </div>
+
+            <!-- Apellido -->
+            <div class="campo">
+                <label for="last_name">Apellido <span class="requerido">*</span></label>
+                <input type="text" name="last_name" id="last_name" value="{{ form.last_name.value|default:'' }}"
+                    placeholder="Apellido" required>
+            </div>
+
+            <!-- Teléfono -->
+            <div class="campo">
+                <label for="telefono">Teléfono (opcional)</label>
+                <input type="text" name="telefono" id="telefono" value="{{ form.telefono.value|default:'' }}"
+                    placeholder="Ej: 3001234567">
+            </div>
+
+            <!-- Espacio vacío para alineación -->
+            <div class="campo">
+                <label for="rol_usuario">Rol del Usuario <span class="requerido">*</span></label>
+                <select name="rol_usuario" id="rol_usuario" required>
+                    <option value="administrador" {% if rol_actual=='administrador' %}selected{% endif %}>Administrador
+                    </option>
+                    <option value="coordinador" {% if rol_actual=='coordinador' %}selected{% endif %}>Coordinador
+                    </option>
+                </select>
+            </div>
+
+            <!-- Password -->
+            <div class="campo">
+                <label for="password1">Contraseña <span class="requerido">*</span></label>
+                <div class="password-field">
+                    <input type="password" name="password1" id="password1" placeholder="Mínimo 8 caracteres" required>
+                    <button type="button" class="toggle-password" onclick="togglePassword('password1')">
+                        <i class="fa-solid fa-eye" id="icon-password1"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Confirmar Password -->
+            <div class="campo">
+                <label for="password2">Confirmar Contraseña <span class="requerido">*</span></label>
+                <div class="password-field">
+                    <input type="password" name="password2" id="password2" placeholder="Confirmar contraseña" required>
+                    <button type="button" class="toggle-password" onclick="togglePassword('password2')">
+                        <i class="fa-solid fa-eye" id="icon-password2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Opciones adicionales -->
+        <div class="opciones-adicionales">
+            <h3>⚙️ Opciones de Cuenta</h3>
+
+            <div class="opcion-check">
+                <label class="toggle-check">
+                    <input type="checkbox" name="usuario_activo" id="usuario_activo" checked>
+                    <span class="toggle-check-slider"></span>
+                </label>
+                <div class="opcion-texto">
+                    <label for="usuario_activo">Cuenta activa</label>
+                    <span class="descripcion">Si está desactivado, el usuario no podrá iniciar sesión</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="botones-accion">
+            <a href="{% url 'usuarios:gestionar_permisos' %}" class="btn-cancelar">Cancelar</a>
+            <button type="submit" class="btn-guardar">✓ Crear Usuario</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    function togglePassword(inputId) {
+        const input = document.getElementById(inputId);
+        const icon = document.getElementById('icon-' + inputId);
+
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+
+    // Auto-cerrar alertas después de 5 segundos
+    document.addEventListener('DOMContentLoaded', function () {
+        const alertas = document.querySelectorAll('.alerta');
+        alertas.forEach(alerta => {
+            setTimeout(() => {
+                alerta.style.display = 'none';
+            }, 5000);
+        });
+    });
+</script>
+
+{% endblock %}

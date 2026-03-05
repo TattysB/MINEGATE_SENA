@@ -1,0 +1,477 @@
+{% extends "master.html" %}
+{% load static %}
+
+{% block title %}Registro de Asistentes - MINEGATE{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link rel="stylesheet" href="{% static 'css/registro_publico_asistentes.css' %}">
+
+<style>
+    .extension-icon-pdf {
+        color: #dc2626;
+        font-size: 1.5rem;
+    }
+
+    .extension-icon-doc,
+    .extension-icon-docx {
+        color: #2563eb;
+        font-size: 1.5rem;
+    }
+
+    .extension-icon-xls,
+    .extension-icon-xlsx {
+        color: #059669;
+        font-size: 1.5rem;
+    }
+
+    .extension-icon-jpg,
+    .extension-icon-jpeg,
+    .extension-icon-png {
+        color: #667eea;
+        font-size: 1.5rem;
+    }
+</style>
+
+{% if estado_no_aprobado %}
+<!-- Visita no aprobada -->
+<div class="registro-header" style="background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);">
+    <div class="container text-center">
+        <h1><i class="fas fa-clock me-3"></i>Visita Pendiente</h1>
+    </div>
+</div>
+
+<div class="container pb-5">
+    <div class="visita-info-card">
+        <div class="visita-no-aprobada">
+            <i class="fas fa-hourglass-half"></i>
+            <h2>Esta visita aún no ha sido aprobada</h2>
+            <p>El registro de asistentes estará disponible una vez que la administración apruebe la solicitud de visita.
+                Por favor, intente nuevamente más tarde.</p>
+            <br>
+            <p><strong>Estado actual:</strong>
+                {% if visita.estado == 'pendiente' %}
+                <span class="badge bg-warning text-dark">Pendiente de revisión</span>
+                {% elif visita.estado == 'rechazada' %}
+                <span class="badge bg-danger">Rechazada</span>
+                {% endif %}
+            </p>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<!-- Visita aprobada - Mostrar formulario de registro -->
+<div class="registro-header">
+    <div class="container text-center">
+        <h1><i class="fas fa-user-plus me-3"></i>Registro de Asistentes</h1>
+        <p class="mb-2">Complete el formulario para registrar a cada asistente</p>
+        <span class="badge-tipo">
+            <i class="fas fa-{% if tipo == 'interna' %}building{% else %}users{% endif %} me-2"></i>
+            {% if tipo == 'interna' %}Visita Interna{% else %}Visita Externa{% endif %}
+        </span>
+    </div>
+</div>
+
+<div class="container pb-5">
+    {% if messages %}
+    {% for message in messages %}
+    <div
+        class="alert alert-{% if 'error' in message.tags %}danger{% elif 'success' in message.tags %}success{% else %}warning{% endif %}">
+        <i
+            class="fas fa-{% if 'error' in message.tags %}exclamation-circle{% elif 'success' in message.tags %}check-circle{% else %}info-circle{% endif %}"></i>
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <!-- Información de la visita -->
+    <div class="visita-info-card">
+        <h4><i class="fas fa-info-circle"></i> Información de la Visita</h4>
+        <div class="info-grid">
+            {% if tipo == 'interna' %}
+            <div class="info-item">
+                <label>Programa</label>
+                <span>{{ visita.nombre_programa }}</span>
+            </div>
+            <div class="info-item">
+                <label>Número de Ficha</label>
+                <span>{{ visita.numero_ficha }}</span>
+            </div>
+            <div class="info-item">
+                <label>Responsable</label>
+                <span>{{ visita.responsable }}</span>
+            </div>
+            {% else %}
+            <div class="info-item">
+                <label>Institución</label>
+                <span>{{ visita.nombre }}</span>
+            </div>
+            <div class="info-item">
+                <label>Responsable</label>
+                <span>{{ visita.nombre_responsable }}</span>
+            </div>
+            {% endif %}
+            <div class="info-item">
+                <label>Estado</label>
+                <span style="color: #10b981;"><i class="fas fa-check-circle"></i> Aprobada</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enlace para compartir -->
+    <div class="enlace-compartir">
+        <h5><i class="fas fa-share-alt me-2"></i>Enlace para Compartir</h5>
+        <p class="text-muted mb-3">Comparta este enlace con las personas que necesitan registrarse como asistentes</p>
+        <div class="enlace-box">
+            <input type="text" id="enlace-registro" value="{{ enlace_registro }}" readonly>
+            <button class="btn-copiar" onclick="copiarEnlace()">
+                <i class="fas fa-copy me-2"></i>Copiar
+            </button>
+        </div>
+    </div>
+
+    <!-- Progreso -->
+    <div class="progress-box">
+        <h5><i class="fas fa-chart-pie me-2" style="color: #00af00;"></i>Progreso de Registro</h5>
+        <div class="progress-bar-custom">
+            {% widthratio asistentes_actuales max_asistentes 100 as progress_percent %}
+            <div class="progress-fill {% if asistentes_actuales >= max_asistentes %}full{% endif %}"
+                style="--progreso: {{ progress_percent|default:0 }}%; width: var(--progreso);">
+                {% if progress_percent|add:0 > 10 %}{{ asistentes_actuales }} / {{ max_asistentes }}{% endif %}
+            </div>
+        </div>
+        <p class="text-center text-muted mb-0">
+            <strong>{{ asistentes_actuales }}</strong> de <strong>{{ max_asistentes }}</strong> asistentes registrados
+        </p>
+    </div>
+
+    {% if visita.estado == 'documentos_enviados' or visita.estado == 'en_revision_documentos' or visita.estado ==
+    'confirmada' %}
+    <div class="visita-info-card" style="border-left: 4px solid #10b981; background: #f0fdf4;">
+        <div style="text-align: center; padding: 20px;">
+            <i class="fas fa-check-circle fa-3x" style="color: #10b981; margin-bottom: 15px;"></i>
+            <h3 style="color: #065f46;">Solicitud Final Enviada</h3>
+            <p style="color: #047857; font-size: 1.1rem;">La información de los asistentes ha sido enviada correctamente
+                y está siendo revisada por la administración.</p>
+            <p style="color: #059669; font-size: 0.9rem;">Ya no es posible agregar o eliminar asistentes para esta
+                visita.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if visita.estado == 'aprobada_inicial' %}
+    <!-- Sección de Envío Final -->
+    <div class="visita-info-card" id="seccion-envio-final" style="border-left: 4px solid #f59e0b; background: #fffbeb;">
+        <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 280px;">
+                <h4 style="color: #92400e; margin-bottom: 8px;"><i class="fas fa-paper-plane me-2"></i>Finalizar
+                    Registro de Asistentes</h4>
+                <p style="color: #b45309; margin-bottom: 0; font-size: 0.95rem;">Una vez que haya registrado a
+                    <strong>todos</strong> los asistentes, debe enviar la solicitud final para que la administración
+                    pueda revisarlos y confirmar la visita.
+                </p>
+            </div>
+            <button onclick="confirmarEnvioFinal()" id="btn-envio-final"
+                style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none; padding: 12px 25px; border-radius: 10px; font-weight: 700; font-size: 1rem; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(245,158,11,0.3);">
+                <i class="fas fa-check-double"></i> Enviar Solicitud Final
+            </button>
+        </div>
+        <div id="status-envio-final" style="margin-top: 15px; display: none;">
+            <div class="alert alert-info py-2" style="font-size: 0.9rem;">
+                <i class="fas fa-spinner fa-spin me-2"></i> Procesando envío final...
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if puede_agregar and visita.estado == 'aprobada_inicial' %}
+    <!-- Documentos disponibles para descargar -->
+    {% if documentos_por_categoria %}
+    <div class="form-registro" style="border-left: 4px solid #667eea;">
+        <h4><i class="fas fa-download" style="color: #667eea;"></i> Documentos Requeridos para Descargar</h4>
+        <p style="color: #666; margin-bottom: 25px;">Descargue, diligencie y tenga listos los siguientes documentos
+            antes de la visita. Estos serán evaluados por el administrador.</p>
+
+        {% for categoria, docs in documentos_por_categoria.items %}
+        <div style="margin-bottom: 20px;">
+            <h5 style="color: #333; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #e5e7eb;">
+                {{ categoria }}
+            </h5>
+            {% for doc in docs %}
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: #f8f9fa; border-radius: 10px; margin-bottom: 8px; transition: all 0.3s ease; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 200px;">
+                    <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% elif doc.extension == '.jpg' or doc.extension == '.jpeg' or doc.extension == '.png' %}file-image{% else %}file-alt{% endif %}"
+                        class="extension-icon-{{ doc.extension|slice:'1:' }}"></i>
+                    <div>
+                        <strong style="color: #333;">{{ doc.titulo }}</strong>
+                        <br>
+                        <small style="color: #888;">{{ doc.nombre_archivo }} · {{ doc.tamaño_legible }}</small>
+                        {% if doc.descripcion %}
+                        <br><small style="color: #666;">{{ doc.descripcion }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <a href="{{ doc.archivo.url }}" target="_blank"
+                        style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 8px 18px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; transition: all 0.3s ease; white-space: nowrap;"
+                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 5px 15px rgba(16,185,129,0.4)'"
+                        onmouseout="this.style.transform='none'; this.style.boxShadow='none'">
+                        <i class="fas fa-eye"></i> Ver
+                    </a>
+                    <a href="{{ doc.archivo.url }}" download
+                        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 8px 18px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; transition: all 0.3s ease; white-space: nowrap;"
+                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 5px 15px rgba(102,126,234,0.4)'"
+                        onmouseout="this.style.transform='none'; this.style.boxShadow='none'">
+                        <i class="fas fa-download"></i> Descargar
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if puede_agregar and visita.estado == 'aprobada_inicial' %}
+    <!-- Formulario de registro -->
+    <div class="form-registro">
+        <h4><i class="fas fa-plus-circle"></i> Registrar Nuevo Asistente</h4>
+
+        <div class="documentos-info">
+            <p><i class="fas fa-info-circle me-2"></i>
+                <strong>Importante:</strong> Cada asistente debe adjuntar su documento de identidad.
+                Los documentos serán revisados por el administrador antes de la visita.
+            </p>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Nombre Completo <span class="required">*</span></label>
+                    <input type="text" name="nombre_completo" class="form-control"
+                        placeholder="Ingrese el nombre completo" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Tipo de Documento <span class="required">*</span></label>
+                    <select name="tipo_documento" class="form-control" required>
+                        <option value="">Seleccione el tipo...</option>
+                        <option value="CC">Cédula de Ciudadanía</option>
+                        <option value="CE">Cédula de Extranjería</option>
+                        <option value="TI">Tarjeta de Identidad</option>
+                        <option value="PPT">Permiso Especial de Permanencia</option>
+                        <option value="PP">Pasaporte</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Número de Documento <span class="required">*</span></label>
+                    <input type="text" name="numero_documento" class="form-control"
+                        placeholder="Ingrese el número de documento" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Correo Electrónico</label>
+                    <input type="email" name="correo" class="form-control" placeholder="correo@ejemplo.com">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Teléfono</label>
+                    <input type="text" name="telefono" class="form-control" placeholder="Número de teléfono">
+                </div>
+            </div>
+
+            <h5 class="mt-4 mb-3"><i class="fas fa-file-upload me-2" style="color: #667eea;"></i>Documentos</h5>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Documento de Identidad <span class="required">*</span></label>
+                    <label class="file-upload" id="upload-identidad">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p id="text-identidad">Haga clic para subir (PDF, JPG, PNG)</p>
+                        <input type="file" name="documento_identidad" accept=".pdf,.jpg,.jpeg,.png"
+                            onchange="updateFileName(this, 'text-identidad', 'upload-identidad')">
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label>Documento Adicional (Opcional)</label>
+                    <label class="file-upload" id="upload-adicional">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p id="text-adicional">Haga clic para subir (PDF, JPG, PNG)</p>
+                        <input type="file" name="documento_adicional" accept=".pdf,.jpg,.jpeg,.png"
+                            onchange="updateFileName(this, 'text-adicional', 'upload-adicional')">
+                    </label>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <button type="submit" class="btn-submit">
+                    <i class="fas fa-user-plus"></i> Registrar Asistente
+                </button>
+            </div>
+        </form>
+    </div>
+    {% else %}
+    <div class="form-registro">
+        <div class="text-center py-4">
+            <i class="fas fa-users fa-3x text-warning mb-3"></i>
+            <h4>Límite de asistentes alcanzado</h4>
+            <p class="text-muted">Ya se han registrado todos los asistentes permitidos para esta visita ({{
+                max_asistentes }}).</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Lista de asistentes registrados -->
+    <div class="asistentes-lista">
+        <h4><i class="fas fa-users"></i> Asistentes Registrados ({{ asistentes_actuales }})</h4>
+
+        {% if asistentes %}
+        {% for asistente in asistentes %}
+        <div class="asistente-card">
+            <div class="asistente-info">
+                <h5>
+                    <i class="fas fa-user me-2" style="color: #667eea;"></i>
+                    {{ asistente.nombre_completo }}
+                </h5>
+                <p>
+                    <i class="fas fa-id-card me-1"></i>{{ asistente.get_tipo_documento_display }}: {{
+                    asistente.numero_documento }}
+                    {% if asistente.correo %} | <i class="fas fa-envelope me-1"></i>{{ asistente.correo }}{% endif %}
+                </p>
+                <p class="mt-2">
+                    <small>
+                        {% if asistente.documento_identidad %}
+                        <span class="doc-badge uploaded"><i class="fas fa-check"></i> Doc. Identidad</span>
+                        {% else %}
+                        <span class="doc-badge missing"><i class="fas fa-times"></i> Sin Doc. Identidad</span>
+                        {% endif %}
+                        {% if asistente.documento_adicional %}
+                        <span class="doc-badge uploaded"><i class="fas fa-check"></i> Doc. Adicional</span>
+                        {% endif %}
+                    </small>
+                </p>
+            </div>
+            <div class="asistente-estado">
+                <span
+                    class="estado-badge estado-{% if asistente.estado == 'documentos_aprobados' %}aprobado{% elif asistente.estado == 'documentos_rechazados' %}rechazado{% else %}pendiente{% endif %}">
+                    {% if asistente.estado == 'pendiente_documentos' %}
+                    <i class="fas fa-clock me-1"></i> Pendiente de revisión
+                    {% elif asistente.estado == 'documentos_aprobados' %}
+                    <i class="fas fa-check-circle me-1"></i> Aprobado
+                    {% else %}
+                    <i class="fas fa-times-circle me-1"></i> Rechazado
+                    {% endif %}
+                </span>
+                {% if visita.estado == 'aprobada_inicial' %}
+                {% if tipo == 'interna' %}
+                <a href="{% url 'documentos:eliminar_asistente_publico_interna' token=token asistente_id=asistente.id %}"
+                    class="btn-delete"
+                    onclick="return confirm('¿Está seguro de eliminar a {{ asistente.nombre_completo }}?')">
+                    <i class="fas fa-trash-alt me-1"></i>Eliminar
+                </a>
+                {% else %}
+                <a href="{% url 'documentos:eliminar_asistente_publico_externa' token=token asistente_id=asistente.id %}"
+                    class="btn-delete"
+                    onclick="return confirm('¿Está seguro de eliminar a {{ asistente.nombre_completo }}?')">
+                    <i class="fas fa-trash-alt me-1"></i>Eliminar
+                </a>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty-list">
+            <i class="fas fa-users-slash"></i>
+            <h5>No hay asistentes registrados</h5>
+            <p>Use el formulario anterior para registrar asistentes</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    function confirmarEnvioFinal() {
+        const cantAsistentes = parseInt("{{ asistentes_actuales|default:0 }}");
+        if (cantAsistentes === 0) {
+            alert("Debe registrar al menos un asistente antes de enviar la solicitud final.");
+            return;
+        }
+
+        if (confirm("¿Está seguro de finalizar el registro? Una vez enviado, no podrá agregar ni eliminar más asistentes.")) {
+            const btn = document.getElementById('btn-envio-final');
+            const status = document.getElementById('status-envio-final');
+
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
+            status.style.display = 'block';
+
+            const formData = new FormData();
+            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+            fetch("{% url 'documentos:enviar_solicitud_final' token=token tipo=tipo %}", {
+                method: 'POST',
+                body: formData
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        alert("Error: " + data.error);
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        status.style.display = 'none';
+                    }
+                })
+                .catch(err => {
+                    alert("Error de conexión al enviar la solicitud.");
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    status.style.display = 'none';
+                });
+        }
+    }
+
+    function copiarEnlace() {
+        const input = document.getElementById('enlace-registro');
+        input.select();
+        input.setSelectionRange(0, 99999);
+        document.execCommand('copy');
+
+        const btn = document.querySelector('.btn-copiar');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check me-2"></i>¡Copiado!';
+        btn.style.background = '#10b981';
+
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.style.background = '#00af00';
+        }, 2000);
+    }
+
+    function updateFileName(input, textId, uploadId) {
+        const text = document.getElementById(textId);
+        const upload = document.getElementById(uploadId);
+
+        if (input.files && input.files[0]) {
+            text.textContent = input.files[0].name;
+            upload.classList.add('has-file');
+        } else {
+            text.textContent = 'Haga clic para subir (PDF, JPG, PNG)';
+            upload.classList.remove('has-file');
+        }
+    }
+</script>
+{% endif %}
+{% endblock %}

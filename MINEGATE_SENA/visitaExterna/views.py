@@ -1,21 +1,28 @@
 from django.http import HttpResponse
 from django.template import loader
 from django.shortcuts import redirect
+from django.contrib import messages
+from django.urls import reverse
 from .models import VisitaExterna
 from .forms import VisitaExternaForm
 
 def visita_externa(request):
-  visitas = VisitaExterna.objects.all().values()
+  visitas = VisitaExterna.objects.all()
   
-  # Filtrar por nombre
-  nombre = request.GET.get('nombre', '')
-  if nombre:
-    visitas = visitas.filter(nombre__icontains=nombre)
+  # Filtrar por nombre de la institución
+  nombre_institucion = request.GET.get('nombre_institucion', '')
+  if nombre_institucion:
+    visitas = visitas.filter(nombre__icontains=nombre_institucion)
   
-  # Filtrar por ID
-  visita_id = request.GET.get('id', '')
-  if visita_id:
-    visitas = visitas.filter(id=visita_id)
+  # Filtrar por nombre del responsable
+  nombre_responsable = request.GET.get('nombre_responsable', '')
+  if nombre_responsable:
+    visitas = visitas.filter(nombre_responsable__icontains=nombre_responsable)
+
+  # Filtrar por documento del responsable
+  documento_responsable = request.GET.get('documento_responsable', '')
+  if documento_responsable:
+    visitas = visitas.filter(documento_responsable__icontains=documento_responsable)
   
   template = loader.get_template('lista_visitas.html')
   context = {
@@ -23,15 +30,31 @@ def visita_externa(request):
   }
   return HttpResponse(template.render(context, request))
 
- # Vista para crear una nueva visita externa
+# Vista para crear una nueva visita externa
 def crear_visita(request):
+  # Verificar si el usuario está autenticado desde la sesión
+  if not request.session.get('responsable_autenticado'):
+    return redirect('panel_visitante:login_responsable')
+  
+  correo_responsable = request.session.get('responsable_correo')
+  documento_responsable = request.session.get('responsable_documento')
+  
   if request.method == 'POST':
     form = VisitaExternaForm(request.POST)
     if form.is_valid():
-      form.save()
-      return redirect('visita_externa')
+      # Crear la visita con estado enviada a coordinación (primera revisión)
+      visita = form.save(commit=False)
+      # Usar los datos de la sesión para correo y documento
+      visita.correo_responsable = correo_responsable
+      visita.documento_responsable = documento_responsable
+      visita.estado = 'enviada_coordinacion'  # Primera revisión por coordinador
+      visita.save()
+      messages.success(request, '✅ Su solicitud de visita ha sido enviada y está pendiente de revisión por coordinación.')
+      return redirect('panel_visitante:panel_responsable')
   else:
     form = VisitaExternaForm()
+    form.fields['documento_responsable'].initial = documento_responsable
+    form.fields['correo_responsable'].initial = correo_responsable
   
   template = loader.get_template('crear_visita.html')
   context = {
@@ -46,7 +69,7 @@ def editar_visita(request, id):
     form = VisitaExternaForm(request.POST, instance=visita)
     if form.is_valid():
       form.save()
-      return redirect('visita_externa')
+      return redirect(reverse('visitaExterna:visita_externa'))
   else:
     form = VisitaExternaForm(instance=visita)
   
@@ -71,7 +94,7 @@ def eliminar_visita(request, id):
   visita = VisitaExterna.objects.get(id=id)
   if request.method == 'POST':
     visita.delete()
-    return redirect('visita_externa')
+    return redirect(reverse('visitaExterna:visita_externa'))
   
   template = loader.get_template('eliminar_visita.html')
   context = {

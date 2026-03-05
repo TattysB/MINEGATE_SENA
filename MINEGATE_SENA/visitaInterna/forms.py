@@ -8,72 +8,88 @@ class VisitaInternaForm(forms.ModelForm):
     class Meta:
         model = VisitaInterna
         fields = [
-            'nombre',
+            'nombre_programa',
+            'numero_ficha',
             'responsable',
-            'telefono',
-            'cantidad',
-            'fecha',
-            'estado'
+            'tipo_documento_responsable',
+            'documento_responsable',
+            'correo_responsable',
+            'telefono_responsable',
+            'cantidad_aprendices',
+            'observaciones',
         ]
         # Widgets 
         widgets = {
-            'nombre': forms.TextInput(attrs={
+            'nombre_programa': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Ingrese el nombre de la visita'
+                'placeholder': 'Ingrese el nombre'
+            }),
+            'numero_ficha': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Número de ficha',
+                'min': '1'
             }),
             'responsable': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Ingrese el nombre del responsable'
+                'placeholder': 'Ingrese el nombre'
             }),
-            'telefono': forms.TextInput(attrs={
+            'tipo_documento_responsable': forms.Select(attrs={
+                'class': 'form-control'
+            }),
+            'documento_responsable': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Documento del responsable',
+                'readonly': True,
+                'style': 'background-color: #e9ecef; cursor: not-allowed;'
+            }),
+            'correo_responsable': forms.EmailInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'correo@ejemplo.com',
+                'readonly': True,
+                'style': 'background-color: #e9ecef; cursor: not-allowed;'
+            }),
+            'telefono_responsable': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': '3001234567'
             }),
-            'cantidad': forms.NumberInput(attrs={
+            'cantidad_aprendices': forms.NumberInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Número de visitantes',
+                'placeholder': 'Número de aprendices',
                 'min': '1'
             }),
-            'fecha': forms.DateInput(attrs={
+            'observaciones': forms.Textarea(attrs={
                 'class': 'form-control',
-                'type': 'date'
+                'placeholder': 'Ingrese observaciones (opcional)',
+                'rows': 4
             }),
-            'estado': forms.Select(attrs={
-                'class': 'form-control'
-            })
         }
         # Etiquetas 
         labels = {
-            'nombre': 'Nombre',
+            'nombre_programa': 'Nombre de Programa',
+            'numero_ficha': 'Número de Ficha',
             'responsable': 'Responsable',
-            'telefono': 'Teléfono',
-            'cantidad': 'Cantidad de Visitantes',
-            'fecha': 'Fecha de la Visita',
-            'estado': 'Estado'
+            'tipo_documento_responsable': 'Tipo de Documento del responsable',
+            'documento_responsable': 'Documento del responsable',
+            'correo_responsable': 'Correo del responsable',
+            'telefono_responsable': 'Teléfono del responsable',
+            'cantidad_aprendices': 'Cantidad de aprendices',
+            'observaciones': 'Observaciones',
         }
         
     # Validaciones
     
-    def clean_telefono(self):
+    def clean_telefono_responsable(self):
         """Validar que el teléfono contenga solo números"""
-        telefono = self.cleaned_data.get('telefono')
+        telefono = self.cleaned_data.get('telefono_responsable')
         if telefono and not telefono.isdigit():
             raise forms.ValidationError("El teléfono debe contener solo números.")
         if telefono and len(telefono) != 10:
             raise forms.ValidationError("El teléfono debe tener 10 dígitos.")
         return telefono
     
-    def clean_cantidad(self):
+    def clean_cantidad_aprendices(self):
         """Validar que la cantidad sea un número positivo"""
-        cantidad = self.cleaned_data.get('cantidad')
+        cantidad = self.cleaned_data.get('cantidad_aprendices')
         if cantidad and cantidad <= 0:
             raise forms.ValidationError("La cantidad debe ser un número positivo mayor a 0.")
         return cantidad
-    
-    def clean_fecha(self):
-        """Validar que la fecha no sea en el pasado"""
-        from datetime import date
-        fecha = self.cleaned_data.get('fecha')
-        if fecha and fecha < date.today():
-            raise forms.ValidationError("La fecha no puede ser anterior a hoy.")
-        return fecha

@@ -1,0 +1,498 @@
+{% load static %}
+{% load accesibility_tags %}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reservar Visita Interna - MINEGATE</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}">
+<style>
+  :root {
+    --sena-verde: #39a900;
+    --sena-verde-oscuro: #2d8600;
+  }
+  .page-header {
+    background: linear-gradient(135deg, #1a5c00, var(--sena-verde));
+    color: white;
+    padding: 2rem 0;
+  }
+  .page-header h2 { font-weight: 800; margin: 0; }
+  .breadcrumb-nav a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.85rem; }
+  .breadcrumb-nav span { color: rgba(255,255,255,0.5); margin: 0 6px; }
+
+  .form-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    overflow: hidden;
+    margin-bottom: 2rem;
+  }
+  .form-card-header {
+    background: #f8fffe;
+    border-bottom: 2px solid #e8f8e0;
+    padding: 1.2rem 1.8rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    color: var(--sena-verde-oscuro);
+    font-size: 1rem;
+  }
+  .form-card-header i { font-size: 1.1rem; }
+  .form-card-body { padding: 1.8rem; }
+  label { font-weight: 600; font-size: 0.9rem; color: #374151; margin-bottom: 4px; }
+  .form-control, .form-select { border-radius: 8px; border: 1.5px solid #d1d5db; font-size: 0.9rem; padding: 0.55rem 0.85rem; }
+  .form-control:focus, .form-select:focus { border-color: var(--sena-verde); box-shadow: 0 0 0 3px rgba(57,169,0,0.12); }
+  .section-label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.8px; color: #6b7280; font-weight: 700; margin-bottom: 0.8rem; padding-bottom: 6px; border-bottom: 1px solid #f0f0f0; }
+  .helper-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 1rem; margin-bottom: 1.5rem; font-size: 0.85rem; color: #065f46; }
+  .btn-submit { background: var(--sena-verde); border: none; color: white; padding: 0.75rem 2.5rem; border-radius: 50px; font-weight: 700; font-size: 1rem; transition: all 0.2s; }
+  .btn-submit:hover { background: var(--sena-verde-oscuro); transform: translateY(-1px); }
+  .fichas-dropdown { max-height: 200px; overflow-y: auto; }
+  
+  /* Estilos del calendario embebido */
+  #calendarioContainer {
+    min-height: 200px;
+  }
+  #calendarioContainer .calendar-page {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding: 0;
+  }
+  #calendarioContainer .calendar-card {
+    flex: 1;
+    min-width: 300px;
+    max-width: 420px;
+    position: relative;
+    padding: 15px;
+  }
+  #calendarioContainer .card-top {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 15px;
+    position: relative;
+  }
+  #calendarioContainer .card-top .nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    border: 1px solid #e5e7eb;
+    background: #f9fafb;
+    border-radius: 50%;
+    font-size: 20px;
+    font-weight: bold;
+    color: #374151;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    z-index: 10;
+  }
+  #calendarioContainer .card-top .nav:hover {
+    background: var(--sena-verde);
+    color: white;
+    border-color: var(--sena-verde);
+  }
+  #calendarioContainer .card-top #prevSel { left: 0; }
+  #calendarioContainer .card-top #nextSel { right: 0; }
+  #calendarioContainer .availability-config {
+    flex: 1;
+    min-width: 260px;
+    max-width: 380px;
+    padding: 15px;
+  }
+  #calendarioContainer .availability-config h3 {
+    margin: 0 0 10px 0;
+    font-size: 1rem;
+    color: var(--sena-verde);
+  }
+  #calendarioContainer .calendar-table td.available { cursor: pointer; }
+  #calendarioContainer .calendar-table td.disabled { cursor: not-allowed; }
+  #calendarioContainer .legend { margin-top: 10px; padding: 8px 0; }
+  #calendarioContainer #horariosList .horario-chip {
+    display: inline-block;
+    padding: 8px 16px;
+    margin: 5px;
+    background: #f3f4f6;
+    border: 2px solid #d1d5db;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+  }
+  #calendarioContainer #horariosList .horario-chip:hover {
+    border-color: var(--sena-verde);
+    background: #f0fdf4;
+  }
+  #calendarioContainer #horariosList .horario-chip.selected {
+    background: var(--sena-verde);
+    color: white;
+    border-color: var(--sena-verde);
+  }
+  
+  /* Resumen de selección */
+  .seleccion-resumen {
+    background: #f0fdf4;
+    border: 2px solid #bbf7d0;
+    border-radius: 12px;
+    padding: 15px 20px;
+    margin-top: 15px;
+    display: none;
+  }
+  .seleccion-resumen.visible { display: block; }
+  .seleccion-resumen h4 {
+    margin: 0 0 8px 0;
+    font-size: 1rem;
+    color: var(--sena-verde-oscuro);
+  }
+  .seleccion-resumen p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #374151;
+  }
+  .seleccion-resumen .fecha-hora {
+    font-weight: 700;
+    color: var(--sena-verde);
+  }
+</style>
+</head>
+<body>
+
+<!-- Page Header -->
+<div class="page-header">
+  <div class="container">
+    <div class="breadcrumb-nav mb-2">
+      <a href="{% url 'panel_instructor_interno:panel' %}"><i class="fas fa-home me-1"></i>Mi Panel</a>
+      <span>›</span>
+      <span style="color:rgba(255,255,255,0.9)">Reservar Visita Interna</span>
+    </div>
+    <h2><i class="fas fa-calendar-plus me-3"></i>Reservar Visita Interna</h2>
+    <p class="mb-0 mt-1" style="opacity:0.85;">Complete el formulario para solicitar una visita al SENA Centro Minero</p>
+  </div>
+</div>
+
+<div class="container py-4">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{% if 'error' in message.tags %}danger{% else %}success{% endif %} alert-dismissible fade show" role="alert">
+        {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Fichas disponibles: Helper rápido -->
+  {% if fichas %}
+  <div class="helper-box">
+    <strong><i class="fas fa-lightbulb me-2"></i>Fichas disponibles</strong><br>
+    Puedes usar una de las fichas ya registradas:
+    <div class="mt-2 d-flex flex-wrap gap-2">
+      {% for ficha in fichas|slice:":8" %}
+        <button type="button" class="btn btn-sm btn-outline-success"
+          onclick="document.getElementById('id_numero_ficha').value='{{ ficha.numero }}'; document.getElementById('id_nombre_programa').value='{{ ficha.programa.nombre }}';">
+          <i class="fas fa-tag me-1"></i>{{ ficha.numero }} — {{ ficha.programa.nombre }}
+        </button>
+      {% endfor %}
+      {% if fichas|length > 8 %}<span class="text-muted small align-self-center">y más...</span>{% endif %}
+    </div>
+  </div>
+  {% else %}
+  <div class="alert alert-warning">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    No hay fichas registradas aún.
+    <a href="{% url 'panel_instructor_interno:crear_ficha' %}" class="alert-link">Crea una ficha</a> antes de reservar la visita,
+    o ingresa los datos manualmente en el formulario.
+  </div>
+  {% endif %}
+
+  <form method="POST">
+    {% csrf_token %}
+    
+    <!-- Campos ocultos para fecha y hora -->
+    {{ form.fecha_visita }}
+    {{ form.hora_inicio }}
+    {{ form.hora_fin }}
+
+    <!-- Selección de Fecha y Horario -->
+    <div class="form-card">
+      <div class="form-card-header">
+        <i class="fas fa-calendar-alt"></i>Fecha y Horario de la Visita
+      </div>
+      <div class="form-card-body">
+        <p class="text-muted mb-3">Selecciona un día disponible (verde) y luego elige el horario que prefieras.</p>
+        <div id="calendarioContainer">
+          <p class="text-center py-4"><i class="fas fa-spinner fa-spin me-2"></i>Cargando calendario...</p>
+        </div>
+        
+        <div class="seleccion-resumen" id="resumenSeleccion">
+          <h4><i class="fas fa-check-circle me-2 text-success"></i>Fecha y horario seleccionados</h4>
+          <p>Fecha: <span class="fecha-hora" id="resumenFecha">-</span></p>
+          <p>Horario: <span class="fecha-hora" id="resumenHorario">-</span></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Datos del Programa -->
+    <div class="form-card">
+      <div class="form-card-header">
+        <i class="fas fa-graduation-cap"></i>Datos del Programa de Formación
+      </div>
+      <div class="form-card-body">
+        <div class="row g-3">
+          <div class="col-md-8">
+            <label for="id_nombre_programa">Nombre del Programa <span class="text-danger">*</span></label>
+            {{ form.nombre_programa }}
+            {% if form.nombre_programa.errors %}<div class="text-danger small mt-1">{{ form.nombre_programa.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label for="id_numero_ficha">Número de Ficha <span class="text-danger">*</span></label>
+            {{ form.numero_ficha }}
+            {% if form.numero_ficha.errors %}<div class="text-danger small mt-1">{{ form.numero_ficha.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label for="id_cantidad_aprendices">Cantidad de Aprendices <span class="text-danger">*</span></label>
+            {{ form.cantidad_aprendices }}
+            {% if form.cantidad_aprendices.errors %}<div class="text-danger small mt-1">{{ form.cantidad_aprendices.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Datos del Responsable -->
+    <div class="form-card">
+      <div class="form-card-header">
+        <i class="fas fa-user-tie"></i>Datos del Responsable
+      </div>
+      <div class="form-card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="id_responsable">Nombre del Responsable <span class="text-danger">*</span></label>
+            {{ form.responsable }}
+          </div>
+          <div class="col-md-3">
+            <label for="id_tipo_documento_responsable">Tipo de Documento</label>
+            {{ form.tipo_documento_responsable }}
+          </div>
+          <div class="col-md-3">
+            <label for="id_documento_responsable">Número de Documento <span class="text-danger">*</span></label>
+            {{ form.documento_responsable }}
+          </div>
+          <div class="col-md-6">
+            <label for="id_correo_responsable">Correo Electrónico <span class="text-danger">*</span></label>
+            {{ form.correo_responsable }}
+          </div>
+          <div class="col-md-6">
+            <label for="id_telefono_responsable">Teléfono <span class="text-danger">*</span></label>
+            {{ form.telefono_responsable }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Observaciones -->
+    <div class="form-card">
+      <div class="form-card-header">
+        <i class="fas fa-comment-alt"></i>Observaciones
+      </div>
+      <div class="form-card-body">
+        {{ form.observaciones }}
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center">
+      <a href="{% url 'panel_instructor_interno:panel' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Volver al Panel
+      </a>
+      <button type="submit" class="btn-submit btn" id="btnEnviar">
+        <i class="fas fa-paper-plane me-2"></i>Enviar Solicitud
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const container = document.getElementById('calendarioContainer');
+  let selectedDate = null;
+  let selectedHorario = null;
+  
+  // Cargar calendario inicial
+  loadCalendario();
+  
+  function loadCalendario(year, month) {
+    let url = '/calendario/seleccion/';
+    if (year && month) {
+      url = '/calendario/seleccion/' + year + '/' + month + '/';
+    }
+    
+    fetch(url, {
+      headers: {'X-Requested-With': 'XMLHttpRequest'}
+    })
+    .then(r => r.text())
+    .then(html => {
+      container.innerHTML = html;
+      initCalendarioEvents();
+    })
+    .catch(err => {
+      container.innerHTML = '<p class="text-danger">Error al cargar el calendario</p>';
+    });
+  }
+  
+  function initCalendarioEvents() {
+    const page = container.querySelector('#calendarioSeleccionPage');
+    if (!page) return;
+    
+    const cardEl = page.querySelector('.calendar-card');
+    const year = parseInt(cardEl.getAttribute('data-year'));
+    const month = parseInt(cardEl.getAttribute('data-month'));
+    
+    // Navegación de meses
+    const prev = page.querySelector('#prevSel');
+    const next = page.querySelector('#nextSel');
+    
+    if (prev) {
+      prev.addEventListener('click', function() {
+        let y = year, m = month - 1;
+        if (m < 1) { m = 12; y -= 1; }
+        loadCalendario(y, m);
+      });
+    }
+    
+    if (next) {
+      next.addEventListener('click', function() {
+        let y = year, m = month + 1;
+        if (m > 12) { m = 1; y += 1; }
+        loadCalendario(y, m);
+      });
+    }
+    
+    // Click en días
+    const table = page.querySelector('.calendar-table');
+    if (table) {
+      table.addEventListener('click', function(e) {
+        const td = e.target.closest('td');
+        if (!td || !td.classList.contains('available')) return;
+        
+        // Quitar selección anterior
+        page.querySelectorAll('td.selected-day').forEach(el => el.classList.remove('selected-day'));
+        td.classList.add('selected-day');
+        
+        selectedDate = td.getAttribute('data-date');
+        selectedHorario = null;
+        updateResumen();
+        loadHorarios(selectedDate);
+      });
+    }
+  }
+  
+  function loadHorarios(dateStr) {
+    const horarioHint = container.querySelector('#horarioHint');
+    const horariosList = container.querySelector('#horariosList');
+    
+    if (horarioHint) horarioHint.textContent = 'Cargando horarios...';
+    if (horariosList) {
+      horariosList.innerHTML = '';
+      horariosList.style.display = 'none';
+    }
+    
+    fetch('/calendario/horarios/' + dateStr + '/', {
+      headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'}
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (!data.ok) {
+        if (horarioHint) horarioHint.textContent = 'Error: ' + (data.error || 'No se pudieron cargar');
+        return;
+      }
+      
+      if (!data.ranges || !data.ranges.length) {
+        if (horarioHint) horarioHint.textContent = 'No hay horarios configurados para este día.';
+        return;
+      }
+      
+      const horarioTitle = container.querySelector('#horarioTitle');
+      if (horarioTitle) horarioTitle.textContent = 'Horarios disponibles para ' + formatDate(dateStr);
+      if (horarioHint) horarioHint.textContent = 'Selecciona el horario que prefieras:';
+      
+      if (horariosList) {
+        horariosList.innerHTML = data.ranges.map(r => 
+          '<span class="horario-chip" data-start="' + r.start + '" data-end="' + r.end + '">' + r.label + '</span>'
+        ).join('');
+        horariosList.style.display = 'block';
+        
+        // Event listeners para chips
+        horariosList.querySelectorAll('.horario-chip').forEach(chip => {
+          chip.addEventListener('click', function() {
+            horariosList.querySelectorAll('.horario-chip').forEach(c => c.classList.remove('selected'));
+            this.classList.add('selected');
+            selectedHorario = {
+              start: this.getAttribute('data-start'),
+              end: this.getAttribute('data-end'),
+              label: this.textContent
+            };
+            updateResumen();
+            updateFormFields();
+          });
+        });
+      }
+    })
+    .catch(err => {
+      if (horarioHint) horarioHint.textContent = 'Error al cargar horarios.';
+    });
+  }
+  
+  function formatDate(dateStr) {
+    const parts = dateStr.split('-');
+    const months = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    return parseInt(parts[2]) + ' de ' + months[parseInt(parts[1])] + ' de ' + parts[0];
+  }
+  
+  function updateResumen() {
+    const resumen = document.getElementById('resumenSeleccion');
+    const resumenFecha = document.getElementById('resumenFecha');
+    const resumenHorario = document.getElementById('resumenHorario');
+    
+    if (selectedDate && selectedHorario) {
+      resumen.classList.add('visible');
+      resumenFecha.textContent = formatDate(selectedDate);
+      resumenHorario.textContent = selectedHorario.label;
+    } else {
+      resumen.classList.remove('visible');
+    }
+  }
+  
+  function updateFormFields() {
+    if (selectedDate) {
+      document.getElementById('id_fecha_visita').value = selectedDate;
+    }
+    if (selectedHorario) {
+      document.getElementById('id_hora_inicio').value = selectedHorario.start;
+      document.getElementById('id_hora_fin').value = selectedHorario.end;
+    }
+  }
+  
+  // Validación antes de enviar
+  document.getElementById('btnEnviar').addEventListener('click', function(e) {
+    if (!selectedDate || !selectedHorario) {
+      e.preventDefault();
+      alert('Por favor selecciona una fecha y un horario para la visita.');
+      container.scrollIntoView({ behavior: 'smooth' });
+    }
+  });
+});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% accessibility_widget %}
+</body>
+</html>

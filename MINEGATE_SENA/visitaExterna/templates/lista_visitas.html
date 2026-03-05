@@ -2,9 +2,12 @@
 <html>
 <head>
   <title>Visitas Externas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 20px; }
+    body { font-family: 'Work Sans', sans-serif; background-color: #f5f5f5; padding: 20px; }
     .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
     h1 { color: #333; margin-bottom: 30px; text-align: center; }
     .btn-crear { margin-bottom: 20px; text-align: center; }
@@ -27,23 +30,35 @@
 </head>
 <body>
 
-<div class="container">
-  <h1>Lista de Visitas Externas</h1>
-  <div class="btn-crear"><a href="{% url 'crear_visita' %}"><button>+ Crear Nueva Visita</button></a></div>
+{% block title %}Visitas Externas{% endblock %}
 
-  <div style="margin: 20px 0; padding: 20px; background-color: #f9f9f9; border-radius: 4px;">
-    <form method="GET" style="display: flex; gap: 10px; flex-wrap: wrap;">
-      <div style="flex: 1; min-width: 200px;">
-        <label for="buscar_nombre" style="display: block; margin-bottom: 5px; color: #555; font-weight: bold;">Buscar por Nombre:</label>
-        <input type="text" id="buscar_nombre" name="nombre" value="{{ request.GET.nombre }}" placeholder="Ingrese el nombre" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/lista_visitas.css' %}">
+<link rel="stylesheet" href="{% static 'css/ocultar_layout.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h1>Lista de Visitas Externas</h1>
+  <div class="btn-crear"><a href="{% url 'visitaExterna:crear_visita' %}"><button>+ Crear Nueva Visita</button></a></div>
+
+  <div class="filtros-box">
+    <form method="GET" class="filtros-form">
+      <div class="filtro-campo">
+        <label for="buscar_institucion">Buscar por Nombre de Institución:</label>
+        <input type="text" id="buscar_institucion" name="nombre_institucion" value="{{ request.GET.nombre_institucion }}" placeholder="Ingrese el nombre">
       </div>
-      <div style="flex: 1; min-width: 150px;">
-        <label for="filtrar_id" style="display: block; margin-bottom: 5px; color: #555; font-weight: bold;">Filtrar por ID:</label>
-        <input type="number" id="filtrar_id" name="id" value="{{ request.GET.id }}" placeholder="Ingrese el ID" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+      <div class="filtro-campo">
+        <label for="buscar_responsable">Buscar por Nombre del Responsable:</label>
+        <input type="text" id="buscar_responsable" name="nombre_responsable" value="{{ request.GET.nombre_responsable }}" placeholder="Ingrese el nombre">
       </div>
-      <div style="display: flex; gap: 5px; align-items: flex-end;">
-        <button type="submit" style="padding: 8px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; transition: 0.3s;">Buscar</button>
-        <a href="{% url 'visita_externa' %}" style="text-decoration: none;"><button type="button" style="padding: 8px 20px; background-color: #757575; color: white; border: none; border-radius: 4px; cursor: pointer; transition: 0.3s;">Limpiar</button></a>
+      <div class="filtro-campo">
+        <label for="filtrar_documento">Filtrar por Documento del Responsable:</label>
+        <input type="text" id="filtrar_documento" name="documento_responsable" value="{{ request.GET.documento_responsable }}" placeholder="Ingrese el documento">
+      </div>
+      <div class="filtros-botones">
+        <button type="submit" class="btn-buscar">Buscar</button>
+        <a href="{% url 'visitaExterna:visita_externa' %}"><button type="button" class="btn-limpiar">Limpiar</button></a>
       </div>
     </form>
   </div>
@@ -53,8 +68,12 @@
     <thead>
       <tr>
         <th>ID</th>
-        <th>Nombre</th>
+        <th>Nombre de la Institución</th>
         <th>Responsable</th>
+        <th>Documento</th>
+        <th>Correo Electrónico</th>
+        <th>Teléfono</th>
+        <th>Cantidad de Visitantes</th>
         <th>Acciones</th>
       </tr>
     </thead>
@@ -62,11 +81,16 @@
       {% for visita in visitas %}
         <tr>
           <td>{{ visita.id }}</td>
-          <td><a href="detalle_visita/{{ visita.id }}">{{ visita.nombre }}</a></td>
-          <td>{{ visita.responsable }}</td>
+          <td>{{ visita.nombre }}</td>
+          <td>{{ visita.nombre_responsable }}</td>
+          <td>{{ visita.documento_responsable }}</td>
+          <td>{{ visita.correo_responsable }}</td>
+          <td>{{ visita.telefono_responsable }}</td>
+          <td>{{ visita.cantidad_visitantes }}</td>
           <td>
-            <a href="{% url 'editar_visita' visita.id %}"><button class="btn-action btn-editar">Editar</button></a>
-            <a href="{% url 'eliminar_visita' visita.id %}"><button class="btn-action btn-eliminar">Eliminar</button></a>
+            <a href="detalle_visita/{{ visita.id }}"><button class="btn-action btn-detalle">Ver Detalle</button></a>
+            <a href="{% url 'visitaExterna:editar_visita' visita.id %}"><button class="btn-action btn-editar">Editar</button></a>
+            <a href="{% url 'visitaExterna:eliminar_visita' visita.id %}"><button class="btn-action btn-eliminar">Eliminar</button></a>
           </td>
         </tr>
       {% endfor %}
@@ -76,5 +100,4 @@
   <p class="sin-datos">No hay visitas externas registradas.</p>
 {% endif %}
 </div>
-</body>
-</html>
+{% endblock %}
