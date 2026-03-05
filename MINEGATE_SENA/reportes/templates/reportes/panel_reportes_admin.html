@@ -1,0 +1,161 @@
+<div id="seccion-reportes" class="contenido-seccion" style="display:block;">
+  <div style="padding:20px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:15px;">
+      <h2 style="color:#1f2937;margin:0;display:flex;align-items:center;gap:10px;">
+        <i class="ri-bar-chart-line" style="color:#39a900;"></i>
+        Reportes de Visitas
+      </h2>
+    </div>
+
+    <div style="background:white;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,0.1);padding:16px;margin-bottom:20px;">
+      <form method="get" action="{% url 'core:panel_administrativo_seccion' 'reportes' %}" data-reportes-filter style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;align-items:end;">
+        <div>
+          <label style="display:block;font-size:13px;color:#374151;margin-bottom:6px;">Tipo de visita</label>
+          <select name="tipo" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;">
+            <option value="todas" {% if filtros_reportes.tipo == 'todas' %}selected{% endif %}>Todas</option>
+            <option value="interna" {% if filtros_reportes.tipo == 'interna' %}selected{% endif %}>Internas</option>
+            <option value="externa" {% if filtros_reportes.tipo == 'externa' %}selected{% endif %}>Externas</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="display:block;font-size:13px;color:#374151;margin-bottom:6px;">Estado</label>
+          <select name="estado" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;">
+            <option value="">Todos</option>
+            {% for valor, nombre in estados_reportes %}
+            <option value="{{ valor }}" {% if filtros_reportes.estado == valor %}selected{% endif %}>{{ nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label style="display:block;font-size:13px;color:#374151;margin-bottom:6px;">Desde</label>
+          <input type="date" name="fecha_desde" value="{{ filtros_reportes.fecha_desde_raw }}" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;">
+        </div>
+
+        <div>
+          <label style="display:block;font-size:13px;color:#374151;margin-bottom:6px;">Hasta</label>
+          <input type="date" name="fecha_hasta" value="{{ filtros_reportes.fecha_hasta_raw }}" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;">
+        </div>
+
+        <button type="submit" style="padding:10px 14px;background:#2563eb;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;">
+          <i class="ri-filter-3-line"></i> Filtrar
+        </button>
+      </form>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px;">
+        <a href="{% url 'reportes:descargar_pdf' %}{% if query_string_reportes %}?{{ query_string_reportes }}{% endif %}" style="padding:10px 14px;background:#dc2626;color:white;text-decoration:none;border-radius:8px;font-weight:600;display:inline-flex;align-items:center;gap:6px;">
+          <i class="ri-file-pdf-line"></i> Descargar PDF
+        </a>
+        <a href="{% url 'reportes:descargar_excel' %}{% if query_string_reportes %}?{{ query_string_reportes }}{% endif %}" style="padding:10px 14px;background:#16a34a;color:white;text-decoration:none;border-radius:8px;font-weight:600;display:inline-flex;align-items:center;gap:6px;">
+          <i class="ri-file-excel-2-line"></i> Descargar Excel
+        </a>
+        <span style="margin-left:auto;background:#e5e7eb;color:#111827;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;">
+          Total: {{ total_filas_reportes }}
+        </span>
+      </div>
+    </div>
+
+    <div style="background:white;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,0.1);overflow:hidden;">
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr style="background:#f3f4f6;">
+              <th style="padding:12px 14px;text-align:left;">Tipo</th>
+              <th style="padding:12px 14px;text-align:left;">ID</th>
+              <th style="padding:12px 14px;text-align:left;">Nombre/Programa</th>
+              <th style="padding:12px 14px;text-align:left;">Responsable</th>
+              <th style="padding:12px 14px;text-align:left;">Documento</th>
+              <th style="padding:12px 14px;text-align:left;">Correo</th>
+              <th style="padding:12px 14px;text-align:left;">Cantidad de visitantes</th>
+              <th style="padding:12px 14px;text-align:left;">Fecha Solicitud</th>
+              <th style="padding:12px 14px;text-align:left;">Fecha Visita</th>
+              <th style="padding:12px 14px;text-align:left;">Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for fila in filas_reportes %}
+            <tr style="border-top:1px solid #e5e7eb;">
+              <td style="padding:10px 14px;">{{ fila.tipo }}</td>
+              <td style="padding:10px 14px;">#{{ fila.id }}</td>
+              <td style="padding:10px 14px;">{{ fila.nombre }}</td>
+              <td style="padding:10px 14px;">{{ fila.responsable }}</td>
+              <td style="padding:10px 14px;">{{ fila.documento }}</td>
+              <td style="padding:10px 14px;">{{ fila.correo }}</td>
+              <td style="padding:10px 14px;">{{ fila.cantidad }}</td>
+              <td style="padding:10px 14px;">{{ fila.fecha_solicitud|date:'d/m/Y H:i' }}</td>
+              <td style="padding:10px 14px;">{% if fila.fecha_visita %}{{ fila.fecha_visita|date:'d/m/Y' }}{% else %}-{% endif %}</td>
+              <td style="padding:10px 14px;">{{ fila.estado }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="10" style="padding:30px;text-align:center;color:#6b7280;">No hay visitas para los filtros seleccionados.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {% if total_filas_reportes > 100 %}
+    <p style="margin-top:10px;color:#6b7280;font-size:12px;">Se muestran 100 registros en pantalla. Las descargas incluyen todos los resultados filtrados.</p>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  (function () {
+    const initReportesFilter = () => {
+      const root = document.getElementById('seccion-reportes');
+      if (!root) return;
+
+      const form = root.querySelector('form[data-reportes-filter]');
+      if (!form || form.dataset.ajaxBound === '1') return;
+      form.dataset.ajaxBound = '1';
+
+      form.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        const params = new URLSearchParams(new FormData(form));
+        const url = `${form.action}?${params.toString()}`;
+
+        root.style.opacity = '0.65';
+        root.style.transition = 'opacity .15s ease';
+
+        try {
+          const response = await fetch(url, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin'
+          });
+
+          if (!response.ok) {
+            window.location.href = url;
+            return;
+          }
+
+          const html = await response.text();
+          const doc = new DOMParser().parseFromString(html, 'text/html');
+          const newRoot = doc.getElementById('seccion-reportes');
+
+          if (!newRoot) {
+            window.location.href = url;
+            return;
+          }
+
+          root.outerHTML = newRoot.outerHTML;
+          window.history.replaceState({}, '', url);
+          initReportesFilter();
+        } catch (error) {
+          window.location.href = url;
+        } finally {
+          const currentRoot = document.getElementById('seccion-reportes');
+          if (currentRoot) {
+            currentRoot.style.opacity = '1';
+          }
+        }
+      });
+    };
+
+    initReportesFilter();
+  })();
+</script>
+
