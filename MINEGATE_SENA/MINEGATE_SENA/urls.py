@@ -19,6 +19,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.generic.base import RedirectView
 from core.views import error_404
 
 urlpatterns = [
@@ -36,6 +37,9 @@ urlpatterns = [
     path('instructor/interno/', include('panel_instructor_interno.urls')),
     path('instructor/externo/', include('panel_instructor_externo.urls')),    
     path('coordinador/', include('coordinador.urls')),
-    
+    path('favicon.ico', RedirectView.as_view(url='/static/img/LogoMine.png')), # Usar el logo como favicon temporal
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
