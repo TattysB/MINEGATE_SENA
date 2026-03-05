@@ -19,7 +19,7 @@
 
     <!-- BODY DEL CARD -->
     <div class="password-body">
-      <form method="post" novalidate>
+      <form method="post" novalidate id="changePasswordForm">
         {% csrf_token %}
 
         <!-- SECCIÓN: CONTRASEÑA ACTUAL -->
@@ -67,11 +67,6 @@
                 </div>
               {% endfor %}
             {% endif %}
-            {% if form.new_password1.help_text %}
-            <small class="form-text">
-              {{ form.new_password1.help_text|safe }}
-            </small>
-            {% endif %}
           </div>
 
           <!-- Campo: Confirmar Contraseña -->
@@ -111,20 +106,6 @@
     </div>
   </div>
 </div>
+<script src="{% static 'js/cambiar_contrasena.js' %}"></script>
 
-<script>
-  // Agregar clase is-invalid a campos con errores
-  document.addEventListener('DOMContentLoaded', function() {
-    const errorTexts = document.querySelectorAll('.error-text');
-    errorTexts.forEach(function(errorText) {
-      const inputGroup = errorText.closest('.mb-3');
-      if (inputGroup) {
-        const input = inputGroup.querySelector('.form-control, input');
-        if (input) {
-          input.classList.add('is-invalid');
-        }
-      }
-    });
-  });
-</script>
 {% endblock %}

@@ -40,7 +40,7 @@ main.main-content {
   align-items: center;
   padding: 20px;
   background-color: rgba(0, 0, 0, 0.4);
-  animation: fadeIn 0.4s ease-out;
+  animation: modalFadeIn 0.25s ease-out;
 }
 
 .modal-edit-card {
@@ -54,7 +54,7 @@ main.main-content {
   overflow-y: auto;
   /* Permite hacer scroll vertical si el contenido (como la foto) excede la altura */
   border: 1px solid rgba(0, 0, 0, 0.05);
-  animation: slideUpIn 0.4s ease;
+  animation: modalFadeIn 0.25s ease-out;
 }
 
 /* Flex Container for Horizontal Layout */
@@ -311,15 +311,13 @@ main.main-content {
   border-left: 4px solid var(--danger);
 }
 
-@keyframes slideUpIn {
+@keyframes modalFadeIn {
   from {
     opacity: 0;
-    transform: translateY(15px);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 

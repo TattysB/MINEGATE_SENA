@@ -556,6 +556,16 @@
     outline: none;
   }
 
+  .password-body .form-control:disabled,
+  .password-body input[type="password"]:disabled,
+  .password-body input[type="text"]:disabled,
+  .password-body input[type="email"]:disabled {
+    background-color: #f1f5f9;
+    color: #94a3b8;
+    border-color: #cbd5e1;
+    cursor: not-allowed;
+  }
+
   .password-body .form-control.is-invalid,
   .password-body input.is-invalid {
     border-color: #ef4444;
@@ -640,6 +650,146 @@
     box-shadow: 0 14px 30px rgba(22, 163, 74, 0.35);
   }
 
+  .password-strength-container {
+    width: 100%;
+    margin-top: 10px;
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .password-strength-container.visible {
+    opacity: 1;
+    max-height: 260px;
+  }
+
+  .strength-bar-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .strength-bar {
+    flex: 1;
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .strength-bar-fill {
+    height: 100%;
+    width: 0;
+    border-radius: 4px;
+    transition: width 0.3s ease, background-color 0.3s ease;
+  }
+
+  .strength-bar-fill.strength-weak {
+    background: linear-gradient(90deg, #ef4444, #f87171);
+  }
+
+  .strength-bar-fill.strength-medium {
+    background: linear-gradient(90deg, #f59e0b, #fbbf24);
+  }
+
+  .strength-bar-fill.strength-good {
+    background: linear-gradient(90deg, #84cc16, #a3e635);
+  }
+
+  .strength-bar-fill.strength-strong {
+    background: linear-gradient(90deg, #10b981, #34d399);
+  }
+
+  .strength-text {
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 80px;
+    text-align: right;
+  }
+
+  .strength-text.strength-weak {
+    color: #ef4444;
+  }
+
+  .strength-text.strength-medium {
+    color: #f59e0b;
+  }
+
+  .strength-text.strength-good {
+    color: #84cc16;
+  }
+
+  .strength-text.strength-strong {
+    color: #10b981;
+  }
+
+  .password-requirements-dynamic {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+  }
+
+  .password-requirements-dynamic .requirement {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.86rem;
+    transition: all 0.2s ease;
+  }
+
+  .password-requirements-dynamic .requirement .req-icon {
+    font-size: 14px;
+  }
+
+  .password-requirements-dynamic .requirement.unmet,
+  .password-requirements-dynamic .requirement.unmet .req-icon,
+  .password-requirements-dynamic .requirement.unmet span {
+    color: #ef4444;
+  }
+
+  .password-requirements-dynamic .requirement.met,
+  .password-requirements-dynamic .requirement.met .req-icon,
+  .password-requirements-dynamic .requirement.met span {
+    color: #10b981;
+  }
+
+  .field-error-inline {
+    margin-top: 8px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #b91c1c;
+    font-size: 0.86rem;
+    font-weight: 600;
+    animation: slideInShake 0.4s ease-out;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  @keyframes slideInShake {
+    0% {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+
+    50% {
+      transform: translateX(5px);
+    }
+
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
   @media (max-width: 768px) {
     .modal-password-card {
       max-width: 100%;
@@ -654,5 +804,20 @@
 
     .form-section {
       padding: 14px;
+    }
+
+    .strength-bar-wrapper {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
+    }
+
+    .strength-text {
+      text-align: left;
+      min-width: unset;
+    }
+
+    .password-requirements-dynamic .requirement {
+      font-size: 0.8rem;
     }
   }
