@@ -5,12 +5,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  {% block extra_css %}{% endblock %}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
   <title>MineGate</title>
 
   <!-- ESTILOS ANTIGUOS (Comentados para pruebas) -->
   <link rel="stylesheet" href="{% static 'core/css/nuevos_estilos.css' %}?v=16" />
   <!-- Estilos del Dropdown de Usuario -->
   <link rel="stylesheet" href="{% static 'core/css/user_dropdown.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/configuracion_perfil.css' %}" />
   <!-- Iconos y Fuentes -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet" />
@@ -87,7 +90,7 @@
 
                 </div>
                 <div class="user-dropdown-body">
-                  <a href="{% url 'usuarios:configuracion_perfil' %}" class="dropdown-item">
+                  <a href="javascript:void(0)" onclick="abrirModalPerfil(event)" class="dropdown-item">
                     <i class="ri-user-line"></i>
                     <span>Mi Perfil</span>
                   </a>
@@ -188,6 +191,40 @@
               Sí, Cerrar Sesión
             </button>
           </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Mi Perfil -->
+    <div id="modalPerfil" class="modal-perfil-overlay" style="display: none;">
+      <div class="modal-perfil-card" onclick="event.stopPropagation()">
+        <div class="modal-header-perfil">
+          <h3>Mi Perfil</h3>
+          <button onclick="cerrarModalPerfil()" class="btn-close-perfil">&times;</button>
+        </div>
+
+        <div class="modal-body-perfil">
+          <div class="perfil-avatar-container">
+            {% if perfil and perfil.foto_perfil %}
+            <img src="{{ perfil.foto_perfil.url }}" alt="Foto de perfil" class="perfil-avatar" />
+            {% else %}
+            <img src="{% static 'core/img/usuario.png' %}" alt="Foto de perfil" class="perfil-avatar" />
+            {% endif %}
+          </div>
+
+          <h2 class="perfil-nombre">{{ request.user.get_full_name|default:request.user.username }}</h2>
+          <p class="perfil-email">{{ request.user.email }}</p>
+
+          <div class="perfil-acciones">
+            <a href="{% url 'usuarios:perfil' %}" class="btn-perfil-action btn-verde">
+              <span class="action-left"><i class="ri-edit-box-line"></i> Editar Perfil</span>
+              <i class="ri-arrow-right-s-line action-right"></i>
+            </a>
+            <a href="{% url 'usuarios:cambiar_contraseña' %}" class="btn-perfil-action btn-gris">
+              <span class="action-left"><i class="ri-lock-line"></i> Cambiar Contraseña</span>
+              <i class="ri-arrow-right-s-line action-right"></i>
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -505,6 +542,36 @@
         modal.style.display = "none";
       }
     }
+
+    // Funciones para Modal Mi Perfil
+    function abrirModalPerfil(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const modal = document.getElementById("modalPerfil");
+      if (modal) {
+        modal.style.display = "flex";
+      }
+      // Cerrar el dropdown para que no se sobreponga
+      const dropdown = document.getElementById("userDropdownMenu");
+      if (dropdown) dropdown.classList.remove("active");
+    }
+
+    function cerrarModalPerfil() {
+      const modal = document.getElementById("modalPerfil");
+      if (modal) {
+        modal.style.display = "none";
+      }
+    }
+
+    // Cerrar el modal de perfil dando click afuera (ya que el overlay cubre toda la pantalla)
+    document.addEventListener("click", function (e) {
+      const modal = document.getElementById("modalPerfil");
+      if (modal && modal.style.display === "flex") {
+        if (e.target === modal) {
+          cerrarModalPerfil();
+        }
+      }
+    });
   </script>
 
   <!-- Hamburger Menu Script -->
@@ -831,221 +898,222 @@
   {% if not solo_coordinador %}
   <!-- Script para Gestión de Visitas -->
   <script>
-    // Variables globales
-    let tipoVisitaActual = 'internas';
+    (function () {
+      // Variables globales
+      let tipoVisitaActual = 'internas';
 
-    // Función para cambiar tab de tipo de visita
-    function cambiarTabVisita(tipo) {
-      tipoVisitaActual = tipo;
-      document.querySelectorAll('.tab-visita').forEach(tab => {
-        if (tab.getAttribute('data-tipo') === tipo) {
-          tab.style.background = '#8b5cf6';
-          tab.style.color = 'white';
-          tab.classList.add('active');
-        } else {
-          tab.style.background = '#e5e7eb';
-          tab.style.color = '#374151';
-          tab.classList.remove('active');
+      // Función para cambiar tab de tipo de visita
+      function cambiarTabVisita(tipo) {
+        tipoVisitaActual = tipo;
+        document.querySelectorAll('.tab-visita').forEach(tab => {
+          if (tab.getAttribute('data-tipo') === tipo) {
+            tab.style.background = '#8b5cf6';
+            tab.style.color = 'white';
+            tab.classList.add('active');
+          } else {
+            tab.style.background = '#e5e7eb';
+            tab.style.color = '#374151';
+            tab.classList.remove('active');
+          }
+        });
+        cargarVisitas();
+      }
+
+      // ========================================
+      // FUNCIONES PARA NUEVA VISITA
+      // ========================================
+
+      // Variables globales para el calendario de selección
+      let calendarioSeleccion_selectedDate = null;
+      let calendarioSeleccion_selectedHorario = null;
+
+      function initCalendarioSeleccionEvents(container) {
+        if (!container) return;
+        console.log('Inicializando eventos del calendario de selección');
+
+        const prev = container.querySelector('#prevSel');
+        const next = container.querySelector('#nextSel');
+        const cardEl = container.querySelector('.calendar-card');
+        const year = parseInt(cardEl.getAttribute('data-year'));
+        const month = parseInt(cardEl.getAttribute('data-month'));
+        const horarioTitle = container.querySelector('#horarioTitle');
+        const horarioHint = container.querySelector('#horarioHint');
+        const horariosList = container.querySelector('#horariosList');
+        const btnContinuar = container.querySelector('#btnContinuarVisita');
+
+        // Reset
+        calendarioSeleccion_selectedDate = null;
+        calendarioSeleccion_selectedHorario = null;
+
+        function fetchMonth(y, m) {
+          const url = '/calendario/seleccion/' + y + '/' + m + '/';
+          return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(r => r.text());
         }
-      });
-      cargarVisitas();
-    }
 
-    // ========================================
-    // FUNCIONES PARA NUEVA VISITA
-    // ========================================
-
-    // Variables globales para el calendario de selección
-    let calendarioSeleccion_selectedDate = null;
-    let calendarioSeleccion_selectedHorario = null;
-
-    function initCalendarioSeleccionEvents(container) {
-      if (!container) return;
-      console.log('Inicializando eventos del calendario de selección');
-
-      const prev = container.querySelector('#prevSel');
-      const next = container.querySelector('#nextSel');
-      const cardEl = container.querySelector('.calendar-card');
-      const year = parseInt(cardEl.getAttribute('data-year'));
-      const month = parseInt(cardEl.getAttribute('data-month'));
-      const horarioTitle = container.querySelector('#horarioTitle');
-      const horarioHint = container.querySelector('#horarioHint');
-      const horariosList = container.querySelector('#horariosList');
-      const btnContinuar = container.querySelector('#btnContinuarVisita');
-
-      // Reset
-      calendarioSeleccion_selectedDate = null;
-      calendarioSeleccion_selectedHorario = null;
-
-      function fetchMonth(y, m) {
-        const url = '/calendario/seleccion/' + y + '/' + m + '/';
-        return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(r => r.text());
-      }
-
-      function goTo(y, m) {
-        const contenedor = document.getElementById('calendarioNuevaVisitaContent');
-        if (contenedor) {
-          fetchMonth(y, m).then(html => {
-            contenedor.innerHTML = html;
-            const newContainer = contenedor.querySelector('#calendarioSeleccionPage');
-            if (newContainer) initCalendarioSeleccionEvents(newContainer);
-          });
+        function goTo(y, m) {
+          const contenedor = document.getElementById('calendarioNuevaVisitaContent');
+          if (contenedor) {
+            fetchMonth(y, m).then(html => {
+              contenedor.innerHTML = html;
+              const newContainer = contenedor.querySelector('#calendarioSeleccionPage');
+              if (newContainer) initCalendarioSeleccionEvents(newContainer);
+            });
+          }
         }
-      }
 
-      if (prev) {
-        prev.onclick = function () {
-          let y = year, m = month - 1;
-          if (m < 1) { m = 12; y -= 1; }
-          goTo(y, m);
-        };
-      }
-      if (next) {
-        next.onclick = function () {
-          let y = year, m = month + 1;
-          if (m > 12) { m = 1; y += 1; }
-          goTo(y, m);
-        };
-      }
+        if (prev) {
+          prev.onclick = function () {
+            let y = year, m = month - 1;
+            if (m < 1) { m = 12; y -= 1; }
+            goTo(y, m);
+          };
+        }
+        if (next) {
+          next.onclick = function () {
+            let y = year, m = month + 1;
+            if (m > 12) { m = 1; y += 1; }
+            goTo(y, m);
+          };
+        }
 
-      // Click en días disponibles
-      const table = container.querySelector('.calendar-table');
-      if (table) {
-        table.onclick = function (e) {
-          const td = e.target.closest('td');
-          if (!td) return;
+        // Click en días disponibles
+        const table = container.querySelector('.calendar-table');
+        if (table) {
+          table.onclick = function (e) {
+            const td = e.target.closest('td');
+            if (!td) return;
 
-          // Solo procesar días disponibles
-          if (!td.classList.contains('available')) {
-            console.log('Día no disponible:', td.getAttribute('data-date'));
-            return;
+            // Solo procesar días disponibles
+            if (!td.classList.contains('available')) {
+              console.log('Día no disponible:', td.getAttribute('data-date'));
+              return;
+            }
+
+            console.log('Día seleccionado:', td.getAttribute('data-date'));
+
+            // Quitar selección anterior
+            container.querySelectorAll('td.selected-day').forEach(el => el.classList.remove('selected-day'));
+            td.classList.add('selected-day');
+
+            calendarioSeleccion_selectedDate = td.getAttribute('data-date');
+            calendarioSeleccion_selectedHorario = null;
+            if (btnContinuar) btnContinuar.style.display = 'none';
+
+            // Cargar horarios
+            loadHorarios(calendarioSeleccion_selectedDate);
+          };
+        }
+
+        function loadHorarios(dateStr) {
+          console.log('Cargando horarios para:', dateStr);
+          if (horarioHint) horarioHint.textContent = 'Cargando horarios...';
+          if (horariosList) {
+            horariosList.innerHTML = '';
+            horariosList.style.display = 'none';
           }
 
-          console.log('Día seleccionado:', td.getAttribute('data-date'));
+          const url = '/calendario/horarios/' + dateStr + '/';
+          console.log('URL:', url);
 
-          // Quitar selección anterior
-          container.querySelectorAll('td.selected-day').forEach(el => el.classList.remove('selected-day'));
-          td.classList.add('selected-day');
-
-          calendarioSeleccion_selectedDate = td.getAttribute('data-date');
-          calendarioSeleccion_selectedHorario = null;
-          if (btnContinuar) btnContinuar.style.display = 'none';
-
-          // Cargar horarios
-          loadHorarios(calendarioSeleccion_selectedDate);
-        };
-      }
-
-      function loadHorarios(dateStr) {
-        console.log('Cargando horarios para:', dateStr);
-        if (horarioHint) horarioHint.textContent = 'Cargando horarios...';
-        if (horariosList) {
-          horariosList.innerHTML = '';
-          horariosList.style.display = 'none';
-        }
-
-        const url = '/calendario/horarios/' + dateStr + '/';
-        console.log('URL:', url);
-
-        fetch(url, {
-          headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
-        })
-          .then(r => {
-            console.log('Response status:', r.status);
-            return r.json();
+          fetch(url, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
           })
-          .then(data => {
-            console.log('Datos recibidos:', data);
+            .then(r => {
+              console.log('Response status:', r.status);
+              return r.json();
+            })
+            .then(data => {
+              console.log('Datos recibidos:', data);
 
-            if (!data.ok) {
-              if (horarioHint) horarioHint.textContent = 'Error: ' + (data.error || 'No se pudieron cargar');
-              return;
-            }
+              if (!data.ok) {
+                if (horarioHint) horarioHint.textContent = 'Error: ' + (data.error || 'No se pudieron cargar');
+                return;
+              }
 
-            if (!data.ranges || !data.ranges.length) {
-              if (horarioHint) horarioHint.textContent = 'No hay horarios configurados para este día.';
-              return;
-            }
+              if (!data.ranges || !data.ranges.length) {
+                if (horarioHint) horarioHint.textContent = 'No hay horarios configurados para este día.';
+                return;
+              }
 
-            if (horarioTitle) horarioTitle.textContent = 'Horarios disponibles para ' + dateStr;
-            if (horarioHint) horarioHint.textContent = 'Selecciona el horario que prefieras:';
+              if (horarioTitle) horarioTitle.textContent = 'Horarios disponibles para ' + dateStr;
+              if (horarioHint) horarioHint.textContent = 'Selecciona el horario que prefieras:';
 
-            if (horariosList) {
-              horariosList.innerHTML = data.ranges.map(r =>
-                '<span class="horario-chip" data-start="' + r.start + '" data-end="' + r.end + '">' + r.label + '</span>'
-              ).join('');
-              horariosList.style.display = 'block';
+              if (horariosList) {
+                horariosList.innerHTML = data.ranges.map(r =>
+                  '<span class="horario-chip" data-start="' + r.start + '" data-end="' + r.end + '">' + r.label + '</span>'
+                ).join('');
+                horariosList.style.display = 'block';
 
-              // Event listeners para chips
-              horariosList.querySelectorAll('.horario-chip').forEach(chip => {
-                chip.onclick = function () {
-                  horariosList.querySelectorAll('.horario-chip').forEach(c => c.classList.remove('selected'));
-                  this.classList.add('selected');
-                  calendarioSeleccion_selectedHorario = {
-                    start: this.getAttribute('data-start'),
-                    end: this.getAttribute('data-end'),
-                    label: this.textContent
+                // Event listeners para chips
+                horariosList.querySelectorAll('.horario-chip').forEach(chip => {
+                  chip.onclick = function () {
+                    horariosList.querySelectorAll('.horario-chip').forEach(c => c.classList.remove('selected'));
+                    this.classList.add('selected');
+                    calendarioSeleccion_selectedHorario = {
+                      start: this.getAttribute('data-start'),
+                      end: this.getAttribute('data-end'),
+                      label: this.textContent
+                    };
+                    if (btnContinuar) btnContinuar.style.display = 'inline-block';
                   };
-                  if (btnContinuar) btnContinuar.style.display = 'inline-block';
-                };
-              });
+                });
+              }
+            })
+            .catch(err => {
+              console.error('Error al cargar horarios:', err);
+              if (horarioHint) horarioHint.textContent = 'Error al cargar horarios.';
+            });
+        }
+
+        // Botón continuar
+        if (btnContinuar) {
+          btnContinuar.onclick = function () {
+            if (!calendarioSeleccion_selectedDate || !calendarioSeleccion_selectedHorario) {
+              alert('Por favor selecciona una fecha y un horario.');
+              return;
             }
-          })
-          .catch(err => {
-            console.error('Error al cargar horarios:', err);
-            if (horarioHint) horarioHint.textContent = 'Error al cargar horarios.';
-          });
+            sessionStorage.setItem('visita_fecha', calendarioSeleccion_selectedDate);
+            sessionStorage.setItem('visita_horario_inicio', calendarioSeleccion_selectedHorario.start);
+            sessionStorage.setItem('visita_horario_fin', calendarioSeleccion_selectedHorario.end);
+            sessionStorage.setItem('visita_horario_label', calendarioSeleccion_selectedHorario.label);
+
+            alert('Fecha: ' + calendarioSeleccion_selectedDate + '\nHorario: ' + calendarioSeleccion_selectedHorario.label + '\n\nDatos guardados.');
+          };
+        }
+
+        console.log('Calendario de selección inicializado correctamente');
       }
 
-      // Botón continuar
-      if (btnContinuar) {
-        btnContinuar.onclick = function () {
-          if (!calendarioSeleccion_selectedDate || !calendarioSeleccion_selectedHorario) {
-            alert('Por favor selecciona una fecha y un horario.');
-            return;
-          }
-          sessionStorage.setItem('visita_fecha', calendarioSeleccion_selectedDate);
-          sessionStorage.setItem('visita_horario_inicio', calendarioSeleccion_selectedHorario.start);
-          sessionStorage.setItem('visita_horario_fin', calendarioSeleccion_selectedHorario.end);
-          sessionStorage.setItem('visita_horario_label', calendarioSeleccion_selectedHorario.label);
+      function mostrarCalendarioNuevaVisita() {
+        const contenedor = document.getElementById('contenedorCalendarioNuevaVisita');
+        const contenido = document.getElementById('calendarioNuevaVisitaContent');
 
-          alert('Fecha: ' + calendarioSeleccion_selectedDate + '\nHorario: ' + calendarioSeleccion_selectedHorario.label + '\n\nDatos guardados.');
-        };
-      }
+        if (!contenedor || !contenido) return;
 
-      console.log('Calendario de selección inicializado correctamente');
-    }
-
-    function mostrarCalendarioNuevaVisita() {
-      const contenedor = document.getElementById('contenedorCalendarioNuevaVisita');
-      const contenido = document.getElementById('calendarioNuevaVisitaContent');
-
-      if (!contenedor || !contenido) return;
-
-      contenedor.style.display = 'block';
-      contenido.innerHTML = `
+        contenedor.style.display = 'block';
+        contenido.innerHTML = `
         <div style="text-align: center; padding: 30px;">
           <i class="ri-loader-4-line" style="font-size: 40px; color: #10b981; animation: spin 1s linear infinite;"></i>
           <p style="color: #6b7280; margin-top: 10px;">Cargando calendario...</p>
         </div>
       `;
 
-      // Cargar el calendario de selección
-      fetch('/calendario/seleccion/', {
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-      })
-        .then(response => response.text())
-        .then(html => {
-          contenido.innerHTML = html;
-          // Inicializar el calendario
-          const calendarioContainer = contenido.querySelector('#calendarioSeleccionPage');
-          if (calendarioContainer) {
-            initCalendarioSeleccionEvents(calendarioContainer);
-          }
+        // Cargar el calendario de selección
+        fetch('/calendario/seleccion/', {
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })
-        .catch(err => {
-          console.error('Error al cargar calendario:', err);
-          contenido.innerHTML = `
+          .then(response => response.text())
+          .then(html => {
+            contenido.innerHTML = html;
+            // Inicializar el calendario
+            const calendarioContainer = contenido.querySelector('#calendarioSeleccionPage');
+            if (calendarioContainer) {
+              initCalendarioSeleccionEvents(calendarioContainer);
+            }
+          })
+          .catch(err => {
+            console.error('Error al cargar calendario:', err);
+            contenido.innerHTML = `
           <div style="text-align: center; padding: 30px;">
             <i class="ri-error-warning-line" style="font-size: 40px; color: #ef4444;"></i>
             <p style="color: #6b7280; margin-top: 10px;">Error al cargar el calendario.</p>
@@ -1054,98 +1122,98 @@
             </button>
           </div>
         `;
-        });
+          });
 
-      // Scroll suave al calendario
-      setTimeout(() => {
-        contenedor.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
-    }
-
-    function ocultarCalendarioNuevaVisita() {
-      const contenedor = document.getElementById('contenedorCalendarioNuevaVisita');
-      if (contenedor) {
-        contenedor.style.display = 'none';
+        // Scroll suave al calendario
+        setTimeout(() => {
+          contenedor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
       }
-    }
 
-    // Función para cargar visitas
-    function cargarVisitas() {
-      const estado = document.getElementById('filtroEstadoVisita').value;
-      const buscar = document.getElementById('buscarVisita').value;
-      const tbody = document.getElementById('cuerpoTablaVisitas');
+      function ocultarCalendarioNuevaVisita() {
+        const contenedor = document.getElementById('contenedorCalendarioNuevaVisita');
+        if (contenedor) {
+          contenedor.style.display = 'none';
+        }
+      }
 
-      tbody.innerHTML = `<tr><td colspan="8" style="padding: 40px; text-align: center; color: #6b7280;">
+      // Función para cargar visitas
+      function cargarVisitas() {
+        const estado = document.getElementById('filtroEstadoVisita').value;
+        const buscar = document.getElementById('buscarVisita').value;
+        const tbody = document.getElementById('cuerpoTablaVisitas');
+
+        tbody.innerHTML = `<tr><td colspan="8" style="padding: 40px; text-align: center; color: #6b7280;">
           <i class="ri-loader-4-line" style="font-size: 30px; animation: spin 1s linear infinite;"></i>
           <p>Cargando visitas...</p>
         </td></tr>`;
 
-      fetch(`/gestion/api/visitas/?tipo=${tipoVisitaActual}&estado=${estado}&buscar=${encodeURIComponent(buscar)}`)
-        .then(response => response.json())
-        .then(data => {
-          // Actualizar estadísticas
-          document.getElementById('statPendientes').textContent = data.stats.pendientes;
-          document.getElementById('statAprobadas').textContent = data.stats.aprobadas_total;
-          document.getElementById('statRechazadas').textContent = data.stats.rechazadas;
+        fetch(`/gestion/api/visitas/?tipo=${tipoVisitaActual}&estado=${estado}&buscar=${encodeURIComponent(buscar)}`)
+          .then(response => response.json())
+          .then(data => {
+            // Actualizar estadísticas
+            document.getElementById('statPendientes').textContent = data.stats.pendientes;
+            document.getElementById('statAprobadas').textContent = data.stats.aprobadas_total;
+            document.getElementById('statRechazadas').textContent = data.stats.rechazadas;
 
-          // Actualizar tarjeta de pendientes de revisión
-          const docsPend = data.stats.docs_pendientes_revision || 0;
-          const visitasEnRev = data.stats.en_revision || 0;
+            // Actualizar tarjeta de pendientes de revisión
+            const docsPend = data.stats.docs_pendientes_revision || 0;
+            const visitasEnRev = data.stats.en_revision || 0;
 
-          document.getElementById('statEnRevision').textContent = docsPend;
-          document.getElementById('statEnRevisionArchivos').textContent = visitasEnRev > 0 ? `📋 ${visitasEnRev} visita(s)` : '';
+            document.getElementById('statEnRevision').textContent = docsPend;
+            document.getElementById('statEnRevisionArchivos').textContent = visitasEnRev > 0 ? `📋 ${visitasEnRev} visita(s)` : '';
 
-          // Mostrar badges de notificación si hay docs pendientes
-          const docsEnviados = data.stats.documentos_enviados || 0;
-          const enRevision = data.stats.en_revision || 0;
-          const badgeRev = document.getElementById('badgeEnRevision');
-          const alertaDocs = document.getElementById('alertaDocsPendientes');
-          if (enRevision > 0) {
-            badgeRev.textContent = enRevision;
-            badgeRev.style.display = 'block';
-          } else {
-            badgeRev.style.display = 'none';
-          }
-
-          // Mostrar alerta si hay documentos pendientes de revisión
-          if (docsPend > 0 || docsEnviados > 0) {
-            alertaDocs.style.display = 'flex';
-            let textoAlerta = '';
-            if (docsPend > 0 && docsEnviados > 0) {
-              textoAlerta = `Hay ${docsPend} documento(s) de asistentes pendientes de aprobación y ${docsEnviados} visita(s) con documentos enviados.`;
-            } else if (docsPend > 0) {
-              textoAlerta = `Hay ${docsPend} documento(s) de asistentes pendientes de aprobación.`;
+            // Mostrar badges de notificación si hay docs pendientes
+            const docsEnviados = data.stats.documentos_enviados || 0;
+            const enRevision = data.stats.en_revision || 0;
+            const badgeRev = document.getElementById('badgeEnRevision');
+            const alertaDocs = document.getElementById('alertaDocsPendientes');
+            if (enRevision > 0) {
+              badgeRev.textContent = enRevision;
+              badgeRev.style.display = 'block';
             } else {
-              textoAlerta = `Hay ${docsEnviados} visita(s) con documentos enviados que requieren tu revisión.`;
+              badgeRev.style.display = 'none';
             }
-            document.getElementById('alertaDocsTexto').textContent = textoAlerta;
-          } else {
-            alertaDocs.style.display = 'none';
-          }
 
-          // Actualizar badge del sidebar
-          const sidebarBadge = document.getElementById('sidebarBadgeDocs');
-          const totalNotif = docsPend + docsEnviados;
-          if (totalNotif > 0) {
-            sidebarBadge.textContent = totalNotif;
-            sidebarBadge.style.display = 'block';
-          } else {
-            sidebarBadge.style.display = 'none';
-          }
+            // Mostrar alerta si hay documentos pendientes de revisión
+            if (docsPend > 0 || docsEnviados > 0) {
+              alertaDocs.style.display = 'flex';
+              let textoAlerta = '';
+              if (docsPend > 0 && docsEnviados > 0) {
+                textoAlerta = `Hay ${docsPend} documento(s) de asistentes pendientes de aprobación y ${docsEnviados} visita(s) con documentos enviados.`;
+              } else if (docsPend > 0) {
+                textoAlerta = `Hay ${docsPend} documento(s) de asistentes pendientes de aprobación.`;
+              } else {
+                textoAlerta = `Hay ${docsEnviados} visita(s) con documentos enviados que requieren tu revisión.`;
+              }
+              document.getElementById('alertaDocsTexto').textContent = textoAlerta;
+            } else {
+              alertaDocs.style.display = 'none';
+            }
 
-          // Llenar tabla
-          if (data.visitas.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" style="padding: 40px; text-align: center; color: #6b7280;">
+            // Actualizar badge del sidebar
+            const sidebarBadge = document.getElementById('sidebarBadgeDocs');
+            const totalNotif = docsPend + docsEnviados;
+            if (totalNotif > 0) {
+              sidebarBadge.textContent = totalNotif;
+              sidebarBadge.style.display = 'block';
+            } else {
+              sidebarBadge.style.display = 'none';
+            }
+
+            // Llenar tabla
+            if (data.visitas.length === 0) {
+              tbody.innerHTML = `<tr><td colspan="8" style="padding: 40px; text-align: center; color: #6b7280;">
                 <i class="ri-inbox-line" style="font-size: 40px;"></i>
                 <p>No hay visitas para mostrar</p>
               </td></tr>`;
-            return;
-          }
+              return;
+            }
 
-          let html = '';
-          data.visitas.forEach(v => {
-            const estadoBadge = getEstadoBadge(v.estado);
-            html += `<tr style="border-bottom: 1px solid #e5e7eb;">
+            let html = '';
+            data.visitas.forEach(v => {
+              const estadoBadge = getEstadoBadge(v.estado);
+              html += `<tr style="border-bottom: 1px solid #e5e7eb;">
                 <td style="padding: 12px 15px;">#${v.id}</td>
                 <td style="padding: 12px 15px;">${v.tipo === 'interna' ? '📋 Interna' : '🏢 Externa'}</td>
                 <td style="padding: 12px 15px;">
@@ -1160,109 +1228,109 @@
                   ${getAccionesVisita(v)}
                 </td>
               </tr>`;
-          });
-          tbody.innerHTML = html;
-        })
-        .catch(error => {
-          tbody.innerHTML = `<tr><td colspan="8" style="padding: 40px; text-align: center; color: #ef4444;">
+            });
+            tbody.innerHTML = html;
+          })
+          .catch(error => {
+            tbody.innerHTML = `<tr><td colspan="8" style="padding: 40px; text-align: center; color: #ef4444;">
               <i class="ri-error-warning-line" style="font-size: 40px;"></i>
               <p>Error al cargar las visitas</p>
             </td></tr>`;
-        });
-    }
+          });
+      }
 
-    // Obtener badge de estado
-    function getEstadoBadge(estado) {
-      const badges = {
-        'enviada_coordinacion': '<span style="background:#ede9fe;color:#5b21b6;padding:4px 10px;border-radius:20px;font-size:11px;">🕒 Pendiente coordinación</span>',
-        'pendiente': '<span style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:20px;font-size:11px;">⏳ Pendiente</span>',
-        'aprobada_inicial': '<span style="background:#bbf7d0;color:#166534;padding:4px 10px;border-radius:20px;font-size:11px;">✅ Aprobada Inicial</span>',
-        'documentos_enviados': '<span style="background:#dbeafe;color:#1e40af;padding:4px 10px;border-radius:20px;font-size:11px;">📄 Docs Enviados</span>',
-        'en_revision_documentos': '<span style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:20px;font-size:11px;">🔍 En Revisión</span>',
-        'confirmada': '<span style="background:#d1fae5;color:#065f46;padding:4px 10px;border-radius:20px;font-size:11px;">✅✅ Confirmada</span>',
-        'rechazada': '<span style="background:#fee2e2;color:#991b1b;padding:4px 10px;border-radius:20px;font-size:11px;">❌ Rechazada</span>',
-      };
-      return badges[estado] || estado;
-    }
+      // Obtener badge de estado
+      function getEstadoBadge(estado) {
+        const badges = {
+          'enviada_coordinacion': '<span style="background:#ede9fe;color:#5b21b6;padding:4px 10px;border-radius:20px;font-size:11px;">🕒 Pendiente coordinación</span>',
+          'pendiente': '<span style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:20px;font-size:11px;">⏳ Pendiente</span>',
+          'aprobada_inicial': '<span style="background:#bbf7d0;color:#166534;padding:4px 10px;border-radius:20px;font-size:11px;">✅ Aprobada Inicial</span>',
+          'documentos_enviados': '<span style="background:#dbeafe;color:#1e40af;padding:4px 10px;border-radius:20px;font-size:11px;">📄 Docs Enviados</span>',
+          'en_revision_documentos': '<span style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:20px;font-size:11px;">🔍 En Revisión</span>',
+          'confirmada': '<span style="background:#d1fae5;color:#065f46;padding:4px 10px;border-radius:20px;font-size:11px;">✅✅ Confirmada</span>',
+          'rechazada': '<span style="background:#fee2e2;color:#991b1b;padding:4px 10px;border-radius:20px;font-size:11px;">❌ Rechazada</span>',
+        };
+        return badges[estado] || estado;
+      }
 
-    // Obtener badge de estado de documento de asistente
-    function getEstadoDocumentoBadge(estado) {
-      const badges = {
-        'pendiente_documentos': '<span style="background:#fef3c7;color:#92400e;padding:3px 8px;border-radius:15px;font-size:10px;">⏳ Pendiente</span>',
-        'documentos_aprobados': '<span style="background:#d1fae5;color:#065f46;padding:3px 8px;border-radius:15px;font-size:10px;">✅ Aprobados</span>',
-        'documentos_rechazados': '<span style="background:#fee2e2;color:#991b1b;padding:3px 8px;border-radius:15px;font-size:10px;">❌ Rechazados</span>',
-      };
-      return badges[estado] || estado;
-    }
+      // Obtener badge de estado de documento de asistente
+      function getEstadoDocumentoBadge(estado) {
+        const badges = {
+          'pendiente_documentos': '<span style="background:#fef3c7;color:#92400e;padding:3px 8px;border-radius:15px;font-size:10px;">⏳ Pendiente</span>',
+          'documentos_aprobados': '<span style="background:#d1fae5;color:#065f46;padding:3px 8px;border-radius:15px;font-size:10px;">✅ Aprobados</span>',
+          'documentos_rechazados': '<span style="background:#fee2e2;color:#991b1b;padding:3px 8px;border-radius:15px;font-size:10px;">❌ Rechazados</span>',
+        };
+        return badges[estado] || estado;
+      }
 
-    // Obtener botones de acciones
-    function getAccionesVisita(v) {
-      let acciones = `<button onclick="verDetalleVisita('${v.tipo}', ${v.id})" style="background:#6b7280;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">👁️ Ver</button>`;
+      // Obtener botones de acciones
+      function getAccionesVisita(v) {
+        let acciones = `<button onclick="verDetalleVisita('${v.tipo}', ${v.id})" style="background:#6b7280;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">👁️ Ver</button>`;
 
-      if (v.estado === 'enviada_coordinacion') {
-        acciones += `<span style="display:inline-block;background:#ede9fe;color:#5b21b6;padding:5px 10px;border-radius:5px;margin:2px;font-size:11px;">🕒 Esperando coordinación</span>`;
+        if (v.estado === 'enviada_coordinacion') {
+          acciones += `<span style="display:inline-block;background:#ede9fe;color:#5b21b6;padding:5px 10px;border-radius:5px;margin:2px;font-size:11px;">🕒 Esperando coordinación</span>`;
+          return acciones;
+        }
+
+        if (v.estado === 'pendiente') {
+          acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'aprobar')" style="background:#10b981;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">✅ Aprobar</button>`;
+          acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'rechazar')" style="background:#ef4444;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">❌</button>`;
+        }
+
+        if (v.estado === 'documentos_enviados') {
+          acciones += `<button onclick="verDetalleVisita('${v.tipo}', ${v.id})" style="background:#f59e0b;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;font-weight:600;">📄 Revisar Docs</button>`;
+          acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'iniciar_revision')" style="background:#3b82f6;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">🔍 Finalizar Revisión</button>`;
+        }
+
+        if (v.estado === 'en_revision_documentos') {
+          acciones += `<button onclick="verDetalleVisita('${v.tipo}', ${v.id})" style="background:#f59e0b;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;font-weight:600;">📄 Revisar Docs</button>`;
+
+          if (v.puede_confirmar) {
+            acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'confirmar_visita')" style="background:#10b981;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">✅✅ Confirmar</button>`;
+          } else if (v.tiene_rechazos) {
+            acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'rechazar')" style="background:#ef4444;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">❌ Rechazar por Documentos</button>`;
+          } else {
+            acciones += `<button onclick="mAlert('No se puede confirmar la visita aún. Asegúrese de que todos los asistentes tengan sus documentos aprobados.', 'warning')" style="background:#10b981;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;opacity:0.5;" title="Documentos pendientes de aprobación">⚠️ Confirmar</button>`;
+          }
+        }
+
         return acciones;
       }
 
-      if (v.estado === 'pendiente') {
-        acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'aprobar')" style="background:#10b981;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">✅ Aprobar</button>`;
-        acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'rechazar')" style="background:#ef4444;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">❌</button>`;
+      // Filtrar visitas
+      function filtrarVisitas() {
+        const val = document.getElementById('filtroEstadoVisita').value;
+        filtrarPorEstado(val);
       }
 
-      if (v.estado === 'documentos_enviados') {
-        acciones += `<button onclick="verDetalleVisita('${v.tipo}', ${v.id})" style="background:#f59e0b;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;font-weight:600;">📄 Revisar Docs</button>`;
-        acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'iniciar_revision')" style="background:#3b82f6;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">🔍 Finalizar Revisión</button>`;
-      }
+      // Mostrar visitas aprobadas con botón volver
+      function mostrarVisitasAprobadas() {
+        const tbody = document.getElementById('cuerpoTablaVisitas');
 
-      if (v.estado === 'en_revision_documentos') {
-        acciones += `<button onclick="verDetalleVisita('${v.tipo}', ${v.id})" style="background:#f59e0b;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;font-weight:600;">📄 Revisar Docs</button>`;
-
-        if (v.puede_confirmar) {
-          acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'confirmar_visita')" style="background:#10b981;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">✅✅ Confirmar</button>`;
-        } else if (v.tiene_rechazos) {
-          acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'rechazar')" style="background:#ef4444;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">❌ Rechazar por Documentos</button>`;
-        } else {
-          acciones += `<button onclick="mAlert('No se puede confirmar la visita aún. Asegúrese de que todos los asistentes tengan sus documentos aprobados.', 'warning')" style="background:#10b981;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;opacity:0.5;" title="Documentos pendientes de aprobación">⚠️ Confirmar</button>`;
-        }
-      }
-
-      return acciones;
-    }
-
-    // Filtrar visitas
-    function filtrarVisitas() {
-      const val = document.getElementById('filtroEstadoVisita').value;
-      filtrarPorEstado(val);
-    }
-
-    // Mostrar visitas aprobadas con botón volver
-    function mostrarVisitasAprobadas() {
-      const tbody = document.getElementById('cuerpoTablaVisitas');
-
-      // Mostrar loader
-      tbody.innerHTML = `<tr><td colspan="8" style="padding: 40px; text-align: center; color: #6b7280;">
+        // Mostrar loader
+        tbody.innerHTML = `<tr><td colspan="8" style="padding: 40px; text-align: center; color: #6b7280;">
           <i class="ri-loader-4-line" style="font-size: 30px; animation: spin 1s linear infinite;"></i>
           <p>Cargando visitas aprobadas...</p>
         </td></tr>`;
 
-      fetch(`/gestion/api/visitas-aprobadas/?tipo=${tipoVisitaActual}`)
-        .then(response => response.json())
-        .then(data => {
-          const visitas = data.visitas || [];
+        fetch(`/gestion/api/visitas-aprobadas/?tipo=${tipoVisitaActual}`)
+          .then(response => response.json())
+          .then(data => {
+            const visitas = data.visitas || [];
 
-          if (visitas.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" style="padding: 40px; text-align: center; color: #6b7280;">
+            if (visitas.length === 0) {
+              tbody.innerHTML = `<tr><td colspan="8" style="padding: 40px; text-align: center; color: #6b7280;">
                 <i class="ri-inbox-line" style="font-size: 40px;"></i>
                 <p>No hay visitas aprobadas</p>
               </td></tr>`;
-            return;
-          }
+              return;
+            }
 
-          // Renderizar con el mismo formato que cargarVisitas()
-          let html = '';
-          visitas.forEach(v => {
-            const estadoBadge = getEstadoBadge(v.estado);
-            html += `<tr style="border-bottom: 1px solid #e5e7eb;">
+            // Renderizar con el mismo formato que cargarVisitas()
+            let html = '';
+            visitas.forEach(v => {
+              const estadoBadge = getEstadoBadge(v.estado);
+              html += `<tr style="border-bottom: 1px solid #e5e7eb;">
                 <td style="padding: 12px 15px;">#${v.id}</td>
                 <td style="padding: 12px 15px;">${v.tipo_display}</td>
                 <td style="padding: 12px 15px;">
@@ -1280,133 +1348,133 @@
                   </button>
                 </td>
               </tr>`;
-          });
-          tbody.innerHTML = html;
-        })
-        .catch(error => {
-          console.error('Error:', error);
-          tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 20px; color: #ef4444;">
+            });
+            tbody.innerHTML = html;
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 20px; color: #ef4444;">
               <i class="ri-alert-line" style="font-size: 24px;"></i>
               <p style="font-size: 13px; color: #6b7280;">Error al cargar las visitas aprobadas</p>
             </td></tr>`;
-        });
-    }
-
-    // Filtrar por estado desde las tarjetas de estadísticas
-    function filtrarPorEstado(estado) {
-      document.getElementById('filtroEstadoVisita').value = estado;
-      cargarVisitas();
-
-      // Para estados con documentos, mostrar inline
-      if (estado === 'en_revision_documentos') {
-        mostrarDocumentosPorEstado('revision');
-      } else if (estado === 'documentos_enviados') {
-        mostrarDocumentosPorEstado('enviados');
-      } else {
-        // Para otros estados, asegurar que se muestre la tabla
-        document.getElementById('contenedorInlineDocs').style.display = 'none';
-        document.getElementById('contenedorTablaVisitas').style.display = '';
+          });
       }
-    }
 
-    // Mostrar documentos según filtro (inline)
-    function mostrarDocumentosPorEstado(filtro) {
-      const inlineContainer = document.getElementById('contenedorInlineDocs');
-      const tablaContainer = document.getElementById('contenedorTablaVisitas');
-      const contenido = document.getElementById('contenidoInlineDocs');
-      const titulo = document.getElementById('tituloInlineDocs');
-      const subtitulo = document.getElementById('subtituloInlineDocs');
-      const statsDiv = document.getElementById('statsInlineDocs');
+      // Filtrar por estado desde las tarjetas de estadísticas
+      function filtrarPorEstado(estado) {
+        document.getElementById('filtroEstadoVisita').value = estado;
+        cargarVisitas();
 
-      // Config según filtro
-      const configs = {
-        'revision': {
-          titulo: '🔍 Documentos Pendientes de Revisión',
-          subtitulo: 'Archivos que aún necesitan ser revisados',
-          color: '#f59e0b',
-          queryParams: 'estado_asistente=pendiente_documentos',
-          filtroLocal: null
-        },
-        'enviados': {
-          titulo: '📄 Documentos Enviados',
-          subtitulo: 'Todos los archivos que han sido enviados por los asistentes',
-          color: '#3b82f6',
-          queryParams: '',
-          filtroLocal: null
-        },
+        // Para estados con documentos, mostrar inline
+        if (estado === 'en_revision_documentos') {
+          mostrarDocumentosPorEstado('revision');
+        } else if (estado === 'documentos_enviados') {
+          mostrarDocumentosPorEstado('enviados');
+        } else {
+          // Para otros estados, asegurar que se muestre la tabla
+          document.getElementById('contenedorInlineDocs').style.display = 'none';
+          document.getElementById('contenedorTablaVisitas').style.display = '';
+        }
+      }
 
-      };
+      // Mostrar documentos según filtro (inline)
+      function mostrarDocumentosPorEstado(filtro) {
+        const inlineContainer = document.getElementById('contenedorInlineDocs');
+        const tablaContainer = document.getElementById('contenedorTablaVisitas');
+        const contenido = document.getElementById('contenidoInlineDocs');
+        const titulo = document.getElementById('tituloInlineDocs');
+        const subtitulo = document.getElementById('subtituloInlineDocs');
+        const statsDiv = document.getElementById('statsInlineDocs');
 
-      const cfg = configs[filtro];
-      if (!cfg) return;
+        // Config según filtro
+        const configs = {
+          'revision': {
+            titulo: '🔍 Documentos Pendientes de Revisión',
+            subtitulo: 'Archivos que aún necesitan ser revisados',
+            color: '#f59e0b',
+            queryParams: 'estado_asistente=pendiente_documentos',
+            filtroLocal: null
+          },
+          'enviados': {
+            titulo: '📄 Documentos Enviados',
+            subtitulo: 'Todos los archivos que han sido enviados por los asistentes',
+            color: '#3b82f6',
+            queryParams: '',
+            filtroLocal: null
+          },
 
-      titulo.textContent = cfg.titulo;
-      subtitulo.textContent = 'Cargando...';
-      statsDiv.innerHTML = '';
-      contenido.innerHTML = `
+        };
+
+        const cfg = configs[filtro];
+        if (!cfg) return;
+
+        titulo.textContent = cfg.titulo;
+        subtitulo.textContent = 'Cargando...';
+        statsDiv.innerHTML = '';
+        contenido.innerHTML = `
           <div style="text-align:center;padding:40px;color:#6b7280;">
             <i class="ri-loader-4-line" style="font-size:40px;animation:spin 1s linear infinite;"></i>
             <p>Cargando documentos...</p>
           </div>`;
 
-      // Ocultar tabla, mostrar contenedor inline
-      tablaContainer.style.display = 'none';
-      inlineContainer.style.display = 'block';
-      window._filtroDocsActual = filtro;
+        // Ocultar tabla, mostrar contenedor inline
+        tablaContainer.style.display = 'none';
+        inlineContainer.style.display = 'block';
+        window._filtroDocsActual = filtro;
 
-      const tipoParam = tipoVisitaActual ? `&tipo=${tipoVisitaActual}` : '';
-      fetch(`/gestion/api/documentos-revision/?${cfg.queryParams}${tipoParam}`)
-        .then(r => r.json())
-        .then(data => {
-          const docs = data.documentos || [];
+        const tipoParam = tipoVisitaActual ? `&tipo=${tipoVisitaActual}` : '';
+        fetch(`/gestion/api/documentos-revision/?${cfg.queryParams}${tipoParam}`)
+          .then(r => r.json())
+          .then(data => {
+            const docs = data.documentos || [];
 
-          // Estadísticas rápidas
-          const pendientes = docs.filter(d => d.estado === 'pendiente_documentos').length;
-          const aprobados = docs.filter(d => d.estado === 'documentos_aprobados').length;
-          const rechazados = docs.filter(d => d.estado === 'documentos_rechazados').length;
+            // Estadísticas rápidas
+            const pendientes = docs.filter(d => d.estado === 'pendiente_documentos').length;
+            const aprobados = docs.filter(d => d.estado === 'documentos_aprobados').length;
+            const rechazados = docs.filter(d => d.estado === 'documentos_rechazados').length;
 
-          statsDiv.innerHTML = `
+            statsDiv.innerHTML = `
               <span style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;">⏳ ${pendientes} Pendientes</span>
               <span style="background:#d1fae5;color:#065f46;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;">✅ ${aprobados} Aprobados</span>
               <span style="background:#fee2e2;color:#991b1b;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;">❌ ${rechazados} Rechazados</span>
             `;
-          subtitulo.textContent = `${docs.length} asistente(s) con documentos encontrados`;
+            subtitulo.textContent = `${docs.length} asistente(s) con documentos encontrados`;
 
-          if (docs.length === 0) {
-            contenido.innerHTML = `
+            if (docs.length === 0) {
+              contenido.innerHTML = `
                 <div style="text-align:center;padding:50px;color:#9ca3af;">
                   <i class="ri-inbox-line" style="font-size:50px;margin-bottom:10px;display:block;"></i>
                   <p style="font-size:16px;font-weight:500;margin-bottom:4px;">No se encontraron documentos</p>
                   <p style="font-size:13px;">No hay archivos que coincidan con este filtro.</p>
                 </div>`;
-            return;
-          }
-
-          // Agrupar por visita
-          const visitasMap = {};
-          docs.forEach(d => {
-            const key = `${d.visita_tipo}_${d.visita_id}`;
-            if (!visitasMap[key]) {
-              visitasMap[key] = {
-                visita_id: d.visita_id,
-                tipo: d.visita_tipo,
-                responsable: d.visita_responsable,
-                programa: d.visita_programa,
-                estado: d.visita_estado,
-                estado_display: d.visita_estado_display,
-                fecha: d.visita_fecha,
-                asistentes: []
-              };
+              return;
             }
-            visitasMap[key].asistentes.push(d);
-          });
 
-          let html = '';
-          Object.values(visitasMap).forEach(visita => {
-            const visitaBadge = getEstadoBadge(visita.estado);
-            const tipoIcon = visita.tipo === 'interna' ? '📋' : '🏢';
+            // Agrupar por visita
+            const visitasMap = {};
+            docs.forEach(d => {
+              const key = `${d.visita_tipo}_${d.visita_id}`;
+              if (!visitasMap[key]) {
+                visitasMap[key] = {
+                  visita_id: d.visita_id,
+                  tipo: d.visita_tipo,
+                  responsable: d.visita_responsable,
+                  programa: d.visita_programa,
+                  estado: d.visita_estado,
+                  estado_display: d.visita_estado_display,
+                  fecha: d.visita_fecha,
+                  asistentes: []
+                };
+              }
+              visitasMap[key].asistentes.push(d);
+            });
 
-            html += `
+            let html = '';
+            Object.values(visitasMap).forEach(visita => {
+              const visitaBadge = getEstadoBadge(visita.estado);
+              const tipoIcon = visita.tipo === 'interna' ? '📋' : '🏢';
+
+              html += `
                 <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:16px;overflow:hidden;">
                   <!-- Cabecera de visita -->
                   <div style="background:linear-gradient(135deg,#f3f4f6,#e5e7eb);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
@@ -1427,25 +1495,25 @@
                   <!-- Asistentes -->
                   <div style="padding:12px 18px;">`;
 
-            visita.asistentes.forEach(a => {
-              // Badge de estado del asistente
-              let aBadge = '';
-              let borderLeft = '#d1d5db';
-              if (a.estado === 'pendiente_documentos') {
-                aBadge = '<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">⏳ Pendiente</span>';
-                borderLeft = '#f59e0b';
-              } else if (a.estado === 'documentos_aprobados') {
-                aBadge = '<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">✅ Aprobado</span>';
-                borderLeft = '#10b981';
-              } else if (a.estado === 'documentos_rechazados') {
-                aBadge = '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">❌ Rechazado</span>';
-                borderLeft = '#ef4444';
-              }
+              visita.asistentes.forEach(a => {
+                // Badge de estado del asistente
+                let aBadge = '';
+                let borderLeft = '#d1d5db';
+                if (a.estado === 'pendiente_documentos') {
+                  aBadge = '<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">⏳ Pendiente</span>';
+                  borderLeft = '#f59e0b';
+                } else if (a.estado === 'documentos_aprobados') {
+                  aBadge = '<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">✅ Aprobado</span>';
+                  borderLeft = '#10b981';
+                } else if (a.estado === 'documentos_rechazados') {
+                  aBadge = '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">❌ Rechazado</span>';
+                  borderLeft = '#ef4444';
+                }
 
-              // Botones de documentos
-              let botonesDoc = '';
-              if (a.documento_adicional) {
-                botonesDoc += `
+                // Botones de documentos
+                let botonesDoc = '';
+                if (a.documento_adicional) {
+                  botonesDoc += `
                       <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
                         <div style="display:flex;gap:4px;align-items:center;">
                           <button onclick="visualizarDocumento('${a.documento_adicional}', 'Doc. Adicional - ${a.nombre_completo}', {estado: '${a.estado === 'documentos_aprobados' ? 'aprobado' : 'pendiente'}'})" 
@@ -1458,18 +1526,18 @@
                         </div>
                         ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:10px;padding:2px 8px;border-radius:6px;font-weight:600;">Aprobado</span>' : (a.estado === 'documentos_rechazados' ? '<span style="background:#fee2e2;color:#991b1b;font-size:10px;padding:2px 8px;border-radius:6px;font-weight:600;">Rechazado</span>' : '')}
                       </div>`;
-              }
-              // Documentos subidos (nuevo modelo)
-              if (a.documentos_subidos && a.documentos_subidos.length > 0) {
-                a.documentos_subidos.forEach(ds => {
-                  let badgeDoc = '';
-                  if (ds.estado === 'aprobado') {
-                    badgeDoc = '<span style="background:#d1fae5;color:#065f46;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;">Aprobado</span>';
-                  } else if (ds.estado === 'rechazado') {
-                    badgeDoc = '<span style="background:#fee2e2;color:#991b1b;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;">Rechazado</span>';
-                  }
+                }
+                // Documentos subidos (nuevo modelo)
+                if (a.documentos_subidos && a.documentos_subidos.length > 0) {
+                  a.documentos_subidos.forEach(ds => {
+                    let badgeDoc = '';
+                    if (ds.estado === 'aprobado') {
+                      badgeDoc = '<span style="background:#d1fae5;color:#065f46;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;">Aprobado</span>';
+                    } else if (ds.estado === 'rechazado') {
+                      badgeDoc = '<span style="background:#fee2e2;color:#991b1b;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;">Rechazado</span>';
+                    }
 
-                  botonesDoc += `
+                    botonesDoc += `
                       <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
                         <div style="display:flex;gap:4px;align-items:center;">
                           <button onclick="visualizarDocumento('${ds.url}', '${ds.titulo} - ${a.nombre_completo}', {id: ${ds.id}, estado: '${ds.estado}'})" 
@@ -1482,13 +1550,13 @@
                         </div>
                         ${badgeDoc}
                       </div>`;
-                });
-              }
+                  });
+                }
 
-              // Botones de acción (aprobar/rechazar) solo para pendientes
-              let accionesHtml = '';
-              if (a.estado === 'pendiente_documentos') {
-                accionesHtml = `
+                // Botones de acción (aprobar/rechazar) solo para pendientes
+                let accionesHtml = '';
+                if (a.estado === 'pendiente_documentos') {
+                  accionesHtml = `
                     <div style="display:flex;gap:6px;margin-left:auto;">
                       <button onclick="event.stopPropagation();aprobarDocDesdeListado('${a.visita_tipo}', ${a.asistente_id}, '${filtro}')" 
                               style="background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;padding:5px 14px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px;">
@@ -1499,15 +1567,15 @@
                         <i class="ri-close-line"></i> Rechazar
                       </button>
                     </div>`;
-              }
+                }
 
-              // Observaciones
-              let obsHtml = '';
-              if (a.observaciones_revision) {
-                obsHtml = `<div style="margin-top:6px;padding:6px 10px;background:#fef3c7;border-radius:5px;font-size:11px;color:#92400e;border:1px solid #fcd34d;">📝 ${a.observaciones_revision}</div>`;
-              }
+                // Observaciones
+                let obsHtml = '';
+                if (a.observaciones_revision) {
+                  obsHtml = `<div style="margin-top:6px;padding:6px 10px;background:#fef3c7;border-radius:5px;font-size:11px;color:#92400e;border:1px solid #fcd34d;">📝 ${a.observaciones_revision}</div>`;
+                }
 
-              html += `
+                html += `
                   <div style="padding:10px 14px;margin:6px 0;background:white;border-radius:8px;border:1px solid #e5e7eb;border-left:4px solid ${borderLeft};box-shadow:0 1px 3px rgba(0,0,0,0.04);">
                     <div style="display:flex;align-items:center;gap:8px;justify-content:space-between;flex-wrap:wrap;">
                       <div style="display:flex;align-items:center;gap:8px;">
@@ -1523,78 +1591,46 @@
                     </div>
                     ${obsHtml}
                   </div>`;
+              });
+
+              html += `</div></div>`;
             });
 
-            html += `</div></div>`;
-          });
-
-          contenido.innerHTML = html;
-        })
-        .catch(err => {
-          contenido.innerHTML = `
+            contenido.innerHTML = html;
+          })
+          .catch(err => {
+            contenido.innerHTML = `
               <div style="text-align:center;padding:50px;color:#ef4444;">
                 <i class="ri-error-warning-line" style="font-size:50px;margin-bottom:10px;display:block;"></i>
                 <p style="font-size:16px;font-weight:500;">Error al cargar documentos</p>
                 <p style="font-size:13px;color:#6b7280;">Verifique su conexión e intente de nuevo.</p>
               </div>`;
+          });
+      }
+
+      function volverAVisitas() {
+        document.getElementById('contenedorInlineDocs').style.display = 'none';
+        document.getElementById('contenedorTablaVisitas').style.display = '';
+        document.getElementById('filtroEstadoVisita').value = 'todos';
+        cargarVisitas();
+      }
+
+      // Aprobar documento desde listado
+      async function aprobarDocDesdeListado(tipo, asistenteId, filtroActual) {
+        const ok = await mConfirm('¿Aprobar los documentos de este asistente?', {
+          title: 'Aprobar Documentos',
+          icon: '<i class="ri-check-double-line"></i>',
+          iconClass: 'cm-success',
+          confirmText: 'Sí, aprobar',
+          confirmClass: 'cm-btn-success'
         });
-    }
+        if (!ok) return;
 
-    function volverAVisitas() {
-      document.getElementById('contenedorInlineDocs').style.display = 'none';
-      document.getElementById('contenedorTablaVisitas').style.display = '';
-      document.getElementById('filtroEstadoVisita').value = 'todos';
-      cargarVisitas();
-    }
-
-    // Aprobar documento desde listado
-    async function aprobarDocDesdeListado(tipo, asistenteId, filtroActual) {
-      const ok = await mConfirm('¿Aprobar los documentos de este asistente?', {
-        title: 'Aprobar Documentos',
-        icon: '<i class="ri-check-double-line"></i>',
-        iconClass: 'cm-success',
-        confirmText: 'Sí, aprobar',
-        confirmClass: 'cm-btn-success'
-      });
-      if (!ok) return;
-
-      const formData = new FormData();
-      formData.append('observaciones', '');
-      formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-
-      fetch(`/gestion/api/asistentes/${tipo}/${asistenteId}/aprobar/`, {
-        method: 'POST',
-        body: formData
-      })
-        .then(r => r.json())
-        .then(data => {
-          if (data.success) {
-            mAlert(data.message, 'success');
-            cargarVisitas();
-            mostrarDocumentosPorEstado(filtroActual);
-          } else {
-            mAlert('Error: ' + data.error, 'error');
-          }
-        })
-        .catch(() => mAlert('Error de conexión.', 'error'));
-    }
-
-    // Rechazar documento desde listado
-    async function rechazarDocDesdeListado(tipo, asistenteId, nombre, filtroActual) {
-      const obs = await mPrompt('Ingrese las observaciones del rechazo para <strong>' + nombre + '</strong>:', {
-        title: 'Rechazar Documentos',
-        icon: '<i class="ri-close-circle-line"></i>',
-        iconClass: 'cm-error',
-        placeholder: 'Motivo del rechazo...',
-        confirmText: 'Rechazar',
-        confirmClass: 'cm-btn-danger'
-      });
-      if (obs !== null && obs.trim() !== '') {
         const formData = new FormData();
-        formData.append('observaciones', obs);
+        formData.append('observaciones', '');
         formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
 
-        fetch(`/gestion/api/asistentes/${tipo}/${asistenteId}/rechazar/`, {
+        fetch(`/gestion/api/asistentes/${tipo}/${asistenteId}/aprobar/`, {
           method: 'POST',
           body: formData
         })
@@ -1609,188 +1645,220 @@
             }
           })
           .catch(() => mAlert('Error de conexión.', 'error'));
-      } else if (obs === '') {
-        mAlert('Debe proporcionar observaciones al rechazar documentos.', 'warning');
-      }
-    }
-
-    // Visualizar documento en modal
-    function visualizarDocumento(url, titulo, extraOptions = null) {
-      document.getElementById('tituloVisualizarDoc').textContent = '📄 ' + titulo;
-      document.getElementById('descargarDocLink').href = url;
-      document.getElementById('abrirNuevaTab').href = url;
-
-      const footer = document.getElementById('footerAccionesDoc');
-      const btnAprobar = document.getElementById('btnAprobarIndividual');
-      const btnRechazar = document.getElementById('btnRechazarIndividual');
-
-      if (extraOptions && extraOptions.id) {
-        footer.style.display = 'flex';
-        // Si ya tiene un estado (aprobado o rechazado), ocultar los botones y mostrar el estado
-        if (extraOptions.estado && extraOptions.estado !== 'pendiente') {
-          btnAprobar.style.setProperty('display', 'none', 'important');
-          btnRechazar.style.setProperty('display', 'none', 'important');
-
-          // Crear o actualizar un badge de estado en el footer
-          let statusBadge = document.getElementById('statusBadgeViewer');
-          if (!statusBadge) {
-            statusBadge = document.createElement('span');
-            statusBadge.id = 'statusBadgeViewer';
-            footer.appendChild(statusBadge);
-          }
-          statusBadge.style.display = 'inline-block';
-          if (extraOptions.estado === 'aprobado') {
-            statusBadge.innerHTML = '<i class="ri-checkbox-circle-line"></i> DOCUMENTO APROBADO';
-            statusBadge.style.cssText = 'background:#10b981;color:white;padding:8px 20px;border-radius:8px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;';
-          } else {
-            statusBadge.innerHTML = '<i class="ri-close-circle-line"></i> DOCUMENTO RECHAZADO';
-            statusBadge.style.cssText = 'background:#ef4444;color:white;padding:8px 20px;border-radius:8px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;';
-          }
-        } else {
-          btnAprobar.style.setProperty('display', 'flex', 'important');
-          btnRechazar.style.setProperty('display', 'flex', 'important');
-          const statusBadge = document.getElementById('statusBadgeViewer');
-          if (statusBadge) statusBadge.style.setProperty('display', 'none', 'important');
-
-          btnAprobar.onclick = () => revisarDocumentoIndividual(extraOptions.id, 'aprobado');
-          btnRechazar.onclick = () => revisarDocumentoIndividual(extraOptions.id, 'rechazado');
-        }
-      } else {
-        footer.style.display = 'none';
       }
 
-      document.getElementById('modalVisualizarDoc').style.display = 'block';
-
-      const contenedor = document.getElementById('contenedorVisualizarDoc');
-      const loading = document.getElementById('docLoadingIndicator');
-      loading.style.display = 'block';
-
-      // Limpiar contenido previo excepto el loading
-      Array.from(contenedor.children).forEach(child => {
-        if (child.id !== 'docLoadingIndicator') child.remove();
-      });
-
-      // Asegurar URL absoluta basada en el origen actual para evitar discrepancias localhost vs 127.0.0.1
-      let absoluteUrl = url;
-      if (url.startsWith('/')) {
-        absoluteUrl = window.location.origin + url;
-      }
-
-      // Usar iframe: la vista Django ya envía los headers correctos
-      const iframe = document.createElement('iframe');
-      iframe.src = absoluteUrl;
-      iframe.id = 'docIframe';
-      iframe.style.cssText = 'width:100%;height:100%;border:none;background:white;';
-
-      let loadSuccess = false;
-      iframe.onload = () => {
-        loadSuccess = true;
-        loading.style.display = 'none';
-      };
-
-      iframe.onerror = () => {
-        loading.style.display = 'none';
-        mostrarErrorDoc(contenedor, absoluteUrl);
-      };
-      contenedor.appendChild(iframe);
-
-      // Timeout de seguridad: si después de 4 segundos no ha cargado, probablemente hubo un error
-      // de conexión (Connection Refused) que el evento 'onerror' del iframe no siempre captura bien.
-      setTimeout(() => {
-        if (!loadSuccess && loading.style.display !== 'none') {
-          loading.style.display = 'none';
-          mostrarErrorDoc(contenedor, absoluteUrl);
-        }
-      }, 4000);
-    }
-
-    async function revisarDocumentoIndividual(docSubidoId, estado) {
-      let observaciones = '';
-      if (estado === 'rechazado') {
-        observaciones = await mPrompt('Ingrese el motivo del rechazo:', {
-          title: 'Rechazar Documento',
+      // Rechazar documento desde listado
+      async function rechazarDocDesdeListado(tipo, asistenteId, nombre, filtroActual) {
+        const obs = await mPrompt('Ingrese las observaciones del rechazo para <strong>' + nombre + '</strong>:', {
+          title: 'Rechazar Documentos',
           icon: '<i class="ri-close-circle-line"></i>',
           iconClass: 'cm-error',
+          placeholder: 'Motivo del rechazo...',
           confirmText: 'Rechazar',
           confirmClass: 'cm-btn-danger'
         });
-        if (observaciones === null) return;
-        if (observaciones.trim() === '') {
-          mAlert('Debe proporcionar un motivo.', 'warning');
-          return;
+        if (obs !== null && obs.trim() !== '') {
+          const formData = new FormData();
+          formData.append('observaciones', obs);
+          formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+          fetch(`/gestion/api/asistentes/${tipo}/${asistenteId}/rechazar/`, {
+            method: 'POST',
+            body: formData
+          })
+            .then(r => r.json())
+            .then(data => {
+              if (data.success) {
+                mAlert(data.message, 'success');
+                cargarVisitas();
+                mostrarDocumentosPorEstado(filtroActual);
+              } else {
+                mAlert('Error: ' + data.error, 'error');
+              }
+            })
+            .catch(() => mAlert('Error de conexión.', 'error'));
+        } else if (obs === '') {
+          mAlert('Debe proporcionar observaciones al rechazar documentos.', 'warning');
         }
       }
 
-      const formData = new FormData();
-      formData.append('estado', estado);
-      formData.append('observaciones', observaciones);
-      formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+      // Visualizar documento en modal
+      function visualizarDocumento(url, titulo, extraOptions = null) {
+        document.getElementById('tituloVisualizarDoc').textContent = '📄 ' + titulo;
+        document.getElementById('descargarDocLink').href = url;
+        document.getElementById('abrirNuevaTab').href = url;
 
-      fetch(`/documentos/api/revisar-asistente/${docSubidoId}/`, {
-        method: 'POST',
-        body: formData
-      })
-        .then(r => r.json())
-        .then(data => {
-          if (data.success) {
-            mAlert(data.message, 'success');
-            // Cerrar visor y volver al detalle
-            cerrarModalVisualizarDoc();
-            // Recargar detalle si está abierto
-            if (window.detalleVisitaActual) {
-              verDetalleVisita(window.detalleVisitaActual.tipo, window.detalleVisitaActual.id);
+        const footer = document.getElementById('footerAccionesDoc');
+        const btnAprobar = document.getElementById('btnAprobarIndividual');
+        const btnRechazar = document.getElementById('btnRechazarIndividual');
+
+        if (extraOptions && extraOptions.id) {
+          footer.style.display = 'flex';
+          // Si ya tiene un estado (aprobado o rechazado), ocultar los botones y mostrar el estado
+          if (extraOptions.estado && extraOptions.estado !== 'pendiente') {
+            btnAprobar.style.setProperty('display', 'none', 'important');
+            btnRechazar.style.setProperty('display', 'none', 'important');
+
+            // Crear o actualizar un badge de estado en el footer
+            let statusBadge = document.getElementById('statusBadgeViewer');
+            if (!statusBadge) {
+              statusBadge = document.createElement('span');
+              statusBadge.id = 'statusBadgeViewer';
+              footer.appendChild(statusBadge);
+            }
+            statusBadge.style.display = 'inline-block';
+            if (extraOptions.estado === 'aprobado') {
+              statusBadge.innerHTML = '<i class="ri-checkbox-circle-line"></i> DOCUMENTO APROBADO';
+              statusBadge.style.cssText = 'background:#10b981;color:white;padding:8px 20px;border-radius:8px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;';
+            } else {
+              statusBadge.innerHTML = '<i class="ri-close-circle-line"></i> DOCUMENTO RECHAZADO';
+              statusBadge.style.cssText = 'background:#ef4444;color:white;padding:8px 20px;border-radius:8px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;';
             }
           } else {
-            mAlert('Error: ' + (data.error || 'No se pudo actualizar el estado'), 'error');
-          }
-        })
-        .catch(() => mAlert('Error de conexión.', 'error'));
-    }
+            btnAprobar.style.setProperty('display', 'flex', 'important');
+            btnRechazar.style.setProperty('display', 'flex', 'important');
+            const statusBadge = document.getElementById('statusBadgeViewer');
+            if (statusBadge) statusBadge.style.setProperty('display', 'none', 'important');
 
-    function mostrarErrorDoc(contenedor, url) {
-      Array.from(contenedor.children).forEach(child => {
-        if (child.id !== 'docLoadingIndicator') child.remove();
-      });
-      const div = document.createElement('div');
-      div.style.cssText = 'text-align:center;padding:40px;color:#ef4444;';
-      div.innerHTML = `
+            btnAprobar.onclick = () => revisarDocumentoIndividual(extraOptions.id, 'aprobado');
+            btnRechazar.onclick = () => revisarDocumentoIndividual(extraOptions.id, 'rechazado');
+          }
+        } else {
+          footer.style.display = 'none';
+        }
+
+        document.getElementById('modalVisualizarDoc').style.display = 'block';
+
+        const contenedor = document.getElementById('contenedorVisualizarDoc');
+        const loading = document.getElementById('docLoadingIndicator');
+        loading.style.display = 'block';
+
+        // Limpiar contenido previo excepto el loading
+        Array.from(contenedor.children).forEach(child => {
+          if (child.id !== 'docLoadingIndicator') child.remove();
+        });
+
+        // Asegurar URL absoluta basada en el origen actual para evitar discrepancias localhost vs 127.0.0.1
+        let absoluteUrl = url;
+        if (url.startsWith('/')) {
+          absoluteUrl = window.location.origin + url;
+        }
+
+        // Usar iframe: la vista Django ya envía los headers correctos
+        const iframe = document.createElement('iframe');
+        iframe.src = absoluteUrl;
+        iframe.id = 'docIframe';
+        iframe.style.cssText = 'width:100%;height:100%;border:none;background:white;';
+
+        let loadSuccess = false;
+        iframe.onload = () => {
+          loadSuccess = true;
+          loading.style.display = 'none';
+        };
+
+        iframe.onerror = () => {
+          loading.style.display = 'none';
+          mostrarErrorDoc(contenedor, absoluteUrl);
+        };
+        contenedor.appendChild(iframe);
+
+        // Timeout de seguridad: si después de 4 segundos no ha cargado, probablemente hubo un error
+        // de conexión (Connection Refused) que el evento 'onerror' del iframe no siempre captura bien.
+        setTimeout(() => {
+          if (!loadSuccess && loading.style.display !== 'none') {
+            loading.style.display = 'none';
+            mostrarErrorDoc(contenedor, absoluteUrl);
+          }
+        }, 4000);
+      }
+
+      async function revisarDocumentoIndividual(docSubidoId, estado) {
+        let observaciones = '';
+        if (estado === 'rechazado') {
+          observaciones = await mPrompt('Ingrese el motivo del rechazo:', {
+            title: 'Rechazar Documento',
+            icon: '<i class="ri-close-circle-line"></i>',
+            iconClass: 'cm-error',
+            confirmText: 'Rechazar',
+            confirmClass: 'cm-btn-danger'
+          });
+          if (observaciones === null) return;
+          if (observaciones.trim() === '') {
+            mAlert('Debe proporcionar un motivo.', 'warning');
+            return;
+          }
+        }
+
+        const formData = new FormData();
+        formData.append('estado', estado);
+        formData.append('observaciones', observaciones);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        fetch(`/documentos/api/revisar-asistente/${docSubidoId}/`, {
+          method: 'POST',
+          body: formData
+        })
+          .then(r => r.json())
+          .then(data => {
+            if (data.success) {
+              mAlert(data.message, 'success');
+              // Cerrar visor y volver al detalle
+              cerrarModalVisualizarDoc();
+              // Recargar detalle si está abierto
+              if (window.detalleVisitaActual) {
+                verDetalleVisita(window.detalleVisitaActual.tipo, window.detalleVisitaActual.id);
+              }
+            } else {
+              mAlert('Error: ' + (data.error || 'No se pudo actualizar el estado'), 'error');
+            }
+          })
+          .catch(() => mAlert('Error de conexión.', 'error'));
+      }
+
+      function mostrarErrorDoc(contenedor, url) {
+        Array.from(contenedor.children).forEach(child => {
+          if (child.id !== 'docLoadingIndicator') child.remove();
+        });
+        const div = document.createElement('div');
+        div.style.cssText = 'text-align:center;padding:40px;color:#ef4444;';
+        div.innerHTML = `
           <i class="ri-error-warning-line" style="font-size:50px;margin-bottom:10px;"></i>
           <p style="font-size:15px;font-weight:500;">No se pudo cargar el documento</p>
           <p style="font-size:13px;color:#6b7280;margin-bottom:15px;">El archivo puede no existir o el formato no es compatible.</p>
           <a href="${url}" target="_blank" style="background:#3b82f6;color:white;padding:10px 24px;border-radius:6px;text-decoration:none;font-size:14px;"><i class="ri-download-line"></i> Abrir en nueva pestaña</a>
         `;
-      contenedor.appendChild(div);
-    }
+        contenedor.appendChild(div);
+      }
 
-    function cerrarModalVisualizarDoc() {
-      document.getElementById('modalVisualizarDoc').style.display = 'none';
-      const contenedor = document.getElementById('contenedorVisualizarDoc');
-      Array.from(contenedor.children).forEach(child => {
-        if (child.id !== 'docLoadingIndicator') child.remove();
-      });
-    }
+      function cerrarModalVisualizarDoc() {
+        document.getElementById('modalVisualizarDoc').style.display = 'none';
+        const contenedor = document.getElementById('contenedorVisualizarDoc');
+        Array.from(contenedor.children).forEach(child => {
+          if (child.id !== 'docLoadingIndicator') child.remove();
+        });
+      }
 
-    // Ver detalle de visita
-    function verDetalleVisita(tipo, id) {
-      const modal = document.getElementById('modalDetalleVisita');
-      const contenido = document.getElementById('contenidoDetalleVisita');
-      document.getElementById('detalleVisitaId').textContent = id;
-      contenido.innerHTML = '<p style="text-align:center;padding:20px;"><i class="ri-loader-4-line" style="animation:spin 1s linear infinite;"></i> Cargando...</p>';
-      modal.style.display = 'block';
+      // Ver detalle de visita
+      function verDetalleVisita(tipo, id) {
+        const modal = document.getElementById('modalDetalleVisita');
+        const contenido = document.getElementById('contenidoDetalleVisita');
+        document.getElementById('detalleVisitaId').textContent = id;
+        contenido.innerHTML = '<p style="text-align:center;padding:20px;"><i class="ri-loader-4-line" style="animation:spin 1s linear infinite;"></i> Cargando...</p>';
+        modal.style.display = 'block';
 
-      fetch(`/gestion/api/visitas/${tipo}/${id}/`)
-        .then(response => response.json())
-        .then(data => {
-          // Render de TODOS los asistentes con tarjetas detalladas
-          let asistentesHtml = '';
-          if (data.asistentes.length > 0) {
-            asistentesHtml = data.asistentes.map(a => {
-              // Botones de documentos
-              let botonesDoc = '';
-              let tieneDocs = false;
-              if (a.documento_identidad) {
-                tieneDocs = true;
-                botonesDoc += `
+        fetch(`/gestion/api/visitas/${tipo}/${id}/`)
+          .then(response => response.json())
+          .then(data => {
+            // Render de TODOS los asistentes con tarjetas detalladas
+            let asistentesHtml = '';
+            if (data.asistentes.length > 0) {
+              asistentesHtml = data.asistentes.map(a => {
+                // Botones de documentos
+                let botonesDoc = '';
+                let tieneDocs = false;
+                if (a.documento_identidad) {
+                  tieneDocs = true;
+                  botonesDoc += `
                       <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
                         <div style="display:flex;gap:4px;align-items:center;">
                           <button onclick="visualizarDocumento('${a.documento_identidad}', 'Documento de Identidad - ${a.nombre_completo}', {estado: '${a.estado === 'documentos_aprobados' ? 'aprobado' : 'pendiente'}'})" 
@@ -1803,10 +1871,10 @@
                         </div>
                         ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (a.estado === 'documentos_rechazados' ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Rechazado</span>' : '')}
                       </div>`;
-              }
-              if (a.documento_adicional) {
-                tieneDocs = true;
-                botonesDoc += `
+                }
+                if (a.documento_adicional) {
+                  tieneDocs = true;
+                  botonesDoc += `
                       <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
                         <div style="display:flex;gap:4px;align-items:center;">
                           <button onclick="visualizarDocumento('${a.documento_adicional}', 'Documento Adicional - ${a.nombre_completo}', {estado: '${a.estado === 'documentos_aprobados' ? 'aprobado' : 'pendiente'}'})" 
@@ -1819,19 +1887,19 @@
                         </div>
                         ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (a.estado === 'documentos_rechazados' ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Rechazado</span>' : '')}
                       </div>`;
-              }
-              // Documentos subidos (nuevo modelo)
-              if (a.documentos_subidos && a.documentos_subidos.length > 0) {
-                tieneDocs = true;
-                a.documentos_subidos.forEach(ds => {
-                  let badgeDoc = '';
-                  if (ds.estado === 'aprobado') {
-                    badgeDoc = '<span style="background:#d1fae5;color:#065f46;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;">Aprobado</span>';
-                  } else if (ds.estado === 'rechazado') {
-                    badgeDoc = '<span style="background:#fee2e2;color:#991b1b;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;">Rechazado</span>';
-                  }
+                }
+                // Documentos subidos (nuevo modelo)
+                if (a.documentos_subidos && a.documentos_subidos.length > 0) {
+                  tieneDocs = true;
+                  a.documentos_subidos.forEach(ds => {
+                    let badgeDoc = '';
+                    if (ds.estado === 'aprobado') {
+                      badgeDoc = '<span style="background:#d1fae5;color:#065f46;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;">Aprobado</span>';
+                    } else if (ds.estado === 'rechazado') {
+                      badgeDoc = '<span style="background:#fee2e2;color:#991b1b;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;">Rechazado</span>';
+                    }
 
-                  botonesDoc += `
+                    botonesDoc += `
                       <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
                         <div style="display:flex;gap:4px;align-items:center;">
                           <button onclick="visualizarDocumento('${ds.url}', '${ds.titulo} - ${a.nombre_completo}', {id: ${ds.id}, estado: '${ds.estado}'})" 
@@ -1845,60 +1913,60 @@
                         ${badgeDoc}
                       </div>
                       ${ds.observaciones_revision ? `<div style="font-size:10px;color:#991b1b;font-style:italic;margin-left:4px;margin-top:-2px;margin-bottom:6px;">❌ ${ds.observaciones_revision}</div>` : ''}`;
-                });
-              }
+                  });
+                }
 
-              // Si no tiene documentos, mostrar aviso
-              if (!tieneDocs) {
-                botonesDoc = `<span style="color:#9ca3af;font-size:12px;font-style:italic;">📭 Sin documentos subidos aún</span>`;
-              }
+                // Si no tiene documentos, mostrar aviso
+                if (!tieneDocs) {
+                  botonesDoc = `<span style="color:#9ca3af;font-size:12px;font-style:italic;">📭 Sin documentos subidos aún</span>`;
+                }
 
-              // Estado badge
-              let estadoBadge = '';
-              let borderColor = '#e5e7eb';
-              if (a.estado === 'pendiente_documentos') {
-                borderColor = '#f59e0b';
-                estadoBadge = '<span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">⏳ Pendiente</span>';
-              } else if (a.estado === 'documentos_aprobados') {
-                borderColor = '#10b981';
-                estadoBadge = '<span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">✅ Aprobado</span>';
-              } else if (a.estado === 'documentos_rechazados') {
-                borderColor = '#ef4444';
-                estadoBadge = '<span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">❌ Rechazado</span>';
-              }
+                // Estado badge
+                let estadoBadge = '';
+                let borderColor = '#e5e7eb';
+                if (a.estado === 'pendiente_documentos') {
+                  borderColor = '#f59e0b';
+                  estadoBadge = '<span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">⏳ Pendiente</span>';
+                } else if (a.estado === 'documentos_aprobados') {
+                  borderColor = '#10b981';
+                  estadoBadge = '<span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">✅ Aprobado</span>';
+                } else if (a.estado === 'documentos_rechazados') {
+                  borderColor = '#ef4444';
+                  estadoBadge = '<span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">❌ Rechazado</span>';
+                }
 
-              // Botones de acción aprobar/rechazar
-              let accionesDocHtml = '';
-              if (a.estado === 'pendiente_documentos' && tieneDocs) {
-                let btnAprobarMask = '';
-                // Cálculo de respaldo por si fallan las banderas del backend
-                const hasRechazos = a.tiene_rechazos || a.documentos_subidos.some(ds => ds.estado === 'rechazado');
-                const hasAprobaciones = a.tiene_aprobaciones || a.documentos_subidos.some(ds => ds.estado === 'aprobado');
-                const allAprobados = a.todos_aprobados || (tieneDocs && a.documentos_subidos.every(ds => ds.estado === 'aprobado'));
+                // Botones de acción aprobar/rechazar
+                let accionesDocHtml = '';
+                if (a.estado === 'pendiente_documentos' && tieneDocs) {
+                  let btnAprobarMask = '';
+                  // Cálculo de respaldo por si fallan las banderas del backend
+                  const hasRechazos = a.tiene_rechazos || a.documentos_subidos.some(ds => ds.estado === 'rechazado');
+                  const hasAprobaciones = a.tiene_aprobaciones || a.documentos_subidos.some(ds => ds.estado === 'aprobado');
+                  const allAprobados = a.todos_aprobados || (tieneDocs && a.documentos_subidos.every(ds => ds.estado === 'aprobado'));
 
-                if (hasRechazos) {
-                  btnAprobarMask = `
+                  if (hasRechazos) {
+                    btnAprobarMask = `
                     <button onclick="mAlert('No se puede aprobar masivamente porque existen documentos rechazados. El asistente debe corregir los archivos o debe marcarlos todos individualmente.', 'warning')" 
                             style="background:#9ca3af;color:white;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px;opacity:0.7;">
                       <i class="ri-forbid-line"></i> Rechazos detectados
                     </button>`;
-                } else if (!hasAprobaciones) {
-                  btnAprobarMask = `
+                  } else if (!hasAprobaciones) {
+                    btnAprobarMask = `
                     <button onclick="mAlert('Debe revisar y aprobar al menos un documento individualmente antes de poder aprobar todos masivamente.', 'info')" 
                             style="background:#6b7280;color:white;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px;opacity:0.7;">
                       <i class="ri-information-line"></i> Revisar primero
                     </button>`;
-                } else {
-                  const btnText = allAprobados ? 'Aprobación Final' : 'Aprobar Documentos';
-                  const btnColor = allAprobados ? '#10b981' : '#10b981'; // Mismo verde o ligeramente distinto
-                  btnAprobarMask = `
+                  } else {
+                    const btnText = allAprobados ? 'Aprobación Final' : 'Aprobar Documentos';
+                    const btnColor = allAprobados ? '#10b981' : '#10b981'; // Mismo verde o ligeramente distinto
+                    btnAprobarMask = `
                     <button onclick="event.stopPropagation();aprobarDocRevision('${tipo}', ${a.id})" 
                             style="background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px;transition:all .2s;box-shadow:0 2px 6px rgba(16,185,129,0.3);">
                       <i class="ri-check-double-line"></i> ${btnText}
                     </button>`;
-                }
+                  }
 
-                accionesDocHtml = `
+                  accionesDocHtml = `
                     <div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px dashed #d1d5db;align-items:center;">
                       <span style="font-size:12px;font-weight:600;color:#374151;">Acción:</span>
                       ${btnAprobarMask}
@@ -1907,15 +1975,15 @@
                         <i class="ri-close-line"></i> Rechazar Todo
                       </button>
                     </div>`;
-              }
+                }
 
-              // Observaciones si existen
-              let obsRevHtml = '';
-              if (a.observaciones_revision) {
-                obsRevHtml = `<div style="margin-top:10px;padding:10px;background:#fef3c7;border-radius:6px;font-size:12px;color:#92400e;border:1px solid #fcd34d;">📝 <strong>Observaciones:</strong> ${a.observaciones_revision}</div>`;
-              }
+                // Observaciones si existen
+                let obsRevHtml = '';
+                if (a.observaciones_revision) {
+                  obsRevHtml = `<div style="margin-top:10px;padding:10px;background:#fef3c7;border-radius:6px;font-size:12px;color:#92400e;border:1px solid #fcd34d;">📝 <strong>Observaciones:</strong> ${a.observaciones_revision}</div>`;
+                }
 
-              return `
+                return `
                   <div style="padding:14px;background:#f9fafb;margin:8px 0;border-radius:10px;border:1px solid ${borderColor};border-left:4px solid ${borderColor};box-shadow:0 1px 4px rgba(0,0,0,0.04);">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
                       <div>
@@ -1937,10 +2005,10 @@
                     ${accionesDocHtml}
                     ${obsRevHtml}
                   </div>`;
-            }).join('');
-          }
+              }).join('');
+            }
 
-          let html = `
+            let html = `
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;background:#f9fafb;padding:14px;border-radius:10px;">
                 <div><strong>Responsable:</strong> ${data.responsable}</div>
                 <div><strong>Estado:</strong> ${getEstadoBadge(data.estado)}</div>
@@ -1954,204 +2022,170 @@
               </h4>
               
               ${data.asistentes.length > 0
-              ? `<div style="max-height:450px;overflow-y:auto;">${asistentesHtml}</div>`
-              : `<div style="text-align:center;padding:30px;color:#9ca3af;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
+                ? `<div style="max-height:450px;overflow-y:auto;">${asistentesHtml}</div>`
+                : `<div style="text-align:center;padding:30px;color:#9ca3af;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
                     <i class="ri-user-add-line" style="font-size:36px;margin-bottom:6px;"></i>
                     <p style="margin:0;">No hay asistentes registrados aún</p>
                   </div>`
-            }
+              }
             `;
-          contenido.innerHTML = html;
+            contenido.innerHTML = html;
 
-          // Guardar datos para posibles acciones
-          window.detalleVisitaActual = data;
-        })
-        .catch(error => {
-          contenido.innerHTML = '<p style="color:#ef4444;text-align:center;">Error al cargar el detalle</p>';
-        });
-    }
-
-    // Revisar documento de asistente
-    function revisarDocumento(tipo, asistente_id, accion, observaciones = '') {
-      const formData = new FormData();
-      formData.append('observaciones', observaciones);
-      formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-
-      fetch(`/gestion/api/asistentes/${tipo}/${asistente_id}/${accion}/`, {
-        method: 'POST',
-        body: formData
-      })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            mAlert(data.message, 'success');
-            if (window.detalleVisitaActual) {
-              verDetalleVisita(window.detalleVisitaActual.tipo, window.detalleVisitaActual.id);
-            }
-          } else {
-            mAlert('Error: ' + data.error, 'error');
-          }
-        })
-        .catch(error => {
-          mAlert('Error de conexión. Verifique su red e intente de nuevo.', 'error');
-        });
-    }
-
-    // Modal para rechazar documento con observaciones
-    async function abrirModalRechazoDoc(tipo, asistente_id, nombre) {
-      const obs = await mPrompt(`Ingrese las observaciones del rechazo para <strong>${nombre}</strong>:`, {
-        title: 'Rechazar Documentos',
-        icon: '<i class="ri-close-circle-line"></i>',
-        iconClass: 'cm-error',
-        placeholder: 'Motivo del rechazo...',
-        confirmText: 'Rechazar',
-        confirmClass: 'cm-btn-danger'
-      });
-      if (obs !== null && obs.trim() !== '') {
-        revisarDocumento(tipo, asistente_id, 'rechazar', obs);
-      } else if (obs === '') {
-        mAlert('Debe proporcionar observaciones al rechazar documentos.', 'warning');
+            // Guardar datos para posibles acciones
+            window.detalleVisitaActual = data;
+          })
+          .catch(error => {
+            contenido.innerHTML = '<p style="color:#ef4444;text-align:center;">Error al cargar el detalle</p>';
+          });
       }
-    }
 
-    function cerrarModalDetalle() {
-      document.getElementById('modalDetalleVisita').style.display = 'none';
-    }
+      // Revisar documento de asistente
+      function revisarDocumento(tipo, asistente_id, accion, observaciones = '') {
+        const formData = new FormData();
+        formData.append('observaciones', observaciones);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
 
-    // Ejecutar acción sobre visita
-    async function accionVisita(tipo, id, accion) {
-      let observaciones = '';
-      if (accion === 'rechazar') {
-        observaciones = await mPrompt('Ingrese el motivo del rechazo de esta visita:', {
-          title: 'Rechazar Visita',
+        fetch(`/gestion/api/asistentes/${tipo}/${asistente_id}/${accion}/`, {
+          method: 'POST',
+          body: formData
+        })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              mAlert(data.message, 'success');
+              if (window.detalleVisitaActual) {
+                verDetalleVisita(window.detalleVisitaActual.tipo, window.detalleVisitaActual.id);
+              }
+            } else {
+              mAlert('Error: ' + data.error, 'error');
+            }
+          })
+          .catch(error => {
+            mAlert('Error de conexión. Verifique su red e intente de nuevo.', 'error');
+          });
+      }
+
+      // Modal para rechazar documento con observaciones
+      async function abrirModalRechazoDoc(tipo, asistente_id, nombre) {
+        const obs = await mPrompt(`Ingrese las observaciones del rechazo para <strong>${nombre}</strong>:`, {
+          title: 'Rechazar Documentos',
           icon: '<i class="ri-close-circle-line"></i>',
           iconClass: 'cm-error',
+          placeholder: 'Motivo del rechazo...',
           confirmText: 'Rechazar',
-          confirmClass: 'cm-btn-danger',
-          placeholder: 'Escriba el motivo aquí...'
+          confirmClass: 'cm-btn-danger'
         });
-        if (observaciones === null) return;
-        if (observaciones.trim() === '') {
-          mAlert('Debe proporcionar un motivo para rechazar la visita.', 'warning');
-          return;
+        if (obs !== null && obs.trim() !== '') {
+          revisarDocumento(tipo, asistente_id, 'rechazar', obs);
+        } else if (obs === '') {
+          mAlert('Debe proporcionar observaciones al rechazar documentos.', 'warning');
         }
       }
-      if (accion === 'aprobar') {
-        const ok = await mConfirm('¿Estás seguro de <strong>aprobar</strong> esta visita?', {
-          title: 'Aprobar Visita',
-          icon: '<i class="ri-check-line"></i>',
+
+      function cerrarModalDetalle() {
+        document.getElementById('modalDetalleVisita').style.display = 'none';
+      }
+
+      // Ejecutar acción sobre visita
+      async function accionVisita(tipo, id, accion) {
+        let observaciones = '';
+        if (accion === 'rechazar') {
+          observaciones = await mPrompt('Ingrese el motivo del rechazo de esta visita:', {
+            title: 'Rechazar Visita',
+            icon: '<i class="ri-close-circle-line"></i>',
+            iconClass: 'cm-error',
+            confirmText: 'Rechazar',
+            confirmClass: 'cm-btn-danger',
+            placeholder: 'Escriba el motivo aquí...'
+          });
+          if (observaciones === null) return;
+          if (observaciones.trim() === '') {
+            mAlert('Debe proporcionar un motivo para rechazar la visita.', 'warning');
+            return;
+          }
+        }
+        if (accion === 'aprobar') {
+          const ok = await mConfirm('¿Estás seguro de <strong>aprobar</strong> esta visita?', {
+            title: 'Aprobar Visita',
+            icon: '<i class="ri-check-line"></i>',
+            iconClass: 'cm-success',
+            confirmText: 'Sí, aprobar',
+            confirmClass: 'cm-btn-success'
+          });
+          if (!ok) return;
+        }
+        if (accion === 'iniciar_revision') {
+          const ok = await mConfirm('¿Desea finalizar la revisión de esta visita?', {
+            title: 'Finalizar Revisión',
+            icon: '<i class="ri-search-eye-line"></i>',
+            iconClass: 'cm-info',
+            confirmText: 'Finalizar',
+            confirmClass: 'cm-btn-primary'
+          });
+          if (!ok) return;
+        }
+        if (accion === 'confirmar_visita') {
+          const ok = await mConfirm('¿Confirmar esta visita? Todos los documentos deben estar aprobados.', {
+            title: 'Confirmar Visita',
+            icon: '<i class="ri-checkbox-circle-line"></i>',
+            iconClass: 'cm-success',
+            confirmText: 'Sí, confirmar',
+            confirmClass: 'cm-btn-success'
+          });
+          if (!ok) return;
+        }
+
+        const formData = new FormData();
+        formData.append('observaciones', observaciones);
+
+        fetch(`/gestion/api/visitas/${tipo}/${id}/${accion}/`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+          },
+          body: formData
+        })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              mAlert(data.message, 'success');
+              if (accion === 'aprobar') {
+                filtrarPorEstado('aprobadas');
+              } else {
+                cargarVisitas();
+              }
+            } else {
+              mAlert('Error: ' + data.error, 'error');
+            }
+          })
+          .catch(error => {
+            mAlert('Error de conexión. Verifique su red e intente de nuevo.', 'error');
+          });
+      }
+
+      // Cerrar modales al hacer clic fuera
+      document.getElementById('modalDetalleVisita').addEventListener('click', function (e) {
+        if (e.target === this) cerrarModalDetalle();
+      });
+      document.getElementById('modalVisualizarDoc').addEventListener('click', function (e) {
+        if (e.target === this) cerrarModalVisualizarDoc();
+      });
+
+      async function aprobarDocRevision(tipo, asistenteId) {
+        const ok = await mConfirm('¿Aprobar los documentos de este asistente?', {
+          title: 'Aprobar Documentos',
+          icon: '<i class="ri-check-double-line"></i>',
           iconClass: 'cm-success',
           confirmText: 'Sí, aprobar',
           confirmClass: 'cm-btn-success'
         });
         if (!ok) return;
-      }
-      if (accion === 'iniciar_revision') {
-        const ok = await mConfirm('¿Desea finalizar la revisión de esta visita?', {
-          title: 'Finalizar Revisión',
-          icon: '<i class="ri-search-eye-line"></i>',
-          iconClass: 'cm-info',
-          confirmText: 'Finalizar',
-          confirmClass: 'cm-btn-primary'
-        });
-        if (!ok) return;
-      }
-      if (accion === 'confirmar_visita') {
-        const ok = await mConfirm('¿Confirmar esta visita? Todos los documentos deben estar aprobados.', {
-          title: 'Confirmar Visita',
-          icon: '<i class="ri-checkbox-circle-line"></i>',
-          iconClass: 'cm-success',
-          confirmText: 'Sí, confirmar',
-          confirmClass: 'cm-btn-success'
-        });
-        if (!ok) return;
-      }
 
-      const formData = new FormData();
-      formData.append('observaciones', observaciones);
-
-      fetch(`/gestion/api/visitas/${tipo}/${id}/${accion}/`, {
-        method: 'POST',
-        headers: {
-          'X-CSRFToken': '{{ csrf_token }}'
-        },
-        body: formData
-      })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            mAlert(data.message, 'success');
-            if (accion === 'aprobar') {
-              filtrarPorEstado('aprobadas');
-            } else {
-              cargarVisitas();
-            }
-          } else {
-            mAlert('Error: ' + data.error, 'error');
-          }
-        })
-        .catch(error => {
-          mAlert('Error de conexión. Verifique su red e intente de nuevo.', 'error');
-        });
-    }
-
-    // Cerrar modales al hacer clic fuera
-    document.getElementById('modalDetalleVisita').addEventListener('click', function (e) {
-      if (e.target === this) cerrarModalDetalle();
-    });
-    document.getElementById('modalVisualizarDoc').addEventListener('click', function (e) {
-      if (e.target === this) cerrarModalVisualizarDoc();
-    });
-
-    async function aprobarDocRevision(tipo, asistenteId) {
-      const ok = await mConfirm('¿Aprobar los documentos de este asistente?', {
-        title: 'Aprobar Documentos',
-        icon: '<i class="ri-check-double-line"></i>',
-        iconClass: 'cm-success',
-        confirmText: 'Sí, aprobar',
-        confirmClass: 'cm-btn-success'
-      });
-      if (!ok) return;
-
-      const formData = new FormData();
-      formData.append('observaciones', '');
-      formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-
-      fetch(`/gestion/api/asistentes/${tipo}/${asistenteId}/aprobar/`, {
-        method: 'POST',
-        body: formData
-      })
-        .then(r => r.json())
-        .then(data => {
-          if (data.success) {
-            mAlert(data.message, 'success');
-            cargarVisitas();
-            // Recargar detalle si está abierto
-            if (window.detalleVisitaActual) {
-              verDetalleVisita(window.detalleVisitaActual.tipo, window.detalleVisitaActual.id);
-            }
-          } else {
-            mAlert('Error: ' + data.error, 'error');
-          }
-        })
-        .catch(() => mAlert('Error de conexión. Verifique su red e intente de nuevo.', 'error'));
-    }
-
-    async function rechazarDocRevision(tipo, asistenteId, nombre) {
-      const obs = await mPrompt('Ingrese las observaciones del rechazo para <strong>' + nombre + '</strong>:', {
-        title: 'Rechazar Documentos',
-        icon: '<i class="ri-close-circle-line"></i>',
-        iconClass: 'cm-error',
-        placeholder: 'Motivo del rechazo...',
-        confirmText: 'Rechazar',
-        confirmClass: 'cm-btn-danger'
-      });
-      if (obs !== null && obs.trim() !== '') {
         const formData = new FormData();
-        formData.append('observaciones', obs);
+        formData.append('observaciones', '');
         formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
 
-        fetch(`/gestion/api/asistentes/${tipo}/${asistenteId}/rechazar/`, {
+        fetch(`/gestion/api/asistentes/${tipo}/${asistenteId}/aprobar/`, {
           method: 'POST',
           body: formData
         })
@@ -2169,11 +2203,43 @@
             }
           })
           .catch(() => mAlert('Error de conexión. Verifique su red e intente de nuevo.', 'error'));
-      } else if (obs === '') {
-        mAlert('Debe proporcionar observaciones al rechazar documentos.', 'warning');
       }
-    }
-  }) ();
+
+      async function rechazarDocRevision(tipo, asistenteId, nombre) {
+        const obs = await mPrompt('Ingrese las observaciones del rechazo para <strong>' + nombre + '</strong>:', {
+          title: 'Rechazar Documentos',
+          icon: '<i class="ri-close-circle-line"></i>',
+          iconClass: 'cm-error',
+          placeholder: 'Motivo del rechazo...',
+          confirmText: 'Rechazar',
+          confirmClass: 'cm-btn-danger'
+        });
+        if (obs !== null && obs.trim() !== '') {
+          const formData = new FormData();
+          formData.append('observaciones', obs);
+          formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+          fetch(`/gestion/api/asistentes/${tipo}/${asistenteId}/rechazar/`, {
+            method: 'POST',
+            body: formData
+          })
+            .then(r => r.json())
+            .then(data => {
+              if (data.success) {
+                mAlert(data.message, 'success');
+                cargarVisitas();
+                // Recargar detalle si está abierto
+                if (window.detalleVisitaActual) {
+                  verDetalleVisita(window.detalleVisitaActual.tipo, window.detalleVisitaActual.id);
+                }
+              } else {
+                mAlert('Error: ' + data.error, 'error');
+              }
+            })
+            .catch(() => mAlert('Error de conexión. Verifique su red e intente de nuevo.', 'error'));
+        }
+      }
+    })();
   </script>
   {% endif %}
 
@@ -2550,7 +2616,8 @@
     </div>
   </div>
 
-  <script src="{% static 'js/accessibility.js' %}?v=1.1"></script>
+
+  <script src="{% static 'accessibility/js/accessibility.js' %}?v=1.1"></script>
 
 </body>
 
