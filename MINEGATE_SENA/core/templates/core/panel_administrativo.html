@@ -20,6 +20,8 @@
   <link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}" />
   <link rel="stylesheet" href="{% static 'calendario/css/calendario_seleccion.css' %}" />
   <link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}" />
+  <link rel="stylesheet" href="{% static 'core/css/gestion_pagina_informativa.css' %}?v=20260305e" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css" />
   <script src="{% static 'core/js/custom_modal.js' %}" defer></script>
   <script src="{% static 'documentos/js/gestion_documentos.js' %}" defer></script>
 </head>
@@ -148,6 +150,12 @@
           </a>
         </li>
 
+        <li data-content="PaginaInformativa" class="{% if seccion_activa == 'gestion_pagina_informativa' %}active{% endif %}">
+          <a href="{% url 'core:panel_administrativo_seccion' 'gestion_pagina_informativa' %}" class="sidebar-link">
+            <i class="ri-gallery-line icon-documents"></i><span>Página Informativa</span>
+          </a>
+        </li>
+
         {% if es_superusuario %}
         <li data-content="GestionPermisos" id="sidebarGestionPermisos"
           data-url="{% url 'usuarios:gestionar_permisos' %}">
@@ -266,6 +274,8 @@
         <h2>Escanear Documentos</h2>
         <p>Esta sección estará disponible próximamente.</p>
       </div>
+      {% elif seccion_activa == 'gestion_pagina_informativa' %}
+      {% include 'core/gestion_pagina_informativa.html' %}
       {% elif seccion_activa == 'configuracion' %}
       <div class="contenido-temporal">
         <h2>Configuración</h2>
