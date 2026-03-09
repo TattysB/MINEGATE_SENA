@@ -1,12 +1,12 @@
-{% extends "core/panel_administrativo.html" %}
+{% extends "coordinador/base_coordinador.html" %}
 {% block content %}
 <div style="padding: 20px;">
   <h2 style="margin:0 0 14px;color:#1f2937;">Gestión de Visitas</h2>
   <p style="margin:0 0 18px;color:#6b7280;">Calendario de solo lectura, resumen diario y aprobación de solicitudes en un solo apartado.</p>
 
   <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;align-items:start;">
-    <div style="background:#fff;border-radius:10px;padding:14px;box-shadow:0 2px 10px rgba(0,0,0,0.08);">
-      <div id="calendarReadonlyContainer">
+    <div style="background:#fff;border-radius:10px;padding:14px;box-shadow:0 2px 10px rgba(0,0,0,0.08);display:flex;justify-content:center;">
+      <div id="calendarReadonlyContainer" style="width:100%;display:flex;justify-content:center;align-items:flex-start;">
         <p style="padding:20px;text-align:center;color:#6b7280;">Cargando calendario...</p>
       </div>
     </div>
