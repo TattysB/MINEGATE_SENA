@@ -120,6 +120,12 @@
             <span>Gestión de Visitas</span>
           </a>
         </li>
+        <li data-content="registrocoordinacion">
+          <a href="{% url 'coordinador:registro' %}" class="sidebar-link">
+            <i class="ri-list-unordered icon-visit-management"></i>
+            <span>Registro</span>
+          </a>
+        </li>
         {% else %}
         <li data-content="Panel_principal" class="{% if seccion_activa == 'panel_principal' %}active{% endif %}">
           <a href="{% url 'core:panel_administrativo_seccion' 'panel_principal' %}" class="sidebar-link">
