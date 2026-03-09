@@ -1,0 +1,383 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MineGate - Coordinador</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{% static 'core/css/nuevos_estilos.css' %}?v=16" />
+  <link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}" />
+  <link rel="stylesheet" href="{% static 'calendario/css/calendario_seleccion.css' %}" />
+  <link rel="stylesheet" href="{% static 'core/css/user_dropdown.css' %}" />
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  <div class="app-container">
+    <button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle menu">
+      <i class="ri-menu-line"></i>
+    </button>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-logo-container">
+          <img src="{% static 'img/LogoMine.png' %}" alt="MineGate Logo" class="topbar-logo-img" />
+          <div class="topbar-brand">
+            <span class="brand-main">SICAM</span>
+            <span class="brand-divider">|</span>
+            <span class="brand-sub">Sistema Informactivo del Control y Acceso a la Mina </span>
+          </div>
+        </div>
+      </div>
+      <div class="topbar-center">
+        <div class="search-container">
+          <i class="ri-search-line search-icon"></i>
+          <input type="text" placeholder="Buscar módulos, usuarios, docur..." class="search-input">
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-actions">
+          <div class="notification-wrapper">
+            <i class="ri-notification-3-line notification-icon"></i>
+            <span class="notification-badge">3</span>
+          </div>
+          <div class="topbar-user-profile">
+            <div class="user-profile-dropdown">
+              <button class="user-profile-btn" id="userDropdownBtn" aria-label="User menu">
+                <div class="user-profile-photo-container">
+                  {% if perfil and perfil.foto_perfil %}
+                    <img src="{{ perfil.foto_perfil.url }}" alt="Foto de perfil" class="profile-img-topbar" />
+                  {% else %}
+                    <img src="{% static 'core/img/usuario.png' %}" alt="Foto de perfil" class="profile-img-topbar" />
+                  {% endif %}
+                </div>
+              </button>
+              <div class="user-dropdown-menu" id="userDropdownMenu">
+                <div class="user-dropdown-header">
+                  <div class="header-avatar"><i class="ri-user-fill"></i></div>
+                  <div class="header-info">
+                    <span class="user-name">{{ request.user.get_full_name|default:request.user.username }}</span>
+                    <span class="user-role-label">{{ panel_role_label|default:'Coordinador' }}</span>
+                    <span class="user-email">{{ request.user.email }}</span>
+                  </div>
+                </div>
+                <div class="user-dropdown-body">
+                  <a href="javascript:void(0)" onclick="abrirModalPerfil(event)" class="dropdown-item">
+                    <i class="ri-user-line"></i>
+                    <span>Mi Perfil</span>
+                  </a>
+                  <div class="dropdown-divider"></div>
+                  <a href="javascript:void(0)" onclick="abrirModalCerrarSesion(event)" class="dropdown-item logout-item">
+                    <i class="ri-logout-box-r-line"></i>
+                    <span>Cerrar Sesión</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar" id="sidebar">
+      <ul>
+        <li data-content="gestionvisitas">
+          <a href="{% url 'coordinador:panel' %}" class="sidebar-link"><i class="ri-calendar-check-line"></i><span>Gestión de Visitas</span></a>
+        </li>
+        <li data-content="registrocoordinacion">
+          <a href="{% url 'coordinador:registro' %}" class="sidebar-link"><i class="ri-list-unordered"></i><span>Registro</span></a>
+        </li>
+      </ul>
+      <button id="logout" class="logout-button" onclick="abrirModalCerrarSesion(event)">
+        <li data-content="cerrar">
+          <i class="ri-logout-box-r-line icon-logout"></i><span>Cerrar Sesión</span>
+        </li>
+      </button>
+    </div>
+
+    <main id="mainContent">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <script defer src="{% static 'core/js/Funcionalidades.js' %}"></script>
+  <script defer src="{% static 'calendario/js/panel_calendario_loader.js' %}"></script>
+  <script>
+    function abrirModalCerrarSesion(e){ e.preventDefault(); const modal=document.getElementById('modalCerrarSesion'); if(modal) modal.style.display='flex'; }
+  </script>
+  {% block extra_js %}{% endblock %}
+  <!-- Modal Cerrar Sesión -->
+  <div id="modalCerrarSesion" class="modal">
+    <div class="modal-contenido">
+      <div class="modal-encabezado">
+        <h2>🚪 Cerrar Sesión</h2>
+        <button class="modal-cerrar" onclick="cerrarModal('modalCerrarSesion')">
+          &times;
+        </button>
+      </div>
+      <div class="modal-cuerpo">
+        <p style="text-align: center; font-size: 16px; margin: 20px 0">
+          ¿Estás seguro de que deseas cerrar sesión?
+        </p>
+        <p class="texto-info" style="text-align: center">
+          Se cerrará tu sesión actual y deberás iniciar sesión nuevamente
+          para acceder.
+        </p>
+      </div>
+      <div class="modal-pie">
+        <button class="btn-modal btn-cancelar" onclick="cerrarModal('modalCerrarSesion')">
+          Cancelar
+        </button>
+        <a href="{% url 'usuarios:logout' %}" style="text-decoration: none">
+          <button class="btn-modal btn-confirmar" style="background-color: #e74c3c">
+            Sí, Cerrar Sesión
+          </button>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Mi Perfil -->
+  <div id="modalPerfil" class="modal-perfil-overlay" style="display: none;">
+    <div class="modal-perfil-card" onclick="event.stopPropagation()">
+      <div class="modal-header-perfil">
+        <h3>Mi Perfil</h3>
+        <button onclick="cerrarModalPerfil()" class="btn-close-perfil">&times;</button>
+      </div>
+
+      <div class="modal-body-perfil">
+        <div class="perfil-avatar-container">
+          {% if perfil and perfil.foto_perfil %}
+          <img src="{{ perfil.foto_perfil.url }}" alt="Foto de perfil" class="perfil-avatar" />
+          {% else %}
+          <img src="{% static 'core/img/usuario.png' %}" alt="Foto de perfil" class="perfil-avatar" />
+          {% endif %}
+        </div>
+
+        <h2 class="perfil-nombre">{{ request.user.get_full_name|default:request.user.username }}</h2>
+        <p class="perfil-email">{{ request.user.email }}</p>
+
+        <div class="perfil-acciones">
+          <a href="{% url 'usuarios:perfil' %}" class="btn-perfil-action btn-verde">
+            <span class="action-left"><i class="ri-edit-box-line"></i> Editar Perfil</span>
+            <i class="ri-arrow-right-s-line action-right"></i>
+          </a>
+          <a href="{% url 'usuarios:cambiar_contraseña' %}" class="btn-perfil-action btn-gris">
+            <span class="action-left"><i class="ri-lock-line"></i> Cambiar Contraseña</span>
+            <i class="ri-arrow-right-s-line action-right"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Personalizado de Alertas/Confirmaciones -->
+  <div id="customModal" class="cm-overlay">
+    <div class="cm-box" id="cmBox">
+      <div class="cm-icon" id="cmIcon"></div>
+      <h3 class="cm-title" id="cmTitle"></h3>
+      <p class="cm-message" id="cmMessage"></p>
+      <div class="cm-input-wrap" id="cmInputWrap" style="display:none;">
+        <textarea id="cmInput" class="cm-input" rows="3" placeholder="Escriba aquí..."></textarea>
+      </div>
+      <div class="cm-buttons" id="cmButtons"></div>
+    </div>
+  </div>
+
+  <!-- Elementos de accesibilidad -->
+  <div class="minegate-acc-trigger" onclick="toggleAccPanel()" title="Opciones de Accesibilidad">
+    <i class="fas fa-universal-access fa-2x"></i>
+  </div>
+
+  <div id="accPanel" class="acc-widget-panel" style="display: none; max-height: 80vh; overflow-y: auto">
+    <h5 class="text-dark">Herramientas de Accesibilidad</h5>
+    <div class="acc-btn-group">
+      <button class="acc-opt" onclick="handleTextToSpeech()">
+        <span>Escuchar texto</span>
+        <i class="fas fa-volume-up"></i>
+      </button>
+      <button class="acc-opt" onclick="adjustFont(1)">
+        <span>Aumentar letra</span>
+        <i class="fas fa-plus"></i>
+      </button>
+      <button class="acc-opt" onclick="adjustFont(-1)">
+        <span>Disminuir letra</span>
+        <i class="fas fa-minus"></i>
+      </button>
+      <button class="acc-opt" onclick="toggleFeature('extra-spacing')">
+        <span>Espacio entre letras</span>
+        <i class="fas fa-arrows-alt-h"></i>
+      </button>
+      <button class="acc-opt" onclick="handleContrast()">
+        <span>Alto contraste</span>
+        <i class="fas fa-adjust"></i>
+      </button>
+      <button class="acc-opt" onclick="toggleFeature('underline-links')">
+        <span>Subrayar enlaces</span>
+        <i class="fas fa-link"></i>
+      </button>
+      <button class="acc-opt" onclick="toggleFeature('big-cursor')">
+        <span>Cursor grande</span>
+        <i class="fas fa-mouse-pointer"></i>
+      </button>
+      <button class="acc-opt" onclick="toggleReadingGuide()">
+        <span>Guía de lectura</span>
+        <i class="fas fa-grip-lines"></i>
+      </button>
+      <button class="acc-opt bg-danger text-white" onclick="resetAll()">
+        <span>Restablecer</span>
+        <i class="fas fa-sync-alt"></i>
+      </button>
+    </div>
+  </div>
+
+  <script src="{% static 'accessibility/js/accessibility.js' %}?v=1.1"></script>
+
+  <script>
+    // Funciones comunes para modales y perfil (copiadas de la plantilla administrativa)
+    function cerrarModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (modal) {
+        modal.style.display = "none";
+      }
+    }
+
+    function abrirModalPerfil(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const modal = document.getElementById("modalPerfil");
+      if (modal) {
+        modal.style.display = "flex";
+      }
+      const dropdown = document.getElementById("userDropdownMenu");
+      if (dropdown) dropdown.classList.remove("active");
+    }
+
+    function cerrarModalPerfil() {
+      const modal = document.getElementById("modalPerfil");
+      if (modal) {
+        modal.style.display = "none";
+      }
+    }
+
+    document.addEventListener("click", function (e) {
+      const modal = document.getElementById("modalPerfil");
+      if (modal && modal.style.display === "flex") {
+        if (e.target === modal) {
+          cerrarModalPerfil();
+        }
+      }
+    });
+
+    // Dropdown simple para el perfil
+    document.addEventListener("DOMContentLoaded", function () {
+      const userDropdownBtn = document.getElementById("userDropdownBtn");
+      const userDropdownMenu = document.getElementById("userDropdownMenu");
+      if (userDropdownBtn && userDropdownMenu) {
+        userDropdownBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          userDropdownMenu.classList.toggle("active");
+        });
+        document.addEventListener("click", function (e) {
+          if (!userDropdownBtn.contains(e.target) && !userDropdownMenu.contains(e.target)) {
+            userDropdownMenu.classList.remove("active");
+          }
+        });
+        const dropdownItems = userDropdownMenu.querySelectorAll(".dropdown-item");
+        dropdownItems.forEach(item => {
+          item.addEventListener("click", function () {
+            userDropdownMenu.classList.remove("active");
+          });
+        });
+      }
+    });
+  </script>
+  <script>
+    // Sidebar behavior: toggle, overlay, mobile close, and hover collapse on desktop
+    document.addEventListener('DOMContentLoaded', function () {
+      const hamburgerBtn = document.getElementById('hamburgerBtn');
+      const sidebar = document.getElementById('sidebar');
+      const sidebarOverlay = document.getElementById('sidebarOverlay');
+      const sidebarItems = sidebar ? sidebar.querySelectorAll('li[data-content]') : [];
+
+      function closeSidebar() {
+        if (sidebar) sidebar.classList.remove('active');
+        if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+        if (hamburgerBtn) hamburgerBtn.classList.remove('active');
+        document.body.style.overflow = 'auto';
+      }
+
+      if (hamburgerBtn) {
+        hamburgerBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          const isActive = sidebar && sidebar.classList.contains('active');
+          if (!isActive) {
+            sidebar && sidebar.classList.add('active');
+            sidebarOverlay && sidebarOverlay.classList.add('active');
+            hamburgerBtn.classList.add('active');
+            document.body.style.overflow = 'hidden';
+          } else {
+            closeSidebar();
+          }
+        });
+      }
+
+      if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+
+      sidebarItems.forEach((item) => {
+        item.addEventListener('click', function () {
+          if (window.innerWidth <= 768) {
+            closeSidebar();
+            this.classList.add('active');
+            sidebarItems.forEach((other) => { if (other !== this) other.classList.remove('active'); });
+          }
+        });
+      });
+
+      // Restore previous calendar content when clicking non-calendar items
+      sidebarItems.forEach((item) => {
+        item.addEventListener('click', function () {
+          const targetContent = this.getAttribute('data-content');
+          if (targetContent !== 'calendario') {
+            const main = document.getElementById('mainContent');
+            if (main && main.classList.contains('calendar-in-panel')) {
+              main.innerHTML = window._previousMainHTML || '';
+              main.classList.remove('calendar-in-panel');
+              window._previousMainHTML = null;
+            }
+          }
+        });
+      });
+
+      // Close sidebar when pressing ESC
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && sidebar && sidebar.classList.contains('active')) {
+          closeSidebar();
+        }
+      });
+
+      // Hover collapse for desktop
+      const sidebarElement = document.getElementById('sidebar');
+      if (sidebarElement) {
+        if (window.innerWidth > 768) {
+          sidebarElement.classList.add('collapsed');
+          sidebarElement.addEventListener('mouseenter', function () { sidebarElement.classList.remove('collapsed'); });
+          sidebarElement.addEventListener('mouseleave', function () { sidebarElement.classList.add('collapsed'); });
+        }
+        window.addEventListener('resize', function () {
+          if (window.innerWidth <= 768) {
+            sidebarElement.classList.remove('collapsed');
+          } else {
+            sidebarElement.classList.add('collapsed');
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>
