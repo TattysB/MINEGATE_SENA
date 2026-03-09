@@ -366,6 +366,59 @@ function mostrarDocumentosPorEstado(filtro) {
               </div>
               <div style="padding:12px 18px;">`;
 
+        // Extraer y mostrar los documentos finales UNA SOLA VEZ (al inicio, antes de los asistentes)
+        const categorias_finales = ['📝 ATS', '🤸🏻‍♂️ Charla de Seguridad y Calestenia', '📜 Formato Inducción y Reinducción'];
+        let documentos_finales_visita = [];
+
+        // Obtener documentos finales del primer asistente que los tenga
+        for (const asistente of visita.asistentes) {
+          if (asistente.documentos_subidos && asistente.documentos_subidos.length > 0) {
+            documentos_finales_visita = asistente.documentos_subidos.filter(ds =>
+              categorias_finales.some(cat => ds.categoria && ds.categoria.includes(cat))
+            );
+            if (documentos_finales_visita.length > 0) break;
+          }
+        }
+
+        // Mostrar documentos finales de la visita (una sola vez)
+        if (documentos_finales_visita.length > 0) {
+          html += `
+            <div style="padding:10px 14px;margin:6px 0;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;border-left:4px solid #22c55e;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                <i class="ri-file-text-line" style="color:#22c55e;font-size:16px;"></i>
+                <strong style="font-size:13px;color:#166534;">Archivos Finales - ${visita.responsable}</strong>
+                <span style="background:#bbf7d0;color:#166534;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">${visita.asistentes.length} asistente(s)</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px;width:100%;">`;
+
+          documentos_finales_visita.forEach(ds => {
+            let badgeDoc = '';
+            if (ds.estado === 'aprobado') {
+              badgeDoc = '<span style="background:#d1fae5;color:#065f46;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;">Aprobado</span>';
+            } else if (ds.estado === 'rechazado') {
+              badgeDoc = '<span style="background:#fee2e2;color:#991b1b;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;">Rechazado</span>';
+            }
+
+            html += `
+              <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
+                <div style="display:flex;gap:4px;align-items:center;">
+                  <button onclick="visualizarDocumento('${ds.url}', '${ds.titulo} - ${visita.responsable}', {id: ${ds.id}, estado: '${ds.estado}'})" 
+                          style="background:#059669;color:white;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;font-size:11px;display:inline-flex;align-items:center;gap:4px;font-weight:500;">
+                    <i class="ri-eye-line"></i> 📋 ${ds.titulo}
+                  </button>
+                  <a href="${ds.download_url || ds.url}" download style="background:#6b7280;color:white;padding:5px 8px;border-radius:6px;text-decoration:none;font-size:11px;display:inline-flex;align-items:center;" title="Descargar">
+                    <i class="ri-download-line"></i>
+                  </a>
+                </div>
+                ${badgeDoc}
+              </div>`;
+          });
+
+          html += `
+              </div>
+            </div>`;
+        }
+
         visita.asistentes.forEach(a => {
           let aBadge = '';
           let borderLeft = '#d1d5db';
@@ -397,7 +450,14 @@ function mostrarDocumentosPorEstado(filtro) {
                   </div>`;
           }
           if (a.documentos_subidos && a.documentos_subidos.length > 0) {
-            a.documentos_subidos.forEach(ds => {
+            // Filtrar SOLO documentos que NO sean los archivos finales (para evitar duplicados)
+            const categorias_finales = ['📝 ATS', '🤸🏻‍♂️ Charla de Seguridad y Calestenia', '📜 Formato Inducción y Reinducción'];
+            const documentos_personales = a.documentos_subidos.filter(ds =>
+              !categorias_finales.some(cat => ds.categoria && ds.categoria.includes(cat))
+            );
+
+            // Mostrar solo documentos personales del asistente (no los finales)
+            documentos_personales.forEach(ds => {
               let badgeDoc = '';
               if (ds.estado === 'aprobado') {
                 badgeDoc = '<span style="background:#d1fae5;color:#065f46;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;">Aprobado</span>';
@@ -702,6 +762,59 @@ function verDetalleVisita(tipo, id) {
   fetch(`/gestion/api/visitas/${tipo}/${id}/`)
     .then(response => response.json())
     .then(data => {
+      // Extraer documentos finales una sola vez (del primer asistente que los tenga)
+      const categorias_finales = ['📝 ATS', '🤸🏻‍♂️ Charla de Seguridad y Calestenia', '📜 Formato Inducción y Reinducción'];
+      let documentos_finales = [];
+
+      for (const asistente of data.asistentes) {
+        if (asistente.documentos_subidos && asistente.documentos_subidos.length > 0) {
+          documentos_finales = asistente.documentos_subidos.filter(ds =>
+            categorias_finales.some(cat => ds.categoria && ds.categoria.includes(cat))
+          );
+          if (documentos_finales.length > 0) break;
+        }
+      }
+
+      // Construir HTML de archivos finales
+      let archivosFinalesHtml = '';
+      if (documentos_finales.length > 0) {
+        archivosFinalesHtml = `
+          <div style="background:#f0fdf4;padding:16px;border-radius:10px;border:1px solid #bbf7d0;border-left:4px solid #22c55e;margin-bottom:20px;">
+            <h4 style="color:#166534;margin:0 0 12px 0;display:flex;align-items:center;gap:8px;">
+              <i class="ri-file-text-line"></i> 📁 Archivos Finales - ${data.responsable}
+            </h4>
+            <div style="display:flex;flex-direction:column;gap:8px;">`;
+
+        documentos_finales.forEach(ds => {
+          let badgeDoc = '';
+          if (ds.estado === 'aprobado') {
+            badgeDoc = '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>';
+          } else if (ds.estado === 'rechazado') {
+            badgeDoc = '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Rechazado</span>';
+          } else {
+            badgeDoc = '<span style="background:#fef3c7;color:#92400e;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Pendiente</span>';
+          }
+
+          archivosFinalesHtml += `
+              <div style="display:flex;justify-content:space-between;align-items:center;background:white;padding:10px;border-radius:6px;border:1px solid #d1faf0;">
+                <div style="display:flex;gap:6px;align-items:center;">
+                  <button onclick="visualizarDocumento('${ds.url}', '${ds.titulo} - ${data.responsable}', {id: ${ds.id}, estado: '${ds.estado}'})" 
+                          style="background:#059669;color:white;padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:5px;font-weight:500;">
+                    <i class="ri-eye-line"></i> 📋 ${ds.titulo}
+                  </button>
+                  <a href="${ds.download_url || ds.url}" download style="background:#6b7280;color:white;padding:7px 10px;border-radius:6px;text-decoration:none;font-size:12px;display:inline-flex;align-items:center;" title="Descargar">
+                    <i class="ri-download-line"></i>
+                  </a>
+                </div>
+                ${badgeDoc}
+              </div>`;
+        });
+
+        archivosFinalesHtml += `
+            </div>
+          </div>`;
+      }
+
       let asistentesHtml = '';
       if (data.asistentes.length > 0) {
         asistentesHtml = data.asistentes.map(a => {
@@ -740,8 +853,17 @@ function verDetalleVisita(tipo, id) {
                   </div>`;
           }
           if (a.documentos_subidos && a.documentos_subidos.length > 0) {
-            tieneDocs = true;
-            a.documentos_subidos.forEach(ds => {
+            // Filtrar SOLO documentos que NO sean los archivos finales
+            const categorias_finales = ['📝 ATS', '🤸🏻‍♂️ Charla de Seguridad y Calestenia', '📜 Formato Inducción y Reinducción'];
+            const documentos_personales = a.documentos_subidos.filter(ds =>
+              !categorias_finales.some(cat => ds.categoria && ds.categoria.includes(cat))
+            );
+
+            if (documentos_personales.length > 0) {
+              tieneDocs = true;
+            }
+
+            documentos_personales.forEach(ds => {
               let badgeDoc = '';
               if (ds.estado === 'aprobado') {
                 badgeDoc = '<span style="background:#d1fae5;color:#065f46;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;">Aprobado</span>';
@@ -859,6 +981,8 @@ function verDetalleVisita(tipo, id) {
             <div><strong>${tipo === 'interna' ? 'Programa' : 'Institución'}:</strong> ${data.programa || data.institucion || 'N/A'}</div>
             <div><strong>Fecha:</strong> ${data.fecha_solicitud}</div>
           </div>
+          
+          ${archivosFinalesHtml}
           
           <h4 style="color:#374151;border-bottom:2px solid #8b5cf6;padding-bottom:8px;margin-bottom:8px;display:flex;align-items:center;gap:8px;">
             👥 Asistentes Registrados
