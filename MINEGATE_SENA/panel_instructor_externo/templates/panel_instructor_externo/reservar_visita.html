@@ -245,6 +245,12 @@
       </div>
       <div class="form-card-body">
         {{ form.observacion }}
+        <div class="form-check mt-3" style="align-items:center;">
+          <input class="form-check-input" type="checkbox" value="1" id="acepto_terminos" style="transform:scale(1.4);margin-right:.5rem;">
+          <label class="form-check-label" for="acepto_terminos" style="font-size:1.05rem;font-weight:600;color:#222;">
+            He leído y acepto los <a href="#" data-bs-toggle="modal" data-bs-target="#modalTerminos" class="fw-bold text-primary">Términos y Condiciones</a> y la Política de Privacidad del Centro Minero SENA.
+          </label>
+        </div>
       </div>
     </div>
 
@@ -428,11 +434,184 @@ document.addEventListener('DOMContentLoaded', function() {
       alert('Por favor selecciona una fecha y un horario para la visita.');
       container.scrollIntoView({ behavior: 'smooth' });
     }
+    // Validar aceptación de términos
+    const checkbox = document.getElementById('acepto_terminos');
+    if (checkbox && !checkbox.checked) {
+      e.preventDefault();
+      // Abrir modal para que el usuario lea y acepte
+      const modalEl = document.getElementById('modalTerminos');
+      if (modalEl) {
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+      } else {
+        alert('Debe aceptar los Términos y Condiciones antes de enviar la solicitud.');
+      }
+      return false;
+    }
   });
 });
 </script>
+
+<!-- Modal Términos y Condiciones -->
+<div class="modal fade" id="modalTerminos" tabindex="-1" aria-labelledby="modalTerminosLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalTerminosLabel">Términos y Condiciones</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body" style="max-height:70vh;overflow:auto;">
+        <p><strong>Sistema SICAM</strong></p>
+        <p><strong>Centro Minero – Servicio Nacional de Aprendizaje (SENA)</strong></p>
+
+        <p><strong>1. Objeto</strong></p>
+        <p>Los presentes Términos y Condiciones regulan el uso del Sistema de Control y Administración de Mina (SICAM), plataforma utilizada para el registro, control y gestión de visitas a las instalaciones de práctica minera del Centro Minero del Servicio Nacional de Aprendizaje (SENA).</p>
+        <p>El objetivo del sistema es permitir el registro organizado de visitantes, el control de ingreso y salida de personas y el apoyo a los protocolos de seguridad institucional, garantizando un manejo responsable de la información.</p>
+        <p>El uso del sistema implica la aceptación expresa de las condiciones establecidas en el presente documento.</p>
+
+        <p><strong>2. Identificación del Sistema</strong></p>
+        <p>El sistema SICAM es una herramienta tecnológica diseñada para facilitar la gestión de visitantes en el Centro Minero del SENA.</p>
+        <p>Este sistema permite:</p>
+        <ul>
+          <li>Registrar información de visitantes.</li>
+          <li>Gestionar solicitudes de visitas.</li>
+          <li>Controlar horarios de ingreso y salida.</li>
+          <li>Identificar responsables de cada visita.</li>
+          <li>Mantener un registro institucional de las visitas realizadas.</li>
+        </ul>
+        <p>El sistema forma parte de un proyecto formativo desarrollado dentro del programa Tecnólogo en Análisis y Desarrollo de Software del SENA.</p>
+
+        <p><strong>3. Aceptación de los Términos y Condiciones</strong></p>
+        <p>Al utilizar el sistema SICAM, el usuario manifiesta que:</p>
+        <ul>
+          <li>Ha leído y comprendido los presentes términos y condiciones.</li>
+          <li>Acepta el tratamiento de sus datos personales para los fines establecidos.</li>
+          <li>Se compromete a cumplir las normas de seguridad del Centro Minero.</li>
+        </ul>
+        <p>La aceptación se realiza mediante la selección de la opción:</p>
+        <p>“Acepto los términos y condiciones del sistema SICAM.”</p>
+        <p>Sin esta aceptación, el sistema no permitirá completar el registro de la visita.</p>
+
+        <p><strong>4. Información Solicitada para el Registro de Visitas</strong></p>
+        <p>Para realizar el registro de una visita, el sistema podrá solicitar la siguiente información:</p>
+        <ul>
+          <li>Nombre completo del visitante</li>
+          <li>Tipo y número de documento de identidad</li>
+          <li>Entidad o institución de procedencia</li>
+          <li>Motivo de la visita</li>
+          <li>Persona responsable dentro del Centro Minero</li>
+          <li>Fecha de la visita</li>
+          <li>Hora de ingreso</li>
+          <li>Hora de salida</li>
+          <li>Información de contacto cuando sea necesario</li>
+        </ul>
+        <p>El usuario se compromete a proporcionar información veraz, completa y actualizada.</p>
+        <p>El suministro de información falsa o incompleta podrá ocasionar la cancelación o restricción de la visita.</p>
+
+        <p><strong>5. Tratamiento de Datos Personales</strong></p>
+        <p>La información personal recolectada mediante el sistema SICAM será tratada conforme a la normativa colombiana vigente sobre protección de datos personales, en especial:</p>
+        <ul>
+          <li>Ley 1581 de 2012 – Protección de Datos Personales</li>
+          <li>Decreto 1377 de 2013</li>
+          <li>Ley 1266 de 2008 – Habeas Data</li>
+        </ul>
+        <p>Los datos personales serán utilizados únicamente para:</p>
+        <ul>
+          <li>Control de ingreso y salida de visitantes</li>
+          <li>Seguridad institucional</li>
+          <li>Registro administrativo de visitas</li>
+          <li>Seguimiento de actividades realizadas en el Centro Minero</li>
+          <li>Procesos académicos relacionados con el proyecto formativo</li>
+        </ul>
+        <p>El SENA garantiza el uso responsable, seguro y confidencial de la información registrada.</p>
+
+        <p><strong>6. Uso Adecuado del Sistema</strong></p>
+        <p>El sistema SICAM deberá utilizarse exclusivamente para fines relacionados con el registro y gestión de visitas.</p>
+        <p>Se encuentra prohibido:</p>
+        <ul>
+          <li>Manipular o alterar información registrada en el sistema.</li>
+          <li>Acceder al sistema sin autorización.</li>
+          <li>Utilizar la información registrada con fines diferentes a los establecidos.</li>
+        </ul>
+        <p>El uso indebido del sistema podrá generar restricciones de acceso y acciones administrativas correspondientes.</p>
+
+        <p><strong>7. Normas de Seguridad para Visitantes</strong></p>
+        <p>Toda persona que ingrese a las instalaciones de práctica minera del Centro Minero deberá cumplir con las normas de seguridad establecidas por la institución, incluyendo:</p>
+        <ul>
+          <li>Seguir las indicaciones del personal autorizado.</li>
+          <li>Utilizar los elementos de protección personal (EPP) cuando sea requerido.</li>
+          <li>No ingresar a zonas restringidas.</li>
+          <li>No manipular equipos o maquinaria sin autorización.</li>
+        </ul>
+        <p>El incumplimiento de estas normas podrá generar la suspensión inmediata de la visita.</p>
+
+        <p><strong>8. Uso de Imágenes y Registros</strong></p>
+        <p>Los visitantes autorizan el registro de su información y, cuando sea necesario, la captura de fotografías, videos o registros audiovisuales relacionados con el control de acceso o actividades institucionales dentro del Centro Minero.</p>
+        <p>Estos registros podrán ser utilizados con fines:</p>
+        <ul>
+          <li>Institucionales</li>
+          <li>Académicos</li>
+          <li>Administrativos</li>
+          <li>De seguridad</li>
+        </ul>
+        <p>Todo uso se realizará respetando la normativa de protección de datos personales.</p>
+
+        <p><strong>9. Responsabilidad del Usuario</strong></p>
+        <p>El usuario es responsable de:</p>
+        <ul>
+          <li>Proporcionar información verídica.</li>
+          <li>Cumplir con las normas de seguridad del Centro Minero.</li>
+          <li>Utilizar correctamente el sistema.</li>
+        </ul>
+        <p>El usuario acepta que cualquier incumplimiento de estas condiciones podrá generar restricciones de acceso a las instalaciones o al sistema.</p>
+
+        <p><strong>10. Limitación de Responsabilidad</strong></p>
+        <p>El Centro Minero del SENA no se hace responsable por:</p>
+        <ul>
+          <li>Información incorrecta suministrada por los visitantes.</li>
+          <li>Incumplimiento de normas de seguridad por parte de los visitantes.</li>
+          <li>Uso indebido del sistema por parte de terceros no autorizados.</li>
+        </ul>
+
+        <p><strong>11. Legislación Aplicable</strong></p>
+        <p>Los presentes términos y condiciones se rigen por la legislación de la República de Colombia, especialmente en materia de:</p>
+        <ul>
+          <li>Protección de datos personales</li>
+          <li>Seguridad de la información</li>
+          <li>Normativa institucional del SENA</li>
+        </ul>
+        <p>Cualquier controversia derivada del uso del sistema será resuelta conforme a las políticas institucionales y a la legislación vigente.</p>
+
+        <p><strong>12. Modificaciones</strong></p>
+        <p>El Centro Minero del SENA se reserva el derecho de actualizar o modificar los presentes términos y condiciones cuando sea necesario para mejorar el funcionamiento del sistema o cumplir con cambios normativos.</p>
+
+        <p><strong>13. Aceptación Final</strong></p>
+        <p>Antes de completar el registro en el sistema SICAM, el usuario deberá confirmar la siguiente declaración:</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-primary" id="aceptoModalBtn">Entendido y Acepto</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 {% accessibility_widget %}
 </body>
 </html>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const btn = document.getElementById('aceptoModalBtn');
+  if (btn) {
+    btn.addEventListener('click', function() {
+      const checkbox = document.getElementById('acepto_terminos');
+      if (checkbox) checkbox.checked = true;
+      const modalEl = document.getElementById('modalTerminos');
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      if (modal) modal.hide();
+    });
+  }
+});
+</script>
