@@ -32,6 +32,7 @@ def panel_administrativo_seccion(request, seccion):
         "gestion_calendario",
         "gestion_visitas",
         "gestion_documentos",
+        "control_acceso",
         "escaneo_documentos",
         "configuracion",
         "reportes",
