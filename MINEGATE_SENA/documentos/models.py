@@ -105,7 +105,9 @@ class DocumentoSubidoAsistente(models.Model):
     )
     observaciones_revision = models.TextField(blank=True, null=True)
     archivo = models.FileField(
-        upload_to=documento_subido_upload_path, verbose_name="Archivo subido"
+        upload_to=documento_subido_upload_path,
+        max_length=500,
+        verbose_name="Archivo subido",
     )
     fecha_subida = models.DateTimeField(auto_now_add=True)
 

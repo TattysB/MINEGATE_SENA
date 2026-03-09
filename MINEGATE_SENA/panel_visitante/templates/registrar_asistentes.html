@@ -39,31 +39,7 @@
         <p>{% if tipo == 'interna' %}Visita Interna{% else %}Visita Externa{% endif %} #{{ visita.id }}</p>
     </div>
 </div>
-        {% if not puede_agregar %}
-        <div id="modalArchivosFinales" style="display:block;position:fixed;z-index:9999;left:0;top:0;width:100%;height:100%;background-color:rgba(0,0,0,0.5);">
-            <div style="background:#fff;padding:32px 24px;border-radius:12px;max-width:600px;margin:80px auto;box-shadow:0 8px 32px rgba(0,0,0,0.2);position:relative;">
-                <button onclick="document.getElementById('modalArchivosFinales').style.display='none';" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:1.5rem;color:#888;cursor:pointer;">&times;</button>
-                <h2 style="color:#145A32;margin-bottom:18px;"><i class="fas fa-folder-open me-2"></i> Archivos finales</h2>
-                <p style="color:#333;margin-bottom:18px;">Suba los archivos requeridos para finalizar el proceso:</p>
-                <form method="post" enctype="multipart/form-data" id="formArchivosFinales">
-                    {% csrf_token %}
-                    {% for categoria, docs in documentos_por_categoria.items %}
-                        {% if categoria == '📝 ATS' or categoria == '📜 Formato Inducción y Reinducción' or categoria == '🤸🏻‍♂️ Charla de Seguridad y Calestenia' %}
-                            <h4 style="margin-top:18px;color:#228B22;">{{ categoria }}</h4>
-                            {% for doc in docs %}
-                                <div style="margin-bottom:12px;">
-                                    <label style="font-weight:600;color:#333;">{{ doc.titulo }}</label>
-                                    <input type="file" name="archivo_final_{{ doc.id }}" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" style="display:block;margin-top:6px;">
-                                </div>
-                            {% endfor %}
-                        {% endif %}
-                    {% endfor %}
-                    <button type="submit" style="background:linear-gradient(90deg,#228B22,#2ecc40);color:#fff;font-weight:bold;padding:10px 28px;border:none;border-radius:8px;margin-top:18px;">Subir archivos finales</button>
-                </form>
-            </div>
-        </div>
 
-        {% endif %}
 <div class="container pb-5">
     {% if messages %}
         {% for message in messages %}
@@ -110,7 +86,14 @@
 
     <!-- Progreso de registro -->
     <div class="progress-section">
-        <h4><i class="fas fa-chart-pie me-2" style="color: #00af00;"></i>Progreso de Registro</h4>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h4 style="margin: 0;"><i class="fas fa-chart-pie me-2" style="color: #00af00;"></i>Progreso de Registro</h4>
+            {% if mostrar_archivos_finales %}
+            <a href="#seccion-archivos-finales" style="background: linear-gradient(135deg, #228B22 0%, #2ecc40 100%); color: white; padding: 8px 18px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
+                <i class="fas fa-folder-open"></i> Ver Archivos Finales
+            </a>
+            {% endif %}
+        </div>
         <div class="progress-bar-custom">
             {% widthratio asistentes_actuales max_asistentes 100 as progress_percent %}
             <div class="progress-fill {% if asistentes_actuales >= max_asistentes %}full{% endif %}" style="width: {{ progress_percent }}%;">
@@ -128,30 +111,6 @@
             <h5>Límite de asistentes alcanzado</h5>
             <p class="mb-0">Ya ha registrado el número máximo de asistentes permitidos para esta visita.</p>
         </div>
-        {% if mostrar_archivos_finales %}
-        <div id="modalArchivosFinales" style="display:block;position:fixed;z-index:9999;left:0;top:0;width:100%;height:100%;background-color:rgba(0,0,0,0.5);">
-            <div style="background:#fff;padding:32px 24px;border-radius:12px;max-width:600px;margin:80px auto;box-shadow:0 8px 32px rgba(0,0,0,0.2);position:relative;">
-                <button onclick="document.getElementById('modalArchivosFinales').style.display='none';" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:1.5rem;color:#888;cursor:pointer;">&times;</button>
-                <h2 style="color:#145A32;margin-bottom:18px;"><i class="fas fa-folder-open me-2"></i> Archivos finales</h2>
-                <p style="color:#333;margin-bottom:18px;">Suba los archivos requeridos para finalizar el proceso:</p>
-                <form method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    {% for categoria, docs in documentos_por_categoria.items %}
-                        {% if categoria == '📝 ATS' or categoria == '📜 Formato Inducción y Reinducción' or categoria == '🤸🏻‍♂️ Charla de Seguridad y Calestenia' %}
-                            <h4 style="margin-top:18px;color:#228B22;">{{ categoria }}</h4>
-                            {% for doc in docs %}
-                                <div style="margin-bottom:12px;">
-                                    <label style="font-weight:600;color:#333;">{{ doc.titulo }}</label>
-                                    <input type="file" name="archivo_final_{{ doc.id }}" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" style="display:block;margin-top:6px;">
-                                </div>
-                            {% endfor %}
-                        {% endif %}
-                    {% endfor %}
-                    <button type="submit" style="background:linear-gradient(90deg,#228B22,#2ecc40);color:#fff;font-weight:bold;padding:10px 28px;border:none;border-radius:8px;margin-top:18px;">Subir archivos finales</button>
-                </form>
-            </div>
-        </div>
-        {% endif %}
     {% endif %}
 
     <!-- Documentos para descargar -->
@@ -335,6 +294,39 @@
             </div>
         {% endif %}
     </div>
+
+    <!-- Sección de Archivos Finales -->
+    {% if mostrar_archivos_finales %}
+    <div id="seccion-archivos-finales" class="form-card" style="border-left: 4px solid #228B22; background: #f0fdf4;">
+        <h4 style="color: #145A32; margin-bottom: 18px;"><i class="fas fa-folder-open me-2"></i> Archivos Finales</h4>
+        <p style="color: #333; margin-bottom: 18px; font-size: 0.95rem;">Suba los archivos requeridos para finalizar el proceso:</p>
+        <form method="post" enctype="multipart/form-data" id="formArchivosFinales">
+            {% csrf_token %}
+            {% for categoria, docs in documentos_por_categoria.items %}
+                {% if categoria == '📝 ATS' or categoria == '📜 Formato Inducción y Reinducción' or categoria == '🤸🏻‍♂️ Charla de Seguridad y Calestenia' %}
+                    <div style="margin-bottom: 20px;">
+                        <h5 style="color: #228B22; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #bbf7d0;"><i class="fas fa-{% if 'ATS' in categoria %}file-alt{% elif 'Inducción' in categoria %}file-pdf{% else %}users{% endif %} me-2"></i>{{ categoria }}</h5>
+                        {% for doc in docs %}
+                            <div style="margin-bottom: 16px; padding: 12px; background: white; border-radius: 8px; border: 1px solid #d1fae5;">
+                                <label style="font-weight: 600; color: #333; display: block; margin-bottom: 8px;">
+                                    <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% else %}file-alt{% endif %}" style="font-size: 1.2rem; color: {% if doc.extension == '.pdf' %}#dc2626{% elif doc.extension == '.doc' or doc.extension == '.docx' %}#2563eb{% else %}#059669{% endif %}; margin-right: 6px;"></i>
+                                    {{ doc.titulo }}
+                                </label>
+                                <input type="file" name="archivo_final_{{ doc.id }}" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" class="form-control" style="padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px;">
+                                {% if doc.descripcion %}<small style="color: #666; display: block; margin-top: 4px;">{{ doc.descripcion }}</small>{% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="submit" style="background: linear-gradient(135deg, #228B22 0%, #2ecc40 100%); color: #fff; font-weight: bold; padding: 12px 28px; border: none; border-radius: 8px; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(34,139,34,0.4)'," onmouseout="this.style.transform='none'; this.style.boxShadow='none'">
+                    <i class="fas fa-upload"></i> Subir Archivos Finales
+                </button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
 
     <!-- Botón volver -->
     <div class="text-center mt-4">
