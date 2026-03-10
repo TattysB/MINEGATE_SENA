@@ -4,11 +4,12 @@ from django.contrib import messages
 from django.db.models import Q
 from django.db.utils import OperationalError, ProgrammingError
 from django.urls import reverse
-from PIL import Image
+from PIL import Image, ImageOps, UnidentifiedImageError
 from datetime import date, timedelta
 import calendar
+from pathlib import Path
 from usuarios.models import PerfilUsuario
-from calendario.models import Availability
+from calendario.models import Availability, ReservaHorario
 from .forms import (
     ContenidoPaginaInformativaForm,
     ElementoEncabezadoInformativoForm,
@@ -70,12 +71,33 @@ def _convertir_a_entero(valor, predeterminado=0):
         return predeterminado
 
 
+def _obtener_parametros_guardado(ruta_archivo, imagen):
+    extension = Path(ruta_archivo or "").suffix.lower()
+
+    if extension in {".jpg", ".jpeg"}:
+        formato = "JPEG"
+        if imagen.mode not in ("RGB", "L"):
+            imagen = imagen.convert("RGB")
+        return imagen, formato, {"quality": 90, "optimize": True}
+
+    if extension == ".png":
+        return imagen, "PNG", {}
+
+    if extension == ".webp":
+        return imagen, "WEBP", {}
+
+    if imagen.mode not in ("RGB", "L"):
+        imagen = imagen.convert("RGB")
+    return imagen, "JPEG", {"quality": 90, "optimize": True}
+
+
 def _aplicar_recorte_imagen(ruta_archivo, x, y, ancho_recorte, alto_recorte):
     if not ruta_archivo or ancho_recorte <= 0 or alto_recorte <= 0:
         return False
 
     try:
-        with Image.open(ruta_archivo) as imagen:
+        with Image.open(ruta_archivo) as imagen_original:
+            imagen = ImageOps.exif_transpose(imagen_original)
             ancho_img, alto_img = imagen.size
 
             x = max(0, min(x, max(ancho_img - 1, 0)))
@@ -84,9 +106,13 @@ def _aplicar_recorte_imagen(ruta_archivo, x, y, ancho_recorte, alto_recorte):
             y2 = max(y + 1, min(y + alto_recorte, alto_img))
 
             recortada = imagen.crop((x, y, x2, y2))
-            recortada.save(ruta_archivo)
+            recortada, formato, kwargs_guardado = _obtener_parametros_guardado(
+                ruta_archivo,
+                recortada,
+            )
+            recortada.save(ruta_archivo, format=formato, **kwargs_guardado)
         return True
-    except Exception:
+    except (UnidentifiedImageError, OSError, ValueError):
         return False
 
 
@@ -208,8 +234,23 @@ def _agregar_contexto_calendario(context):
             a.date.isoformat()
             for a in Availability.objects.filter(date__gte=today, date__lte=end_month)
         )
+
+        reservas_qs = ReservaHorario.objects.filter(
+            fecha__gte=start_month,
+            fecha__lte=end_month,
+        )
+        fechas_pendientes = set()
+        fechas_confirmadas = set()
+        for reserva in reservas_qs:
+            fecha_str = reserva.fecha.isoformat()
+            if reserva.estado == "pendiente":
+                fechas_pendientes.add(fecha_str)
+            elif reserva.estado == "confirmada":
+                fechas_confirmadas.add(fecha_str)
     except Exception:
         available_dates = set()
+        fechas_pendientes = set()
+        fechas_confirmadas = set()
 
     context.update(
         {
@@ -219,6 +260,8 @@ def _agregar_contexto_calendario(context):
             "weeks": weeks,
             "today": today,
             "available_dates": available_dates,
+            "fechas_pendientes": fechas_pendientes,
+            "fechas_confirmadas": fechas_confirmadas,
         }
     )
 

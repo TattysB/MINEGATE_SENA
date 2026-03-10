@@ -191,6 +191,8 @@
             <hr>
             <div class="form-group">
                 <h5 style="margin-bottom:10px;">Subir Archivos Requeridos <span class="required">*</span></h5>
+                
+                <!-- Formato Auto Reporte Condiciones de Salud -->
                 {% for categoria, docs in documentos_por_categoria.items %}
                     {% if categoria == '👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud' %}
                         <div style="margin-bottom: 18px;">
@@ -203,6 +205,41 @@
                                         {{ doc.titulo }} <span class="required">*</span>
                                     </label>
                                     <input type="file" name="documento_{{ doc.id }}" class="form-control" required {% if not puede_agregar %}disabled{% endif %} style="max-width:100%;">
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+
+                <!-- Formato Autorización Padres de Familia con advertencia -->
+                {% for categoria, docs in documentos_por_categoria.items %}
+                    {% if categoria == '📋 Formato Autorización Padres de Familia' %}
+                        <div style="margin-bottom: 18px; padding: 15px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px;">
+                            <div style="display: flex; align-items: start; gap: 12px; margin-bottom: 12px;">
+                                <i class="fas fa-exclamation-triangle" style="color: #f59e0b; font-size: 1.5rem; margin-top: 2px;"></i>
+                                <div>
+                                    <strong style="color: #92400e; font-size: 1.05rem; display: block; margin-bottom: 6px;">
+                                        ⚠️ IMPORTANTE - Menores de Edad
+                                    </strong>
+                                    <p style="color: #78350f; margin: 0; line-height: 1.5;">
+                                        Si eres <strong>menor de 18 años</strong>, es <strong>OBLIGATORIO</strong> subir el formato de autorización de padres de familia firmado. 
+                                        <strong style="display: block; margin-top: 4px;">Sin este documento NO podrás realizar la visita.</strong>
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <strong>{{ categoria }}</strong>
+                            {% for doc in docs %}
+                                <div class="form-group" style="margin-bottom:16px; margin-top: 12px;">
+                                    <label style="font-weight:500; margin-bottom:6px;">
+                                        <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% elif doc.extension == '.jpg' or doc.extension == '.jpeg' or doc.extension == '.png' %}file-image{% else %}file-alt{% endif %}"
+                                           style="font-size: 1.2rem; color: {% if doc.extension == '.pdf' %}#dc2626{% elif doc.extension == '.doc' or doc.extension == '.docx' %}#2563eb{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}#059669{% else %}#667eea{% endif %}; margin-right:8px;"></i>
+                                        {{ doc.titulo }} <span style="color: #92400e;">(Requerido para menores de edad)</span>
+                                    </label>
+                                    <input type="file" name="documento_{{ doc.id }}" class="form-control" {% if not puede_agregar %}disabled{% endif %} style="max-width:100%;">
+                                    <small style="color: #78350f; font-style: italic; display: block; margin-top: 4px;">
+                                        Deja este campo vacío solo si eres mayor de edad
+                                    </small>
                                 </div>
                             {% endfor %}
                         </div>

@@ -11,6 +11,7 @@ class Availability(models.Model):
 	class Meta:
 		ordering = ['date', 'time', 'end_time']
 		unique_together = ('date', 'time', 'end_time')
+		db_table = 'availability'
 
 	def __str__(self):
 		if self.end_time:
@@ -20,7 +21,7 @@ class Availability(models.Model):
 
 class ReservaHorario(models.Model):
 	"""
-	Modelo para rastrear reservas de horarios cuando una visita es aprobada.
+	Modelo para rastrear reservas de horarios de visitas.
 	- estado 'pendiente': aprobación inicial, bloquea el horario (se muestra naranja)
 	- estado 'confirmada': visita confirmada definitivamente (se muestra rojo)
 	"""
@@ -57,6 +58,7 @@ class ReservaHorario(models.Model):
 		ordering = ['fecha', 'hora_inicio']
 		verbose_name = "Reserva de Horario"
 		verbose_name_plural = "Reservas de Horarios"
+		db_table = 'reserva_horario'
 	
 	def __str__(self):
 		tipo = "Interna" if self.visita_interna else "Externa"
@@ -106,6 +108,16 @@ class ReservaHorario(models.Model):
 			reserva.estado = 'confirmada'
 			reserva.save()
 		return reserva
+
+	@classmethod
+	def liberar_reserva(cls, visita, tipo='interna'):
+		"""Libera (elimina) la reserva asociada a una visita rechazada o cancelada."""
+		if tipo == 'interna':
+			qs = cls.objects.filter(visita_interna=visita)
+		else:
+			qs = cls.objects.filter(visita_externa=visita)
+		deleted, _ = qs.delete()
+		return deleted
 	
 	@classmethod
 	def horario_disponible(cls, fecha, hora_inicio, hora_fin):

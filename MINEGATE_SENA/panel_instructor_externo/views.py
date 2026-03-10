@@ -1,12 +1,14 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Q
+from django.db import transaction
 from visitaExterna.models import VisitaExterna
 from .forms import VisitaExternaInstructorForm
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.conf import settings
+from calendario.models import ReservaHorario
 
 
 # ==================== AUTENTICACIÓN POR SESIÓN ====================

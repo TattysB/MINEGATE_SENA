@@ -67,6 +67,17 @@
     var replaceDayBtn = root.querySelector('#replaceDayBtn');
     var clearDayBtn = root.querySelector('#clearDayBtn');
     var saveBtn = root.querySelector('#saveAvailBtn');
+    var selectedDatesCount = root.querySelector('#selectedDatesCount');
+    var selectedDatesChips = root.querySelector('#selectedDatesChips');
+    var calendarLayout = root.querySelector('.calendar-layout');
+    var summaryBase = calendarLayout ? (calendarLayout.getAttribute('data-summary-base') || '/calendario/day/summary/') : '/calendario/day/summary/';
+    var gestionVisitasUrl = calendarLayout ? (calendarLayout.getAttribute('data-gestion-url') || '/panel_administrativo/gestion_visitas/') : '/panel_administrativo/gestion_visitas/';
+
+    var dayInspectorTitle = root.querySelector('#dayInspectorTitle');
+    var dayInspectorBadge = root.querySelector('#dayInspectorBadge');
+    var dayInspectorDate = root.querySelector('#dayInspectorDate');
+    var dayInspectorRanges = root.querySelector('#dayInspectorRanges');
+    var dayInspectorVisits = root.querySelector('#dayInspectorVisits');
     if(!startTime || !endTime || !addRangeBtn || !selectedDatesSummary || !rangesList || !saveBtn){ return; }
 
     var dayFetchBase = form.getAttribute('data-day-fetch-base') || '/calendario/day/';
@@ -84,6 +95,7 @@
       var td = root.querySelector('table.calendar-table td[data-date="' + dateStr + '"]');
       if(!td) return;
       if(td.classList.contains('other-month') || td.classList.contains('disabled')) return;
+      if(td.classList.contains('pending') || td.classList.contains('occupied')) return;
       if(available){
         td.classList.remove('no-available');
         td.classList.add('available');
@@ -99,8 +111,19 @@
 
     function renderSelectedDates(){
       var items = sortDates(Array.from(selectedDates));
+      if(selectedDatesCount){ selectedDatesCount.textContent = String(items.length); }
       if(!items.length){
+        if(selectedDatesChips){
+          selectedDatesChips.innerHTML = '<span class="empty-day">Selecciona uno o varios días del calendario (lunes a sábado).</span>';
+          return;
+        }
         selectedDatesSummary.textContent = 'Selecciona uno o varios días del calendario (lunes a sábado).';
+        return;
+      }
+      if(selectedDatesChips){
+        selectedDatesChips.innerHTML = items.map(function(item){
+          return '<span class="date-chip">' + item + '</span>';
+        }).join('');
         return;
       }
       selectedDatesSummary.innerHTML = '<strong>Días seleccionados:</strong> ' + items.join(', ');
@@ -221,6 +244,135 @@
     function canEnable(){ return selectedDates.size > 0 && ranges.length > 0; }
     function refresh(){ saveBtn.disabled = !canEnable(); }
 
+    function getCellState(td){
+      if(!td) return 'neutral';
+      if(td.classList.contains('occupied')) return 'occupied';
+      if(td.classList.contains('pending')) return 'pending';
+      if(td.classList.contains('available')) return 'available';
+      if(td.classList.contains('no-available')) return 'no-available';
+      return 'neutral';
+    }
+
+    function renderInspectorBadge(state){
+      if(!dayInspectorBadge) return;
+      dayInspectorBadge.className = 'inspector-badge';
+      if(state === 'available'){
+        dayInspectorBadge.classList.add('available');
+        dayInspectorBadge.textContent = 'Disponible';
+      } else if(state === 'pending'){
+        dayInspectorBadge.classList.add('pending');
+        dayInspectorBadge.textContent = 'Pendiente';
+      } else if(state === 'occupied'){
+        dayInspectorBadge.classList.add('occupied');
+        dayInspectorBadge.textContent = 'Ocupado';
+      } else {
+        dayInspectorBadge.classList.add('neutral');
+        dayInspectorBadge.textContent = 'Sin selección';
+      }
+    }
+
+    function renderInspectorRanges(ranges, state){
+      if(!dayInspectorRanges) return;
+      if(state !== 'available'){
+        dayInspectorRanges.innerHTML = '<span class="empty-day">Selecciona un día verde para ver horarios libres.</span>';
+        return;
+      }
+      if(!ranges || !ranges.length){
+        dayInspectorRanges.innerHTML = '<span class="empty-day">No hay horarios libres para este día.</span>';
+        return;
+      }
+      dayInspectorRanges.innerHTML = ranges.map(function(r){
+        return '<span class="inspector-chip">' + r.label + '</span>';
+      }).join('');
+    }
+
+    function renderInspectorVisits(visitas, state){
+      if(!dayInspectorVisits) return;
+      if(state !== 'pending' && state !== 'occupied'){
+        dayInspectorVisits.innerHTML = '<div class="inspector-empty">Selecciona un día amarillo o rojo para ver la visita.</div>';
+        return;
+      }
+      if(!visitas || !visitas.length){
+        dayInspectorVisits.innerHTML = '<div class="inspector-empty">No hay reservas registradas para este día.</div>';
+        return;
+      }
+
+      dayInspectorVisits.innerHTML = visitas.map(function(v){
+        var estadoClass = v.estado === 'pendiente' ? 'pending' : 'confirmada';
+        var showInfoButton = v.estado === 'confirmada';
+        var infoPayload = encodeURIComponent(JSON.stringify(v || {}));
+        return [
+          '<article class="visit-item">',
+            '<div class="visit-item-head">',
+              '<div>',
+                '<span class="visit-type">' + (v.tipo || 'visita') + '</span>',
+                '<h5>' + (v.titulo || 'Visita') + '</h5>',
+              '</div>',
+              '<span class="visit-status ' + estadoClass + '">' + (v.estado_label || v.estado || '') + '</span>',
+            '</div>',
+            '<p><strong>Responsable:</strong> ' + (v.responsable || 'Sin responsable') + '</p>',
+            '<p><strong>Documento:</strong> ' + (v.documento_responsable || 'N/A') + '</p>',
+            '<p><strong>Horario:</strong> ' + (v.horario || 'Sin horario') + '</p>',
+            '<div class="visit-actions" style="margin-top:8px;display:flex;justify-content:flex-end;">',
+              showInfoButton
+                ? '<button type="button" class="btn-inspector btn-inspector-danger" data-action="show-info" data-info="' + infoPayload + '">Ver informacion</button>'
+                : '<button type="button" class="btn-inspector btn-inspector-warning" data-action="go-gestion">Ir a Gestion de Visitas</button>',
+            '</div>',
+          '</article>'
+        ].join('');
+      }).join('');
+
+      dayInspectorVisits.querySelectorAll('button[data-action="go-gestion"]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          window.location.href = gestionVisitasUrl;
+        });
+      });
+
+      dayInspectorVisits.querySelectorAll('button[data-action="show-info"]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var raw = btn.getAttribute('data-info') || '';
+          try {
+            var info = JSON.parse(decodeURIComponent(raw));
+            var message = [
+              'Tipo: ' + (info.tipo || 'N/A'),
+              'Estado: ' + (info.estado_label || info.estado || 'N/A'),
+              'Responsable: ' + (info.responsable || 'N/A'),
+              'Documento: ' + (info.documento_responsable || 'N/A'),
+              'Horario: ' + (info.horario || 'N/A')
+            ].join('\n');
+            alert(message);
+          } catch (e) {
+            alert('No fue posible mostrar la informacion de la visita.');
+          }
+        });
+      });
+    }
+
+    function loadDayInspector(dateStr, preferredState){
+      if(!dateStr || !dayInspectorDate) return;
+      if(dayInspectorTitle) dayInspectorTitle.textContent = 'Resumen del día';
+      dayInspectorDate.textContent = 'Cargando información de ' + dateStr + '...';
+      renderInspectorBadge('neutral');
+
+      fetch(summaryBase + dateStr + '/', { headers: { 'X-Requested-With':'XMLHttpRequest', 'Accept':'application/json' } })
+        .then(function(res){ return res.json(); })
+        .then(function(json){
+          if(!json || !json.ok){ throw new Error('No se pudo cargar el resumen del día'); }
+          var state = json.day_state || preferredState || 'neutral';
+          if(dayInspectorDate){ dayInspectorDate.textContent = json.date_formatted || dateStr; }
+          renderInspectorBadge(state);
+          renderInspectorRanges(json.available_ranges || [], state);
+          renderInspectorVisits(json.visitas || [], state);
+        })
+        .catch(function(err){
+          console.error(err);
+          if(dayInspectorDate){ dayInspectorDate.textContent = 'No se pudo cargar el resumen del día.'; }
+          renderInspectorBadge('neutral');
+          renderInspectorRanges([], 'neutral');
+          renderInspectorVisits([], 'neutral');
+        });
+    }
+
     var calendarTable = root.querySelector('table.calendar-table');
     if(calendarTable){
       calendarTable.addEventListener('click', function(ev){
@@ -229,6 +381,15 @@
         if(td.classList.contains('other-month') || td.classList.contains('disabled')) return;
         var d = td.getAttribute('data-date');
         if(!d) return;
+
+        var state = getCellState(td);
+        loadDayInspector(d, state);
+
+        // Días con reserva: solo mostrar panel de detalle, no permitir selección múltiple para guardado.
+        if(state === 'pending' || state === 'occupied'){
+          return;
+        }
+
         if(selectedDates.has(d)){
           selectedDates.delete(d);
           td.classList.remove('selected-day');
@@ -346,6 +507,7 @@
           // Para cada celda visible del calendario: marcar disponible o deshabilitar
           root.querySelectorAll('table.calendar-table td[data-date]').forEach(function(td){
             if(td.classList.contains('other-month') || td.classList.contains('disabled')) return;
+            if(td.classList.contains('pending') || td.classList.contains('occupied')) return;
             var d = td.getAttribute('data-date');
             if(avail.has(d)){
               td.classList.remove('no-available');
@@ -367,6 +529,7 @@
           if(endTime) endTime.value = '';
           saveBtn.textContent = 'Guardado';
           setTimeout(function(){ saveBtn.textContent = 'Guardar Disponibilidades'; }, 1600);
+          if(selectedDatesCount){ selectedDatesCount.textContent = '0'; }
           refresh();
         } else {
           alert('Disponibilidades guardadas.');
