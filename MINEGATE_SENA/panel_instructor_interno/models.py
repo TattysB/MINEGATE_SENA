@@ -36,6 +36,7 @@ class Programa(models.Model):
         verbose_name = 'Programa'
         verbose_name_plural = 'Programas'
         ordering = ['nombre']
+        db_table = 'programa'
 
     def __str__(self):
         return self.nombre
@@ -91,6 +92,7 @@ class Ficha(models.Model):
         verbose_name = 'Ficha'
         verbose_name_plural = 'Fichas'
         ordering = ['-numero']
+        db_table = 'ficha'
 
     def __str__(self):
         return f'Ficha {self.numero} - {self.programa.nombre}'    
@@ -186,6 +188,7 @@ class Aprendiz(models.Model):
         verbose_name_plural = 'Aprendices'
         ordering = ['apellido', 'nombre']
         unique_together = ['ficha', 'numero_documento']
+        db_table = 'aprendiz'
     
     def __str__(self):
         return f"{self.nombre} {self.apellido} - Ficha {self.ficha.numero}"

@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.contrib import messages
 from django.db.models import Q
+from django.db import transaction
 from visitaInterna.models import VisitaInterna
 from .models import Ficha, Programa
 from .forms import VisitaInternaInstructorForm, ProgramaForm, FichaForm
@@ -9,6 +10,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.conf import settings
+from calendario.models import ReservaHorario
 
 from django.http import JsonResponse
 from visitaInterna.models import VisitaInterna, AsistenteVisitaInterna
@@ -96,51 +98,80 @@ def reservar_visita_interna(request):
             visita.correo_responsable = correo
             visita.documento_responsable = documento
             visita.estado = "enviada_coordinacion"
-            visita.save()
-            # Enviar correo HTML de confirmación al responsable
-            try:
-                subject = "Confirmación: solicitud de visita interna enviada"
-                context = {
-                    "responsable_nombre": nombre_completo,
-                    "responsable": visita.responsable,
-                    "documento_responsable": visita.documento_responsable,
-                    "nombre_programa": visita.nombre_programa,
-                    "numero_ficha": visita.numero_ficha,
-                    "fecha_visita": (
-                        visita.fecha_visita.strftime("%d/%m/%Y")
-                        if visita.fecha_visita
-                        else "Por definir"
-                    ),
-                    "hora_programada": (
-                        (
-                            visita.hora_inicio.strftime("%I:%M %p")
-                            + " - "
-                            + visita.hora_fin.strftime("%I:%M %p")
-                        )
-                        if visita.hora_inicio and visita.hora_fin
-                        else "Por definir"
-                    ),
-                }
-                html_content = render_to_string(
-                    "emails/solicitud_visita_interna.html", context
-                )
-                text_content = strip_tags(html_content)
-                msg = EmailMultiAlternatives(
-                    subject,
-                    text_content,
-                    settings.DEFAULT_FROM_EMAIL,
-                    [visita.correo_responsable],
-                )
-                msg.attach_alternative(html_content, "text/html")
-                msg.send(fail_silently=True)
-            except Exception:
-                pass
 
-            messages.success(
-                request,
-                "✅ Solicitud de visita interna enviada. Queda pendiente de aprobación por coordinación.",
-            )
-            return redirect("panel_instructor_interno:mis_visitas")
+            if not (visita.fecha_visita and visita.hora_inicio and visita.hora_fin):
+                form.add_error(
+                    None,
+                    "Debes seleccionar fecha y horario antes de enviar la solicitud.",
+                )
+            elif visita.hora_inicio >= visita.hora_fin:
+                form.add_error(None, "El horario seleccionado no es válido.")
+            else:
+                try:
+                    with transaction.atomic():
+                        visita.save()
+
+                        if not ReservaHorario.horario_disponible(
+                            visita.fecha_visita,
+                            visita.hora_inicio,
+                            visita.hora_fin,
+                        ):
+                            raise ValueError(
+                                "El horario seleccionado ya no está disponible. Por favor elige otro horario."
+                            )
+
+                        reserva = ReservaHorario.crear_reserva_interna(visita)
+                        if not reserva:
+                            raise ValueError(
+                                "No fue posible bloquear el horario seleccionado. Intenta nuevamente."
+                            )
+                except ValueError as exc:
+                    form.add_error(None, str(exc))
+                else:
+                    # Enviar correo HTML de confirmación al responsable
+                    try:
+                        subject = "Confirmación: solicitud de visita interna enviada"
+                        context = {
+                            "responsable_nombre": nombre_completo,
+                            "responsable": visita.responsable,
+                            "documento_responsable": visita.documento_responsable,
+                            "nombre_programa": visita.nombre_programa,
+                            "numero_ficha": visita.numero_ficha,
+                            "fecha_visita": (
+                                visita.fecha_visita.strftime("%d/%m/%Y")
+                                if visita.fecha_visita
+                                else "Por definir"
+                            ),
+                            "hora_programada": (
+                                (
+                                    visita.hora_inicio.strftime("%I:%M %p")
+                                    + " - "
+                                    + visita.hora_fin.strftime("%I:%M %p")
+                                )
+                                if visita.hora_inicio and visita.hora_fin
+                                else "Por definir"
+                            ),
+                        }
+                        html_content = render_to_string(
+                            "emails/solicitud_visita_interna.html", context
+                        )
+                        text_content = strip_tags(html_content)
+                        msg = EmailMultiAlternatives(
+                            subject,
+                            text_content,
+                            settings.DEFAULT_FROM_EMAIL,
+                            [visita.correo_responsable],
+                        )
+                        msg.attach_alternative(html_content, "text/html")
+                        msg.send(fail_silently=True)
+                    except Exception:
+                        pass
+
+                    messages.success(
+                        request,
+                        "✅ Solicitud enviada. El horario quedó bloqueado y está pendiente de aprobación por coordinación.",
+                    )
+                    return redirect("panel_instructor_interno:mis_visitas")
     else:
         form = VisitaInternaInstructorForm(
             initial={

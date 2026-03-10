@@ -53,6 +53,7 @@ class VisitaExterna(models.Model):
     class Meta:
         verbose_name = "Visita Externa"
         verbose_name_plural = "Visitas Externas"  
+        db_table = 'visita_externa'
     
     def __str__(self):
         return f"{self.nombre} - {self.nombre_responsable}"
@@ -149,6 +150,7 @@ class AsistenteVisitaExterna(models.Model):
         verbose_name_plural = "Asistentes de Visitas Externas"
         ordering = ['nombre_completo']
         unique_together = ['visita', 'numero_documento']
+        db_table = 'asistente_visita_externa'
     
     def __str__(self):
         return f"{self.nombre_completo} - {self.visita.nombre}"
@@ -177,6 +179,7 @@ class HistorialAccionVisitaExterna(models.Model):
         verbose_name = "Historial de Acción"
         verbose_name_plural = "Historial de Acciones"
         ordering = ['-fecha_hora']
+        db_table = 'historial_accion_visita_externa'
     
     def __str__(self):
         return f"{self.get_tipo_accion_display()} - {self.visita} - {self.fecha_hora.strftime('%d/%m/%Y %H:%M')}"
