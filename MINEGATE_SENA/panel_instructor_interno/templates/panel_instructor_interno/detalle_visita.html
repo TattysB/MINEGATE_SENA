@@ -50,6 +50,8 @@
   .btn-registrar:hover { background:var(--sena-verde-oscuro); color:white; transform:translateY(-1px); }
   .btn-enviar { background:#6366f1; color:white; border:none; padding:10px 22px; border-radius:50px; font-weight:700; font-size:0.9rem; text-decoration:none; display:inline-flex; align-items:center; gap:7px; transition:all 0.2s; }
   .btn-enviar:hover { background:#4f46e5; color:white; }
+  .btn-actualizar-asi { background:transparent; color:#2563eb; border:1px solid #2563eb; padding:4px 12px; border-radius:50px; font-size:0.78rem; font-weight:600; text-decoration:none; transition:all 0.2s; }
+  .btn-actualizar-asi:hover { background:#dbeafe; color:#1d4ed8; }
   .btn-eliminar-asi { background:transparent; color:#ef4444; border:1px solid #ef4444; padding:4px 12px; border-radius:50px; font-size:0.78rem; font-weight:600; text-decoration:none; transition:all 0.2s; }
   .btn-eliminar-asi:hover { background:#fee2e2; color:#991b1b; }
   .progress-wrap { background:#e9ecef; border-radius:50px; height:12px; overflow:hidden; margin:0.5rem 0; }
@@ -217,11 +219,17 @@
             <small>{{ asistente.get_tipo_documento_display }}: {{ asistente.numero_documento }}</small>
           </div>
           {% if visita.estado == 'aprobada_inicial' %}
-          <a href="{% url 'panel_instructor_interno:eliminar_asistente_visita' visita_id=visita.id asistente_id=asistente.id tipo='interna' %}"
-             class="btn-eliminar-asi"
-             onclick="return confirm('¿Eliminar a {{ asistente.nombre_completo }}?')">
-            <i class="fas fa-trash me-1"></i>Eliminar
-          </a>
+          <div class="d-flex gap-2">
+            <a href="{% url 'panel_visitante:actualizar_info_asistente' tipo='interna' asistente_id=asistente.id %}"
+               class="btn-actualizar-asi">
+              <i class="fas fa-pen me-1"></i>Actualizar
+            </a>
+            <a href="{% url 'panel_instructor_interno:eliminar_asistente_visita' visita_id=visita.id asistente_id=asistente.id tipo='interna' %}"
+               class="btn-eliminar-asi"
+               onclick="return confirm('¿Eliminar a {{ asistente.nombre_completo }}?')">
+              <i class="fas fa-trash me-1"></i>Eliminar
+            </a>
+          </div>
           {% endif %}
         </div>
         {% endfor %}

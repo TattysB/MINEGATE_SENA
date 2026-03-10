@@ -23,8 +23,10 @@ from calendario.models import ReservaHorario
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
+from django.utils import timezone
 from django.conf import settings
 from django.urls import reverse
+from gestion_visitas.services import GeneradorQRPDF
 
 ESTADOS_APROBADAS = [
     "aprobada_inicial",
@@ -644,6 +646,39 @@ def api_accion_visita(request, tipo, visita_id, accion):
         visita.estado = "confirmada"
         visita.save()
 
+        # Enviar QR solo al quedar confirmada la visita (aprobacion total).
+        qr_enviados = 0
+        qr_fallidos = 0
+        qr_omitidos = 0
+
+        for asistente in visita.asistentes.filter(estado="documentos_aprobados"):
+            if asistente.qr_generado or asistente.email_qr_enviado:
+                qr_omitidos += 1
+                continue
+
+            if not asistente.correo:
+                qr_omitidos += 1
+                continue
+
+            try:
+                generador_qr = GeneradorQRPDF(
+                    asistente=asistente,
+                    visita=visita,
+                    tipo_visita=tipo,
+                )
+                if generador_qr.enviar_por_email():
+                    asistente.qr_generado = True
+                    asistente.email_qr_enviado = True
+                    asistente.fecha_envio_qr = timezone.now()
+                    asistente.save(
+                        update_fields=["qr_generado", "email_qr_enviado", "fecha_envio_qr"]
+                    )
+                    qr_enviados += 1
+                else:
+                    qr_fallidos += 1
+            except Exception:
+                qr_fallidos += 1
+        
         # Confirmar la reserva de horario (cambiar a estado 'confirmada')
         ReservaHorario.confirmar_reserva(visita, tipo)
 
@@ -723,7 +758,10 @@ def api_accion_visita(request, tipo, visita_id, accion):
             f"Visita confirmada definitivamente por {request.user.username}",
         )
         return JsonResponse(
-            {"success": True, "message": "✅ Visita confirmada definitivamente"}
+            {
+                "success": True,
+                "message": f"✅ Visita confirmada definitivamente. QR enviados: {qr_enviados}, fallidos: {qr_fallidos}, omitidos: {qr_omitidos}.",
+            }
         )
 
     return JsonResponse({"success": False, "error": "Acción no válida"})
