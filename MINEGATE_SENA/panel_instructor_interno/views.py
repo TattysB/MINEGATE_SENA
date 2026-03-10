@@ -222,10 +222,28 @@ def mis_visitas_internas(request):
 def detalle_visita_interna(request, pk):
     correo, _ = get_sesion_instructor(request)
     visita = get_object_or_404(VisitaInterna, pk=pk, correo_responsable__iexact=correo)
+
+    # Obtener documentos disponibles para descargar, agrupados por categoría
+    from documentos.models import Documento
+
+    documentos_disponibles = Documento.objects.all().order_by(
+        "categoria", "-fecha_subida"
+    )
+    documentos_por_categoria = {}
+    for doc in documentos_disponibles:
+        cat_display = doc.get_categoria_display()
+        if cat_display not in documentos_por_categoria:
+            documentos_por_categoria[cat_display] = []
+        documentos_por_categoria[cat_display].append(doc)
+
     return render(
         request,
         "panel_instructor_interno/detalle_visita.html",
-        {"visita": visita, "correo": correo},
+        {
+            "visita": visita,
+            "correo": correo,
+            "documentos_por_categoria": documentos_por_categoria,
+        },
     )
 
 
