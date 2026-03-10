@@ -11,8 +11,7 @@ from django.urls import reverse
 from datetime import datetime
 from visitaInterna.models import VisitaInterna, AsistenteVisitaInterna
 from visitaExterna.models import VisitaExterna, AsistenteVisitaExterna
-from documentos.models import Documento
-from gestion_visitas.services import GeneradorQRPDF
+from documentos.models import Documento, DocumentoSubidoAsistente, DocumentoSubidoAprendiz
 from .forms import (
     RegistroVisitanteForm,
     PasswordResetRequestForm,
@@ -27,6 +26,7 @@ from .forms import (
 )
 from .models import RegistroVisitante
 from django.conf import settings
+from django.db import IntegrityError
 
 
 def _redirect_segun_rol(request, tipo=None, visita_id=None):
@@ -53,6 +53,16 @@ def _redirect_segun_rol(request, tipo=None, visita_id=None):
         return redirect("panel_instructor_externo:panel")
     else:
         return redirect("panel_visitante:panel_responsable")
+
+
+def _tiene_acceso_por_correo(visita, correo):
+    """
+    Valida ownership de la visita usando el correo del responsable.
+    El correo es el identificador canonico de la cuenta en sesion.
+    """
+    if not correo:
+        return False
+    return (visita.correo_responsable or "").strip().lower() == correo.strip().lower()
 
 
 def login_responsable(request):
@@ -158,11 +168,11 @@ def panel_responsable(request):
     try:
         # Obtener visitas del responsable
         visitas_internas = VisitaInterna.objects.filter(
-            correo_responsable__iexact=correo, documento_responsable=documento
+            correo_responsable__iexact=correo
         ).prefetch_related("asistentes")
 
         visitas_externas = VisitaExterna.objects.filter(
-            correo_responsable__iexact=correo, documento_responsable=documento
+            correo_responsable__iexact=correo
         ).prefetch_related("asistentes")
 
         context = {
@@ -189,15 +199,12 @@ def registrar_asistentes(request, tipo, visita_id):
         return redirect("panel_visitante:login_responsable")
 
     correo = request.session.get("responsable_correo")
-    documento = request.session.get("responsable_documento")
-
     # Obtener la visita según el tipo
     if tipo == "interna":
         visita = get_object_or_404(
             VisitaInterna,
             id=visita_id,
             correo_responsable__iexact=correo,
-            documento_responsable=documento,
         )
         asistentes = visita.asistentes.all()
         max_asistentes = visita.cantidad_aprendices
@@ -206,7 +213,6 @@ def registrar_asistentes(request, tipo, visita_id):
             VisitaExterna,
             id=visita_id,
             correo_responsable__iexact=correo,
-            documento_responsable=documento,
         )
         asistentes = visita.asistentes.all()
         max_asistentes = visita.cantidad_visitantes
@@ -282,7 +288,58 @@ def registrar_asistentes(request, tipo, visita_id):
                 asistentes_previos_unicos.append(doc_info)
         asistentes_previos = asistentes_previos_unicos
 
-    # Obtener documentos disponibles para descargar, agrupados por categoría
+    # Sincronizar documento de salud desde Aprendiz -> Asistente (solo visitas internas)
+    if tipo == "interna":
+        from panel_instructor_interno.models import Aprendiz
+
+        doc_salud_default = Documento.objects.filter(
+            categoria="Formato Auto Reporte Condiciones de Salud"
+        ).first()
+
+        for asistente in asistentes:
+            tiene_doc_salud = asistente.documentos_subidos.filter(
+                documento_requerido__categoria="Formato Auto Reporte Condiciones de Salud"
+            ).exists()
+
+            if not tiene_doc_salud:
+                aprendiz = Aprendiz.objects.filter(
+                    ficha__numero=visita.numero_ficha,
+                    numero_documento=asistente.numero_documento,
+                ).first()
+
+                if aprendiz:
+                    docs_salud_aprendiz = DocumentoSubidoAprendiz.objects.filter(
+                        aprendiz=aprendiz,
+                        documento_requerido__categoria="Formato Auto Reporte Condiciones de Salud",
+                    ).select_related("documento_requerido")
+
+                    for doc_subido in docs_salud_aprendiz:
+                        DocumentoSubidoAsistente.objects.update_or_create(
+                            documento_requerido=doc_subido.documento_requerido,
+                            asistente_interna=asistente,
+                            asistente_externa=None,
+                            defaults={"archivo": doc_subido.archivo},
+                        )
+
+                    # Compatibilidad con registros antiguos que guardaban en documento_adicional
+                    if not docs_salud_aprendiz.exists() and aprendiz.documento_adicional and doc_salud_default:
+                        DocumentoSubidoAsistente.objects.update_or_create(
+                            documento_requerido=doc_salud_default,
+                            asistente_interna=asistente,
+                            asistente_externa=None,
+                            defaults={"archivo": aprendiz.documento_adicional},
+                        )
+
+            asistente.tiene_doc_salud = asistente.documentos_subidos.filter(
+                documento_requerido__categoria="Formato Auto Reporte Condiciones de Salud"
+            ).exists()
+    else:
+        for asistente in asistentes:
+            asistente.tiene_doc_salud = asistente.documentos_subidos.filter(
+                documento_requerido__categoria="Formato Auto Reporte Condiciones de Salud"
+            ).exists()
+
+    # Obtener documentos disponibles para descargar, agrupados por categoria
     documentos_disponibles = Documento.objects.all().order_by(
         "categoria", "-fecha_subida"
     )
@@ -317,8 +374,6 @@ def registrar_asistentes(request, tipo, visita_id):
         and mostrar_archivos_finales  # Permitir si hay al menos 1 asistente
         and any(f.startswith("archivo_final_") for f in request.FILES)
     ):
-        from documentos.models import DocumentoSubidoAsistente
-
         archivos_subidos = []
         # Obtener el primer asistente para asociar los archivos finales
         primer_asistente = asistentes.first() if asistentes.exists() else None
@@ -418,8 +473,6 @@ def registrar_asistentes(request, tipo, visita_id):
                             telefono=telefono,
                         )
                     # Guardar archivos subidos
-                    from documentos.models import DocumentoSubidoAsistente
-
                     for doc_id, archivo in archivos_dict.items():
                         if archivo:
                             DocumentoSubidoAsistente.objects.create(
@@ -476,26 +529,11 @@ def registrar_asistentes(request, tipo, visita_id):
                             # Si falla la creación del aprendiz en ficha, no interrumpir el flujo
                             pass
 
-                    # Generar y enviar QR por correo
-                    try:
-                        generador_qr = GeneradorQRPDF(
-                            asistente=asistente, visita=visita, tipo_visita=tipo
-                        )
-                        if generador_qr.enviar_por_email():
-                            messages.success(
-                                request,
-                                f'Asistente "{nombre}" registrado correctamente. QR enviado al correo.',
-                            )
-                        else:
-                            messages.warning(
-                                request,
-                                f'Asistente "{nombre}" registrado, pero hubo un problema al enviar el QR.',
-                            )
-                    except Exception as e:
-                        messages.warning(
-                            request,
-                            f'Asistente "{nombre}" registrado, pero no se pudo generar el QR: {str(e)}',
-                        )
+                    # El QR se envia unicamente cuando la visita queda confirmada en su totalidad.
+                    messages.success(
+                        request,
+                        f'Asistente "{nombre}" registrado correctamente. El QR se enviara cuando la visita sea confirmada definitivamente.',
+                    )
 
                     # Ya no es necesario guardar en session, el context lo calcula dinámicamente
                     return redirect(
@@ -550,16 +588,11 @@ def eliminar_asistente(request, tipo, asistente_id):
         return redirect("panel_visitante:login_responsable")
 
     correo = request.session.get("responsable_correo")
-    documento = request.session.get("responsable_documento")
-
     if tipo == "interna":
         asistente = get_object_or_404(AsistenteVisitaInterna, id=asistente_id)
         visita = asistente.visita
         # Verificar que el responsable tenga acceso a esta visita
-        if (
-            visita.correo_responsable.lower() != correo.lower()
-            or visita.documento_responsable != documento
-        ):
+        if not _tiene_acceso_por_correo(visita, correo):
             messages.error(request, "No tiene permiso para esta acción.")
             return _redirect_segun_rol(request)
         visita_id = visita.id
@@ -567,10 +600,7 @@ def eliminar_asistente(request, tipo, asistente_id):
     elif tipo == "externa":
         asistente = get_object_or_404(AsistenteVisitaExterna, id=asistente_id)
         visita = asistente.visita
-        if (
-            visita.correo_responsable.lower() != correo.lower()
-            or visita.documento_responsable != documento
-        ):
+        if not _tiene_acceso_por_correo(visita, correo):
             messages.error(request, "No tiene permiso para esta acción.")
             return _redirect_segun_rol(request)
         visita_id = visita.id
@@ -595,23 +625,15 @@ def enviar_solicitud_final(request, tipo, visita_id):
         return redirect("panel_visitante:login_responsable")
 
     correo = request.session.get("responsable_correo")
-    documento = request.session.get("responsable_documento")
-
     # Obtener la visita
     if tipo == "interna":
         visita = get_object_or_404(VisitaInterna, id=visita_id)
-        if (
-            visita.correo_responsable.lower() != correo.lower()
-            or visita.documento_responsable != documento
-        ):
+        if not _tiene_acceso_por_correo(visita, correo):
             messages.error(request, "No tiene permiso para esta acción.")
             return _redirect_segun_rol(request)
     elif tipo == "externa":
         visita = get_object_or_404(VisitaExterna, id=visita_id)
-        if (
-            visita.correo_responsable.lower() != correo.lower()
-            or visita.documento_responsable != documento
-        ):
+        if not _tiene_acceso_por_correo(visita, correo):
             messages.error(request, "No tiene permiso para esta acción.")
             return _redirect_segun_rol(request)
     else:
@@ -901,25 +923,17 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
         return redirect("panel_visitante:login_responsable")
 
     correo = request.session.get("responsable_correo")
-    documento = request.session.get("responsable_documento")
-
     if tipo == "interna":
         asistente = get_object_or_404(AsistenteVisitaInterna, id=asistente_id)
         visita = asistente.visita
         # Verificar que el responsable tenga acceso a esta visita
-        if (
-            visita.correo_responsable.lower() != correo.lower()
-            or visita.documento_responsable != documento
-        ):
+        if not _tiene_acceso_por_correo(visita, correo):
             messages.error(request, "No tiene permiso para esta acción.")
             return _redirect_segun_rol(request)
     elif tipo == "externa":
         asistente = get_object_or_404(AsistenteVisitaExterna, id=asistente_id)
         visita = asistente.visita
-        if (
-            visita.correo_responsable.lower() != correo.lower()
-            or visita.documento_responsable != documento
-        ):
+        if not _tiene_acceso_por_correo(visita, correo):
             messages.error(request, "No tiene permiso para esta acción.")
             return _redirect_segun_rol(request)
     else:
@@ -983,6 +997,94 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
     )
 
 
+def actualizar_info_asistente(request, tipo, asistente_id):
+    """Actualiza solo la informacion basica del asistente (sin documentos)."""
+    if not request.session.get("responsable_autenticado"):
+        return redirect("panel_visitante:login_responsable")
+
+    correo = request.session.get("responsable_correo")
+    if tipo == "interna":
+        asistente = get_object_or_404(AsistenteVisitaInterna, id=asistente_id)
+        visita = asistente.visita
+        if not _tiene_acceso_por_correo(visita, correo):
+            messages.error(request, "No tiene permiso para esta accion.")
+            return _redirect_segun_rol(request)
+    elif tipo == "externa":
+        asistente = get_object_or_404(AsistenteVisitaExterna, id=asistente_id)
+        visita = asistente.visita
+        if not _tiene_acceso_por_correo(visita, correo):
+            messages.error(request, "No tiene permiso para esta accion.")
+            return _redirect_segun_rol(request)
+    else:
+        messages.error(request, "Tipo de visita no valido.")
+        return _redirect_segun_rol(request)
+
+    if request.method == "POST":
+        nombre = request.POST.get("nombre_completo", "").strip()
+        tipo_doc = request.POST.get("tipo_documento", "").strip()
+        numero_doc = request.POST.get("numero_documento", "").strip()
+        correo_asistente = request.POST.get("correo", "").strip()
+        telefono = request.POST.get("telefono", "").strip()
+
+        if not nombre or not tipo_doc or not numero_doc:
+            messages.error(request, "Nombre, tipo y numero de documento son obligatorios.")
+            return render(
+                request,
+                "actualizar_info_asistente.html",
+                {
+                    "asistente": asistente,
+                    "tipo": tipo,
+                    "visita": visita,
+                    "tipo_documento_choices": asistente.TIPO_DOCUMENTO_CHOICES,
+                },
+            )
+
+        duplicado_qs = asistente.__class__.objects.filter(
+            visita=visita,
+            numero_documento=numero_doc,
+        ).exclude(id=asistente.id)
+
+        if duplicado_qs.exists():
+            messages.error(
+                request,
+                "Ya existe otro asistente en esta visita con ese numero de documento.",
+            )
+            return render(
+                request,
+                "actualizar_info_asistente.html",
+                {
+                    "asistente": asistente,
+                    "tipo": tipo,
+                    "visita": visita,
+                    "tipo_documento_choices": asistente.TIPO_DOCUMENTO_CHOICES,
+                },
+            )
+
+        asistente.nombre_completo = nombre
+        asistente.tipo_documento = tipo_doc
+        asistente.numero_documento = numero_doc
+        asistente.correo = correo_asistente
+        asistente.telefono = telefono
+
+        try:
+            asistente.save()
+            messages.success(request, "Informacion del asistente actualizada correctamente.")
+            return _redirect_segun_rol(request, tipo=tipo, visita_id=visita.id)
+        except IntegrityError:
+            messages.error(request, "No se pudo actualizar por conflicto de datos.")
+
+    return render(
+        request,
+        "actualizar_info_asistente.html",
+        {
+            "asistente": asistente,
+            "tipo": tipo,
+            "visita": visita,
+            "tipo_documento_choices": asistente.TIPO_DOCUMENTO_CHOICES,
+        },
+    )
+
+
 def copiar_asistente_previo(request, tipo, visita_id, asistente_previo_id):
     """
     Copia un asistente previo de una visita anterior a la visita actual.
@@ -992,15 +1094,12 @@ def copiar_asistente_previo(request, tipo, visita_id, asistente_previo_id):
         return redirect("panel_visitante:login_responsable")
 
     correo = request.session.get("responsable_correo")
-    documento = request.session.get("responsable_documento")
-
     # Obtener visita actual
     if tipo == "interna":
         visita = get_object_or_404(
             VisitaInterna,
             id=visita_id,
             correo_responsable__iexact=correo,
-            documento_responsable=documento,
         )
         # Obtener asistente previo (de cualquier visita anterior con el mismo número de ficha)
         asistente_original = get_object_or_404(
@@ -1011,7 +1110,6 @@ def copiar_asistente_previo(request, tipo, visita_id, asistente_previo_id):
             VisitaExterna,
             id=visita_id,
             correo_responsable__iexact=correo,
-            documento_responsable=documento,
         )
         # Obtener asistente previo (de cualquier visita anterior con el mismo nombre)
         asistente_original = get_object_or_404(

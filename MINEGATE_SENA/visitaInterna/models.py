@@ -40,7 +40,7 @@ class VisitaInterna(models.Model):
     hora_inicio = models.TimeField(verbose_name="Hora de inicio", null=True, blank=True)
     hora_fin = models.TimeField(verbose_name="Hora de fin", null=True, blank=True)
     
-    observaciones = models.TextField(verbose_name="Observaciones", blank=True, default="")
+    observaciones = models.TextField(verbose_name="Observaciones", blank=True, null=True)
     
     def save(self, *args, **kwargs):
         if not self.token_acceso:

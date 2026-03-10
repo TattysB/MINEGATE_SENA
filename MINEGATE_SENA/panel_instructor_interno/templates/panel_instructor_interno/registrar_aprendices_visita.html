@@ -117,11 +117,12 @@
                                                             | 📞 {{ aprendiz.telefono }}
                                                         {% endif %}
                                                     </small>
-                                                    {% if aprendiz.documento_identidad or aprendiz.documento_adicional %}
+                                                    {% if aprendiz.documento_identidad or aprendiz.tiene_documentos_subidos %}
                                                         <small class="text-success d-block mt-1">
                                                             <i class="bi bi-file-earmark-check"></i> Documentos: 
                                                             {% if aprendiz.documento_identidad %}<span class="badge bg-info">ID</span>{% endif %}
-                                                            {% if aprendiz.documento_adicional %}<span class="badge bg-success">Salud</span>{% endif %}
+                                                            {% if aprendiz.tiene_doc_salud %}<span class="badge bg-success">Salud</span>{% endif %}
+                                                            {% if aprendiz.tiene_documentos_subidos %}<span class="badge bg-secondary">Categorias</span>{% endif %}
                                                         </small>
                                                     {% endif %}
                                                 </div>
@@ -151,11 +152,12 @@
                                                                 | 📞 {{ aprendiz.telefono }}
                                                             {% endif %}
                                                         </small>
-                                                        {% if aprendiz.documento_identidad or aprendiz.documento_adicional %}
+                                                        {% if aprendiz.documento_identidad or aprendiz.tiene_documentos_subidos %}
                                                             <small class="text-success d-block mt-1">
                                                                 <i class="bi bi-file-earmark-check"></i> Documentos: 
                                                                 {% if aprendiz.documento_identidad %}<span class="badge bg-info">ID</span>{% endif %}
-                                                                {% if aprendiz.documento_adicional %}<span class="badge bg-success">Salud</span>{% endif %}
+                                                                {% if aprendiz.tiene_doc_salud %}<span class="badge bg-success">Salud</span>{% endif %}
+                                                                {% if aprendiz.tiene_documentos_subidos %}<span class="badge bg-secondary">Categorias</span>{% endif %}
                                                             </small>
                                                         {% endif %}
                                                     </div>

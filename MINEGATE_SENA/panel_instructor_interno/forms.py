@@ -16,9 +16,9 @@ def validar_correo_formato(correo):
         raise ValidationError('Por favor, ingresa un correo válido (ej: usuario@ejemplo.com)')
 
 
-def validar_documento_numero(numero_documento):
+def validar_documento_numero(numero_documento, min_len=5, max_len=15):
     """
-    Valida que el número de documento sea solo numérico (5-15 dígitos).
+    Valida que el número de documento sea solo numérico y cumpla longitud.
     """
     if not numero_documento:
         raise ValidationError('El número de documento no puede estar vacío.')
@@ -30,10 +30,10 @@ def validar_documento_numero(numero_documento):
         raise ValidationError('El número de documento solo debe contener números (sin puntos ni guiones).')
     
     # Validar rango de longitud
-    if len(numero_documento) < 5:
-        raise ValidationError('El número de documento debe tener al menos 5 dígitos.')
-    if len(numero_documento) > 15:
-        raise ValidationError('El número de documento no puede exceder 15 dígitos.')
+    if len(numero_documento) < min_len:
+        raise ValidationError(f'El número de documento debe tener al menos {min_len} dígitos.')
+    if len(numero_documento) > max_len:
+        raise ValidationError(f'El número de documento no puede exceder {max_len} dígitos.')
     
     return numero_documento
 
@@ -60,7 +60,8 @@ def validar_nombre_alfabetico(nombre, campo='nombre'):
     if not nombre:
         raise ValidationError(f'El {campo} no puede estar vacío.')
     
-    nombre = nombre.strip()
+    # Normaliza espacios múltiples a un solo espacio.
+    nombre = re.sub(r'\s+', ' ', nombre.strip())
     
     # Permite letras (incluyendo acentos), espacios y apóstrofos
     if not re.match(r"^[a-záéíóúñüA-ZÁÉÍÓÚÑÜ\s'-]+$", nombre):
@@ -89,7 +90,7 @@ def validar_telefono(telefono):
     telefono = str(telefono).strip()
     
     # Permite números, +, espacios y guiones
-    if not re.match(r'^[\+]?[0-9\s\-]{6,14}$', telefono):
+    if not re.match(r'^[\+]?[0-9\s\-]{7,20}$', telefono):
         raise ValidationError('El teléfono solo debe contener números y caracteres válidos (+, espacios, guiones).')
     
     # Contar solo los dígitos
@@ -368,6 +369,11 @@ class AprendizForm(forms.ModelForm):
     Formulario para registrar aprendices con validaciones completas.
     """
     
+    def __init__(self, *args, ficha=None, **kwargs):
+        """Inicializa el formulario con la ficha opcional para validación."""
+        self.ficha = ficha
+        super().__init__(*args, **kwargs)
+    
     class Meta:
         model = Aprendiz
         fields = ['nombre', 'apellido', 'tipo_documento', 'numero_documento', 'correo', 'telefono', 'documento_identidad', 'documento_adicional', 'estado']
@@ -376,11 +382,17 @@ class AprendizForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'Nombre del aprendiz',
                 'maxlength': '100',
+                'minlength': '2',
+                'pattern': r"[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s'-]{2,100}",
+                'title': 'Solo letras y espacios (2 a 100 caracteres).',
             }),
             'apellido': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Apellido del aprendiz',
                 'maxlength': '100',
+                'minlength': '2',
+                'pattern': r"[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s'-]{2,100}",
+                'title': 'Solo letras y espacios (2 a 100 caracteres).',
             }),
             'tipo_documento': forms.Select(attrs={
                 'class': 'form-select',
@@ -389,18 +401,24 @@ class AprendizForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'Número de documento (solo números)',
                 'inputmode': 'numeric',
-                'maxlength': '15',
+                'maxlength': '10',
+                'minlength': '5',
+                'pattern': r'[0-9]{5,10}',
+                'title': 'Ingresa entre 5 y 10 dígitos numéricos.',
             }),
             'correo': forms.EmailInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'correo@ejemplo.com (requerido para QR)',
                 'maxlength': '150',
+                'autocomplete': 'email',
             }),
             'telefono': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Teléfono (opcional)',
                 'inputmode': 'tel',
                 'maxlength': '20',
+                'pattern': r'^[\+]?[0-9\s\-]{7,20}$',
+                'title': 'Teléfono válido: 7 a 15 dígitos (puede incluir +, espacios y guiones).',
             }),
             'documento_identidad': forms.FileInput(attrs={
                 'class': 'form-control',
@@ -439,7 +457,7 @@ class AprendizForm(forms.ModelForm):
         documento = self.cleaned_data.get('numero_documento', '')
         if not documento:
             raise ValidationError('El número de documento es obligatorio.')
-        return validar_documento_numero(documento)
+        return validar_documento_numero(documento, min_len=5, max_len=10)
     
     def clean_correo(self):
         """Validación de correo (CRÍTICO para envío de QR)."""
@@ -463,4 +481,27 @@ class AprendizForm(forms.ModelForm):
     def clean_telefono(self):
         """Validación de teléfono."""
         return validar_telefono(self.cleaned_data.get('telefono', ''))
+    
+    def clean(self):
+        """Validación de la combinación única ficha + numero_documento."""
+        cleaned_data = super().clean()
+        numero_documento = cleaned_data.get('numero_documento')
+        
+        # Obtener ficha: de la inicialización o del instance
+        ficha = self.ficha or (self.instance.ficha if self.instance else None)
+        
+        if numero_documento and ficha:
+            from django.db.models import Q
+            # Excluir el aprendiz actual si está editando
+            query = Q(ficha=ficha, numero_documento=numero_documento)
+            if self.instance and self.instance.pk:
+                query &= ~Q(pk=self.instance.pk)
+            
+            if Aprendiz.objects.filter(query).exists():
+                raise ValidationError(
+                    f'❌ Ya existe un aprendiz con el documento {numero_documento} en esta ficha. '
+                    f'Cada documento debe ser único por ficha.'
+                )
+        
+        return cleaned_data
 
