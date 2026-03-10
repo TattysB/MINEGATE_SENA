@@ -1,4 +1,5 @@
 from django.db import models
+import mimetypes
 
 
 PAGINA_INFORMATIVA_UPLOAD_DIR = "img/"
@@ -43,6 +44,7 @@ class ContenidoPaginaInformativa(models.Model):
 	class Meta:
 		verbose_name = "Contenido de página informativa"
 		verbose_name_plural = "Contenido de página informativa"
+		db_table = "contenido_pagina_informativa"
 
 	def save(self, *args, **kwargs):
 		self.pk = 1
@@ -70,6 +72,7 @@ class ElementoEncabezadoInformativo(models.Model):
 		verbose_name = "Elemento de encabezado informativo"
 		verbose_name_plural = "Elementos de encabezado informativo"
 		ordering = ["orden", "id"]
+		db_table = "elemento_encabezado_informativo"
 
 	def __str__(self):
 		base = self.titulo.strip() if self.titulo else "Diapositiva"
@@ -97,6 +100,18 @@ class ElementoGaleriaInformativa(models.Model):
 		verbose_name = "Elemento de galería informativa"
 		verbose_name_plural = "Elementos de galería informativa"
 		ordering = ["orden", "id"]
+		db_table = "elemento_galeria_informativa"
 
 	def __str__(self):
 		return f"{self.get_tipo_display()}: {self.titulo}"
+
+	@property
+	def mime_type(self):
+		nombre = getattr(self.archivo, "name", "")
+		mime, _ = mimetypes.guess_type(nombre)
+		if mime:
+			return mime
+
+		if self.tipo == self.TIPO_VIDEO:
+			return "video/mp4"
+		return "image/jpeg"

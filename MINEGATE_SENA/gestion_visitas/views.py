@@ -101,10 +101,14 @@ def api_listar_visitas(request):
                     ),
                     "cantidad": v.cantidad_aprendices,
                     "estado": v.estado,
-                    "tiene_rechazos": v.asistentes.filter(estado="documentos_rechazados").exists(),
+                    "tiene_rechazos": v.asistentes.filter(
+                        estado="documentos_rechazados"
+                    ).exists(),
                     "puede_confirmar": (
-                        v.asistentes.exists() and 
-                        not v.asistentes.exclude(estado="documentos_aprobados").exists()
+                        v.asistentes.exists()
+                        and not v.asistentes.exclude(
+                            estado="documentos_aprobados"
+                        ).exists()
                     ),
                     "fecha_solicitud": (
                         v.fecha_solicitud.strftime("%d/%m/%Y %H:%M")
@@ -172,10 +176,14 @@ def api_listar_visitas(request):
                     ),
                     "cantidad": v.cantidad_visitantes,
                     "estado": v.estado,
-                    "tiene_rechazos": v.asistentes.filter(estado="documentos_rechazados").exists(),
+                    "tiene_rechazos": v.asistentes.filter(
+                        estado="documentos_rechazados"
+                    ).exists(),
                     "puede_confirmar": (
-                        v.asistentes.exists() and 
-                        not v.asistentes.exclude(estado="documentos_aprobados").exists()
+                        v.asistentes.exists()
+                        and not v.asistentes.exclude(
+                            estado="documentos_aprobados"
+                        ).exists()
                     ),
                     "fecha_solicitud": (
                         v.fecha_solicitud.strftime("%d/%m/%Y %H:%M")
@@ -229,40 +237,66 @@ def api_detalle_visita(request, tipo, visita_id):
     if tipo == "interna":
         visita = get_object_or_404(VisitaInterna, pk=visita_id)
         asistentes = []
-        if visita.estado not in ["aprobada_inicial", "pendiente", "enviada_coordinacion"]:
+        if visita.estado not in [
+            "aprobada_inicial",
+            "pendiente",
+            "enviada_coordinacion",
+        ]:
             for a in visita.asistentes.all():
                 asistentes.append(
                     {
-                    "id": a.id,
-                    "nombre_completo": a.nombre_completo,
-                    "tipo_documento": a.tipo_documento,
-                    "numero_documento": a.numero_documento,
-                    "correo": a.correo,
-                    "telefono": a.telefono,
-                    "estado": a.estado,
-                    "documento_identidad": (
-                        a.documento_identidad.url if a.documento_identidad else None
-                    ),
-                    "documento_adicional": (
-                        a.documento_adicional.url if a.documento_adicional else None
-                    ),
-                    "observaciones_revision": a.observaciones_revision,
-                    "documentos_subidos": [
-                        {
-                            "id": ds.id,
-                            "titulo": ds.documento_requerido.titulo,
-                            "categoria": ds.documento_requerido.get_categoria_display(),
-                            "url": f"/documentos/ver-asistente/{ds.id}/",
-                            "download_url": f"/documentos/descargar-asistente/{ds.id}/",
-                            "estado": ds.estado,
-                            "observaciones_revision": ds.observaciones_revision or "",
-                            "nombre_archivo": ds.nombre_archivo,
-                            "fecha_subida": ds.fecha_subida.strftime("%d/%m/%Y %H:%M") if ds.fecha_subida else None,
-                        }
-                        for ds in a.documentos_subidos.select_related("documento_requerido").all()
-                    ],
-                }
-            )
+                        "id": a.id,
+                        "nombre_completo": a.nombre_completo,
+                        "tipo_documento": a.tipo_documento,
+                        "numero_documento": a.numero_documento,
+                        "correo": a.correo,
+                        "telefono": a.telefono,
+                        "estado": a.estado,
+                        "documento_identidad": (
+                            a.documento_identidad.url if a.documento_identidad else None
+                        ),
+                        "documento_adicional": (
+                            a.documento_adicional.url if a.documento_adicional else None
+                        ),
+                        "formato_autorizacion_padres": (
+                            a.formato_autorizacion_padres.url
+                            if a.formato_autorizacion_padres
+                            else None
+                        ),
+                        "estado_autorizacion_padres": (
+                            a.estado_autorizacion_padres
+                            if a.formato_autorizacion_padres
+                            else None
+                        ),
+                        "observaciones_autorizacion_padres": (
+                            a.observaciones_autorizacion_padres
+                            if a.formato_autorizacion_padres
+                            else None
+                        ),
+                        "observaciones_revision": a.observaciones_revision,
+                        "documentos_subidos": [
+                            {
+                                "id": ds.id,
+                                "titulo": ds.documento_requerido.titulo,
+                                "categoria": ds.documento_requerido.get_categoria_display(),
+                                "url": f"/documentos/ver-asistente/{ds.id}/",
+                                "download_url": f"/documentos/descargar-asistente/{ds.id}/",
+                                "estado": ds.estado,
+                                "observaciones_revision": ds.observaciones_revision
+                                or "",
+                                "nombre_archivo": ds.nombre_archivo,
+                                "fecha_subida": (
+                                    ds.fecha_subida.strftime("%d/%m/%Y %H:%M")
+                                    if ds.fecha_subida
+                                    else None
+                                ),
+                            }
+                            for ds in a.documentos_subidos.select_related(
+                                "documento_requerido"
+                            ).all()
+                        ],
+                    }
+                )
 
         historial = list(
             HistorialAccionVisitaInterna.objects.filter(visita=visita)
@@ -300,40 +334,56 @@ def api_detalle_visita(request, tipo, visita_id):
     else:
         visita = get_object_or_404(VisitaExterna, pk=visita_id)
         asistentes = []
-        if visita.estado not in ["aprobada_inicial", "pendiente", "enviada_coordinacion"]:
+        if visita.estado not in [
+            "aprobada_inicial",
+            "pendiente",
+            "enviada_coordinacion",
+        ]:
             for a in visita.asistentes.all():
                 asistentes.append(
                     {
-                    "id": a.id,
-                    "nombre_completo": a.nombre_completo,
-                    "tipo_documento": a.tipo_documento,
-                    "numero_documento": a.numero_documento,
-                    "correo": a.correo,
-                    "telefono": a.telefono,
-                    "estado": a.estado,
-                    "documento_identidad": (
-                        a.documento_identidad.url if a.documento_identidad else None
-                    ),
-                    "documento_adicional": (
-                        a.documento_adicional.url if a.documento_adicional else None
-                    ),
-                    "observaciones_revision": a.observaciones_revision,
-                    "documentos_subidos": [
-                        {
-                            "id": ds.id,
-                            "titulo": ds.documento_requerido.titulo,
-                            "categoria": ds.documento_requerido.get_categoria_display(),
-                            "url": f"/documentos/ver-asistente/{ds.id}/",
-                            "download_url": f"/documentos/descargar-asistente/{ds.id}/",
-                            "estado": ds.estado,
-                            "observaciones_revision": ds.observaciones_revision or "",
-                            "nombre_archivo": ds.nombre_archivo,
-                            "fecha_subida": ds.fecha_subida.strftime("%d/%m/%Y %H:%M") if ds.fecha_subida else None,
-                        }
-                        for ds in a.documentos_subidos.select_related("documento_requerido").all()
-                    ],
-                }
-            )
+                        "id": a.id,
+                        "nombre_completo": a.nombre_completo,
+                        "tipo_documento": a.tipo_documento,
+                        "numero_documento": a.numero_documento,
+                        "correo": a.correo,
+                        "telefono": a.telefono,
+                        "estado": a.estado,
+                        "documento_identidad": (
+                            a.documento_identidad.url if a.documento_identidad else None
+                        ),
+                        "documento_adicional": (
+                            a.documento_adicional.url if a.documento_adicional else None
+                        ),
+                        "formato_autorizacion_padres": (
+                            a.formato_autorizacion_padres.url
+                            if a.formato_autorizacion_padres
+                            else None
+                        ),
+                        "observaciones_revision": a.observaciones_revision,
+                        "documentos_subidos": [
+                            {
+                                "id": ds.id,
+                                "titulo": ds.documento_requerido.titulo,
+                                "categoria": ds.documento_requerido.get_categoria_display(),
+                                "url": f"/documentos/ver-asistente/{ds.id}/",
+                                "download_url": f"/documentos/descargar-asistente/{ds.id}/",
+                                "estado": ds.estado,
+                                "observaciones_revision": ds.observaciones_revision
+                                or "",
+                                "nombre_archivo": ds.nombre_archivo,
+                                "fecha_subida": (
+                                    ds.fecha_subida.strftime("%d/%m/%Y %H:%M")
+                                    if ds.fecha_subida
+                                    else None
+                                ),
+                            }
+                            for ds in a.documentos_subidos.select_related(
+                                "documento_requerido"
+                            ).all()
+                        ],
+                    }
+                )
 
         historial = list(
             HistorialAccionVisitaExterna.objects.filter(visita=visita)
@@ -450,23 +500,34 @@ def api_accion_visita(request, tipo, visita_id, accion):
         # Enviar correo al responsable notificando la aprobación inicial y link al panel
         try:
             if tipo == "interna":
-                panel_path = reverse('panel_instructor_interno:mis_visitas')
+                panel_path = reverse("panel_instructor_interno:mis_visitas")
             else:
-                panel_path = reverse('panel_instructor_externo:panel')
+                panel_path = reverse("panel_instructor_externo:panel")
             panel_url = request.build_absolute_uri(panel_path)
 
-            subject = 'Su visita ha sido aprobada inicialmente'
+            subject = "Su visita ha sido aprobada inicialmente"
             context = {
-                'responsable_nombre': getattr(visita, 'responsable', getattr(visita, 'nombre_responsable', '')),
-                'panel_url': panel_url,
+                "responsable_nombre": getattr(
+                    visita, "responsable", getattr(visita, "nombre_responsable", "")
+                ),
+                "panel_url": panel_url,
             }
-            if tipo == 'interna':
-                html_content = render_to_string('emails/aprobada_visita_interna.html', context)
+            if tipo == "interna":
+                html_content = render_to_string(
+                    "emails/aprobada_visita_interna.html", context
+                )
             else:
-                html_content = render_to_string('emails/aprobada_visita_externa.html', context)
+                html_content = render_to_string(
+                    "emails/aprobada_visita_externa.html", context
+                )
             text_content = strip_tags(html_content)
-            msg = EmailMultiAlternatives(subject, text_content, settings.DEFAULT_FROM_EMAIL, [visita.correo_responsable])
-            msg.attach_alternative(html_content, 'text/html')
+            msg = EmailMultiAlternatives(
+                subject,
+                text_content,
+                settings.DEFAULT_FROM_EMAIL,
+                [visita.correo_responsable],
+            )
+            msg.attach_alternative(html_content, "text/html")
             msg.send(fail_silently=True)
         except Exception:
             pass
@@ -515,11 +576,14 @@ def api_accion_visita(request, tipo, visita_id, accion):
 
         visita.estado = "rechazada"
         visita.save()
+        ReservaHorario.liberar_reserva(visita, tipo)
         registrar_accion(
             "rechazo",
-            f"Visita rechazada por {request.user.username}. Motivo: {observaciones}"
-            if observaciones
-            else f"Visita rechazada por {request.user.username}",
+            (
+                f"Visita rechazada por {request.user.username}. Motivo: {observaciones}"
+                if observaciones
+                else f"Visita rechazada por {request.user.username}"
+            ),
         )
         return JsonResponse({"success": True, "message": "❌ Visita rechazada"})
 
@@ -544,7 +608,10 @@ def api_accion_visita(request, tipo, visita_id, accion):
             f"Revisión de documentos iniciada por {request.user.username}",
         )
         return JsonResponse(
-            {"success": True, "message": " ✔️ Se ha finalizado la revisión de documentos"}
+            {
+                "success": True,
+                "message": " ✔️ Se ha finalizado la revisión de documentos",
+            }
         )
 
     elif accion == "confirmar_visita":
@@ -576,49 +643,77 @@ def api_accion_visita(request, tipo, visita_id, accion):
 
         visita.estado = "confirmada"
         visita.save()
-        
+
         # Confirmar la reserva de horario (cambiar a estado 'confirmada')
         ReservaHorario.confirmar_reserva(visita, tipo)
-        
+
         # Enviar correo al responsable notificando confirmación y detalles
         try:
-            if tipo == 'interna':
-                template_name = 'emails/visita_confirmada_interna.html'
-                panel_path = reverse('panel_instructor_interno:mis_visitas')
+            if tipo == "interna":
+                template_name = "emails/visita_confirmada_interna.html"
+                panel_path = reverse("panel_instructor_interno:mis_visitas")
             else:
-                template_name = 'emails/visita_confirmada_externa.html'
-                panel_path = reverse('panel_instructor_externo:panel')
+                template_name = "emails/visita_confirmada_externa.html"
+                panel_path = reverse("panel_instructor_externo:panel")
 
             panel_url = request.build_absolute_uri(panel_path)
 
             # Construir contexto con detalles de la visita
             context = {
-                'responsable_nombre': getattr(visita, 'responsable', getattr(visita, 'nombre_responsable', '')),
-                'fecha_visita': visita.fecha_visita.strftime('%d/%m/%Y') if getattr(visita, 'fecha_visita', None) else (visita.fecha_solicitud.strftime('%d/%m/%Y') if visita.fecha_solicitud else 'Por definir'),
-                'hora_programada': (visita.hora_inicio.strftime('%I:%M %p') + ' - ' + visita.hora_fin.strftime('%I:%M %p')) if getattr(visita, 'hora_inicio', None) and getattr(visita, 'hora_fin', None) else 'Por definir',
-                'recomendaciones': 'Por favor llegar 10 minutos antes; traer documento de identidad; seguir instrucciones de coordinación.',
-                'panel_url': panel_url,
+                "responsable_nombre": getattr(
+                    visita, "responsable", getattr(visita, "nombre_responsable", "")
+                ),
+                "fecha_visita": (
+                    visita.fecha_visita.strftime("%d/%m/%Y")
+                    if getattr(visita, "fecha_visita", None)
+                    else (
+                        visita.fecha_solicitud.strftime("%d/%m/%Y")
+                        if visita.fecha_solicitud
+                        else "Por definir"
+                    )
+                ),
+                "hora_programada": (
+                    (
+                        visita.hora_inicio.strftime("%I:%M %p")
+                        + " - "
+                        + visita.hora_fin.strftime("%I:%M %p")
+                    )
+                    if getattr(visita, "hora_inicio", None)
+                    and getattr(visita, "hora_fin", None)
+                    else "Por definir"
+                ),
+                "recomendaciones": "Por favor llegar 10 minutos antes; traer documento de identidad; seguir instrucciones de coordinación.",
+                "panel_url": panel_url,
             }
 
             # Campos específicos
-            if tipo == 'interna':
-                context.update({
-                    'nombre_programa': visita.nombre_programa,
-                    'numero_ficha': visita.numero_ficha,
-                    'responsable': visita.responsable,
-                })
+            if tipo == "interna":
+                context.update(
+                    {
+                        "nombre_programa": visita.nombre_programa,
+                        "numero_ficha": visita.numero_ficha,
+                        "responsable": visita.responsable,
+                    }
+                )
             else:
-                context.update({
-                    'nombre': visita.nombre,
-                    'nombre_responsable': visita.nombre_responsable,
-                    'sede': getattr(visita, 'sede', 'No especificada'),
-                })
+                context.update(
+                    {
+                        "nombre": visita.nombre,
+                        "nombre_responsable": visita.nombre_responsable,
+                        "sede": getattr(visita, "sede", "No especificada"),
+                    }
+                )
 
             html_content = render_to_string(template_name, context)
             text_content = strip_tags(html_content)
-            subject = 'Visita confirmada exitosamente'
-            msg = EmailMultiAlternatives(subject, text_content, settings.DEFAULT_FROM_EMAIL, [visita.correo_responsable])
-            msg.attach_alternative(html_content, 'text/html')
+            subject = "Visita confirmada exitosamente"
+            msg = EmailMultiAlternatives(
+                subject,
+                text_content,
+                settings.DEFAULT_FROM_EMAIL,
+                [visita.correo_responsable],
+            )
+            msg.attach_alternative(html_content, "text/html")
             msg.send(fail_silently=True)
         except Exception:
             pass
@@ -629,6 +724,62 @@ def api_accion_visita(request, tipo, visita_id, accion):
         )
         return JsonResponse(
             {"success": True, "message": "✅ Visita confirmada definitivamente"}
+        )
+
+    return JsonResponse({"success": False, "error": "Acción no válida"})
+
+
+@login_required(login_url="usuarios:login")
+def api_revisar_autorizacion_padres(request, tipo, asistente_id, accion):
+    """API para revisar específicamente el documento de autorización de padres"""
+    if not es_administrador_panel(request.user):
+        return JsonResponse({"success": False, "error": "No autorizado"}, status=403)
+
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "Método no permitido"})
+
+    if tipo == "interna":
+        asistente = get_object_or_404(AsistenteVisitaInterna, pk=asistente_id)
+    else:
+        asistente = get_object_or_404(AsistenteVisitaExterna, pk=asistente_id)
+
+    # Verificar que tenga el archivo
+    if not asistente.formato_autorizacion_padres:
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "Este asistente no tiene formato de autorización de padres",
+            }
+        )
+
+    observaciones = request.POST.get("observaciones", "")
+
+    if accion == "aprobar":
+        asistente.estado_autorizacion_padres = "aprobado"
+        asistente.observaciones_autorizacion_padres = observaciones
+        asistente.save()
+        return JsonResponse(
+            {
+                "success": True,
+                "message": f"✅ Autorización de padres aprobada para {asistente.nombre_completo}",
+            }
+        )
+    elif accion == "rechazar":
+        if not observaciones:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Debe proporcionar observaciones al rechazar",
+                }
+            )
+        asistente.estado_autorizacion_padres = "rechazado"
+        asistente.observaciones_autorizacion_padres = observaciones
+        asistente.save()
+        return JsonResponse(
+            {
+                "success": True,
+                "message": f"❌ Autorización de padres rechazada para {asistente.nombre_completo}",
+            }
         )
 
     return JsonResponse({"success": False, "error": "Acción no válida"})
@@ -799,6 +950,16 @@ def api_documentos_revision(request):
                     "documento_adicional": (
                         a.documento_adicional.url if a.documento_adicional else None
                     ),
+                    "estado_autorizacion_padres": (
+                        a.estado_autorizacion_padres
+                        if a.formato_autorizacion_padres
+                        else None
+                    ),
+                    "observaciones_autorizacion_padres": (
+                        a.observaciones_autorizacion_padres
+                        if a.formato_autorizacion_padres
+                        else None
+                    ),
                     "observaciones_revision": a.observaciones_revision,
                     "documentos_subidos": [
                         {
@@ -810,9 +971,15 @@ def api_documentos_revision(request):
                             "estado": ds.estado,
                             "observaciones_revision": ds.observaciones_revision or "",
                             "nombre_archivo": ds.nombre_archivo,
-                            "fecha_subida": ds.fecha_subida.strftime("%d/%m/%Y %H:%M") if ds.fecha_subida else None,
+                            "fecha_subida": (
+                                ds.fecha_subida.strftime("%d/%m/%Y %H:%M")
+                                if ds.fecha_subida
+                                else None
+                            ),
                         }
-                        for ds in a.documentos_subidos.select_related("documento_requerido").all()
+                        for ds in a.documentos_subidos.select_related(
+                            "documento_requerido"
+                        ).all()
                     ],
                 }
             )
@@ -856,9 +1023,15 @@ def api_documentos_revision(request):
                             "estado": ds.estado,
                             "observaciones_revision": ds.observaciones_revision or "",
                             "nombre_archivo": ds.nombre_archivo,
-                            "fecha_subida": ds.fecha_subida.strftime("%d/%m/%Y %H:%M") if ds.fecha_subida else None,
+                            "fecha_subida": (
+                                ds.fecha_subida.strftime("%d/%m/%Y %H:%M")
+                                if ds.fecha_subida
+                                else None
+                            ),
                         }
-                        for ds in a.documentos_subidos.select_related("documento_requerido").all()
+                        for ds in a.documentos_subidos.select_related(
+                            "documento_requerido"
+                        ).all()
                     ],
                 }
             )

@@ -49,6 +49,7 @@ class Documento(models.Model):
         ordering = ["-fecha_subida"]
         verbose_name = "Documento"
         verbose_name_plural = "Documentos"
+        db_table = "documento"
 
     def __str__(self):
         return self.titulo
@@ -115,6 +116,7 @@ class DocumentoSubidoAsistente(models.Model):
         verbose_name = "Documento Subido por Asistente"
         verbose_name_plural = "Documentos Subidos por Asistentes"
         ordering = ["documento_requerido__categoria"]
+        db_table = "documento_subido_asistente"
 
     def __str__(self):
         asistente = self.asistente_interna or self.asistente_externa

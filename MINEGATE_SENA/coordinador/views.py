@@ -95,7 +95,10 @@ def resumen_dia_coordinador(request, day):
 			visita = reserva.visita_interna
 			visitas.append(
 				{
+					"visita_id": visita.id,
+					"tipo_slug": "interna",
 					"tipo": "Interna",
+					"estado_codigo": reserva.estado,
 					"estado": reserva.get_estado_display(),
 					"responsable": visita.responsable,
 					"institucion_programa": visita.nombre_programa,
@@ -106,7 +109,10 @@ def resumen_dia_coordinador(request, day):
 			visita = reserva.visita_externa
 			visitas.append(
 				{
+					"visita_id": visita.id,
+					"tipo_slug": "externa",
 					"tipo": "Externa",
+					"estado_codigo": reserva.estado,
 					"estado": reserva.get_estado_display(),
 					"responsable": visita.nombre_responsable,
 					"institucion_programa": visita.nombre,
@@ -263,6 +269,7 @@ def api_accion_coordinacion(request, tipo, visita_id, accion):
 		observaciones = request.POST.get("observaciones", "").strip()
 		visita.estado = "rechazada"
 		visita.save(update_fields=["estado"])
+		ReservaHorario.liberar_reserva(visita, tipo)
 		registrar(
 			f"Solicitud rechazada por coordinación ({request.user.username}). Motivo: {observaciones}"
 			if observaciones

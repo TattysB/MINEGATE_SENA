@@ -1,11 +1,60 @@
+from io import BytesIO
+from pathlib import Path
+
 from django import forms
 from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import SimpleUploadedFile
+from PIL import Image, ImageOps, UnidentifiedImageError
 
 from .models import (
     ContenidoPaginaInformativa,
     ElementoEncabezadoInformativo,
     ElementoGaleriaInformativa,
 )
+
+
+ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+ALLOWED_VIDEO_EXTENSIONS = {".mp4", ".webm", ".ogg"}
+MAX_IMAGE_SIZE_BYTES = 20 * 1024 * 1024
+MAX_VIDEO_SIZE_BYTES = 120 * 1024 * 1024
+
+
+def _extension_archivo(nombre):
+    return Path(nombre or "").suffix.lower()
+
+
+def _normalizar_orientacion_imagen(archivo):
+    archivo.seek(0)
+    with Image.open(archivo) as imagen_original:
+        imagen = ImageOps.exif_transpose(imagen_original)
+        extension = _extension_archivo(getattr(archivo, "name", ""))
+
+        if extension in {".jpg", ".jpeg"}:
+            formato = "JPEG"
+            content_type = "image/jpeg"
+        elif extension == ".png":
+            formato = "PNG"
+            content_type = "image/png"
+        elif extension == ".webp":
+            formato = "WEBP"
+            content_type = "image/webp"
+        else:
+            formato = "JPEG"
+            content_type = "image/jpeg"
+
+        if formato == "JPEG" and imagen.mode not in ("RGB", "L"):
+            imagen = imagen.convert("RGB")
+
+        buffer = BytesIO()
+        kwargs_guardado = {"quality": 90, "optimize": True} if formato == "JPEG" else {}
+        imagen.save(buffer, format=formato, **kwargs_guardado)
+
+    buffer.seek(0)
+    return SimpleUploadedFile(
+        name=getattr(archivo, "name", "imagen.jpg"),
+        content=buffer.getvalue(),
+        content_type=content_type,
+    )
 
 
 class ContenidoPaginaInformativaForm(forms.ModelForm):
@@ -109,6 +158,25 @@ class ElementoEncabezadoInformativoForm(forms.ModelForm):
             raise ValidationError("El texto de la diapositiva no puede superar 50 palabras.")
         return texto
 
+    def clean_imagen(self):
+        imagen = self.cleaned_data.get("imagen")
+        if not imagen:
+            return imagen
+
+        extension = _extension_archivo(getattr(imagen, "name", ""))
+        if extension not in ALLOWED_IMAGE_EXTENSIONS:
+            raise ValidationError(
+                "Formato de imagen no soportado. Usa JPG, PNG o WEBP."
+            )
+
+        if getattr(imagen, "size", 0) > MAX_IMAGE_SIZE_BYTES:
+            raise ValidationError("La imagen no puede superar 20 MB.")
+
+        try:
+            return _normalizar_orientacion_imagen(imagen)
+        except (UnidentifiedImageError, OSError):
+            raise ValidationError("El archivo cargado no es una imagen válida.")
+
 
 class ElementoGaleriaInformativaForm(forms.ModelForm):
     class Meta:
@@ -159,3 +227,57 @@ class ElementoGaleriaInformativaForm(forms.ModelForm):
 
         if self.instance and self.instance.pk:
             self.fields["archivo"].required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+        tipo = cleaned_data.get("tipo")
+        archivo_subido = cleaned_data.get("archivo")
+        archivo_actual = getattr(self.instance, "archivo", None)
+        archivo_referencia = archivo_subido or (
+            archivo_actual if getattr(archivo_actual, "name", "") else None
+        )
+
+        if not tipo or not archivo_referencia:
+            return cleaned_data
+
+        extension = _extension_archivo(getattr(archivo_referencia, "name", ""))
+
+        if tipo == ElementoGaleriaInformativa.TIPO_VIDEO:
+            if extension not in ALLOWED_VIDEO_EXTENSIONS:
+                self.add_error(
+                    "archivo",
+                    "Para tipo video solo se permiten archivos MP4, WEBM u OGG.",
+                )
+                return cleaned_data
+
+            if getattr(archivo_referencia, "size", 0) > MAX_VIDEO_SIZE_BYTES:
+                self.add_error("archivo", "El video no puede superar 120 MB.")
+
+            content_type = getattr(archivo_subido, "content_type", "")
+            if archivo_subido and content_type and not content_type.startswith("video/"):
+                self.add_error("archivo", "El archivo seleccionado no corresponde a un video.")
+
+            return cleaned_data
+
+        if extension not in ALLOWED_IMAGE_EXTENSIONS:
+            self.add_error(
+                "archivo",
+                "Para tipo imagen solo se permiten archivos JPG, PNG o WEBP.",
+            )
+            return cleaned_data
+
+        if getattr(archivo_referencia, "size", 0) > MAX_IMAGE_SIZE_BYTES:
+            self.add_error("archivo", "La imagen no puede superar 20 MB.")
+
+        content_type = getattr(archivo_subido, "content_type", "")
+        if archivo_subido and content_type and not content_type.startswith("image/"):
+            self.add_error("archivo", "El archivo seleccionado no corresponde a una imagen.")
+            return cleaned_data
+
+        if archivo_subido:
+            try:
+                cleaned_data["archivo"] = _normalizar_orientacion_imagen(archivo_subido)
+            except (UnidentifiedImageError, OSError):
+                self.add_error("archivo", "El archivo cargado no es una imagen válida.")
+
+        return cleaned_data
