@@ -147,6 +147,11 @@
             <i class="ri-file-search-line icon-documents"></i><span> Documentos</span>
           </a>
         </li>
+        <li data-content="controlacceso" class="{% if seccion_activa == 'control_acceso' %}active{% endif %}">
+          <a href="{% url 'core:panel_administrativo_seccion' 'control_acceso' %}" class="sidebar-link">
+            <i class="ri-shield-check-line"></i><span>Control de Acceso</span>
+          </a>
+        </li>
         <li data-content="Escaneo" class="{% if seccion_activa == 'escaneo_documentos' %}active{% endif %}">
           <a href="{% url 'core:panel_administrativo_seccion' 'escaneo_documentos' %}" class="sidebar-link">
             <i class="ri-qr-scan-line icon-scan"></i><span>Escanear Documentos</span>
@@ -306,6 +311,8 @@
           }
         });
       </script>
+      {% elif seccion_activa == 'control_acceso' %}
+      {% include 'control_acceso_mina/panel_porteria.html' %}
       {% elif seccion_activa == 'escaneo_documentos' %}
       <div class="contenido-temporal">
         <h2>Escanear Documentos</h2>
