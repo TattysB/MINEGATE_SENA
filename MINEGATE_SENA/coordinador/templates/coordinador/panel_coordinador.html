@@ -24,6 +24,7 @@
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
       <h3 style="margin:0;">Solicitudes pendientes de coordinación</h3>
       <select id="tipoVisita" onchange="recargarSolicitudes()" style="padding:8px;border:1px solid #d1d5db;border-radius:8px;">
+        <option value="todas">Todas</option>
         <option value="internas">Internas</option>
         <option value="externas">Externas</option>
       </select>
@@ -186,7 +187,7 @@
     }
 
     cuerpo.innerHTML = visitas.map(v => `
-      <tr>
+      <tr id="visita-${v.tipo}-${v.id}" data-tipo="${v.tipo}" data-id="${v.id}">
         <td style="padding:10px;">#${v.id}</td>
         <td style="padding:10px;">${v.tipo_display}</td>
         <td style="padding:10px;">${v.responsable}</td>
@@ -228,5 +229,37 @@
     loadCalendar();
     recargarSolicitudes();
   });
+
+  // Si la URL trae ?tipo=...&id=..., intentar localizar la fila después de recargar
+  (function handleOpenFromNotif() {
+    function getParam(name) {
+      const url = new URL(window.location.href);
+      return url.searchParams.get(name);
+    }
+    const tipoParam = getParam('tipo');
+    const idParam = getParam('id');
+    if (!tipoParam || !idParam) return;
+
+    // Llamamos a recargar y luego buscamos la fila hasta encontrarla
+    const tryFind = () => {
+      const row = document.getElementById(`visita-${tipoParam.slice(0,-1)}-${idParam}`) || document.getElementById(`visita-${tipoParam}-${idParam}`);
+      if (row) {
+        row.style.transition = 'background-color 0.4s ease';
+        const original = row.style.backgroundColor;
+        row.style.backgroundColor = '#fff7cc';
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => { row.style.backgroundColor = original; }, 2500);
+        return true;
+      }
+      return false;
+    };
+
+    // Try after some intervals (up to ~10s)
+    let attempts = 0;
+    const interval = setInterval(() => {
+      attempts += 1;
+      if (tryFind() || attempts > 20) clearInterval(interval);
+    }, 500);
+  })();
 </script>
 {% endblock %}
