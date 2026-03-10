@@ -312,7 +312,7 @@
                             <video class="d-block w-100"
                                 style="height: 600px; object-fit: contain; background-color: #000;" autoplay loop muted
                                 playsinline>
-                                <source src="{{ elemento.archivo.url }}?v={{ elemento.actualizado_en|date:'U' }}">
+                                <source src="{{ elemento.archivo.url }}?v={{ elemento.actualizado_en|date:'U' }}" type="{{ elemento.mime_type|default:'video/mp4' }}">
                             </video>
                             {% else %}
                             <img src="{{ elemento.archivo.url }}?v={{ elemento.actualizado_en|date:'U' }}" class="d-block w-100"

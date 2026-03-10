@@ -80,7 +80,7 @@
             playsinline
           >
             {% if galeria_base_preview and galeria_base_preview.tipo == 'video' and galeria_base_preview.archivo %}
-            <source src="{{ galeria_base_preview.archivo.url }}?v={{ galeria_base_preview.actualizado_en|date:'U' }}">
+            <source src="{{ galeria_base_preview.archivo.url }}?v={{ galeria_base_preview.actualizado_en|date:'U' }}" type="{{ galeria_base_preview.mime_type|default:'video/mp4' }}">
             {% endif %}
           </video>
           <div class="gpi-live-gallery-caption">
@@ -646,6 +646,7 @@
           {% if item.activo %}
           {
             tipo: '{{ item.tipo }}',
+            mime: '{{ item.mime_type|default_if_none:""|escapejs }}',
             titulo: '{{ item.titulo|default_if_none:""|escapejs }}',
             descripcion: '{{ item.descripcion|default_if_none:""|escapejs }}',
             src: '{{ item.archivo.url }}?v={{ item.actualizado_en|date:"U" }}',
@@ -685,6 +686,7 @@
       if (!galleryData.length) {
         galleryData.push({
           tipo: 'imagen',
+          mime: 'image/jpeg',
           titulo: 'Título del elemento',
           descripcion: 'Descripción del elemento de galería.',
           src: '{{ MEDIA_PREFIX }}img/grupal.jpg',
@@ -811,12 +813,13 @@
         renderHero();
       };
 
-      const mostrarMediaGaleria = ({ tipo, src }) => {
+      const mostrarMediaGaleria = ({ tipo, src, mime }) => {
         const actual = galleryData[galleryIndex] || galleryData[0];
         if (!actual || !src) return;
 
         actual.tipo = tipo;
         actual.src = src;
+        actual.mime = mime || actual.mime;
         renderGallery();
       };
 
@@ -840,8 +843,10 @@
 
         if (!liveGalleryImage || !liveGalleryVideo) return;
 
+        const mimeActual = actual.mime || (actual.tipo === 'video' ? 'video/mp4' : 'image/jpeg');
+
         if (actual.tipo === 'video') {
-          liveGalleryVideo.innerHTML = `<source src="${actual.src}">`;
+          liveGalleryVideo.innerHTML = `<source src="${actual.src}" type="${mimeActual}">`;
           liveGalleryVideo.load();
           liveGalleryVideo.classList.remove('is-hidden');
           liveGalleryImage.classList.add('is-hidden');
@@ -1096,6 +1101,25 @@
 
       const esTipoImagen = () => !galeriaTipo || galeriaTipo.value === 'imagen';
 
+      const detectarTipoArchivo = (file) => {
+        if (!file) return null;
+        const tipoMime = String(file.type || '').toLowerCase();
+        const nombre = String(file.name || '').toLowerCase();
+
+        if (tipoMime.startsWith('video/')) return 'video';
+        if (tipoMime.startsWith('image/')) return 'imagen';
+
+        if (/\.(mp4|webm|ogg|mov|m4v)$/i.test(nombre)) return 'video';
+        if (/\.(jpg|jpeg|png|webp|gif|bmp|heic|heif)$/i.test(nombre)) return 'imagen';
+        return null;
+      };
+
+      const actualizarAcceptArchivoGaleria = () => {
+        if (!galeriaInput) return;
+        // Mantener ambos tipos visibles en el explorador para evitar que videos válidos queden ocultos.
+        galeriaInput.setAttribute('accept', 'image/*,video/*');
+      };
+
       const inicializarGaleriaCropper = () => {
         if (!window.Cropper || !galeriaPreview || !esTipoImagen()) return;
         if (galleryCropper) galleryCropper.destroy();
@@ -1131,6 +1155,7 @@
 
       if (galeriaTipo) {
         galeriaTipo.addEventListener('change', () => {
+          actualizarAcceptArchivoGaleria();
           actualizarVisibilidadGaleriaCrop();
           const actual = galleryData[galleryIndex] || galleryData[0];
           if (actual) {
@@ -1141,6 +1166,7 @@
             inicializarGaleriaCropper();
           }
         });
+        actualizarAcceptArchivoGaleria();
         actualizarVisibilidadGaleriaCrop();
       }
 
@@ -1170,7 +1196,13 @@
           const file = event.target.files && event.target.files[0];
           if (!file) return;
 
-          if (file.type.startsWith('image/')) {
+          const tipoDetectado = detectarTipoArchivo(file);
+          if (galeriaTipo && tipoDetectado) {
+            galeriaTipo.value = tipoDetectado;
+            galeriaTipo.dispatchEvent(new Event('change'));
+          }
+
+          if (tipoDetectado === 'imagen' || file.type.startsWith('image/')) {
             // Mostrar el panel del cropper cuando se selecciona una imagen
             if (galeriaCropTools && esTipoImagen()) {
               galeriaCropTools.classList.remove('is-hidden');
@@ -1179,16 +1211,16 @@
             reader.onload = (e) => {
               galeriaPreview.src = e.target.result;
               galeriaPreview.onload = inicializarGaleriaCropper;
-              mostrarMediaGaleria({ tipo: 'imagen', src: e.target.result });
+              mostrarMediaGaleria({ tipo: 'imagen', src: e.target.result, mime: file.type || 'image/jpeg' });
             };
             reader.readAsDataURL(file);
-          } else if (file.type.startsWith('video/')) {
+          } else if (tipoDetectado === 'video' || file.type.startsWith('video/')) {
             // Ocultar el panel del cropper si se selecciona un video
             if (galeriaCropTools) {
               galeriaCropTools.classList.add('is-hidden');
             }
             const urlVideo = URL.createObjectURL(file);
-            mostrarMediaGaleria({ tipo: 'video', src: urlVideo });
+            mostrarMediaGaleria({ tipo: 'video', src: urlVideo, mime: file.type || 'video/mp4' });
           }
         });
       }

@@ -10,7 +10,7 @@
   <title>MineGate</title>
 
   <!-- ESTILOS ANTIGUOS (Comentados para pruebas) -->
-  <link rel="stylesheet" href="{% static 'core/css/nuevos_estilos.css' %}?v=16" />
+  <link rel="stylesheet" href="{% static 'core/css/nuevos_estilos.css' %}?v=17" />
   <!-- Estilos del Dropdown de Usuario -->
   <link rel="stylesheet" href="{% static 'core/css/user_dropdown.css' %}" />
   <link rel="stylesheet" href="{% static 'css/configuracion_perfil.css' %}" />
@@ -20,8 +20,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="{% static 'documentos/css/gestion_documentos.css' %}" />
-  <link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}" />
-  <link rel="stylesheet" href="{% static 'calendario/css/calendario_seleccion.css' %}" />
+  <link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}?v=20260309f" />
+  <link rel="stylesheet" href="{% static 'calendario/css/calendario_seleccion.css' %}?v=20260309e" />
   <link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}" />
   <link rel="stylesheet" href="{% static 'core/css/gestion_pagina_informativa.css' %}?v=20260305e" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css" />
@@ -338,9 +338,9 @@
   <script>
     window.calendarioPanelConfig = {
       calendarioIndexUrl: "{% url 'calendario:index' %}",
-      calendarioCssUrl: "{% static 'calendario/css/calendario.css' %}",
-      seleccionCssUrl: "{% static 'calendario/css/calendario_seleccion.css' %}",
-      calendarioJsUrl: "{% static 'calendario/js/calendario.js' %}"
+      calendarioCssUrl: "{% static 'calendario/css/calendario.css' %}?v=20260309c",
+      seleccionCssUrl: "{% static 'calendario/css/calendario_seleccion.css' %}?v=20260309e",
+      calendarioJsUrl: "{% static 'calendario/js/calendario.js' %}?v=20260309c"
     };
   </script>
   <script defer src="{% static 'calendario/js/panel_calendario_loader.js' %}"></script>
@@ -492,10 +492,10 @@
 
         // Verificar documentos pendientes al cargar la página
         function verificarDocsPendientes() {
-          fetch('/gestion/api/visitas/?tipo=internas&estado=todos&buscar=')
+          fetch('/gestion/visitas/?tipo=internas&estado=todos&buscar=')
             .then(r => r.json())
             .then(dataInt => {
-              fetch('/gestion/api/visitas/?tipo=externas&estado=todos&buscar=')
+              fetch('/gestion/visitas/?tipo=externas&estado=todos&buscar=')
                 .then(r => r.json())
                 .then(dataExt => {
                   const pendInt = (dataInt.stats.docs_pendientes_revision || 0);
@@ -712,8 +712,8 @@
   </script>
   {% if not solo_coordinador %}
   <script defer src="{% static 'calendario/js/panel_calendario_nueva_visita.js' %}"></script>
-  <script defer src="{% static 'documentos/js/panel_documentos_visitas.js' %}"></script>
-  <script defer src="{% static 'js/panel_visitas.js' %}"></script>
+  <script defer src="{% static 'documentos/js/panel_documentos_visitas.js' %}?v=20260309-noapi"></script>
+  <script defer src="{% static 'js/panel_visitas.js' %}?v=20260309-noapi"></script>
   {% endif %}
 
   <!-- Modal Personalizado de Alertas/Confirmaciones -->
