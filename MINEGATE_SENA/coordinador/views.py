@@ -155,7 +155,7 @@ def api_solicitudes_coordinacion(request):
 					),
 				}
 			)
-	else:
+	elif tipo == "externas":
 		visitas = VisitaExterna.objects.filter(estado="enviada_coordinacion").order_by(
 			"-fecha_solicitud", "-id"
 		)
@@ -163,6 +163,48 @@ def api_solicitudes_coordinacion(request):
 			visitas = visitas.filter(nombre_responsable__icontains=buscar)
 
 		for visita in visitas:
+			visitas_data.append(
+				{
+					"id": visita.id,
+					"tipo": "externa",
+					"tipo_display": "Externa (Institución)",
+					"responsable": visita.nombre_responsable,
+					"institucion": visita.nombre or "N/A",
+					"correo": visita.correo_responsable,
+					"cantidad": visita.cantidad_visitantes,
+					"fecha_solicitud": (
+						visita.fecha_solicitud.strftime("%d/%m/%Y %H:%M")
+						if visita.fecha_solicitud
+						else "N/A"
+					),
+				}
+			)
+	else:
+		# tipo == 'todas' o cualquier otro valor: combinar internas y externas
+		visitas_int = VisitaInterna.objects.filter(estado="enviada_coordinacion").order_by("-fecha_solicitud", "-id")
+		visitas_ext = VisitaExterna.objects.filter(estado="enviada_coordinacion").order_by("-fecha_solicitud", "-id")
+		if buscar:
+			visitas_int = visitas_int.filter(responsable__icontains=buscar)
+			visitas_ext = visitas_ext.filter(nombre_responsable__icontains=buscar)
+
+		for visita in visitas_int:
+			visitas_data.append(
+				{
+					"id": visita.id,
+					"tipo": "interna",
+					"tipo_display": "Interna (SENA)",
+					"responsable": visita.responsable,
+					"institucion": visita.nombre_programa or "N/A",
+					"correo": visita.correo_responsable,
+					"cantidad": visita.cantidad_aprendices,
+					"fecha_solicitud": (
+						visita.fecha_solicitud.strftime("%d/%m/%Y %H:%M")
+						if visita.fecha_solicitud
+						else "N/A"
+					),
+				}
+			)
+		for visita in visitas_ext:
 			visitas_data.append(
 				{
 					"id": visita.id,
