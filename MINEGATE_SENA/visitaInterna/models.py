@@ -90,7 +90,8 @@ class VisitaInterna(models.Model):
     class Meta:
         verbose_name = "Visita Interna"
         verbose_name_plural = "Visitas Internas"
-        ordering = ["-id"]
+        ordering = ['-id']
+        db_table = 'visita_interna'
 
     def __str__(self):
         return f"{self.nombre_programa}"
@@ -209,9 +210,10 @@ class AsistenteVisitaInterna(models.Model):
     class Meta:
         verbose_name = "Asistente de Visita Interna"
         verbose_name_plural = "Asistentes de Visitas Internas"
-        ordering = ["nombre_completo"]
-        unique_together = ["visita", "numero_documento"]
-
+        ordering = ['nombre_completo']
+        unique_together = ['visita', 'numero_documento']
+        db_table = 'asistente_visita_interna'
+    
     def __str__(self):
         return f"{self.nombre_completo} - {self.visita.nombre_programa}"
 
@@ -253,7 +255,8 @@ class HistorialAccionVisitaInterna(models.Model):
     class Meta:
         verbose_name = "Historial de Acción"
         verbose_name_plural = "Historial de Acciones"
-        ordering = ["-fecha_hora"]
-
+        ordering = ['-fecha_hora']
+        db_table = 'historial_accion_visita_interna'
+    
     def __str__(self):
         return f"{self.get_tipo_accion_display()} - {self.visita} - {self.fecha_hora.strftime('%d/%m/%Y %H:%M')}"
