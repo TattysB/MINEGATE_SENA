@@ -396,6 +396,12 @@ def registrar_asistentes(request, tipo, visita_id):
                         if archivo:
                             archivos_ok = True
                         archivos_dict[doc.id] = archivo
+                elif categoria == "📋 Formato Autorización Padres de Familia":
+                    for doc in docs:
+                        file_field = f"documento_{doc.id}"
+                        archivo = request.FILES.get(file_field)
+                        # Este archivo es opcional, por lo que no afecta archivos_ok
+                        archivos_dict[doc.id] = archivo
 
             if campos_ok and archivos_ok:
                 try:
@@ -420,18 +426,39 @@ def registrar_asistentes(request, tipo, visita_id):
                     # Guardar archivos subidos
                     from documentos.models import DocumentoSubidoAsistente
 
+                    # Separar el formato de autorización de padres de los demás documentos
+                    formato_padres_archivo = None
+                    documentos_regulares = {}
+
                     for doc_id, archivo in archivos_dict.items():
                         if archivo:
-                            DocumentoSubidoAsistente.objects.create(
-                                documento_requerido_id=doc_id,
-                                asistente_interna=(
-                                    asistente if tipo == "interna" else None
-                                ),
-                                asistente_externa=(
-                                    asistente if tipo == "externa" else None
-                                ),
-                                archivo=archivo,
-                            )
+                            # Verificar si es el documento de autorización de padres
+                            documento = Documento.objects.get(id=doc_id)
+                            if (
+                                documento.categoria
+                                == "Formato Autorización Padres de Familia"
+                            ):
+                                formato_padres_archivo = archivo
+                            else:
+                                documentos_regulares[doc_id] = archivo
+
+                    # Guardar el formato de autorización de padres directamente en el asistente
+                    if formato_padres_archivo:
+                        asistente.formato_autorizacion_padres = formato_padres_archivo
+                        asistente.save()
+
+                    # Guardar los demás documentos en DocumentoSubidoAsistente
+                    for doc_id, archivo in documentos_regulares.items():
+                        DocumentoSubidoAsistente.objects.create(
+                            documento_requerido_id=doc_id,
+                            asistente_interna=(
+                                asistente if tipo == "interna" else None
+                            ),
+                            asistente_externa=(
+                                asistente if tipo == "externa" else None
+                            ),
+                            archivo=archivo,
+                        )
 
                     # Si es visita interna, también registrar aprendiz en la ficha
                     if tipo == "interna":
@@ -1060,6 +1087,16 @@ def copiar_asistente_previo(request, tipo, visita_id, asistente_previo_id):
                 es_reutilizado=True,
                 visita_original=asistente_original,
             )
+            # Copiar el archivo de autorización de padres si existe
+            if asistente_original.formato_autorizacion_padres:
+                from django.core.files.base import ContentFile
+
+                archivo_original = asistente_original.formato_autorizacion_padres
+                nuevo_asistente.formato_autorizacion_padres.save(
+                    archivo_original.name,
+                    ContentFile(archivo_original.read()),
+                    save=True,
+                )
         else:
             nuevo_asistente = AsistenteVisitaExterna.objects.create(
                 visita=visita,
@@ -1071,6 +1108,16 @@ def copiar_asistente_previo(request, tipo, visita_id, asistente_previo_id):
                 es_reutilizado=True,
                 visita_original=asistente_original,
             )
+            # Copiar el archivo de autorización de padres si existe
+            if asistente_original.formato_autorizacion_padres:
+                from django.core.files.base import ContentFile
+
+                archivo_original = asistente_original.formato_autorizacion_padres
+                nuevo_asistente.formato_autorizacion_padres.save(
+                    archivo_original.name,
+                    ContentFile(archivo_original.read()),
+                    save=True,
+                )
 
         messages.success(
             request,

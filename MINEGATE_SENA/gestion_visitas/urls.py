@@ -21,6 +21,11 @@ urlpatterns = [
         views.api_revisar_documento_asistente,
         name="api_revisar_documento_asistente",
     ),
+    path(
+        "api/autorizacion-padres/<str:tipo>/<int:asistente_id>/<str:accion>/",
+        views.api_revisar_autorizacion_padres,
+        name="api_revisar_autorizacion_padres",
+    ),
     # Nuevos endpoints requeridos por el panel
     path(
         "visitas-aprobadas/",
