@@ -221,7 +221,8 @@ b {
 .minegate-acc-trigger {
     position: fixed;
     bottom: 25px;
-    left: 25px;
+    /* Mod rigth por left en caso de que se quiera cambiar */
+    right: 25px;
     width: 60px;
     height: 60px;
     background-color: #00af00;
@@ -246,7 +247,7 @@ b {
     display: none;
     position: fixed;
     bottom: 95px;
-    left: 25px;
+    right: 25px;
     width: 280px;
     background: white;
     border-radius: 12px;
