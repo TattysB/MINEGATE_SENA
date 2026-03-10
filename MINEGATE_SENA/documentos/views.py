@@ -57,6 +57,9 @@ def registro_publico_asistentes(request, token, tipo):
             telefono = request.POST.get("telefono", "").strip()
             documento_identidad = request.FILES.get("documento_identidad")
             documento_adicional = request.FILES.get("documento_adicional")
+            formato_autorizacion_padres = request.FILES.get(
+                "formato_autorizacion_padres"
+            )
 
             if nombre and tipo_doc and num_doc:
                 try:
@@ -74,6 +77,10 @@ def registro_publico_asistentes(request, token, tipo):
                             nuevo_asistente.documento_identidad = documento_identidad
                         if documento_adicional:
                             nuevo_asistente.documento_adicional = documento_adicional
+                        if formato_autorizacion_padres:
+                            nuevo_asistente.formato_autorizacion_padres = (
+                                formato_autorizacion_padres
+                            )
                         nuevo_asistente.save()
                     else:
                         nuevo_asistente = AsistenteVisitaExterna(
@@ -89,6 +96,10 @@ def registro_publico_asistentes(request, token, tipo):
                             nuevo_asistente.documento_identidad = documento_identidad
                         if documento_adicional:
                             nuevo_asistente.documento_adicional = documento_adicional
+                        if formato_autorizacion_padres:
+                            nuevo_asistente.formato_autorizacion_padres = (
+                                formato_autorizacion_padres
+                            )
                         nuevo_asistente.save()
 
                     messages.success(
@@ -529,10 +540,12 @@ def revisar_documento_asistente_api(request, documento_subido_id):
             "nuevo_estado": estado,
         }
     )
+
+
 @require_POST
 def enviar_solicitud_final(request, token, tipo):
     """
-    Cambia el estado de la visita a 'documentos_enviados' para indicar que 
+    Cambia el estado de la visita a 'documentos_enviados' para indicar que
     el organizador ha finalizado el registro de asistentes.
     """
     if tipo == "interna":
@@ -544,15 +557,21 @@ def enviar_solicitud_final(request, token, tipo):
 
     if visita.estado != "aprobada_inicial":
         return JsonResponse(
-            {"success": False, "error": "La solicitud ya fue enviada o no se puede enviar en este estado."}, 
-            status=400
+            {
+                "success": False,
+                "error": "La solicitud ya fue enviada o no se puede enviar en este estado.",
+            },
+            status=400,
         )
 
     # Verificar que haya al menos un asistente registrado
     if visita.asistentes.count() == 0:
         return JsonResponse(
-            {"success": False, "error": "Debe registrar al menos un asistente antes de enviar la solicitud final."}, 
-            status=400
+            {
+                "success": False,
+                "error": "Debe registrar al menos un asistente antes de enviar la solicitud final.",
+            },
+            status=400,
         )
 
     visita.estado = "documentos_enviados"

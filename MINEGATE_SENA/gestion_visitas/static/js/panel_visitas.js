@@ -446,7 +446,7 @@ function mostrarDocumentosPorEstado(filtro) {
                         <i class="ri-download-line"></i>
                       </a>
                     </div>
-                    ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:10px;padding:2px 8px;border-radius:6px;font-weight:600;">Aprobado</span>' : (a.estado === 'documentos_rechazados' ? '<span style="background:#fee2e2;color:#991b1b;font-size:10px;padding:2px 8px;border-radius:6px;font-weight:600;">Rechazado</span>' : '')}
+                    ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (a.estado === 'documentos_rechazados' ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Rechazado</span>' : '')}
                   </div>`;
           }
           if (a.documentos_subidos && a.documentos_subidos.length > 0) {
@@ -615,7 +615,7 @@ function visualizarDocumento(url, titulo, extraOptions = null) {
   const btnAprobar = document.getElementById('btnAprobarIndividual');
   const btnRechazar = document.getElementById('btnRechazarIndividual');
 
-  if (extraOptions && extraOptions.id) {
+  if (extraOptions && (extraOptions.id || extraOptions.mode === 'autorizacion_padres')) {
     footer.style.display = 'flex';
     if (extraOptions.estado && extraOptions.estado !== 'pendiente') {
       btnAprobar.style.setProperty('display', 'none', 'important');
@@ -641,8 +641,13 @@ function visualizarDocumento(url, titulo, extraOptions = null) {
       const statusBadge = document.getElementById('statusBadgeViewer');
       if (statusBadge) statusBadge.style.setProperty('display', 'none', 'important');
 
-      btnAprobar.onclick = () => revisarDocumentoIndividual(extraOptions.id, 'aprobado');
-      btnRechazar.onclick = () => revisarDocumentoIndividual(extraOptions.id, 'rechazado');
+      if (extraOptions.mode === 'autorizacion_padres') {
+        btnAprobar.onclick = () => revisarAutorizacionPadresEnModal(extraOptions.tipo, extraOptions.asistenteId, 'aprobar', extraOptions.nombre || '');
+        btnRechazar.onclick = () => revisarAutorizacionPadresEnModal(extraOptions.tipo, extraOptions.asistenteId, 'rechazar', extraOptions.nombre || '');
+      } else {
+        btnAprobar.onclick = () => revisarDocumentoIndividual(extraOptions.id, 'aprobado');
+        btnRechazar.onclick = () => revisarDocumentoIndividual(extraOptions.id, 'rechazado');
+      }
     }
   } else {
     footer.style.display = 'none';
@@ -686,6 +691,48 @@ function visualizarDocumento(url, titulo, extraOptions = null) {
       mostrarErrorDoc(contenedor, absoluteUrl);
     }
   }, 4000);
+}
+
+async function revisarAutorizacionPadresEnModal(tipo, asistenteId, accion, nombre = '') {
+  let observaciones = '';
+  if (accion === 'rechazar') {
+    observaciones = await mPrompt('Ingrese las observaciones del rechazo para <strong>' + nombre + '</strong>:', {
+      title: 'Rechazar Documento',
+      icon: '<i class="ri-close-circle-line"></i>',
+      iconClass: 'cm-error',
+      placeholder: 'Motivo del rechazo...',
+      confirmText: 'Rechazar',
+      confirmClass: 'cm-btn-danger'
+    });
+    if (observaciones === null) return;
+    if (observaciones.trim() === '') {
+      mAlert('Debe proporcionar observaciones al rechazar la autorización.', 'warning');
+      return;
+    }
+  }
+
+  const formData = new FormData();
+  formData.append('observaciones', observaciones);
+  addCsrfToFormData(formData);
+
+  fetch(`/gestion/api/autorizacion-padres/${tipo}/${asistenteId}/${accion}/`, {
+    method: 'POST',
+    body: formData
+  })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        mAlert(data.message, 'success');
+        cerrarModalVisualizarDoc();
+        cargarVisitas();
+        if (window.detalleVisitaActual) {
+          verDetalleVisita(window.detalleVisitaActual.tipo, window.detalleVisitaActual.id);
+        }
+      } else {
+        mAlert('Error: ' + (data.error || 'No se pudo actualizar el estado'), 'error');
+      }
+    })
+    .catch(() => mAlert('Error de conexión.', 'error'));
 }
 
 async function revisarDocumentoIndividual(docSubidoId, estado) {
@@ -852,6 +899,37 @@ function verDetalleVisita(tipo, id) {
                     ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (a.estado === 'documentos_rechazados' ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Rechazado</span>' : '')}
                   </div>`;
           }
+          if (a.formato_autorizacion_padres) {
+            tieneDocs = true;
+            let estadoAutPadres = a.estado_autorizacion_padres || 'pendiente';
+            let badgeAutPadres = '';
+
+            if (estadoAutPadres === 'aprobado') {
+              badgeAutPadres = '<span style="background:#d1fae5;color:#065f46;font-size:10px;padding:2px 8px;border-radius:6px;font-weight:600;margin-left:8px;">Aprobado</span>';
+            } else if (estadoAutPadres === 'rechazado') {
+              badgeAutPadres = '<span style="background:#fee2e2;color:#991b1b;font-size:10px;padding:2px 8px;border-radius:6px;font-weight:600;margin-left:8px;">Rechazado</span>';
+            }
+
+            botonesDoc += `
+                  <div style="background:#fef3c7;padding:8px;border-radius:6px;border:2px solid #f59e0b;margin-bottom:6px;width:100%;box-sizing:border-box;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
+                      <div style="display:flex;gap:4px;align-items:center;">
+                        <button onclick="visualizarDocumento('${a.formato_autorizacion_padres}', 'Formato Autorización Padres - ${a.nombre_completo}', {mode: 'autorizacion_padres', tipo: '${tipo}', asistenteId: ${a.id}, nombre: '${a.nombre_completo.replace(/'/g, "\\'")}', estado: '${estadoAutPadres}'})" 
+                                style="background:#f59e0b;color:white;padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:5px;font-weight:500;">
+                          <i class="ri-eye-line"></i> 📋 Autorización Padres
+                        </button>
+                        <a href="${a.formato_autorizacion_padres}" download style="background:#92400e;color:white;padding:7px 10px;border-radius:6px;text-decoration:none;font-size:12px;display:inline-flex;align-items:center;" title="Descargar">
+                          <i class="ri-download-line"></i>
+                        </a>
+                      </div>
+                      <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
+                        <span style="background:#fcd34d;color:#78350f;font-size:10px;padding:3px 8px;border-radius:6px;font-weight:600;">👶 Menor</span>
+                        ${badgeAutPadres}
+                      </div>
+                    </div>
+                    ${a.observaciones_autorizacion_padres ? `<div style="font-size:10px;color:#991b1b;font-style:italic;margin-top:6px;">❌ ${a.observaciones_autorizacion_padres}</div>` : ''}
+                  </div>`;
+          }
           if (a.documentos_subidos && a.documentos_subidos.length > 0) {
             // Filtrar SOLO documentos que NO sean los archivos finales
             const categorias_finales = ['📝 ATS', '🤸🏻‍♂️ Charla de Seguridad y Calestenia', '📜 Formato Inducción y Reinducción'];
@@ -908,9 +986,22 @@ function verDetalleVisita(tipo, id) {
           let accionesDocHtml = '';
           if (a.estado === 'pendiente_documentos' && tieneDocs) {
             let btnAprobarMask = '';
-            const hasRechazos = a.tiene_rechazos || a.documentos_subidos.some(ds => ds.estado === 'rechazado');
-            const hasAprobaciones = a.tiene_aprobaciones || a.documentos_subidos.some(ds => ds.estado === 'aprobado');
-            const allAprobados = a.todos_aprobados || (tieneDocs && a.documentos_subidos.every(ds => ds.estado === 'aprobado'));
+
+            // Verificar rechazos (incluyendo autorización de padres si existe)
+            let hasRechazos = a.tiene_rechazos || a.documentos_subidos.some(ds => ds.estado === 'rechazado');
+            if (a.formato_autorizacion_padres && a.estado_autorizacion_padres === 'rechazado') {
+              hasRechazos = true;
+            }
+
+            // Verificar si todos están aprobados
+            let allAprobados = a.todos_aprobados || (tieneDocs && a.documentos_subidos.every(ds => ds.estado === 'aprobado'));
+
+            // Si tiene autorización de padres, debe estar aprobada también
+            if (a.formato_autorizacion_padres) {
+              if (a.estado_autorizacion_padres !== 'aprobado') {
+                allAprobados = false;
+              }
+            }
 
             if (hasRechazos) {
               btnAprobarMask = `
@@ -918,18 +1009,17 @@ function verDetalleVisita(tipo, id) {
                         style="background:#9ca3af;color:white;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px;opacity:0.7;">
                   <i class="ri-forbid-line"></i> Rechazos detectados
                 </button>`;
-            } else if (!hasAprobaciones) {
+            } else if (!allAprobados) {
               btnAprobarMask = `
-                <button onclick="mAlert('Debe revisar y aprobar al menos un documento individualmente antes de poder aprobar todos masivamente.', 'info')" 
+                <button onclick="mAlert('Debe aprobar individualmente todos los archivos antes de realizar la aprobación final.', 'info')" 
                         style="background:#6b7280;color:white;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px;opacity:0.7;">
-                  <i class="ri-information-line"></i> Revisar primero
+                  <i class="ri-information-line"></i> Pendiente aprobar todo
                 </button>`;
             } else {
-              const btnText = allAprobados ? 'Aprobación Final' : 'Aprobar Documentos';
               btnAprobarMask = `
                 <button onclick="event.stopPropagation();aprobarDocRevision('${tipo}', ${a.id})" 
                         style="background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px;transition:all .2s;box-shadow:0 2px 6px rgba(16,185,129,0.3);">
-                  <i class="ri-check-double-line"></i> ${btnText}
+                  <i class="ri-check-double-line"></i> Aprobación Final
                 </button>`;
             }
 
@@ -1158,6 +1248,75 @@ async function aprobarDocRevision(tipo, asistenteId) {
       }
     })
     .catch(() => mAlert('Error de conexión. Verifique su red e intente de nuevo.', 'error'));
+
+  async function aprobarAutorizacionPadres(tipo, asistenteId) {
+    const ok = await mConfirm('¿Aprobar la Autorización de Padres de Familia de este asistente?', {
+      title: 'Aprobar Autorización',
+      icon: '<i class="ri-check-double-line"></i>',
+      iconClass: 'cm-success',
+      confirmText: 'Sí, aprobar',
+      confirmClass: 'cm-btn-success'
+    });
+    if (!ok) return;
+
+    const formData = new FormData();
+    formData.append('observaciones', '');
+    addCsrfToFormData(formData);
+
+    fetch(`/gestion/api/autorizacion-padres/${tipo}/${asistenteId}/aprobar/`, {
+      method: 'POST',
+      body: formData
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          mAlert(data.message, 'success');
+          cargarVisitas();
+          if (window.detalleVisitaActual) {
+            verDetalleVisita(window.detalleVisitaActual.tipo, window.detalleVisitaActual.id);
+          }
+        } else {
+          mAlert('Error: ' + data.error, 'error');
+        }
+      })
+      .catch(() => mAlert('Error de conexión. Verifique su red e intente de nuevo.', 'error'));
+  }
+
+  async function rechazarAutorizacionPadres(tipo, asistenteId, nombre) {
+    const obs = await mPrompt('Ingrese las observaciones del rechazo de la Autorización de Padres para <strong>' + nombre + '</strong>:', {
+      title: 'Rechazar Autorización',
+      icon: '<i class="ri-close-circle-line"></i>',
+      iconClass: 'cm-error',
+      placeholder: 'Motivo del rechazo...',
+      confirmText: 'Rechazar',
+      confirmClass: 'cm-btn-danger'
+    });
+    if (obs !== null && obs.trim() !== '') {
+      const formData = new FormData();
+      formData.append('observaciones', obs);
+      addCsrfToFormData(formData);
+
+      fetch(`/gestion/api/autorizacion-padres/${tipo}/${asistenteId}/rechazar/`, {
+        method: 'POST',
+        body: formData
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.success) {
+            mAlert(data.message, 'success');
+            cargarVisitas();
+            if (window.detalleVisitaActual) {
+              verDetalleVisita(window.detalleVisitaActual.tipo, window.detalleVisitaActual.id);
+            }
+          } else {
+            mAlert('Error: ' + data.error, 'error');
+          }
+        })
+        .catch(() => mAlert('Error de conexión. Verifique su red e intente de nuevo.', 'error'));
+    } else if (obs === '') {
+      mAlert('Debe proporcionar observaciones al rechazar la autorización.', 'warning');
+    }
+  }
 }
 
 async function rechazarDocRevision(tipo, asistenteId, nombre) {
