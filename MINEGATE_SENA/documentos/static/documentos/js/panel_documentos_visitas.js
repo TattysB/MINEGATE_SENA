@@ -148,7 +148,14 @@ function mostrarDocumentosPorEstado(filtro) {
           }
 
           if (a.documentos_subidos && a.documentos_subidos.length > 0) {
-            a.documentos_subidos.forEach(ds => {
+            // Filtrar SOLO documentos que NO sean los archivos finales (para evitar duplicados)
+            const categorias_finales = ['📝 ATS', '🤸🏻‍♂️ Charla de Seguridad y Calestenia', '📜 Formato Inducción y Reinducción'];
+            const documentos_personales = a.documentos_subidos.filter(ds =>
+              !categorias_finales.some(cat => ds.categoria && ds.categoria.includes(cat))
+            );
+
+            // Mostrar solo documentos personales del asistente (no los finales)
+            documentos_personales.forEach(ds => {
               let badgeDoc = '';
               if (ds.estado === 'aprobado') {
                 badgeDoc = '<span style="background:#d1fae5;color:#065f46;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;">Aprobado</span>';

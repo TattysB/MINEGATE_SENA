@@ -15,4 +15,5 @@ urlpatterns = [
         views.api_accion_coordinacion,
         name="api_accion",
     ),
+    path("registro/", views.registro_coordinacion, name="registro"),
 ]
