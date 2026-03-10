@@ -23,6 +23,143 @@ def _serialize_day_ranges_simple(records):
 	return sorted(ranges, key=lambda r: r['start'])
 
 
+def _serialize_free_ranges_for_day(day_date):
+	"""Devuelve rangos libres del día excluyendo reservas superpuestas."""
+	records = list(Availability.objects.filter(date=day_date).order_by('time', 'end_time'))
+	reservas = list(ReservaHorario.objects.filter(fecha=day_date))
+	ranges_disponibles = []
+
+	for rec in records:
+		start_time = rec.time
+		end_time = rec.end_time or rec.time
+
+		horario_libre = True
+		for reserva in reservas:
+			if start_time < reserva.hora_fin and end_time > reserva.hora_inicio:
+				horario_libre = False
+				break
+
+		if horario_libre:
+			start_label = start_time.strftime('%H:%M')
+			if rec.end_time:
+				end_label = rec.end_time.strftime('%H:%M')
+				ranges_disponibles.append(
+					{
+						'start': start_label,
+						'end': end_label,
+						'label': f"{start_label} - {end_label}",
+					}
+				)
+			else:
+				ranges_disponibles.append(
+					{
+						'start': start_label,
+						'end': start_label,
+						'label': start_label,
+					}
+				)
+
+	return sorted(ranges_disponibles, key=lambda r: r['start'])
+
+
+def _format_date_es(day_date):
+	meses = [
+		'',
+		'enero',
+		'febrero',
+		'marzo',
+		'abril',
+		'mayo',
+		'junio',
+		'julio',
+		'agosto',
+		'septiembre',
+		'octubre',
+		'noviembre',
+		'diciembre',
+	]
+	return f"{day_date.day} de {meses[day_date.month]} de {day_date.year}"
+
+
+@require_GET
+def day_summary(request, day):
+	"""Resumen del día para panel lateral del calendario administrativo."""
+	try:
+		day_date = datetime.strptime(day.strip(), '%Y-%m-%d').date()
+	except Exception:
+		return JsonResponse({'ok': False, 'error': 'Fecha inválida'}, status=400)
+
+	reservas = list(
+		ReservaHorario.objects.filter(fecha=day_date)
+		.select_related('visita_interna', 'visita_externa')
+		.order_by('hora_inicio')
+	)
+	ranges_libres = _serialize_free_ranges_for_day(day_date)
+
+	visitas = []
+	for reserva in reservas:
+		if reserva.visita_interna:
+			tipo = 'interna'
+			nombre = reserva.visita_interna.nombre_programa or 'Visita interna'
+			responsable = reserva.visita_interna.responsable or 'Sin responsable'
+			documento = reserva.visita_interna.documento_responsable or ''
+		elif reserva.visita_externa:
+			tipo = 'externa'
+			nombre = reserva.visita_externa.nombre or 'Visita externa'
+			responsable = reserva.visita_externa.nombre_responsable or 'Sin responsable'
+			documento = reserva.visita_externa.documento_responsable or ''
+		else:
+			tipo = 'sin_tipo'
+			nombre = 'Visita'
+			responsable = 'Sin responsable'
+			documento = ''
+
+		visitas.append(
+			{
+				'id_reserva': reserva.id,
+				'tipo': tipo,
+				'titulo': nombre,
+				'responsable': responsable,
+				'documento_responsable': documento,
+				'estado': reserva.estado,
+				'estado_label': 'Pendiente por revisar'
+				if reserva.estado == 'pendiente'
+				else 'Confirmada',
+				'horario': f"{reserva.hora_inicio.strftime('%H:%M')} - {reserva.hora_fin.strftime('%H:%M')}",
+			}
+		)
+
+	has_confirmadas = any(r.estado == 'confirmada' for r in reservas)
+	has_pendientes = any(r.estado == 'pendiente' for r in reservas)
+	has_available = len(ranges_libres) > 0
+
+	if has_confirmadas:
+		day_state = 'occupied'
+	elif has_pendientes:
+		day_state = 'pending'
+	elif has_available:
+		day_state = 'available'
+	else:
+		day_state = 'no-available'
+
+	return JsonResponse(
+		{
+			'ok': True,
+			'date': day_date.isoformat(),
+			'date_formatted': _format_date_es(day_date),
+			'day_state': day_state,
+			'available_ranges': ranges_libres,
+			'visitas': visitas,
+			'stats': {
+				'total_visitas': len(visitas),
+				'pendientes': len([v for v in visitas if v['estado'] == 'pendiente']),
+				'confirmadas': len([v for v in visitas if v['estado'] == 'confirmada']),
+				'horarios_disponibles': len(ranges_libres),
+			},
+		}
+	)
+
+
 def calendario_seleccion(request, year=None, month=None):
 	"""Vista del calendario para seleccionar una fecha disponible para nueva visita"""
 	today = date.today()
@@ -142,47 +279,12 @@ def horarios_disponibles(request, day):
 	if day_date < date.today():
 		return JsonResponse({'ok': False, 'error': 'No se puede seleccionar fechas pasadas'}, status=400)
 
-	records = list(Availability.objects.filter(date=day_date).order_by('time', 'end_time'))
-	
-	# Obtener reservas existentes para este día (tanto pendientes como confirmadas)
-	reservas = list(ReservaHorario.objects.filter(fecha=day_date))
-	
-	# Filtrar horarios que no se superpongan con reservas existentes
-	ranges_disponibles = []
-	for rec in records:
-		start_time = rec.time
-		end_time = rec.end_time or rec.time
-		
-		# Verificar si este horario se superpone con alguna reserva
-		horario_libre = True
-		for reserva in reservas:
-			# Superposición: inicio1 < fin2 AND inicio2 < fin1
-			if start_time < reserva.hora_fin and end_time > reserva.hora_inicio:
-				horario_libre = False
-				break
-		
-		if horario_libre:
-			start_label = start_time.strftime('%H:%M')
-			if rec.end_time:
-				end_label = rec.end_time.strftime('%H:%M')
-				ranges_disponibles.append({
-					'start': start_label,
-					'end': end_label,
-					'label': f"{start_label} - {end_label}"
-				})
-			else:
-				ranges_disponibles.append({
-					'start': start_label,
-					'end': start_label,
-					'label': start_label
-				})
-	
-	ranges = sorted(ranges_disponibles, key=lambda r: r['start'])
+	ranges = _serialize_free_ranges_for_day(day_date)
 	
 	return JsonResponse({
 		'ok': True,
 		'date': day_date.isoformat(),
-		'date_formatted': day_date.strftime('%d de %B de %Y'),
+		'date_formatted': _format_date_es(day_date),
 		'ranges': ranges,
 		'has_availability': len(ranges) > 0
 	})
