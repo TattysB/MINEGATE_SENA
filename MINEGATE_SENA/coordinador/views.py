@@ -8,6 +8,9 @@ from django.shortcuts import get_object_or_404, render
 from calendario.models import ReservaHorario
 from visitaExterna.models import HistorialAccionVisitaExterna, VisitaExterna
 from visitaInterna.models import HistorialAccionVisitaInterna, VisitaInterna
+from .models import AprobacionRegistro
+from django.utils import timezone
+from django.contrib.auth.decorators import permission_required
 
 
 def es_coordinador(user):
@@ -224,6 +227,31 @@ def api_accion_coordinacion(request, tipo, visita_id, accion):
 		registrar(
 			f"Solicitud aprobada por coordinación ({request.user.username}). Pendiente aprobación administrativa."
 		)
+		# Registrar en el log de aprobaciones para el panel de Registro
+		try:
+			if tipo == 'interna':
+				AprobacionRegistro.objects.create(
+					visita_id=visita.id,
+					visita_tipo='interna',
+					responsable=visita.responsable,
+					institucion=visita.nombre_programa or '',
+					correo=visita.correo_responsable or '',
+					cantidad=getattr(visita, 'cantidad_aprendices', None),
+					aprobado_por=request.user,
+				)
+			else:
+				AprobacionRegistro.objects.create(
+					visita_id=visita.id,
+					visita_tipo='externa',
+					responsable=visita.nombre_responsable,
+					institucion=visita.nombre or '',
+					correo=visita.correo_responsable or '',
+					cantidad=getattr(visita, 'cantidad_visitantes', None),
+					aprobado_por=request.user,
+				)
+		except Exception:
+			# No bloquear la operación si el registro falla
+			pass
 		return JsonResponse(
 			{
 				"success": True,
@@ -242,4 +270,9 @@ def api_accion_coordinacion(request, tipo, visita_id, accion):
 		)
 		return JsonResponse({"success": True, "message": "❌ Solicitud rechazada por coordinación."})
 
-	return JsonResponse({"success": False, "error": "Acción no válida"}, status=400)
+
+@login_required(login_url="usuarios:login")
+@user_passes_test(es_coordinador, login_url="core:panel_administrativo")
+def registro_coordinacion(request):
+	registros = AprobacionRegistro.objects.all()[:100]
+	return render(request, "coordinador/registro_coordinacion.html", {"registros": registros})
