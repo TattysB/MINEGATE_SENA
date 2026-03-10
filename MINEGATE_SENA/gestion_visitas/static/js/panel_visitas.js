@@ -43,7 +43,7 @@ function cargarVisitas() {
       <p>Cargando visitas...</p>
     </td></tr>`;
 
-  fetch(`/gestion/api/visitas/?tipo=${tipoVisitaActual}&estado=${estado}&buscar=${encodeURIComponent(buscar)}`)
+  fetch(`/gestion/visitas/?tipo=${tipoVisitaActual}&estado=${estado}&buscar=${encodeURIComponent(buscar)}`)
     .then(response => response.json())
     .then(data => {
       document.getElementById('statPendientes').textContent = data.stats.pendientes;
@@ -196,7 +196,7 @@ function mostrarVisitasAprobadas() {
       <p>Cargando visitas aprobadas...</p>
     </td></tr>`;
 
-  fetch(`/gestion/api/visitas-aprobadas/?tipo=${tipoVisitaActual}`)
+  fetch(`/gestion/visitas-aprobadas/?tipo=${tipoVisitaActual}`)
     .then(response => response.json())
     .then(data => {
       const visitas = data.visitas || [];
@@ -298,7 +298,7 @@ function mostrarDocumentosPorEstado(filtro) {
   window._filtroDocsActual = filtro;
 
   const tipoParam = tipoVisitaActual ? `&tipo=${tipoVisitaActual}` : '';
-  fetch(`/gestion/api/documentos-revision/?${cfg.queryParams}${tipoParam}`)
+  fetch(`/gestion/documentos-revision/?${cfg.queryParams}${tipoParam}`)
     .then(r => r.json())
     .then(data => {
       const docs = data.documentos || [];
@@ -495,7 +495,7 @@ async function aprobarDocDesdeListado(tipo, asistenteId, filtroActual) {
   formData.append('observaciones', '');
   addCsrfToFormData(formData);
 
-  fetch(`/gestion/api/asistentes/${tipo}/${asistenteId}/aprobar/`, {
+  fetch(`/gestion/asistentes/${tipo}/${asistenteId}/aprobar/`, {
     method: 'POST',
     body: formData
   })
@@ -526,7 +526,7 @@ async function rechazarDocDesdeListado(tipo, asistenteId, nombre, filtroActual) 
     formData.append('observaciones', obs);
     addCsrfToFormData(formData);
 
-    fetch(`/gestion/api/asistentes/${tipo}/${asistenteId}/rechazar/`, {
+    fetch(`/gestion/asistentes/${tipo}/${asistenteId}/rechazar/`, {
       method: 'POST',
       body: formData
     })
@@ -699,7 +699,7 @@ function verDetalleVisita(tipo, id) {
   contenido.innerHTML = '<p style="text-align:center;padding:20px;"><i class="ri-loader-4-line" style="animation:spin 1s linear infinite;"></i> Cargando...</p>';
   modal.style.display = 'block';
 
-  fetch(`/gestion/api/visitas/${tipo}/${id}/`)
+  fetch(`/gestion/visitas/${tipo}/${id}/`)
     .then(response => response.json())
     .then(data => {
       let asistentesHtml = '';
@@ -887,7 +887,7 @@ function revisarDocumento(tipo, asistente_id, accion, observaciones = '') {
   formData.append('observaciones', observaciones);
   addCsrfToFormData(formData);
 
-  fetch(`/gestion/api/asistentes/${tipo}/${asistente_id}/${accion}/`, {
+  fetch(`/gestion/asistentes/${tipo}/${asistente_id}/${accion}/`, {
     method: 'POST',
     body: formData
   })
@@ -978,7 +978,7 @@ async function accionVisita(tipo, id, accion) {
   const formData = new FormData();
   formData.append('observaciones', observaciones);
 
-  fetch(`/gestion/api/visitas/${tipo}/${id}/${accion}/`, {
+  fetch(`/gestion/visitas/${tipo}/${id}/${accion}/`, {
     method: 'POST',
     headers: {
       'X-CSRFToken': getCsrfToken()
@@ -1017,7 +1017,7 @@ async function aprobarDocRevision(tipo, asistenteId) {
   formData.append('observaciones', '');
   addCsrfToFormData(formData);
 
-  fetch(`/gestion/api/asistentes/${tipo}/${asistenteId}/aprobar/`, {
+  fetch(`/gestion/asistentes/${tipo}/${asistenteId}/aprobar/`, {
     method: 'POST',
     body: formData
   })
@@ -1050,7 +1050,7 @@ async function rechazarDocRevision(tipo, asistenteId, nombre) {
     formData.append('observaciones', obs);
     addCsrfToFormData(formData);
 
-    fetch(`/gestion/api/asistentes/${tipo}/${asistenteId}/rechazar/`, {
+    fetch(`/gestion/asistentes/${tipo}/${asistenteId}/rechazar/`, {
       method: 'POST',
       body: formData
     })

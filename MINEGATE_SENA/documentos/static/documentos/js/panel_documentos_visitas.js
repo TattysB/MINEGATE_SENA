@@ -54,7 +54,7 @@ function mostrarDocumentosPorEstado(filtro) {
   window._filtroDocsActual = filtro;
 
   const tipoParam = window.tipoVisitaActual ? `&tipo=${window.tipoVisitaActual}` : '';
-  fetch(`/gestion/api/documentos-revision/?${cfg.queryParams}${tipoParam}`)
+  fetch(`/gestion/documentos-revision/?${cfg.queryParams}${tipoParam}`)
     .then(r => r.json())
     .then(data => {
       const docs = data.documentos || [];
@@ -253,7 +253,7 @@ async function aprobarDocDesdeListado(tipo, asistenteId, filtroActual) {
   formData.append('observaciones', '');
   window.addCsrfToFormData(formData);
 
-  fetch(`/gestion/api/asistentes/${tipo}/${asistenteId}/aprobar/`, {
+  fetch(`/gestion/asistentes/${tipo}/${asistenteId}/aprobar/`, {
     method: 'POST',
     body: formData
   })
@@ -290,7 +290,7 @@ async function rechazarDocDesdeListado(tipo, asistenteId, nombre, filtroActual) 
   formData.append('observaciones', obs);
   window.addCsrfToFormData(formData);
 
-  fetch(`/gestion/api/asistentes/${tipo}/${asistenteId}/rechazar/`, {
+  fetch(`/gestion/asistentes/${tipo}/${asistenteId}/rechazar/`, {
     method: 'POST',
     body: formData
   })
@@ -456,7 +456,7 @@ function revisarDocumento(tipo, asistente_id, accion, observaciones = '') {
   formData.append('observaciones', observaciones);
   window.addCsrfToFormData(formData);
 
-  fetch(`/gestion/api/asistentes/${tipo}/${asistente_id}/${accion}/`, {
+  fetch(`/gestion/asistentes/${tipo}/${asistente_id}/${accion}/`, {
     method: 'POST',
     body: formData
   })
@@ -506,7 +506,7 @@ async function aprobarDocRevision(tipo, asistenteId) {
   formData.append('observaciones', '');
   window.addCsrfToFormData(formData);
 
-  fetch(`/gestion/api/asistentes/${tipo}/${asistenteId}/aprobar/`, {
+  fetch(`/gestion/asistentes/${tipo}/${asistenteId}/aprobar/`, {
     method: 'POST',
     body: formData
   })
@@ -539,7 +539,7 @@ async function rechazarDocRevision(tipo, asistenteId, nombre) {
     formData.append('observaciones', obs);
     window.addCsrfToFormData(formData);
 
-    fetch(`/gestion/api/asistentes/${tipo}/${asistenteId}/rechazar/`, {
+    fetch(`/gestion/asistentes/${tipo}/${asistenteId}/rechazar/`, {
       method: 'POST',
       body: formData
     })

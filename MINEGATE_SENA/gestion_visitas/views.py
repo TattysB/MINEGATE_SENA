@@ -515,6 +515,7 @@ def api_accion_visita(request, tipo, visita_id, accion):
 
         visita.estado = "rechazada"
         visita.save()
+        ReservaHorario.liberar_reserva(visita, tipo)
         registrar_accion(
             "rechazo",
             f"Visita rechazada por {request.user.username}. Motivo: {observaciones}"
