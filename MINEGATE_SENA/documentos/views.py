@@ -274,16 +274,8 @@ def subir_documentos_api(request):
     # Extensiones permitidas
     extensiones_permitidas = [
         ".pdf",
-        ".jpg",
-        ".jpeg",
-        ".png",
         ".doc",
         ".docx",
-        ".xls",
-        ".xlsx",
-        ".ppt",
-        ".pptx",
-        ".txt",
     ]
     max_size = 10 * 1024 * 1024  # 10 MB
 
