@@ -345,6 +345,9 @@ function generarSelectCategoria(index, seleccionada) {
     return html;
 }
 
+// Extensiones permitidas para documentos
+var EXTENSIONES_PERMITIDAS_DOCS = ['.pdf', '.doc', '.docx'];
+
 // Preparar archivos para subir
 function prepararArchivosDocumentos(files) {
     var archivosNuevos = Array.from(files);
@@ -355,6 +358,28 @@ function prepararArchivosDocumentos(files) {
         console.error("Elementos de archivos pendientes no encontrados");
         mostrarAlerta("Error: No se encontraron elementos de la interfaz", "error");
         return;
+    }
+
+    // Validar formatos permitidos
+    var rechazados = [];
+    archivosNuevos = archivosNuevos.filter(function (archivo) {
+        var ext = '.' + archivo.name.split('.').pop().toLowerCase();
+        if (EXTENSIONES_PERMITIDAS_DOCS.indexOf(ext) === -1) {
+            rechazados.push(archivo.name);
+            return false;
+        }
+        return true;
+    });
+
+    if (rechazados.length > 0) {
+        mostrarAlerta(
+            '⚠️ Formato no permitido.\n\nSolo se aceptan archivos PDF o Word (DOC, DOCX).\n\nArchivo(s) rechazado(s):\n' + rechazados.join('\n'),
+            'error'
+        );
+        // Limpiar el input para que no quede el archivo inválido seleccionado
+        var inputFile = document.getElementById('inputArchivosDocumentos');
+        if (inputFile) inputFile.value = '';
+        if (archivosNuevos.length === 0) return;
     }
 
     cargarCategoriasFaltantes()

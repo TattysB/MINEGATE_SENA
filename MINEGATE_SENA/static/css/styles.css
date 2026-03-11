@@ -116,6 +116,11 @@
 /* Fondo verde personalizado para toda la navbar */
 .navbar {
     background-color: #00af00 !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1100;
 }
 
 /* Fondo verde para el footer igual a la navbar */
@@ -133,6 +138,13 @@ body {
 body {
     font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     font-weight: 400;
+    padding-top: 86px;
+}
+
+@media (max-width: 991.98px) {
+    body {
+        padding-top: 78px;
+    }
 }
 
 h1,
@@ -180,7 +192,8 @@ b {
     background-color: #1738027a !important;
     color: #ffffff !important;
     border-color: #3fa500 !important;
-    border-radius: 50px !important; /* Forma ovalada */
+    border-radius: 50px !important;
+    /* Forma ovalada */
     padding: 10px 25px !important;
     font-weight: 600 !important;
     box-shadow: 0 4px 15px rgba(63, 165, 0, 0.2);

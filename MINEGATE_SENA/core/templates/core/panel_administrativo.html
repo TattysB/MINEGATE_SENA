@@ -54,13 +54,6 @@
         </div>
       </div>
 
-      <div class="topbar-center">
-        <div class="search-container">
-          <i class="ri-search-line search-icon"></i>
-          <input type="text" placeholder="Buscar módulos, usuarios, docur..." class="search-input">
-        </div>
-      </div>
-
       <div class="topbar-right">
         <div class="topbar-actions">
           <div class="notification-wrapper">
@@ -79,6 +72,7 @@
                     class="profile-img-topbar" />
                   {% endif %}
                 </div>
+                <span class="topbar-role-label">{{ panel_role_label|default:'Administrador' }}</span>
               </button>
 
               <!-- desplegable Menu -->
