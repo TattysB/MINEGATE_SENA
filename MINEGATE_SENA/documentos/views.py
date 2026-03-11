@@ -224,7 +224,7 @@ def listar_documentos_api(request):
         data.append(
             {
                 "id": doc.id,
-                "titulo": doc.titulo,
+                "titulo": doc.categoria,
                 "archivo_url": archivo_url,
                 "nombre_archivo": doc.nombre_archivo,
                 "categoria": doc.categoria,
@@ -238,6 +238,22 @@ def listar_documentos_api(request):
         )
 
     return JsonResponse({"documentos": data, "total": len(data)})
+
+
+@login_required(login_url="usuarios:login")
+def categorias_faltantes_api(request):
+    """API: Retorna categorías pendientes por cargar."""
+    cats_validas = [c[0] for c in Documento.CATEGORIA_CHOICES]
+    categorias_ocupadas = set(Documento.objects.values_list("categoria", flat=True))
+    categorias_faltantes = [c for c in cats_validas if c not in categorias_ocupadas]
+
+    return JsonResponse(
+        {
+            "categorias_faltantes": categorias_faltantes,
+            "categorias_ocupadas": list(categorias_ocupadas),
+            "total_faltantes": len(categorias_faltantes),
+        }
+    )
 
 
 @login_required(login_url="usuarios:login")
@@ -276,6 +292,17 @@ def subir_documentos_api(request):
 
     # Categorías válidas del modelo
     cats_validas = [c[0] for c in Documento.CATEGORIA_CHOICES]
+    categorias_existentes = set(Documento.objects.values_list("categoria", flat=True))
+
+    # Normalizar nombres de archivo ya existentes en BD
+    nombres_existentes = {
+        os.path.basename(nombre).lower()
+        for nombre in Documento.objects.values_list("archivo", flat=True)
+        if nombre
+    }
+
+    categorias_en_lote = set()
+    nombres_en_lote = set()
 
     for idx, archivo in enumerate(archivos):
         _, ext = os.path.splitext(archivo.name)
@@ -289,7 +316,13 @@ def subir_documentos_api(request):
             errores.append(f'"{archivo.name}": excede el tamaño máximo de 10 MB.')
             continue
 
-        titulo = os.path.splitext(archivo.name)[0]
+        nombre_normalizado = archivo.name.lower()
+        if (
+            nombre_normalizado in nombres_existentes
+            or nombre_normalizado in nombres_en_lote
+        ):
+            errores.append(f'"{archivo.name}": ya existe un archivo con ese nombre.')
+            continue
 
         # Obtener categoría individual del archivo
         cat_archivo = (
@@ -300,6 +333,15 @@ def subir_documentos_api(request):
         if cat_archivo not in cats_validas:
             cat_archivo = cats_validas[0] if cats_validas else "EPP Necesarios"
 
+        if cat_archivo in categorias_existentes or cat_archivo in categorias_en_lote:
+            errores.append(
+                f'"{archivo.name}": la categoría "{cat_archivo}" ya fue cargada.'
+            )
+            continue
+
+        # El título visible debe ser el label del formato/categoría
+        titulo = cat_archivo
+
         doc = Documento(
             titulo=titulo,
             archivo=archivo,
@@ -309,10 +351,12 @@ def subir_documentos_api(request):
             tamaño=archivo.size,
         )
         doc.save()
+        nombres_en_lote.add(nombre_normalizado)
+        categorias_en_lote.add(cat_archivo)
         documentos_creados.append(
             {
                 "id": doc.id,
-                "titulo": doc.titulo,
+                "titulo": doc.categoria,
                 "nombre_archivo": doc.nombre_archivo,
             }
         )

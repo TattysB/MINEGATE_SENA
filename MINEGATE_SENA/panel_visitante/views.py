@@ -11,7 +11,11 @@ from django.urls import reverse
 from datetime import datetime
 from visitaInterna.models import VisitaInterna, AsistenteVisitaInterna
 from visitaExterna.models import VisitaExterna, AsistenteVisitaExterna
-from documentos.models import Documento, DocumentoSubidoAsistente, DocumentoSubidoAprendiz
+from documentos.models import (
+    Documento,
+    DocumentoSubidoAsistente,
+    DocumentoSubidoAprendiz,
+)
 from .forms import (
     RegistroVisitanteForm,
     PasswordResetRequestForm,
@@ -322,7 +326,11 @@ def registrar_asistentes(request, tipo, visita_id):
                         )
 
                     # Compatibilidad con registros antiguos que guardaban en documento_adicional
-                    if not docs_salud_aprendiz.exists() and aprendiz.documento_adicional and doc_salud_default:
+                    if (
+                        not docs_salud_aprendiz.exists()
+                        and aprendiz.documento_adicional
+                        and doc_salud_default
+                    ):
                         DocumentoSubidoAsistente.objects.update_or_create(
                             documento_requerido=doc_salud_default,
                             asistente_interna=asistente,
@@ -345,10 +353,10 @@ def registrar_asistentes(request, tipo, visita_id):
     )
     documentos_por_categoria = {}
     for doc in documentos_disponibles:
-        cat_display = doc.get_categoria_display()
-        if cat_display not in documentos_por_categoria:
-            documentos_por_categoria[cat_display] = []
-        documentos_por_categoria[cat_display].append(doc)
+        categoria = doc.categoria
+        if categoria not in documentos_por_categoria:
+            documentos_por_categoria[categoria] = []
+        documentos_por_categoria[categoria].append(doc)
 
     asistentes_actuales = asistentes.count()
     puede_agregar = asistentes_actuales < max_asistentes
@@ -381,9 +389,9 @@ def registrar_asistentes(request, tipo, visita_id):
         if primer_asistente:
             for categoria, docs in context["documentos_por_categoria"].items():
                 if categoria in [
-                    "📝 ATS",
-                    "📜 Formato Inducción y Reinducción",
-                    "🤸🏻‍♂️ Charla de Seguridad y Calestenia",
+                    "ATS",
+                    "Formato Inducción y Reinducción",
+                    "Charla de Seguridad y Calestenia",
                 ]:
                     for doc in docs:
                         archivo = request.FILES.get(f"archivo_final_{doc.id}")
@@ -435,23 +443,23 @@ def registrar_asistentes(request, tipo, visita_id):
             )
             documentos_por_categoria = {}
             for doc in documentos_disponibles:
-                cat_display = doc.get_categoria_display()
-                if cat_display not in documentos_por_categoria:
-                    documentos_por_categoria[cat_display] = []
-                documentos_por_categoria[cat_display].append(doc)
+                categoria = doc.categoria
+                if categoria not in documentos_por_categoria:
+                    documentos_por_categoria[categoria] = []
+                documentos_por_categoria[categoria].append(doc)
 
             # Validar que solo el documento de 'Formato Auto Reporte Condiciones de Salud' fue subido
             archivos_ok = False
             archivos_dict = {}
             for categoria, docs in documentos_por_categoria.items():
-                if categoria == "👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud":
+                if categoria == "Formato Auto Reporte Condiciones de Salud":
                     for doc in docs:
                         file_field = f"documento_{doc.id}"
                         archivo = request.FILES.get(file_field)
                         if archivo:
                             archivos_ok = True
                         archivos_dict[doc.id] = archivo
-                elif categoria == "📋 Formato Autorización Padres de Familia":
+                elif categoria == "Formato Autorización Padres de Familia":
                     for doc in docs:
                         file_field = f"documento_{doc.id}"
                         archivo = request.FILES.get(file_field)
@@ -590,10 +598,10 @@ def registrar_asistentes(request, tipo, visita_id):
     )
     documentos_por_categoria = {}
     for doc in documentos_disponibles:
-        cat_display = doc.get_categoria_display()
-        if cat_display not in documentos_por_categoria:
-            documentos_por_categoria[cat_display] = []
-        documentos_por_categoria[cat_display].append(doc)
+        categoria = doc.categoria
+        if categoria not in documentos_por_categoria:
+            documentos_por_categoria[categoria] = []
+        documentos_por_categoria[categoria].append(doc)
 
     context = {
         "visita": visita,
@@ -1056,7 +1064,9 @@ def actualizar_info_asistente(request, tipo, asistente_id):
         telefono = request.POST.get("telefono", "").strip()
 
         if not nombre or not tipo_doc or not numero_doc:
-            messages.error(request, "Nombre, tipo y numero de documento son obligatorios.")
+            messages.error(
+                request, "Nombre, tipo y numero de documento son obligatorios."
+            )
             return render(
                 request,
                 "actualizar_info_asistente.html",
@@ -1097,7 +1107,9 @@ def actualizar_info_asistente(request, tipo, asistente_id):
 
         try:
             asistente.save()
-            messages.success(request, "Informacion del asistente actualizada correctamente.")
+            messages.success(
+                request, "Informacion del asistente actualizada correctamente."
+            )
             return _redirect_segun_rol(request, tipo=tipo, visita_id=visita.id)
         except IntegrityError:
             messages.error(request, "No se pudo actualizar por conflicto de datos.")
