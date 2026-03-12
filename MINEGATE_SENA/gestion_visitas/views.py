@@ -42,6 +42,58 @@ def es_administrador_panel(user):
     return user.is_superuser or (user.is_staff and not es_coordinador(user))
 
 
+def devolver_visita_a_agendador(visita):
+    """Retorna la visita a estado editable para permitir correcciones y reenvío."""
+    if visita.estado in ["documentos_enviados", "en_revision_documentos"]:
+        visita.estado = "aprobada_inicial"
+        visita.save(update_fields=["estado"])
+
+
+def _documentos_subidos_actuales(asistente):
+    """Retorna la última versión por documento y metadatos de reenvío."""
+    docs = asistente.documentos_subidos.select_related("documento_requerido").order_by(
+        "documento_requerido_id", "-fecha_subida", "-id"
+    )
+    latest_por_documento = {}
+    conteo_por_documento = {}
+    for ds in docs:
+        conteo_por_documento[ds.documento_requerido_id] = (
+            conteo_por_documento.get(ds.documento_requerido_id, 0) + 1
+        )
+        if ds.documento_requerido_id not in latest_por_documento:
+            latest_por_documento[ds.documento_requerido_id] = ds
+
+    documentos_actuales = []
+    for doc_id, ds in latest_por_documento.items():
+        versiones_envio = conteo_por_documento.get(doc_id, 1)
+        documentos_actuales.append(
+            {
+                "ds": ds,
+                "versiones_envio": versiones_envio,
+                "es_reenvio": versiones_envio > 1,
+            }
+        )
+    return documentos_actuales
+
+
+def _serializar_documento_subido(ds, versiones_envio=1, es_reenvio=False):
+    return {
+        "id": ds.id,
+        "titulo": ds.documento_requerido.titulo,
+        "categoria": ds.documento_requerido.get_categoria_display(),
+        "url": f"/documentos/ver-asistente/{ds.id}/",
+        "download_url": f"/documentos/descargar-asistente/{ds.id}/",
+        "estado": ds.estado,
+        "observaciones_revision": ds.observaciones_revision or "",
+        "nombre_archivo": ds.nombre_archivo,
+        "fecha_subida": (
+            ds.fecha_subida.strftime("%d/%m/%Y %H:%M") if ds.fecha_subida else None
+        ),
+        "versiones_envio": versiones_envio,
+        "es_reenvio": es_reenvio,
+    }
+
+
 def tiene_aprobacion_previa_coordinacion(visita, tipo):
     if tipo == "interna":
         return HistorialAccionVisitaInterna.objects.filter(
@@ -275,25 +327,12 @@ def api_detalle_visita(request, tipo, visita_id):
                         ),
                         "observaciones_revision": a.observaciones_revision,
                         "documentos_subidos": [
-                            {
-                                "id": ds.id,
-                                "titulo": ds.documento_requerido.titulo,
-                                "categoria": ds.documento_requerido.get_categoria_display(),
-                                "url": f"/documentos/ver-asistente/{ds.id}/",
-                                "download_url": f"/documentos/descargar-asistente/{ds.id}/",
-                                "estado": ds.estado,
-                                "observaciones_revision": ds.observaciones_revision
-                                or "",
-                                "nombre_archivo": ds.nombre_archivo,
-                                "fecha_subida": (
-                                    ds.fecha_subida.strftime("%d/%m/%Y %H:%M")
-                                    if ds.fecha_subida
-                                    else None
-                                ),
-                            }
-                            for ds in a.documentos_subidos.select_related(
-                                "documento_requerido"
-                            ).all()
+                            _serializar_documento_subido(
+                                doc_actual["ds"],
+                                versiones_envio=doc_actual["versiones_envio"],
+                                es_reenvio=doc_actual["es_reenvio"],
+                            )
+                            for doc_actual in _documentos_subidos_actuales(a)
                         ],
                     }
                 )
@@ -362,25 +401,12 @@ def api_detalle_visita(request, tipo, visita_id):
                         ),
                         "observaciones_revision": a.observaciones_revision,
                         "documentos_subidos": [
-                            {
-                                "id": ds.id,
-                                "titulo": ds.documento_requerido.titulo,
-                                "categoria": ds.documento_requerido.get_categoria_display(),
-                                "url": f"/documentos/ver-asistente/{ds.id}/",
-                                "download_url": f"/documentos/descargar-asistente/{ds.id}/",
-                                "estado": ds.estado,
-                                "observaciones_revision": ds.observaciones_revision
-                                or "",
-                                "nombre_archivo": ds.nombre_archivo,
-                                "fecha_subida": (
-                                    ds.fecha_subida.strftime("%d/%m/%Y %H:%M")
-                                    if ds.fecha_subida
-                                    else None
-                                ),
-                            }
-                            for ds in a.documentos_subidos.select_related(
-                                "documento_requerido"
-                            ).all()
+                            _serializar_documento_subido(
+                                doc_actual["ds"],
+                                versiones_envio=doc_actual["versiones_envio"],
+                                es_reenvio=doc_actual["es_reenvio"],
+                            )
+                            for doc_actual in _documentos_subidos_actuales(a)
                         ],
                     }
                 )
@@ -774,11 +800,15 @@ def api_revisar_autorizacion_padres(request, tipo, asistente_id, accion):
             )
         asistente.estado_autorizacion_padres = "rechazado"
         asistente.observaciones_autorizacion_padres = observaciones
+        asistente.estado = "documentos_rechazados"
+        asistente.observaciones_revision = (
+            f"Autorización de padres rechazada: {observaciones}"
+        )
         asistente.save()
         return JsonResponse(
             {
                 "success": True,
-                "message": f"❌ Autorización de padres rechazada para {asistente.nombre_completo}",
+                "message": f"❌ Autorización de padres rechazada para {asistente.nombre_completo}. Queda pendiente de corrección.",
             }
         )
 
@@ -802,8 +832,10 @@ def api_revisar_documento_asistente(request, tipo, asistente_id, accion):
     observaciones = request.POST.get("observaciones", "")
 
     if accion == "aprobar":
-        # Restricción: No se puede aprobar masivamente si hay rechazos parciales
-        if asistente.documentos_subidos.filter(estado="rechazado").exists():
+        documentos_actuales = _documentos_subidos_actuales(asistente)
+
+        # Restricción: No se puede aprobar masivamente si la última versión tiene rechazos
+        if any(doc_actual["ds"].estado == "rechazado" for doc_actual in documentos_actuales):
             return JsonResponse(
                 {
                     "success": False,
@@ -812,7 +844,7 @@ def api_revisar_documento_asistente(request, tipo, asistente_id, accion):
             )
 
         # Restricción: Debe haber al menos un documento aprobado individualmente
-        if not asistente.documentos_subidos.filter(estado="aprobado").exists():
+        if not any(doc_actual["ds"].estado == "aprobado" for doc_actual in documentos_actuales):
             return JsonResponse(
                 {
                     "success": False,
@@ -845,7 +877,7 @@ def api_revisar_documento_asistente(request, tipo, asistente_id, accion):
         return JsonResponse(
             {
                 "success": True,
-                "message": f"❌ Documentos de {asistente.nombre_completo} rechazados",
+                "message": f"❌ Documentos de {asistente.nombre_completo} rechazados. Queda pendiente de corrección.",
                 "nuevo_estado": "documentos_rechazados",
             }
         )
@@ -924,7 +956,12 @@ def api_documentos_revision(request):
     if tipo == "internas":
         qs = AsistenteVisitaInterna.objects.select_related("visita").all()
         if estado_asistente:
-            qs = qs.filter(estado=estado_asistente)
+            if estado_asistente == "revision_activa":
+                qs = qs.filter(
+                    estado__in=["pendiente_documentos", "documentos_rechazados"]
+                )
+            else:
+                qs = qs.filter(estado=estado_asistente)
         for a in qs:
             documentos_data.append(
                 {
@@ -962,31 +999,24 @@ def api_documentos_revision(request):
                     ),
                     "observaciones_revision": a.observaciones_revision,
                     "documentos_subidos": [
-                        {
-                            "id": ds.id,
-                            "titulo": ds.documento_requerido.titulo,
-                            "categoria": ds.documento_requerido.get_categoria_display(),
-                            "url": f"/documentos/ver-asistente/{ds.id}/",
-                            "download_url": f"/documentos/descargar-asistente/{ds.id}/",
-                            "estado": ds.estado,
-                            "observaciones_revision": ds.observaciones_revision or "",
-                            "nombre_archivo": ds.nombre_archivo,
-                            "fecha_subida": (
-                                ds.fecha_subida.strftime("%d/%m/%Y %H:%M")
-                                if ds.fecha_subida
-                                else None
-                            ),
-                        }
-                        for ds in a.documentos_subidos.select_related(
-                            "documento_requerido"
-                        ).all()
+                        _serializar_documento_subido(
+                            doc_actual["ds"],
+                            versiones_envio=doc_actual["versiones_envio"],
+                            es_reenvio=doc_actual["es_reenvio"],
+                        )
+                        for doc_actual in _documentos_subidos_actuales(a)
                     ],
                 }
             )
     else:
         qs = AsistenteVisitaExterna.objects.select_related("visita").all()
         if estado_asistente:
-            qs = qs.filter(estado=estado_asistente)
+            if estado_asistente == "revision_activa":
+                qs = qs.filter(
+                    estado__in=["pendiente_documentos", "documentos_rechazados"]
+                )
+            else:
+                qs = qs.filter(estado=estado_asistente)
         for a in qs:
             documentos_data.append(
                 {
@@ -1014,24 +1044,12 @@ def api_documentos_revision(request):
                     ),
                     "observaciones_revision": a.observaciones_revision,
                     "documentos_subidos": [
-                        {
-                            "id": ds.id,
-                            "titulo": ds.documento_requerido.titulo,
-                            "categoria": ds.documento_requerido.get_categoria_display(),
-                            "url": f"/documentos/ver-asistente/{ds.id}/",
-                            "download_url": f"/documentos/descargar-asistente/{ds.id}/",
-                            "estado": ds.estado,
-                            "observaciones_revision": ds.observaciones_revision or "",
-                            "nombre_archivo": ds.nombre_archivo,
-                            "fecha_subida": (
-                                ds.fecha_subida.strftime("%d/%m/%Y %H:%M")
-                                if ds.fecha_subida
-                                else None
-                            ),
-                        }
-                        for ds in a.documentos_subidos.select_related(
-                            "documento_requerido"
-                        ).all()
+                        _serializar_documento_subido(
+                            doc_actual["ds"],
+                            versiones_envio=doc_actual["versiones_envio"],
+                            es_reenvio=doc_actual["es_reenvio"],
+                        )
+                        for doc_actual in _documentos_subidos_actuales(a)
                     ],
                 }
             )
