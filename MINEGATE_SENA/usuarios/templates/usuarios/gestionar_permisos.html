@@ -2,6 +2,7 @@
 {% load static %}
  {% block content %} 
 <link rel="stylesheet" href="{% static 'css/gestionar_permisos.css' %}" />
+<link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}?v=20260311c">
 
 <style>
   /* ===== ESTILOS ADICIONALES PARA GESTIÓN DE PERMISOS ===== */
@@ -432,6 +433,9 @@
     </div>
   </div>
 
+  <!-- Script para Modal Unificado -->
+  <script src="{% static 'core/js/custom_modal.js' %}?v=20260311c"></script>
+
   <!-- Script para Gestión de Permisos -->
   <script>
     let usuarioIdEliminar = null;
@@ -662,14 +666,32 @@
 
     function abrirModalEliminar(usuarioId, nombreUsuario, documento) {
       usuarioIdEliminar = usuarioId;
-      document.getElementById("usuarioEliminar").textContent = nombreUsuario;
-      document.getElementById("documentoEliminar").textContent = documento;
-      const form = document.getElementById("formEliminar");
-      form.action = "{% url 'usuarios:eliminar_usuario_permisos' 0 %}".replace(
-        "0",
-        usuarioId,
-      );
-      abrirModal("modalEliminar");
+      const mensaje = '<strong>¿Estás seguro de que deseas eliminar permanentemente a:</strong><br><br>' +
+                      '<strong>Nombre:</strong> ' + nombreUsuario + '<br>' +
+                      '<strong>Documento:</strong> ' + documento + '<br><br>' +
+                      '<small style="color: #6b7280;">El usuario será eliminado del sistema junto con todos sus datos asociados.</small>';
+      
+      if (typeof window.mConfirm === 'function') {
+        window.mConfirm(mensaje, {
+          title: 'Eliminar Usuario',
+          confirmText: 'Sí, Eliminar',
+          confirmClass: 'cm-btn-danger',
+          confirmIcon: 'fas fa-trash'
+        }).then(function(resultado) {
+          if (resultado) {
+            const form = document.getElementById("formEliminar");
+            form.action = "{% url 'usuarios:eliminar_usuario_permisos' 0 %}".replace("0", usuarioId);
+            form.submit();
+          }
+        });
+      } else {
+        // Fallback: usar modal antiguo si mConfirm no está disponible
+        document.getElementById("usuarioEliminar").textContent = nombreUsuario;
+        document.getElementById("documentoEliminar").textContent = documento;
+        const form = document.getElementById("formEliminar");
+        form.action = "{% url 'usuarios:eliminar_usuario_permisos' 0 %}".replace("0", usuarioId);
+        abrirModal("modalEliminar");
+      }
     }
 
     function abrirModalToggleEstado(usuarioId, nombreUsuario, estaActivo) {
