@@ -31,6 +31,7 @@ from .forms import (
 from .models import RegistroVisitante
 from django.conf import settings
 from django.db import IntegrityError
+from pathlib import Path
 
 
 def _redirect_segun_rol(request, tipo=None, visita_id=None):
@@ -382,7 +383,10 @@ def registrar_asistentes(request, tipo, visita_id):
         and mostrar_archivos_finales  # Permitir si hay al menos 1 asistente
         and any(f.startswith("archivo_final_") for f in request.FILES)
     ):
+        extensiones_permitidas = {".pdf", ".doc", ".docx"}
         archivos_subidos = []
+        archivos_invalidos = []
+        archivos_a_guardar = []
         # Obtener el primer asistente para asociar los archivos finales
         primer_asistente = asistentes.first() if asistentes.exists() else None
 
@@ -396,19 +400,35 @@ def registrar_asistentes(request, tipo, visita_id):
                     for doc in docs:
                         archivo = request.FILES.get(f"archivo_final_{doc.id}")
                         if archivo:
-                            # Guardar el archivo asociado al primer asistente de la visita
-                            DocumentoSubidoAsistente.objects.create(
-                                documento_requerido=doc,
-                                asistente_interna=(
-                                    primer_asistente if tipo == "interna" else None
-                                ),
-                                asistente_externa=(
-                                    primer_asistente if tipo == "externa" else None
-                                ),
-                                archivo=archivo,
-                                estado="pendiente",
-                            )
-                            archivos_subidos.append(doc.titulo)
+                            extension = Path(archivo.name).suffix.lower()
+                            if extension not in extensiones_permitidas:
+                                archivos_invalidos.append(doc.titulo or archivo.name)
+                                continue
+
+                            archivos_a_guardar.append((doc, archivo))
+
+            if archivos_invalidos:
+                nombres = ", ".join(archivos_invalidos)
+                messages.error(
+                    request,
+                    f"Solo se permiten archivos PDF o Word (.doc, .docx). Revise: {nombres}.",
+                )
+                return redirect(
+                    "panel_visitante:registrar_asistentes",
+                    tipo=tipo,
+                    visita_id=visita_id,
+                )
+
+            for doc, archivo in archivos_a_guardar:
+                # Guardar el archivo asociado al primer asistente de la visita
+                DocumentoSubidoAsistente.objects.create(
+                    documento_requerido=doc,
+                    asistente_interna=(primer_asistente if tipo == "interna" else None),
+                    asistente_externa=(primer_asistente if tipo == "externa" else None),
+                    archivo=archivo,
+                    estado="pendiente",
+                )
+                archivos_subidos.append(doc.titulo)
 
             if archivos_subidos:
                 messages.success(request, "Archivos finales subidos con éxito.")
@@ -451,20 +471,38 @@ def registrar_asistentes(request, tipo, visita_id):
             # Validar que solo el documento de 'Formato Auto Reporte Condiciones de Salud' fue subido
             archivos_ok = False
             archivos_dict = {}
+            extensiones_permitidas_docs = {".pdf", ".doc", ".docx"}
+            archivos_invalidos = []
             for categoria, docs in documentos_por_categoria.items():
                 if categoria == "Formato Auto Reporte Condiciones de Salud":
                     for doc in docs:
                         file_field = f"documento_{doc.id}"
                         archivo = request.FILES.get(file_field)
                         if archivo:
-                            archivos_ok = True
+                            extension = Path(archivo.name).suffix.lower()
+                            if extension not in extensiones_permitidas_docs:
+                                archivos_invalidos.append(doc.categoria or archivo.name)
+                            else:
+                                archivos_ok = True
                         archivos_dict[doc.id] = archivo
                 elif categoria == "Formato Autorización Padres de Familia":
                     for doc in docs:
                         file_field = f"documento_{doc.id}"
                         archivo = request.FILES.get(file_field)
+                        if archivo:
+                            extension = Path(archivo.name).suffix.lower()
+                            if extension not in extensiones_permitidas_docs:
+                                archivos_invalidos.append(doc.categoria or archivo.name)
                         # Este archivo es opcional, por lo que no afecta archivos_ok
                         archivos_dict[doc.id] = archivo
+
+            if archivos_invalidos:
+                docs_invalidos = ", ".join(archivos_invalidos)
+                messages.error(
+                    request,
+                    f"Solo se permiten archivos PDF o Word (.doc, .docx). Revise: {docs_invalidos}.",
+                )
+                campos_ok = False
 
             if campos_ok and archivos_ok:
                 try:
@@ -487,7 +525,6 @@ def registrar_asistentes(request, tipo, visita_id):
                             telefono=telefono,
                         )
                     # Guardar archivos subidos
-                    from documentos.models import DocumentoSubidoAsistente
 
                     # Separar el formato de autorización de padres de los demás documentos
                     formato_padres_archivo = None
@@ -1000,6 +1037,19 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
         archivo = request.FILES.get(f"documento_salud_{asistente_id}")
 
         if archivo:
+            extensiones_permitidas_docs = {".pdf", ".doc", ".docx"}
+            extension = Path(archivo.name).suffix.lower()
+            if extension not in extensiones_permitidas_docs:
+                messages.error(
+                    request,
+                    "Solo se permiten archivos PDF o Word (.doc, .docx) para este documento.",
+                )
+                return redirect(
+                    "panel_visitante:registrar_asistentes",
+                    tipo=tipo,
+                    visita_id=visita.id,
+                )
+
             # Verificar o crear el DocumentoSubidoAsistente
             if tipo == "interna":
                 doc_subido, created = DocumentoSubidoAsistente.objects.update_or_create(
