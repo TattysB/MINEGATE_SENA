@@ -44,6 +44,11 @@ urlpatterns = [
     ),
     # API para gestión de documentos (panel admin)
     path("api/listar/", views.listar_documentos_api, name="api_listar_documentos"),
+    path(
+        "api/categorias-faltantes/",
+        views.categorias_faltantes_api,
+        name="api_categorias_faltantes",
+    ),
     path("api/subir/", views.subir_documentos_api, name="api_subir_documentos"),
     path(
         "api/eliminar/<int:documento_id>/",

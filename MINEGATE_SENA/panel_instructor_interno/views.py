@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.contrib import messages
 from django.db.models import Q
+from django.db import IntegrityError
 from django.db import transaction
 from visitaInterna.models import VisitaInterna
 from .models import Ficha, Programa
@@ -17,7 +18,7 @@ from visitaInterna.models import VisitaInterna, AsistenteVisitaInterna
 from .models import Ficha, Programa, Aprendiz
 from .forms import VisitaInternaInstructorForm, ProgramaForm, FichaForm, AprendizForm
 from documentos.models import Documento, DocumentoSubidoAsistente
-
+from documentos.models import Documento, DocumentoSubidoAprendiz, DocumentoSubidoAsistente
 
 CATEGORIA_DOC_SALUD = "Formato Auto Reporte Condiciones de Salud"
 CATEGORIAS_ARCHIVOS_FINALES = [
@@ -144,6 +145,7 @@ def construir_reporte_documental_visita(visita, tipo_visita):
         "total_alertas": total_incidencias_asistentes + len(archivos_finales_con_alerta),
         "hay_alertas": bool(asistentes_con_alertas or archivos_finales_con_alerta),
     }
+
 
 # ==================== AUTENTICACIÓN POR SESIÓN ====================
 
@@ -926,32 +928,48 @@ def crear_aprendiz(request, ficha_id):
     ficha = get_object_or_404(Ficha, pk=ficha_id)
 
     # Obtener documentos por categoría
-    docs = Documento.objects.all()
-    documentos_por_categoria = {}
-    for doc in docs:
-        if doc.categoria not in documentos_por_categoria:
-            documentos_por_categoria[doc.categoria] = []
-        documentos_por_categoria[doc.categoria].append(doc)
+    documentos_por_categoria = obtener_documentos_por_categoria()
 
     if request.method == "POST":
-        form = AprendizForm(request.POST, request.FILES)
+        form = AprendizForm(request.POST, request.FILES, ficha=ficha)
         if form.is_valid():
             aprendiz = form.save(commit=False)
             aprendiz.ficha = ficha
-            aprendiz.save()
-            messages.success(
-                request,
-                f'✅ Aprendiz "{aprendiz.get_nombre_completo()}" registrado correctamente con documentos.',
-            )
-            return redirect(
-                "panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id
-            )
+            try:
+                aprendiz.save()
+                
+                # Guardar documentos de apoyo subidos
+                for categoria, docs in documentos_por_categoria.items():
+                    if categoria == '👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud':
+                        for doc in docs:
+                            archivo = request.FILES.get(f"documento_{doc.id}")
+                            if archivo:
+                                DocumentoSubidoAprendiz.objects.create(
+                                    documento_requerido=doc,
+                                    aprendiz=aprendiz,
+                                    archivo=archivo,
+                                    estado='pendiente'
+                                )
+                
+                messages.success(
+                    request,
+                    f'✅ Aprendiz "{aprendiz.get_nombre_completo()}" registrado correctamente con documentos.',
+                )
+                return redirect(
+                    "panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id
+                )
+            except IntegrityError:
+                messages.error(
+                    request, 
+                    f"❌ Ya existe un aprendiz con el documento {aprendiz.numero_documento} en esta ficha. "
+                    f"Cada documento debe ser único por ficha."
+                )
         else:
-            messages.error(
-                request, "❌ Error al validar el formulario. Revisa los campos."
-            )
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"❌ {field}: {error}")
     else:
-        form = AprendizForm()
+        form = AprendizForm(ficha=ficha)
 
     context = {
         "form": form,
@@ -974,27 +992,51 @@ def editar_aprendiz(request, pk):
     ficha = aprendiz.ficha
 
     # Obtener documentos por categoría
-    docs = Documento.objects.all()
-    documentos_por_categoria = {}
-    for doc in docs:
-        if doc.categoria not in documentos_por_categoria:
-            documentos_por_categoria[doc.categoria] = []
-        documentos_por_categoria[doc.categoria].append(doc)
+    documentos_por_categoria = obtener_documentos_por_categoria()
 
     if request.method == "POST":
-        form = AprendizForm(request.POST, request.FILES, instance=aprendiz)
+        form = AprendizForm(request.POST, request.FILES, instance=aprendiz, ficha=ficha)
         if form.is_valid():
-            form.save()
-            messages.success(
-                request, f'✅ Aprendiz "{aprendiz.get_nombre_completo()}" actualizado.'
-            )
-            return redirect(
-                "panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id
-            )
+            try:
+                form.save()
+                
+                # Guardar documentos de apoyo subidos (actualizar existentes)
+                for categoria, docs in documentos_por_categoria.items():
+                    if categoria == '👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud':
+                        for doc in docs:
+                            archivo = request.FILES.get(f"documento_{doc.id}")
+                            if archivo:
+                                # Eliminar documento anterior si existe
+                                DocumentoSubidoAprendiz.objects.filter(
+                                    documento_requerido=doc,
+                                    aprendiz=aprendiz
+                                ).delete()
+                                # Crear nuevo registro
+                                DocumentoSubidoAprendiz.objects.create(
+                                    documento_requerido=doc,
+                                    aprendiz=aprendiz,
+                                    archivo=archivo,
+                                    estado='pendiente'
+                                )
+                
+                messages.success(
+                    request, f'✅ Aprendiz "{aprendiz.get_nombre_completo()}" actualizado.'
+                )
+                return redirect(
+                    "panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id
+                )
+            except IntegrityError:
+                messages.error(
+                    request, 
+                    f"❌ Ya existe un aprendiz con el documento {aprendiz.numero_documento} en esta ficha. "
+                    f"Cada documento debe ser único por ficha."
+                )
         else:
-            messages.error(request, "❌ Error al validar el formulario.")
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"❌ {field}: {error}")
     else:
-        form = AprendizForm(instance=aprendiz)
+        form = AprendizForm(instance=aprendiz, ficha=ficha)
 
     context = {
         "form": form,
@@ -1097,8 +1139,6 @@ def registrar_aprendices_visita(request, visita_id):
         aprendices_registrados = 0
         aprendices_duplicados = 0
 
-        from documentos.models import DocumentoSubidoAsistente, Documento
-
         for aprendiz_id in aprendices_ids:
             try:
                 aprendiz = get_object_or_404(Aprendiz, pk=aprendiz_id, ficha=ficha)
@@ -1121,22 +1161,29 @@ def registrar_aprendices_visita(request, visita_id):
                     estado="pendiente_documentos",
                 )
 
-                # Cargar documentos del aprendiz automáticamente
-                # Buscar el documento "Formato Auto Reporte Condiciones de Salud"
-                if aprendiz.documento_adicional:
-                    try:
-                        doc_salud = Documento.objects.filter(
-                            categoria="Formato Auto Reporte Condiciones de Salud"
-                        ).first()
-                        if doc_salud:
-                            DocumentoSubidoAsistente.objects.create(
-                                documento_requerido=doc_salud,
-                                asistente_interna=asistente,
-                                archivo=aprendiz.documento_adicional,
-                            )
-                    except Exception as e:
-                        # Silenciar si falla, pero continuar con el registro
-                        pass
+                # Cargar documentos del aprendiz automaticamente por categoria
+                docs_aprendiz = DocumentoSubidoAprendiz.objects.filter(
+                    aprendiz=aprendiz
+                ).select_related("documento_requerido")
+
+                for doc_subido in docs_aprendiz:
+                    DocumentoSubidoAsistente.objects.update_or_create(
+                        documento_requerido=doc_subido.documento_requerido,
+                        asistente_interna=asistente,
+                        defaults={"archivo": doc_subido.archivo},
+                    )
+
+                # Compatibilidad con registros antiguos que solo guardaban documento_adicional
+                if not docs_aprendiz.exists() and aprendiz.documento_adicional:
+                    doc_salud = Documento.objects.filter(
+                        categoria="Formato Auto Reporte Condiciones de Salud"
+                    ).first()
+                    if doc_salud:
+                        DocumentoSubidoAsistente.objects.update_or_create(
+                            documento_requerido=doc_salud,
+                            asistente_interna=asistente,
+                            defaults={"archivo": aprendiz.documento_adicional},
+                        )
 
                 aprendices_registrados += 1
             except Exception as e:
@@ -1157,6 +1204,14 @@ def registrar_aprendices_visita(request, visita_id):
 
     # GET - Mostrar formulario
     aprendices = ficha.aprendices.filter(estado="activo").order_by("apellido", "nombre")
+
+    # Marcas visuales por categoria para el template
+    for aprendiz in aprendices:
+        docs_qs = aprendiz.documentos_subidos.select_related("documento_requerido")
+        aprendiz.tiene_documentos_subidos = docs_qs.exists()
+        aprendiz.tiene_doc_salud = docs_qs.filter(
+            documento_requerido__categoria="Formato Auto Reporte Condiciones de Salud"
+        ).exists()
 
     # Identificar cuáles ya están registrados
     ya_registrados = list(
@@ -1191,11 +1246,30 @@ def obtener_documentos_por_categoria():
     for d in docs:
         # Solo agregar si el documento tiene un archivo físico asociado
         if d.archivo:
-            cat_nombre = str(d.categoria) if d.categoria else "General"
-            if cat_nombre not in resultado:
-                resultado[cat_nombre] = []
-            resultado[cat_nombre].append(d)
+            cat_display = d.get_categoria_display() if d.categoria else "General"
+            if cat_display not in resultado:
+                resultado[cat_display] = []
+            resultado[cat_display].append(d)
     return resultado
+
+
+def guardar_documentos_aprendiz(aprendiz, archivos_subidos, documentos_por_categoria):
+    """Guarda o reemplaza los documentos requeridos cargados para un aprendiz."""
+    for docs in documentos_por_categoria.values():
+        for doc in docs:
+            archivo = archivos_subidos.get(f"documento_{doc.id}")
+            if not archivo:
+                continue
+
+            DocumentoSubidoAprendiz.objects.update_or_create(
+                aprendiz=aprendiz,
+                documento_requerido=doc,
+                defaults={
+                    "archivo": archivo,
+                    "estado": "pendiente",
+                    "observaciones_revision": None,
+                },
+            )
 
 
 # ==================== MÓDULO: GESTIONAR APRENDICES (ACTUALIZADO) ====================
@@ -1210,24 +1284,31 @@ def crear_aprendiz(request, ficha_id):
     docs_cat = obtener_documentos_por_categoria()
 
     if request.method == "POST":
-        form = AprendizForm(request.POST, request.FILES)
+        form = AprendizForm(request.POST, request.FILES, ficha=ficha)
         if form.is_valid():
             aprendiz = form.save(commit=False)
             aprendiz.ficha = ficha
-            aprendiz.save()
-            messages.success(
-                request,
-                f'✅ Aprendiz "{aprendiz.get_nombre_completo()}" registrado correctamente.',
-            )
-            return redirect(
-                "panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id
-            )
+            try:
+                aprendiz.save()
+                guardar_documentos_aprendiz(aprendiz, request.FILES, docs_cat)
+                messages.success(
+                    request,
+                    f'✅ Aprendiz "{aprendiz.get_nombre_completo()}" registrado correctamente.',
+                )
+                return redirect(
+                    "panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id
+                )
+            except IntegrityError:
+                messages.error(
+                    request, 
+                    f"❌ Ya existe un aprendiz con el documento {aprendiz.numero_documento} en esta ficha."
+                )
         else:
-            messages.error(
-                request, "❌ Error al validar el formulario. Revisa los campos."
-            )
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"❌ {field}: {error}")
     else:
-        form = AprendizForm()
+        form = AprendizForm(ficha=ficha)
 
     context = {
         "form": form,
@@ -1235,6 +1316,7 @@ def crear_aprendiz(request, ficha_id):
         "correo": correo,
         "titulo": "Registrar Aprendiz",
         "documentos_por_categoria": docs_cat,  # <-- ESTO ACTIVA LAS SECCIONES EN EL HTML
+        "docs_subidos_ids": [],
     }
     return render(request, "panel_instructor_interno/form_aprendiz.html", context)
 
@@ -1249,19 +1331,32 @@ def editar_aprendiz(request, pk):
     docs_cat = obtener_documentos_por_categoria()
 
     if request.method == "POST":
-        form = AprendizForm(request.POST, request.FILES, instance=aprendiz)
+        form = AprendizForm(request.POST, request.FILES, instance=aprendiz, ficha=ficha)
         if form.is_valid():
-            form.save()
-            messages.success(
-                request, f'✅ Aprendiz "{aprendiz.get_nombre_completo()}" actualizado.'
-            )
-            return redirect(
-                "panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id
-            )
+            try:
+                form.save()
+                guardar_documentos_aprendiz(aprendiz, request.FILES, docs_cat)
+                messages.success(
+                    request, f'✅ Aprendiz "{aprendiz.get_nombre_completo()}" actualizado.'
+                )
+                return redirect(
+                    "panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id
+                )
+            except IntegrityError:
+                messages.error(
+                    request, 
+                    f"❌ Ya existe un aprendiz con el documento {aprendiz.numero_documento} en esta ficha."
+                )
         else:
-            messages.error(request, "❌ Error al validar el formulario.")
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"❌ {field}: {error}")
     else:
-        form = AprendizForm(instance=aprendiz)
+        form = AprendizForm(instance=aprendiz, ficha=ficha)
+
+    docs_subidos_ids = list(
+        aprendiz.documentos_subidos.values_list("documento_requerido_id", flat=True)
+    )
 
     context = {
         "form": form,
@@ -1270,6 +1365,7 @@ def editar_aprendiz(request, pk):
         "correo": correo,
         "titulo": "Editar Aprendiz",
         "documentos_por_categoria": docs_cat,  # <-- ESTO ACTIVA LAS SECCIONES EN EL HTML
+        "docs_subidos_ids": docs_subidos_ids,
     }
     return render(request, "panel_instructor_interno/form_aprendiz.html", context)
 

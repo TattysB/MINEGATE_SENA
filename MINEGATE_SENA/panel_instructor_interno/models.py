@@ -138,7 +138,7 @@ class Aprendiz(models.Model):
     )
     
     numero_documento = models.CharField(
-        max_length=50,
+        max_length=10,
         verbose_name='Número de Documento'
     )
     
@@ -149,7 +149,8 @@ class Aprendiz(models.Model):
     telefono = models.CharField(
         max_length=20,
         blank=True,
-        verbose_name='Teléfono'
+        verbose_name='Teléfono',
+        null=True
     )
     
     # Documentos requeridos
@@ -157,8 +158,6 @@ class Aprendiz(models.Model):
         upload_to='aprendices/documentos/%Y/%m/',
         blank=True,
         null=True,
-        verbose_name='Documento de Identidad (PDF/Imagen)',
-        help_text='PDF o imagen del documento de identidad'
     )
     
     documento_adicional = models.FileField(

@@ -194,7 +194,7 @@
                     <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% elif doc.extension == '.jpg' or doc.extension == '.jpeg' or doc.extension == '.png' %}file-image{% else %}file-alt{% endif %}"
                         class="extension-icon-{{ doc.extension|slice:'1:' }}"></i>
                     <div>
-                        <strong style="color: #333;">{{ doc.titulo }}</strong>
+                        <strong style="color: #333;">{{ doc.categoria }}</strong>
                         <br>
                         <small style="color: #888;">{{ doc.nombre_archivo }} · {{ doc.tamaño_legible }}</small>
                         {% if doc.descripcion %}

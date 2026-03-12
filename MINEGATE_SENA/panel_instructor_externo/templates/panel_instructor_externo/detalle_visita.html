@@ -48,6 +48,8 @@
   .btn-registrar:hover { background:var(--ext-oscuro); color:white; transform:translateY(-1px); }
   .btn-enviar { background:#6366f1; color:white; border:none; padding:10px 22px; border-radius:50px; font-weight:700; font-size:0.9rem; text-decoration:none; cursor:pointer; display:inline-flex; align-items:center; gap:7px; transition:all 0.2s; }
   .btn-enviar:hover { background:#4f46e5; color:white; }
+  .btn-actualizar-asi { background:transparent; color:#2563eb; border:1px solid #2563eb; padding:4px 12px; border-radius:50px; font-size:0.78rem; font-weight:600; text-decoration:none; transition:all 0.2s; }
+  .btn-actualizar-asi:hover { background:#dbeafe; color:#1d4ed8; }
   .btn-eliminar-asi { background:transparent; color:#ef4444; border:1px solid #ef4444; padding:4px 12px; border-radius:50px; font-size:0.78rem; font-weight:600; text-decoration:none; transition:all 0.2s; }
   .btn-eliminar-asi:hover { background:#fee2e2; color:#991b1b; }
   .progress-wrap { background:#e9ecef; border-radius:50px; height:12px; overflow:hidden; margin:0.5rem 0; }
@@ -68,6 +70,21 @@
   .estado-pill-mini.rechazado { background:#fecaca; color:#7f1d1d; }
   .estado-pill-mini.pendiente { background:#fef3c7; color:#92400e; }
   .estado-pill-mini.aprobado { background:#d1fae5; color:#065f46; }
+  .final-doc-item { margin-bottom: 10px; padding: 10px; border: 1px solid #d7dee7; border-radius: 10px; background: #ffffff; box-shadow: 0 3px 8px rgba(15, 23, 42, 0.04); }
+  .final-doc-head { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .final-doc-icon { width:34px; height:34px; border-radius:9px; background:#eef9e8; color:#228B22; display:flex; align-items:center; justify-content:center; font-size:0.9rem; }
+  .final-doc-title { font-weight: 800; color: #1f2937; margin:0; font-size: 0.94rem; line-height:1.2; }
+  .final-doc-subtitle { margin:2px 0 0; color:#6b7280; font-size:0.8rem; }
+  .final-doc-input { display: block; margin-top: 4px; padding: 7px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%; background:#fff; }
+  .final-cat-card { border: 1px solid #c7dfb3; border-radius: 12px; background: #fff; overflow: hidden; margin-bottom: 14px; }
+  .final-cat-top { display:flex; align-items:center; gap:10px; background: #edf6e7; padding: 10px 12px; border-bottom: 1px solid #d8e9cb; }
+  .final-cat-top-icon { width:44px; height:44px; border-radius: 12px; background: #3faa08; color:#fff; display:flex; align-items:center; justify-content:center; box-shadow: 0 8px 14px rgba(63,170,8,0.24); font-size: 1rem; }
+  .final-cat-top-title { margin:0; font-size: 1.05rem; font-weight: 800; color: #0f172a; line-height: 1.1; }
+  .final-cat-top-sub { margin:3px 0 0; color:#5b677a; font-size:0.76rem; font-weight:600; }
+  .final-cat-body { padding: 10px; background: #f8fafc; }
+  .final-modal-title { color: #145a32; margin: 0 0 8px; display:flex; align-items:center; gap:10px; font-size: 2.2rem; font-weight: 800; letter-spacing: 0.2px; line-height: 1.1; }
+  .final-modal-title-icon { width:48px; height:48px; border-radius:12px; display:inline-flex; align-items:center; justify-content:center; background: linear-gradient(135deg, #39a900, #2d8600); color:#fff; box-shadow: 0 8px 16px rgba(57, 169, 0, 0.28); font-size: 1.25rem; }
+  .final-modal-subtitle { color: #4b5563; margin: 0 0 16px; font-size: 0.95rem; font-weight: 500; }
 </style>
 </head>
 <body>
@@ -313,11 +330,17 @@
             <small>{{ asistente.get_tipo_documento_display }}: {{ asistente.numero_documento }}</small>
           </div>
           {% if visita.estado == 'aprobada_inicial' %}
-          <a href="{% url 'panel_visitante:eliminar_asistente' tipo='externa' asistente_id=asistente.id %}"
-             class="btn-eliminar-asi"
-             onclick="return confirm('¿Eliminar a {{ asistente.nombre_completo }}?')">
-            <i class="fas fa-trash me-1"></i>Eliminar
-          </a>
+          <div class="d-flex gap-2">
+            <a href="{% url 'panel_visitante:actualizar_info_asistente' tipo='externa' asistente_id=asistente.id %}"
+               class="btn-actualizar-asi">
+              <i class="fas fa-pen me-1"></i>Actualizar
+            </a>
+            <a href="{% url 'panel_visitante:eliminar_asistente' tipo='externa' asistente_id=asistente.id %}"
+               class="btn-eliminar-asi"
+               onclick="return confirm('¿Eliminar a {{ asistente.nombre_completo }}?')">
+              <i class="fas fa-trash me-1"></i>Eliminar
+            </a>
+          </div>
           {% endif %}
         </div>
         {% endfor %}
@@ -379,24 +402,41 @@
 </div>
 
 <!-- Modal Archivos Finales -->
-<div id="modalArchivosFinales" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
-  <div style="background: #fff; padding: 32px 24px; border-radius: 12px; max-width: 600px; margin: 80px auto; box-shadow: 0 8px 32px rgba(0,0,0,0.2); position: relative;">
+<div id="modalArchivosFinales" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); overflow-y: auto; padding: 24px 0;">
+  <div style="background: #fff; padding: 32px 24px; border-radius: 12px; max-width: 600px; max-height: 88vh; overflow-y: auto; margin: 24px auto; box-shadow: 0 8px 32px rgba(0,0,0,0.2); position: relative;">
     <button onclick="cerrarModalArchivosFinales()" style="position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 1.5rem; color: #888; cursor: pointer;">&times;</button>
-    <h2 style="color: #145A32; margin-bottom: 18px;"><i class="fas fa-folder-open me-2"></i> Archivos Finales</h2>
-    <p style="color: #333; margin-bottom: 18px;">Suba los archivos requeridos para finalizar el proceso:</p>
+    <h2 class="final-modal-title"><span class="final-modal-title-icon"><i class="fas fa-folder-open"></i></span>Archivos Finales</h2>
+    <p class="final-modal-subtitle">Suba los archivos requeridos para finalizar el proceso:</p>
     <form method="post" enctype="multipart/form-data" id="formArchivosFinales" action="{% url 'panel_visitante:registrar_asistentes' tipo='externa' visita_id=visita.id %}">
       {% csrf_token %}
       {% for categoria, docs in documentos_por_categoria.items %}
-        {% if categoria == '📝 ATS' or categoria == '📜 Formato Inducción y Reinducción' or categoria == '🤸🏻‍♂️ Charla de Seguridad y Calestenia' %}
-          <div style="margin-bottom: 20px;">
-            <h5 style="color: #228B22; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #e5e7eb;">{{ categoria }}</h5>
+        {% if 'ATS' in categoria or 'Inducción y Reinducción' in categoria or 'Charla de Seguridad y Calestenia' in categoria or 'Charla de Seguridad y Calistenia' in categoria %}
+          <div class="final-cat-card">
+            <div class="final-cat-top">
+              <div class="final-cat-top-icon">
+                <i class="fas fa-{% if 'ATS' in categoria %}clipboard-list{% elif 'Inducción' in categoria %}graduation-cap{% else %}users{% endif %}"></i>
+              </div>
+              <div>
+                <h5 class="final-cat-top-title">{% if 'ATS' in categoria %}ATS{% elif 'Inducción y Reinducción' in categoria %}Formato Inducción y Reinducción{% elif 'Charla de Seguridad y Calestenia' in categoria or 'Charla de Seguridad y Calistenia' in categoria %}Charla de Seguridad y Calistenia{% else %}{{ categoria }}{% endif %}</h5>
+                <p class="final-cat-top-sub">Documento requerido para completar el proceso</p>
+              </div>
+            </div>
+            <div class="final-cat-body">
             {% for doc in docs %}
-              <div style="margin-bottom: 12px;">
-                <label style="font-weight: 600; color: #333;">{{ doc.titulo }}</label>
-                <input type="file" name="archivo_final_{{ doc.id }}" id="input_archivo_{{ doc.id }}" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" style="display: block; margin-top: 6px; padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px; width: 100%;">
+              <div class="final-doc-item">
+                <div class="final-doc-head">
+                  <div class="final-doc-icon">
+                    <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% else %}file-alt{% endif %}"></i>
+                  </div>
+                  <div>
+                    <p class="final-doc-subtitle" style="font-size:0.98rem; font-weight:700; color:#334155; margin:0;">{{ doc.nombre_archivo }}</p>
+                  </div>
+                </div>
+                <input type="file" name="archivo_final_{{ doc.id }}" id="input_archivo_{{ doc.id }}" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" class="final-doc-input">
                 <span class="error-mensaje" id="error_{{ doc.id }}" style="display: none; color: #dc2626; font-size: 0.875rem; margin-top: 4px;"><i class="fas fa-exclamation-circle me-1"></i>No ha seleccionado ningún archivo</span>
               </div>
             {% endfor %}
+            </div>
           </div>
         {% endif %}
       {% endfor %}

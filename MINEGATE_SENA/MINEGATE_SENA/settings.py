@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'coordinador',
     'reportes',
     'chatbot',
+    'control_acceso_mina',
 ]
 
 MIDDLEWARE = [
