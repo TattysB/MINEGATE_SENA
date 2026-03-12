@@ -30,103 +30,122 @@
   }
   
   /* Badges de Estado Cuenta */
-  .badge-activo {
-    background-color: #28a745;
-    color: white;
-    padding: 0.35rem 0.75rem;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 600;
-  }
-  
+  .badge-activo,
   .badge-inactivo {
-    background-color: #dc3545;
-    color: white;
-    padding: 0.35rem 0.75rem;
-    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 999px;
     font-size: 0.75rem;
-    font-weight: 600;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    border: 1px solid transparent;
+  }
+
+  .badge-activo {
+    background: #e6f9ef;
+    color: #157347;
+    border-color: #a3e6c4;
+  }
+
+  .badge-inactivo {
+    background: #ffecef;
+    color: #b42318;
+    border-color: #f3b7be;
   }
   
   /* ===== BOTONES DE ACCIONES PROFESIONALES ===== */
   .acciones-usuario {
     display: flex;
-    gap: 6px;
+    gap: 8px;
     justify-content: center;
     align-items: center;
   }
-  
+
   .btn-accion {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 6px 10px;
-    border: none;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 500;
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+    border: 1px solid transparent;
     cursor: pointer;
-    transition: all 0.2s ease;
     text-decoration: none;
-    gap: 4px;
+    background: #f8fafc;
+    color: #1f2937;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, color 0.2s ease;
   }
-  
+
   .btn-accion:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
   }
   
   /* Botón Ver */
   .btn-ver {
-    background-color: #e3f2fd;
-    color: #1976d2;
-    border: 1px solid #90caf9;
+    background: #eaf2ff;
+    color: #155eef;
+    border-color: #c7d8ff;
   }
-  
+
   .btn-ver:hover {
-    background-color: #bbdefb;
-    color: #1565c0;
+    background: #dbe8ff;
+    color: #0040c1;
   }
   
   /* Botón Editar */
   .btn-editar {
-    background-color: #fff3e0;
-    color: #e65100;
-    border: 1px solid #ffcc80;
+    background: #fff3e8;
+    color: #b54708;
+    border-color: #ffd5ae;
   }
-  
+
   .btn-editar:hover {
-    background-color: #ffe0b2;
-    color: #d84315;
+    background: #ffe7d1;
+    color: #93370d;
   }
   
   /* Botón Toggle Estado */
-  .btn-toggle {
-    background-color: #f3e5f5;
-    color: #7b1fa2;
-    border: 1px solid #ce93d8;
+  .btn-toggle.is-active {
+    background: #fff7dd;
+    color: #b54708;
+    border-color: #f6d88a;
   }
-  
-  .btn-toggle:hover {
-    background-color: #e1bee7;
-    color: #6a1b9a;
+
+  .btn-toggle.is-active:hover {
+    background: #ffefc2;
+    color: #93370d;
+  }
+
+  .btn-toggle.is-inactive {
+    background: #e8fff3;
+    color: #067647;
+    border-color: #9ce0bf;
+  }
+
+  .btn-toggle.is-inactive:hover {
+    background: #d5fbe8;
+    color: #085d3a;
   }
   
   /* Botón Eliminar */
   .btn-eliminar {
-    background-color: #ffebee;
-    color: #c62828;
-    border: 1px solid #ef9a9a;
+    background: #ffecee;
+    color: #b42318;
+    border-color: #f5b5bd;
   }
-  
+
   .btn-eliminar:hover {
-    background-color: #ffcdd2;
-    color: #b71c1c;
+    background: #ffdce1;
+    color: #912018;
   }
   
   /* Iconos en botones */
   .btn-accion i {
-    font-size: 13px;
+    font-size: 0.95rem;
   }
   
   /* Ajuste columnas de tabla */
@@ -278,66 +297,68 @@
           </tr>
         </thead>
         <tbody>
-          {% for perfil in perfiles %}
+          {% for perfil_usuario in perfiles %}
           <tr
-            class="fila-usuario {% if perfil.user.is_active %}aprobado{% else %}rechazado{% endif %}"
-            data-usuario-id="{{ perfil.user.id }}"
+            class="fila-usuario {% if perfil_usuario.user.is_active %}aprobado{% else %}rechazado{% endif %}"
+            data-usuario-id="{{ perfil_usuario.user.id }}"
           >
             <td class="datos-usuario">
               <div class="nombre-usuario">
-                {{ perfil.user.get_full_name|default:perfil.user.username }}
+                {{ perfil_usuario.user.get_full_name|default:perfil_usuario.user.username }}
               </div>
-              <div class="username">@{{ perfil.user.username }}</div>
+              <div class="username">@{{ perfil_usuario.user.username }}</div>
             </td>
             <td>
-              <span class="documento">{{ perfil.documento }}</span>
+              <span class="documento">{{ perfil_usuario.documento }}</span>
             </td>
             <td>
-              <span class="email">{{ perfil.user.email }}</span>
+              <span class="email">{{ perfil_usuario.user.email }}</span>
             </td>
             <td>
               <span class="fecha"
-                >{{ perfil.user.date_joined|date:"d/m/Y H:i" }}</span
+                >{{ perfil_usuario.user.date_joined|date:"d/m/Y H:i" }}</span
               >
             </td>
             <td>
-              {% if perfil.user.is_active %}
-              <span class="badge badge-activo">✓ ACTIVO</span>
+              {% if perfil_usuario.user.is_active %}
+              <span class="badge badge-activo"><i class="fas fa-check-circle"></i> ACTIVO</span>
               {% else %}
-              <span class="badge badge-inactivo">✗ INACTIVO</span>
+              <span class="badge badge-inactivo"><i class="fas fa-times-circle"></i> INACTIVO</span>
               {% endif %}
             </td>
             <td>
               <div class="acciones-usuario">
-                <a 
-                  href="{% url 'usuarios:detalle_usuario_permisos' perfil.user.id %}"
-                  class="btn-accion btn-ver"
-                  title="Ver detalles"
-                >
-                  👁️
-                </a>
-                <a 
-                  href="{% url 'usuarios:editar_usuario' perfil.user.id %}?next={% url 'usuarios:gestionar_permisos' %}"
-                  class="btn-accion btn-editar"
-                  title="Editar usuario"
-                >
-                  ✏️
-                </a>
                 <button
                   type="button"
-                  class="btn-accion btn-toggle"
-                  onclick="abrirModalToggleEstado('{{ perfil.user.id }}', '{{ perfil.user.get_full_name|default:perfil.user.username }}', {{ perfil.user.is_active|yesno:'true,false' }})"
-                  title="{% if perfil.user.is_active %}Desactivar{% else %}Activar{% endif %} usuario"
+                  class="btn-accion btn-ver"
+                  title="Ver detalles"
+                  onclick="abrirModalVer('{{ perfil_usuario.user.id }}')"
                 >
-                  {% if perfil.user.is_active %}⏸️{% else %}▶️{% endif %}
+                  <i class="fas fa-eye" aria-hidden="true"></i>
+                </button>
+                <button
+                  type="button"
+                  class="btn-accion btn-editar"
+                  title="Editar usuario"
+                  onclick="abrirModalEditar('{{ perfil_usuario.user.id }}')"
+                >
+                  <i class="fas fa-edit" aria-hidden="true"></i>
+                </button>
+                <button
+                  type="button"
+                  class="btn-accion btn-toggle {% if perfil_usuario.user.is_active %}is-active{% else %}is-inactive{% endif %}"
+                  onclick="abrirModalToggleEstado('{{ perfil_usuario.user.id }}', '{{ perfil_usuario.user.get_full_name|default:perfil_usuario.user.username }}', {{ perfil_usuario.user.is_active|yesno:'true,false' }})"
+                  title="{% if perfil_usuario.user.is_active %}Desactivar{% else %}Activar{% endif %} usuario"
+                >
+                  <i class="fas {% if perfil_usuario.user.is_active %}fa-user-slash{% else %}fa-user-check{% endif %}" aria-hidden="true"></i>
                 </button>
                 <button
                   type="button"
                   class="btn-accion btn-eliminar"
-                  onclick="abrirModalEliminar('{{ perfil.user.id }}', '{{ perfil.user.get_full_name|default:perfil.user.username }}', '{{ perfil.documento }}')"
+                  onclick="abrirModalEliminar('{{ perfil_usuario.user.id }}', '{{ perfil_usuario.user.get_full_name|default:perfil_usuario.user.username }}', '{{ perfil_usuario.documento }}')"
                   title="Eliminar usuario"
                 >
-                  🗑️
+                  <i class="fas fa-trash-alt" aria-hidden="true"></i>
                 </button>
               </div>
             </td>
@@ -606,9 +627,9 @@
         const tdEstadoCuenta = document.createElement("td");
         tdEstadoCuenta.style.textAlign = "center";
         if (usuario.is_active !== false) {
-          tdEstadoCuenta.innerHTML = '<span class="badge badge-activo">✓ ACTIVO</span>';
+          tdEstadoCuenta.innerHTML = '<span class="badge badge-activo"><i class="fas fa-check-circle"></i> ACTIVO</span>';
         } else {
-          tdEstadoCuenta.innerHTML = '<span class="badge badge-inactivo">✗ INACTIVO</span>';
+          tdEstadoCuenta.innerHTML = '<span class="badge badge-inactivo"><i class="fas fa-times-circle"></i> INACTIVO</span>';
         }
         tr.appendChild(tdEstadoCuenta);
 
@@ -618,27 +639,31 @@
         divAcciones.className = "acciones-usuario";
 
         // Botón Ver Detalle
-        const btnVer = document.createElement("a");
-        btnVer.href = "{% url 'usuarios:detalle_usuario_permisos' 0 %}".replace("0", usuario.id);
+        const btnVer = document.createElement("button");
+        btnVer.type = "button";
         btnVer.className = "btn-accion btn-ver";
         btnVer.title = "Ver detalles";
-        btnVer.textContent = "👁️";
+        btnVer.innerHTML = '<i class="fas fa-eye" aria-hidden="true"></i>';
+        btnVer.onclick = function () { abrirModalVer(usuario.id); };
         divAcciones.appendChild(btnVer);
 
         // Botón Editar
-        const btnEditar = document.createElement("a");
-        btnEditar.href = "{% url 'usuarios:editar_usuario' 0 %}".replace("0", usuario.id) + "?next={% url 'usuarios:gestionar_permisos' %}";
+        const btnEditar = document.createElement("button");
+        btnEditar.type = "button";
         btnEditar.className = "btn-accion btn-editar";
         btnEditar.title = "Editar usuario";
-        btnEditar.textContent = "✏️";
+        btnEditar.innerHTML = '<i class="fas fa-edit" aria-hidden="true"></i>';
+        btnEditar.onclick = function () { abrirModalEditar(usuario.id); };
         divAcciones.appendChild(btnEditar);
 
         // Botón Toggle Estado
         const btnToggle = document.createElement("button");
         btnToggle.type = "button";
-        btnToggle.className = "btn-accion btn-toggle";
+        btnToggle.className = `btn-accion btn-toggle ${usuario.is_active !== false ? "is-active" : "is-inactive"}`;
         btnToggle.title = usuario.is_active !== false ? "Desactivar usuario" : "Activar usuario";
-        btnToggle.textContent = usuario.is_active !== false ? "⏸️" : "▶️";
+        btnToggle.innerHTML = usuario.is_active !== false
+          ? '<i class="fas fa-user-slash" aria-hidden="true"></i>'
+          : '<i class="fas fa-user-check" aria-hidden="true"></i>';
         btnToggle.onclick = function () {
           abrirModalToggleEstado(usuario.id, usuario.nombre, usuario.is_active !== false);
         };
@@ -648,7 +673,7 @@
         btnEliminar.type = "button";
         btnEliminar.className = "btn-accion btn-eliminar";
         btnEliminar.title = "Eliminar usuario";
-        btnEliminar.textContent = "🗑️";
+        btnEliminar.innerHTML = '<i class="fas fa-trash-alt" aria-hidden="true"></i>';
         btnEliminar.onclick = function () {
           abrirModalEliminar(usuario.id, usuario.nombre, usuario.documento);
         };
@@ -752,7 +777,254 @@
         }, 5000);
       });
     });
+
+    // ============================================================
+    // MODALES: VER DETALLE Y EDITAR USUARIO
+    // ============================================================
+    const URL_DETALLE_USUARIO = "{% url 'usuarios:detalle_usuario_permisos' 9999 %}";
+    const URL_EDITAR_AJAX = "{% url 'usuarios:editar_usuario_ajax' 9999 %}";
+
+    function abrirModalVer(usuarioId) {
+      const url = URL_DETALLE_USUARIO.replace('9999', usuarioId);
+      const contenido = document.getElementById('contenidoModalVer');
+      contenido.innerHTML = '<div style="text-align:center;padding:2rem;color:#64748b;">&#9203; Cargando...</div>';
+      document.getElementById('btnEditarDesdeVer').onclick = function () {
+        cerrarModal('modalVerUsuario');
+        abrirModalEditar(usuarioId);
+      };
+      abrirModal('modalVerUsuario');
+      fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(r => r.json())
+        .then(data => {
+          if (!data.success) {
+            contenido.innerHTML = '<p style="color:red;text-align:center;">❌ Error al cargar los datos.</p>';
+            return;
+          }
+          const u = data.usuario;
+          const fotoHTML = u.foto_perfil
+            ? `<img src="${u.foto_perfil}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,0.4);" alt="Foto">`
+            : `<div style="width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700;color:white;">${escaparHTML((u.first_name || u.nombre_completo || '?')[0].toUpperCase())}</div>`;
+          const estadoBadge = u.is_active
+            ? '<span style="padding:0.25rem 0.75rem;border-radius:20px;font-size:0.75rem;font-weight:700;background:rgba(46,125,50,0.9);color:white;">✓ Activo</span>'
+            : '<span style="padding:0.25rem 0.75rem;border-radius:20px;font-size:0.75rem;font-weight:700;background:rgba(198,40,40,0.9);color:white;">✗ Inactivo</span>';
+          contenido.innerHTML = `
+            <div style="background:linear-gradient(135deg,#00b000,#185027);padding:1.25rem 1.5rem;margin:-1.5rem -1.5rem 1.25rem;display:flex;align-items:center;gap:1.25rem;">
+              ${fotoHTML}
+              <div>
+                <h3 style="margin:0;font-size:1.1rem;color:white;">${escaparHTML(u.nombre_completo || u.username)}</h3>
+                <p style="margin:0.2rem 0 0.5rem;color:rgba(255,255,255,0.85);font-size:0.88rem;">@${escaparHTML(u.username)}</p>
+                ${estadoBadge}
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+              <div style="background:#f8fafc;padding:1rem;border-radius:10px;border:1px solid #e2e8f0;">
+                <p style="font-size:0.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin:0 0 0.6rem;">👤 Personal</p>
+                ${campoDetalle('Nombre', u.first_name)}
+                ${campoDetalle('Apellido', u.last_name)}
+                ${campoDetalle('Documento', u.documento || u.username)}
+              </div>
+              <div style="background:#f8fafc;padding:1rem;border-radius:10px;border:1px solid #e2e8f0;">
+                <p style="font-size:0.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin:0 0 0.6rem;">📧 Contacto</p>
+                ${campoDetalle('Email', u.email)}
+                ${campoDetalle('Teléfono', u.telefono || 'No especificado')}
+              </div>
+              <div style="background:#f8fafc;padding:1rem;border-radius:10px;border:1px solid #e2e8f0;grid-column:span 2;">
+                <p style="font-size:0.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin:0 0 0.6rem;">🔐 Cuenta</p>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.25rem;">
+                  ${campoDetalle('Fecha Registro', u.date_joined)}
+                  ${campoDetalle('Último Acceso', u.last_login || 'Nunca')}
+                  ${campoDetalle('Es Staff', u.is_staff ? 'Sí' : 'No')}
+                </div>
+              </div>
+            </div>`;
+        })
+        .catch(() => {
+          contenido.innerHTML = '<p style="color:red;text-align:center;">❌ Error de conexión al cargar los datos.</p>';
+        });
+    }
+
+    function campoDetalle(label, valor) {
+      return `<div style="display:flex;gap:0.4rem;margin-bottom:0.3rem;font-size:0.83rem;">
+        <span style="font-weight:600;color:#64748b;min-width:90px;flex-shrink:0;">${escaparHTML(label)}:</span>
+        <span style="color:#1e293b;">${escaparHTML(String(valor ?? '—'))}</span>
+      </div>`;
+    }
+
+    let _editOriginal = {};
+
+    function abrirModalEditar(usuarioId) {
+      const url = URL_EDITAR_AJAX.replace('9999', usuarioId);
+      document.getElementById('editUserId').value = usuarioId;
+      const alerta = document.getElementById('alertaEditar');
+      alerta.style.display = 'none';
+      alerta.innerHTML = '';
+      document.getElementById('editFirstName').value = '';
+      document.getElementById('editLastName').value = '';
+      document.getElementById('editEmail').value = '';
+      document.getElementById('editTelefono').value = '';
+      document.getElementById('btnGuardarEdicion').disabled = false;
+      document.getElementById('btnGuardarTexto').textContent = '💾 Guardar Cambios';
+      _editOriginal = {};
+      abrirModal('modalEditarUsuario');
+      fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(r => r.json())
+        .then(data => {
+          if (data.success) {
+            const u = data.usuario;
+            document.getElementById('editFirstName').value = u.first_name || '';
+            document.getElementById('editLastName').value = u.last_name || '';
+            document.getElementById('editEmail').value = u.email || '';
+            document.getElementById('editTelefono').value = u.telefono || '';
+            _editOriginal = {
+              first_name: u.first_name || '',
+              last_name: u.last_name || '',
+              email: u.email || '',
+              telefono: u.telefono || '',
+            };
+          }
+        })
+        .catch(console.error);
+    }
+
+    function guardarEdicion() {
+      const alerta = document.getElementById('alertaEditar');
+
+      const actual = {
+        first_name: document.getElementById('editFirstName').value.trim(),
+        last_name: document.getElementById('editLastName').value.trim(),
+        email: document.getElementById('editEmail').value.trim(),
+        telefono: document.getElementById('editTelefono').value.trim(),
+      };
+
+      if (
+        actual.first_name === _editOriginal.first_name &&
+        actual.last_name  === _editOriginal.last_name  &&
+        actual.email      === _editOriginal.email      &&
+        actual.telefono   === _editOriginal.telefono
+      ) {
+        alerta.style.cssText = 'display:block;background:#fff8e1;color:#b7791f;padding:0.75rem 1rem;border-radius:8px;margin-bottom:1rem;border:1px solid #f6d860;font-weight:600;';
+        alerta.textContent = 'ℹ️ No se detectaron cambios. La información ya está guardada.';
+        return;
+      }
+
+      const usuarioId = document.getElementById('editUserId').value;
+      const url = URL_EDITAR_AJAX.replace('9999', usuarioId);
+      const btn = document.getElementById('btnGuardarEdicion');
+      const txtBtn = document.getElementById('btnGuardarTexto');
+      btn.disabled = true;
+      txtBtn.textContent = '&#9203; Guardando...';
+      const formData = new FormData(document.getElementById('formEditarUsuario'));
+      fetch(url, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData,
+      })
+        .then(r => r.json())
+        .then(data => {
+          btn.disabled = false;
+          txtBtn.textContent = '💾 Guardar Cambios';
+          if (data.success) {
+            alerta.style.cssText = 'display:block;background:#e8f5e9;color:#2e7d32;padding:0.75rem 1rem;border-radius:8px;margin-bottom:1rem;border:1px solid #a5d6a7;font-weight:600;';
+            alerta.textContent = '✅ ' + data.message;
+            if (data.nombre_completo) {
+              const fila = document.querySelector(`tr[data-usuario-id="${usuarioId}"]`);
+              if (fila) {
+                const nombreEl = fila.querySelector('.nombre-usuario');
+                if (nombreEl) nombreEl.textContent = data.nombre_completo;
+              }
+            }
+            setTimeout(() => cerrarModal('modalEditarUsuario'), 1800);
+          } else {
+            let errMsg = '❌ Revisa los campos:<br>';
+            if (data.errors) {
+              Object.values(data.errors).forEach(e => {
+                errMsg += '&bull; ' + (Array.isArray(e) ? e.join(', ') : e) + '<br>';
+              });
+            } else if (data.message) {
+              errMsg = '❌ ' + data.message;
+            }
+            alerta.style.cssText = 'display:block;background:#ffebee;color:#c62828;padding:0.75rem 1rem;border-radius:8px;margin-bottom:1rem;border:1px solid #ef9a9a;';
+            alerta.innerHTML = errMsg;
+          }
+        })
+        .catch(() => {
+          btn.disabled = false;
+          txtBtn.textContent = '💾 Guardar Cambios';
+          alerta.style.cssText = 'display:block;background:#ffebee;color:#c62828;padding:0.75rem 1rem;border-radius:8px;margin-bottom:1rem;border:1px solid #ef9a9a;';
+          alerta.textContent = '❌ Error de conexión. Intenta de nuevo.';
+        });
+    }
   </script>
+
+  <!-- Modal Ver Usuario -->
+  <div id="modalVerUsuario" class="modal" style="display:none;">
+    <div class="modal-contenido" style="max-width:600px;width:100%;max-height:90vh;overflow-y:auto;">
+      <div class="modal-encabezado" style="background:linear-gradient(135deg,#00b000,#185027);">
+        <h2 style="color:white;font-size:1.05rem;"><i class="fas fa-user-circle"></i> &nbsp;Detalles del Usuario</h2>
+        <button class="modal-cerrar" onclick="cerrarModal('modalVerUsuario')" style="color:white;">&times;</button>
+      </div>
+      <div class="modal-cuerpo" id="contenidoModalVer" style="padding:1.5rem;">
+        <div style="text-align:center;padding:2rem;color:#64748b;">&#9203; Cargando...</div>
+      </div>
+      <div class="modal-pie">
+        <button class="btn-modal btn-cancelar" onclick="cerrarModal('modalVerUsuario')">Cerrar</button>
+        <button class="btn-modal btn-confirmar" id="btnEditarDesdeVer"
+                style="background:linear-gradient(135deg,#1976d2,#1565c0);">
+          ✏️ Editar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Editar Usuario -->
+  <div id="modalEditarUsuario" class="modal" style="display:none;">
+    <div class="modal-contenido" style="max-width:520px;width:100%;">
+      <div class="modal-encabezado" style="background:linear-gradient(135deg,#1976d2,#1565c0);">
+        <h2 style="color:white;font-size:1.05rem;"><i class="fas fa-user-edit"></i> &nbsp;Editar Usuario</h2>
+        <button class="modal-cerrar" onclick="cerrarModal('modalEditarUsuario')" style="color:white;">&times;</button>
+      </div>
+      <div class="modal-cuerpo" style="padding:1.5rem;">
+        <div id="alertaEditar" style="display:none;margin-bottom:1rem;"></div>
+        <form id="formEditarUsuario" onsubmit="return false;">
+          {% csrf_token %}
+          <input type="hidden" id="editUserId" value="">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div>
+              <label style="display:block;font-weight:600;font-size:0.85rem;color:#64748b;margin-bottom:0.35rem;">Nombre</label>
+              <input type="text" id="editFirstName" name="first_name"
+                     style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid #d1d5db;border-radius:8px;font-size:0.9rem;box-sizing:border-box;"
+                     placeholder="Nombre" required>
+            </div>
+            <div>
+              <label style="display:block;font-weight:600;font-size:0.85rem;color:#64748b;margin-bottom:0.35rem;">Apellido</label>
+              <input type="text" id="editLastName" name="last_name"
+                     style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid #d1d5db;border-radius:8px;font-size:0.9rem;box-sizing:border-box;"
+                     placeholder="Apellido" required>
+            </div>
+            <div style="grid-column:span 2;">
+              <label style="display:block;font-weight:600;font-size:0.85rem;color:#64748b;margin-bottom:0.35rem;">Correo Electrónico</label>
+              <input type="email" id="editEmail" name="email"
+                     style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid #d1d5db;border-radius:8px;font-size:0.9rem;box-sizing:border-box;"
+                     placeholder="correo@ejemplo.com" required>
+            </div>
+            <div style="grid-column:span 2;">
+              <label style="display:block;font-weight:600;font-size:0.85rem;color:#64748b;margin-bottom:0.35rem;">Teléfono</label>
+              <input type="text" id="editTelefono" name="telefono"
+                     style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid #d1d5db;border-radius:8px;font-size:0.9rem;box-sizing:border-box;"
+                     placeholder="Teléfono (opcional)">
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-pie">
+        <button class="btn-modal btn-cancelar" onclick="cerrarModal('modalEditarUsuario')">Cancelar</button>
+        <button class="btn-modal btn-confirmar" onclick="guardarEdicion()" id="btnGuardarEdicion">
+          <span id="btnGuardarTexto">💾 Guardar Cambios</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 {% endblock %}
