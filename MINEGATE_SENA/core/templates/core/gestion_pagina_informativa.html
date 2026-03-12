@@ -711,7 +711,7 @@
       };
 
       if (formSlide) {
-        formSlide.addEventListener('submit', (event) => {
+        formSlide.addEventListener('submit', async (event) => {
           const ordenInput = formSlide.querySelector('[name="orden"]');
           const slideIdInput = formSlide.querySelector('[name="slide_id"]');
           const confirmarInput = formSlide.querySelector('[name="confirmar_reemplazo_slide"]');
@@ -732,20 +732,28 @@
 
           const nombre = textoConFallback(conflicto.titulo, 'la diapositiva existente');
           const mensaje = `La posición ${ordenObjetivo} ya está ocupada por "${nombre}". ¿Deseas reemplazarla?`;
-          const deseaReemplazar = window.confirm(mensaje);
+          event.preventDefault();
+          const deseaReemplazar = await (window.mConfirm
+            ? window.mConfirm(mensaje, {
+              title: 'Reemplazar elemento',
+              confirmText: 'Sí, reemplazar',
+              confirmClass: 'cm-btn-danger',
+              confirmIcon: 'fas fa-rotate'
+            })
+            : Promise.resolve(window.confirm(mensaje)));
 
           if (!deseaReemplazar) {
-            event.preventDefault();
             return;
           }
 
           confirmarInput.value = '1';
           reemplazarIdInput.value = String(conflicto.id);
+          formSlide.submit();
         });
       }
 
       if (formGallery) {
-        formGallery.addEventListener('submit', (event) => {
+        formGallery.addEventListener('submit', async (event) => {
           const ordenInput = formGallery.querySelector('[name="orden"]');
           const elementoIdInput = formGallery.querySelector('[name="elemento_id"]');
           const confirmarInput = formGallery.querySelector('[name="confirmar_reemplazo_galeria"]');
@@ -766,15 +774,23 @@
 
           const nombre = textoConFallback(conflicto.titulo, 'el elemento existente');
           const mensaje = `La posición ${ordenObjetivo} ya está ocupada por "${nombre}". ¿Deseas reemplazarla?`;
-          const deseaReemplazar = window.confirm(mensaje);
+          event.preventDefault();
+          const deseaReemplazar = await (window.mConfirm
+            ? window.mConfirm(mensaje, {
+              title: 'Reemplazar elemento',
+              confirmText: 'Sí, reemplazar',
+              confirmClass: 'cm-btn-danger',
+              confirmIcon: 'fas fa-rotate'
+            })
+            : Promise.resolve(window.confirm(mensaje)));
 
           if (!deseaReemplazar) {
-            event.preventDefault();
             return;
           }
 
           confirmarInput.value = '1';
           reemplazarIdInput.value = String(conflicto.id);
+          formGallery.submit();
         });
       }
 
