@@ -10,6 +10,9 @@
     var form = root.querySelector("[data-chatbot-form]");
     var input = root.querySelector("[data-chatbot-input]");
     var chipsWrap = root.querySelector("[data-chatbot-chips]");
+    var sendBtn = root.querySelector(".minero-chatbot-send");
+    var BOT_REPLY_DELAY_MS = 2200;
+    var isSending = false;
 
     function getCookie(name) {
         var value = "; " + document.cookie;
@@ -26,6 +29,49 @@
         msg.textContent = text;
         body.appendChild(msg);
         body.scrollTop = body.scrollHeight;
+        return msg;
+    }
+
+    function appendTypingIndicator() {
+        var msg = document.createElement("div");
+        msg.className = "minero-msg bot typing";
+        msg.setAttribute("aria-label", "Chat Bot Minero esta escribiendo");
+        msg.innerHTML =
+            "<span>Respondiendo</span>" +
+            '<span class="minero-typing-dots" aria-hidden="true">' +
+            "<span></span><span></span><span></span>" +
+            "</span>";
+        body.appendChild(msg);
+        body.scrollTop = body.scrollHeight;
+        return msg;
+    }
+
+    function removeMessage(node) {
+        if (node && node.parentNode) {
+            node.parentNode.removeChild(node);
+        }
+    }
+
+    function wait(ms) {
+        return new Promise(function (resolve) {
+            setTimeout(resolve, ms);
+        });
+    }
+
+    async function waitMinDelay(startTime) {
+        var elapsed = Date.now() - startTime;
+        var remaining = BOT_REPLY_DELAY_MS - elapsed;
+        if (remaining > 0) {
+            await wait(remaining);
+        }
+    }
+
+    function setBusyState(busy) {
+        isSending = busy;
+        input.disabled = busy;
+        if (sendBtn) {
+            sendBtn.disabled = busy;
+        }
     }
 
     function toggleChat(forceOpen) {
@@ -54,10 +100,20 @@
     }
 
     async function sendMessage(message) {
+        if (isSending) {
+            return;
+        }
+
+        setBusyState(true);
         appendMessage(message, "user");
+        var typingMsg = appendTypingIndicator();
+        var startTime = Date.now();
+        var response;
+        var data;
+        var requestFailed = false;
 
         try {
-            var response = await fetch("/chatbot/responder/", {
+            response = await fetch("/chatbot/responder/", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -66,17 +122,32 @@
                 body: JSON.stringify({ mensaje: message }),
             });
 
-            var data = await response.json();
-            if (!response.ok || !data.ok) {
-                appendMessage("No pude procesar el mensaje. Intenta nuevamente.", "bot");
-                return;
-            }
-
-            appendMessage(data.respuesta, "bot");
-            renderChips(data.sugerencias || []);
+            data = await response.json();
         } catch (err) {
-            appendMessage("Estoy fuera de linea por un momento. Intenta de nuevo.", "bot");
+            requestFailed = true;
         }
+
+        await waitMinDelay(startTime);
+        removeMessage(typingMsg);
+
+        if (requestFailed) {
+            appendMessage("Estoy fuera de linea por un momento. Intenta de nuevo.", "bot");
+            setBusyState(false);
+            input.focus();
+            return;
+        }
+
+        if (!response.ok || !data.ok) {
+            appendMessage("No pude procesar el mensaje. Intenta nuevamente.", "bot");
+            setBusyState(false);
+            input.focus();
+            return;
+        }
+
+        appendMessage(data.respuesta, "bot");
+        renderChips(data.sugerencias || []);
+        setBusyState(false);
+        input.focus();
     }
 
     toggleBtn.addEventListener("click", function () {
@@ -89,6 +160,9 @@
 
     form.addEventListener("submit", function (event) {
         event.preventDefault();
+        if (isSending) {
+            return;
+        }
         var value = (input.value || "").trim();
         if (!value) {
             return;
@@ -98,6 +172,9 @@
     });
 
     chipsWrap.addEventListener("click", function (event) {
+        if (isSending) {
+            return;
+        }
         var target = event.target;
         if (!target.classList.contains("minero-chatbot-chip")) {
             return;
