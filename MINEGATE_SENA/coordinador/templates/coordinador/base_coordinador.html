@@ -10,6 +10,7 @@
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="{% static 'core/css/nuevos_estilos.css' %}?v=16" />
+  <link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}?v=20260311d" />
   <link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}" />
   <link rel="stylesheet" href="{% static 'calendario/css/calendario_seleccion.css' %}" />
   <link rel="stylesheet" href="{% static 'core/css/user_dropdown.css' %}" />
@@ -113,7 +114,33 @@
   <script defer src="{% static 'core/js/Funcionalidades.js' %}"></script>
   <script defer src="{% static 'calendario/js/panel_calendario_loader.js' %}"></script>
   <script>
-    function abrirModalCerrarSesion(e){ e.preventDefault(); const modal=document.getElementById('modalCerrarSesion'); if(modal) modal.style.display='flex'; }
+    function abrirModalCerrarSesion(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      const mensaje = '¿Estás seguro de que deseas cerrar sesión?<br><br><small style="color: #6b7280;">Se cerrará tu sesión actual y deberás iniciar sesión nuevamente para acceder.</small>';
+
+      if (typeof window.mConfirm === 'function') {
+        window.mConfirm(mensaje, {
+          title: 'Cerrar Sesión',
+          confirmText: 'Sí, Cerrar Sesión',
+          confirmClass: 'cm-btn-success',
+          confirmIcon: 'fas fa-right-from-bracket'
+        }).then(function (resultado) {
+          if (resultado) {
+            window.location.href = "{% url 'usuarios:logout' %}";
+          }
+        });
+        return;
+      }
+
+      const modal = document.getElementById('modalCerrarSesion');
+      if (modal) {
+        modal.style.display = 'flex';
+      }
+    }
   </script>
   {% block extra_js %}{% endblock %}
   <!-- Modal Cerrar Sesión -->
@@ -242,6 +269,7 @@
   </div>
 
   <script src="{% static 'accessibility/js/accessibility.js' %}?v=1.1"></script>
+  <script src="{% static 'core/js/custom_modal.js' %}?v=20260311d"></script>
 
   <script>
     // Funciones comunes para modales y perfil (copiadas de la plantilla administrativa)
