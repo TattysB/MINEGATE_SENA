@@ -14,6 +14,22 @@ if (typeof window.addCsrfToFormData !== 'function') {
   };
 }
 
+function getBadgeRevisionDocumentoInline(ds) {
+  const badges = [];
+  if (ds.estado === 'aprobado') {
+    badges.push('<span style="background:#d1fae5;color:#065f46;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;">Aprobado</span>');
+  } else if (ds.estado === 'rechazado') {
+    badges.push('<span style="background:#fee2e2;color:#991b1b;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;">Rechazado</span>');
+  }
+
+  if (ds.es_reenvio) {
+    const versiones = parseInt(ds.versiones_envio || 2, 10);
+    badges.push(`<span style="background:#e0f2fe;color:#075985;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;" title="Documento reenviado ${versiones} veces">🔁 Reenvío</span>`);
+  }
+
+  return badges.join('');
+}
+
 function mostrarDocumentosPorEstado(filtro) {
   const inlineContainer = document.getElementById('contenedorInlineDocs');
   const tablaContainer = document.getElementById('contenedorTablaVisitas');
@@ -27,8 +43,8 @@ function mostrarDocumentosPorEstado(filtro) {
   const configs = {
     'revision': {
       titulo: '🔍 Documentos Pendientes de Revisión',
-      subtitulo: 'Archivos que aún necesitan ser revisados',
-      queryParams: 'estado_asistente=pendiente_documentos',
+      subtitulo: 'Archivos pendientes de revisión o corrección',
+      queryParams: 'estado_asistente=revision_activa',
     },
     'enviados': {
       titulo: '📄 Documentos Enviados',
@@ -127,7 +143,7 @@ function mostrarDocumentosPorEstado(filtro) {
             aBadge = '<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">✅ Aprobado</span>';
             borderLeft = '#10b981';
           } else if (a.estado === 'documentos_rechazados') {
-            aBadge = '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">❌ Rechazado</span>';
+            aBadge = '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">⚠️ Pendiente corrección</span>';
             borderLeft = '#ef4444';
           }
 
@@ -156,12 +172,7 @@ function mostrarDocumentosPorEstado(filtro) {
 
             // Mostrar solo documentos personales del asistente (no los finales)
             documentos_personales.forEach(ds => {
-              let badgeDoc = '';
-              if (ds.estado === 'aprobado') {
-                badgeDoc = '<span style="background:#d1fae5;color:#065f46;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;">Aprobado</span>';
-              } else if (ds.estado === 'rechazado') {
-                badgeDoc = '<span style="background:#fee2e2;color:#991b1b;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;">Rechazado</span>';
-              }
+              const badgeDoc = getBadgeRevisionDocumentoInline(ds);
 
               botonesDoc += `
                   <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
@@ -325,7 +336,7 @@ function visualizarDocumento(url, titulo, extraOptions = null) {
 
   if (extraOptions && extraOptions.id) {
     footer.style.display = 'flex';
-    if (extraOptions.estado && extraOptions.estado !== 'pendiente') {
+    if (extraOptions.estado && extraOptions.estado === 'aprobado') {
       btnAprobar.style.setProperty('display', 'none', 'important');
       btnRechazar.style.setProperty('display', 'none', 'important');
 
@@ -336,13 +347,8 @@ function visualizarDocumento(url, titulo, extraOptions = null) {
         footer.appendChild(statusBadge);
       }
       statusBadge.style.display = 'inline-block';
-      if (extraOptions.estado === 'aprobado') {
-        statusBadge.innerHTML = '<i class="ri-checkbox-circle-line"></i> DOCUMENTO APROBADO';
-        statusBadge.style.cssText = 'background:#10b981;color:white;padding:8px 20px;border-radius:8px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;';
-      } else {
-        statusBadge.innerHTML = '<i class="ri-close-circle-line"></i> DOCUMENTO RECHAZADO';
-        statusBadge.style.cssText = 'background:#ef4444;color:white;padding:8px 20px;border-radius:8px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;';
-      }
+      statusBadge.innerHTML = '<i class="ri-checkbox-circle-line"></i> DOCUMENTO APROBADO';
+      statusBadge.style.cssText = 'background:#10b981;color:white;padding:8px 20px;border-radius:8px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;';
     } else {
       btnAprobar.style.setProperty('display', 'flex', 'important');
       btnRechazar.style.setProperty('display', 'flex', 'important');

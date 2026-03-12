@@ -145,9 +145,30 @@ function getEstadoDocumentoBadge(estado) {
   const badges = {
     'pendiente_documentos': '<span style="background:#fef3c7;color:#92400e;padding:3px 8px;border-radius:15px;font-size:10px;">⏳ Pendiente</span>',
     'documentos_aprobados': '<span style="background:#d1fae5;color:#065f46;padding:3px 8px;border-radius:15px;font-size:10px;">✅ Aprobados</span>',
-    'documentos_rechazados': '<span style="background:#fee2e2;color:#991b1b;padding:3px 8px;border-radius:15px;font-size:10px;">❌ Rechazados</span>',
+    'documentos_rechazados': '<span style="background:#fee2e2;color:#991b1b;padding:3px 8px;border-radius:15px;font-size:10px;">⚠️ Pendiente corrección</span>',
   };
   return badges[estado] || estado;
+}
+
+function getBadgeRevisionDocumento(ds, opts = {}) {
+  const fontSize = opts.fontSize || '9px';
+  const padding = opts.padding || '1px 5px';
+  const borderRadius = opts.borderRadius || '4px';
+  const marginLeft = opts.marginLeft || '4px';
+  const badges = [];
+
+  if (ds.estado === 'aprobado') {
+    badges.push(`<span style="background:#d1fae5;color:#065f46;font-size:${fontSize};padding:${padding};border-radius:${borderRadius};margin-left:${marginLeft};">Aprobado</span>`);
+  } else if (ds.estado === 'rechazado') {
+    badges.push(`<span style="background:#fee2e2;color:#991b1b;font-size:${fontSize};padding:${padding};border-radius:${borderRadius};margin-left:${marginLeft};">Rechazado</span>`);
+  }
+
+  if (ds.es_reenvio) {
+    const versiones = parseInt(ds.versiones_envio || 2, 10);
+    badges.push(`<span style="background:#e0f2fe;color:#075985;font-size:${fontSize};padding:${padding};border-radius:${borderRadius};margin-left:${marginLeft};" title="Documento reenviado ${versiones} veces">🔁 Reenvío</span>`);
+  }
+
+  return badges.join('');
 }
 
 function getAccionesVisita(v) {
@@ -174,7 +195,7 @@ function getAccionesVisita(v) {
     if (v.puede_confirmar) {
       acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'confirmar_visita')" style="background:#10b981;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">✅✅ Confirmar</button>`;
     } else if (v.tiene_rechazos) {
-      acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'rechazar')" style="background:#ef4444;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">❌ Rechazar por Documentos</button>`;
+      acciones += `<span style="display:inline-block;background:#fee2e2;color:#991b1b;padding:5px 10px;border-radius:5px;margin:2px;font-size:11px;">⚠️ Pendiente corrección</span>`;
     } else {
       acciones += `<button onclick="mAlert('No se puede confirmar la visita aún. Asegúrese de que todos los asistentes tengan sus documentos aprobados.', 'warning')" style="background:#10b981;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;opacity:0.5;" title="Documentos pendientes de aprobación">⚠️ Confirmar</button>`;
     }
@@ -266,9 +287,9 @@ function mostrarDocumentosPorEstado(filtro) {
   const configs = {
     'revision': {
       titulo: '🔍 Documentos Pendientes de Revisión',
-      subtitulo: 'Archivos que aún necesitan ser revisados',
+      subtitulo: 'Archivos pendientes de revisión o corrección',
       color: '#f59e0b',
-      queryParams: 'estado_asistente=pendiente_documentos',
+      queryParams: 'estado_asistente=revision_activa',
       filtroLocal: null
     },
     'enviados': {
@@ -392,12 +413,7 @@ function mostrarDocumentosPorEstado(filtro) {
               <div style="display:flex;flex-direction:column;gap:6px;width:100%;">`;
 
           documentos_finales_visita.forEach(ds => {
-            let badgeDoc = '';
-            if (ds.estado === 'aprobado') {
-              badgeDoc = '<span style="background:#d1fae5;color:#065f46;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;">Aprobado</span>';
-            } else if (ds.estado === 'rechazado') {
-              badgeDoc = '<span style="background:#fee2e2;color:#991b1b;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;">Rechazado</span>';
-            }
+            const badgeDoc = getBadgeRevisionDocumento(ds);
 
             html += `
               <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
@@ -429,7 +445,7 @@ function mostrarDocumentosPorEstado(filtro) {
             aBadge = '<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">✅ Aprobado</span>';
             borderLeft = '#10b981';
           } else if (a.estado === 'documentos_rechazados') {
-            aBadge = '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">❌ Rechazado</span>';
+            aBadge = '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">⚠️ Pendiente corrección</span>';
             borderLeft = '#ef4444';
           }
 
@@ -446,7 +462,7 @@ function mostrarDocumentosPorEstado(filtro) {
                         <i class="ri-download-line"></i>
                       </a>
                     </div>
-                    ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (a.estado === 'documentos_rechazados' ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Rechazado</span>' : '')}
+                    ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (a.estado === 'documentos_rechazados' ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Pendiente corrección</span>' : '')}
                   </div>`;
           }
           if (a.documentos_subidos && a.documentos_subidos.length > 0) {
@@ -458,12 +474,7 @@ function mostrarDocumentosPorEstado(filtro) {
 
             // Mostrar solo documentos personales del asistente (no los finales)
             documentos_personales.forEach(ds => {
-              let badgeDoc = '';
-              if (ds.estado === 'aprobado') {
-                badgeDoc = '<span style="background:#d1fae5;color:#065f46;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;">Aprobado</span>';
-              } else if (ds.estado === 'rechazado') {
-                badgeDoc = '<span style="background:#fee2e2;color:#991b1b;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;">Rechazado</span>';
-              }
+              const badgeDoc = getBadgeRevisionDocumento(ds);
 
               botonesDoc += `
                   <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
@@ -617,7 +628,7 @@ function visualizarDocumento(url, titulo, extraOptions = null) {
 
   if (extraOptions && (extraOptions.id || extraOptions.mode === 'autorizacion_padres')) {
     footer.style.display = 'flex';
-    if (extraOptions.estado && extraOptions.estado !== 'pendiente') {
+    if (extraOptions.estado && extraOptions.estado === 'aprobado') {
       btnAprobar.style.setProperty('display', 'none', 'important');
       btnRechazar.style.setProperty('display', 'none', 'important');
 
@@ -628,13 +639,8 @@ function visualizarDocumento(url, titulo, extraOptions = null) {
         footer.appendChild(statusBadge);
       }
       statusBadge.style.display = 'inline-block';
-      if (extraOptions.estado === 'aprobado') {
-        statusBadge.innerHTML = '<i class="ri-checkbox-circle-line"></i> DOCUMENTO APROBADO';
-        statusBadge.style.cssText = 'background:#10b981;color:white;padding:8px 20px;border-radius:8px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;';
-      } else {
-        statusBadge.innerHTML = '<i class="ri-close-circle-line"></i> DOCUMENTO RECHAZADO';
-        statusBadge.style.cssText = 'background:#ef4444;color:white;padding:8px 20px;border-radius:8px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;';
-      }
+      statusBadge.innerHTML = '<i class="ri-checkbox-circle-line"></i> DOCUMENTO APROBADO';
+      statusBadge.style.cssText = 'background:#10b981;color:white;padding:8px 20px;border-radius:8px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;';
     } else {
       btnAprobar.style.setProperty('display', 'flex', 'important');
       btnRechazar.style.setProperty('display', 'flex', 'important');
@@ -833,12 +839,13 @@ function verDetalleVisita(tipo, id) {
             <div style="display:flex;flex-direction:column;gap:8px;">`;
 
         documentos_finales.forEach(ds => {
-          let badgeDoc = '';
-          if (ds.estado === 'aprobado') {
-            badgeDoc = '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>';
-          } else if (ds.estado === 'rechazado') {
-            badgeDoc = '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Rechazado</span>';
-          } else {
+          let badgeDoc = getBadgeRevisionDocumento(ds, {
+            fontSize: '11px',
+            padding: '3px 10px',
+            borderRadius: '6px',
+            marginLeft: '0px'
+          });
+          if (!badgeDoc) {
             badgeDoc = '<span style="background:#fef3c7;color:#92400e;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Pendiente</span>';
           }
 
@@ -880,7 +887,7 @@ function verDetalleVisita(tipo, id) {
                         <i class="ri-download-line"></i>
                       </a>
                     </div>
-                    ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (a.estado === 'documentos_rechazados' ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Rechazado</span>' : '')}
+                    ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (a.estado === 'documentos_rechazados' ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Pendiente corrección</span>' : '')}
                   </div>`;
           }
           if (a.documento_adicional) {
@@ -896,7 +903,7 @@ function verDetalleVisita(tipo, id) {
                         <i class="ri-download-line"></i>
                       </a>
                     </div>
-                    ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (a.estado === 'documentos_rechazados' ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Rechazado</span>' : '')}
+                    ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (a.estado === 'documentos_rechazados' ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Pendiente corrección</span>' : '')}
                   </div>`;
           }
           if (a.formato_autorizacion_padres) {
@@ -942,12 +949,7 @@ function verDetalleVisita(tipo, id) {
             }
 
             documentos_personales.forEach(ds => {
-              let badgeDoc = '';
-              if (ds.estado === 'aprobado') {
-                badgeDoc = '<span style="background:#d1fae5;color:#065f46;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;">Aprobado</span>';
-              } else if (ds.estado === 'rechazado') {
-                badgeDoc = '<span style="background:#fee2e2;color:#991b1b;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;">Rechazado</span>';
-              }
+              const badgeDoc = getBadgeRevisionDocumento(ds);
 
               botonesDoc += `
                   <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
@@ -980,7 +982,7 @@ function verDetalleVisita(tipo, id) {
             estadoBadge = '<span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">✅ Aprobado</span>';
           } else if (a.estado === 'documentos_rechazados') {
             borderColor = '#ef4444';
-            estadoBadge = '<span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">❌ Rechazado</span>';
+            estadoBadge = '<span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">⚠️ Pendiente corrección</span>';
           }
 
           let accionesDocHtml = '';
