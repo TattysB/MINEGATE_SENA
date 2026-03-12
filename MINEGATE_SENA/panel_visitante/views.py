@@ -479,8 +479,6 @@ def registrar_asistentes(request, tipo, visita_id):
                             telefono=telefono,
                         )
                     # Guardar archivos subidos
-                    from documentos.models import DocumentoSubidoAsistente
-
                     # Separar el formato de autorización de padres de los demás documentos
                     formato_padres_archivo = None
                     documentos_regulares = {}
