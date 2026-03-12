@@ -11,7 +11,7 @@
   <title>MineGate</title>
 
   <!-- ESTILOS ANTIGUOS (Comentados para pruebas) -->
-  <link rel="stylesheet" href="{% static 'core/css/nuevos_estilos.css' %}?v=17" />
+  <link rel="stylesheet" href="{% static 'core/css/nuevos_estilos.css' %}?v=19" />
   <!-- Estilos del Dropdown de Usuario -->
   <link rel="stylesheet" href="{% static 'core/css/user_dropdown.css' %}" />
   <link rel="stylesheet" href="{% static 'css/configuracion_perfil.css' %}" />
@@ -405,9 +405,26 @@
     function abrirModalCerrarSesion(event) {
       event.preventDefault();
       event.stopPropagation();
-      const modal = document.getElementById("modalCerrarSesion");
-      if (modal) {
-        modal.style.display = "flex";
+      
+      const mensaje = '¿Estás seguro de que deseas cerrar sesión?<br><br><small style="color: #6b7280;">Se cerrará tu sesión actual y deberás iniciar sesión nuevamente para acceder.</small>';
+      
+      if (typeof window.mConfirm === 'function') {
+        window.mConfirm(mensaje, {
+          title: 'Cerrar Sesión',
+          confirmText: 'Sí, Cerrar Sesión',
+          confirmClass: 'cm-btn-success',
+          confirmIcon: 'fas fa-right-from-bracket'
+        }).then(function(resultado) {
+          if (resultado) {
+            window.location.href = "{% url 'usuarios:logout' %}";
+          }
+        });
+      } else {
+        // Fallback: usar modal antiguo si mConfirm no está disponible
+        const modal = document.getElementById("modalCerrarSesion");
+        if (modal) {
+          modal.style.display = "flex";
+        }
       }
     }
 
