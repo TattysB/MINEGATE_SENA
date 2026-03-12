@@ -31,7 +31,7 @@
   <script src="{% static 'documentos/js/gestion_documentos.js' %}" defer></script>
 </head>
 
-<body>
+<body class="admin-page">
   <div class="app-container">
     <!-- Hamburger Button -->
     <button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle menu">
@@ -54,13 +54,6 @@
         </div>
       </div>
 
-      <div class="topbar-center">
-        <div class="search-container">
-          <i class="ri-search-line search-icon"></i>
-          <input type="text" placeholder="Buscar módulos, usuarios, docur..." class="search-input">
-        </div>
-      </div>
-
       <div class="topbar-right">
         <div class="topbar-actions">
           <div class="notification-wrapper">
@@ -79,6 +72,7 @@
                     class="profile-img-topbar" />
                   {% endif %}
                 </div>
+                <span class="topbar-role-label">{{ panel_role_label|default:'Administrador' }}</span>
               </button>
 
               <!-- desplegable Menu -->
@@ -727,8 +721,8 @@
   </script>
   {% if not solo_coordinador %}
   <script defer src="{% static 'calendario/js/panel_calendario_nueva_visita.js' %}"></script>
-  <script defer src="{% static 'documentos/js/panel_documentos_visitas.js' %}?v=20260309-noapi"></script>
-  <script defer src="{% static 'js/panel_visitas.js' %}?v=20260309-noapi"></script>
+  <script defer src="{% static 'documentos/js/panel_documentos_visitas.js' %}?v=20260311-correccion"></script>
+  <script defer src="{% static 'js/panel_visitas.js' %}?v=20260311-correccion"></script>
   {% endif %}
 
   <!-- Modal Personalizado de Alertas/Confirmaciones -->

@@ -258,10 +258,31 @@ body {
 }
 
 .user-profile-btn {
-  background: transparent;
-  border: none;
-  padding: 0;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1.5px solid rgba(255, 255, 255, 0.45);
+  border-radius: 50px;
+  padding: 5px 14px 5px 5px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.user-profile-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+.topbar-role-label {
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  white-space: nowrap;
 }
 
 

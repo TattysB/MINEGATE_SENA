@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="{% static 'core/css/user_dropdown.css' %}" />
   {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body class="coordinador-page">
   <div class="app-container">
     <button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle menu">
       <i class="ri-menu-line"></i>
@@ -32,12 +32,6 @@
             <span class="brand-divider">|</span>
             <span class="brand-sub">Sistema Informactivo del Control y Acceso a la Mina </span>
           </div>
-        </div>
-      </div>
-      <div class="topbar-center">
-        <div class="search-container">
-          <i class="ri-search-line search-icon"></i>
-          <input type="text" placeholder="Buscar módulos, usuarios, docur..." class="search-input">
         </div>
       </div>
       <div class="topbar-right">
@@ -66,6 +60,7 @@
                     <img src="{% static 'core/img/usuario.png' %}" alt="Foto de perfil" class="profile-img-topbar" />
                   {% endif %}
                 </div>
+                <span class="topbar-role-label">{{ panel_role_label|default:'Coordinador' }}</span>
               </button>
               <div class="user-dropdown-menu" id="userDropdownMenu">
                 <div class="user-dropdown-header">
