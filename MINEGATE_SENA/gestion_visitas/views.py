@@ -563,11 +563,15 @@ def api_accion_visita(request, tipo, visita_id, accion):
                     }
                 )
         elif es_administrador_panel(request.user):
-            if visita.estado != "pendiente":
+            if visita.estado not in [
+                "pendiente",
+                "documentos_enviados",
+                "en_revision_documentos",
+            ]:
                 return JsonResponse(
                     {
                         "success": False,
-                        "error": "La visita no está pendiente de aprobación administrativa",
+                        "error": "La visita no está en un estado válido para rechazo (pendiente o en revisión de documentos)",
                     }
                 )
         else:
@@ -671,14 +675,18 @@ def api_accion_visita(request, tipo, visita_id, accion):
                     asistente.email_qr_enviado = True
                     asistente.fecha_envio_qr = timezone.now()
                     asistente.save(
-                        update_fields=["qr_generado", "email_qr_enviado", "fecha_envio_qr"]
+                        update_fields=[
+                            "qr_generado",
+                            "email_qr_enviado",
+                            "fecha_envio_qr",
+                        ]
                     )
                     qr_enviados += 1
                 else:
                     qr_fallidos += 1
             except Exception:
                 qr_fallidos += 1
-        
+
         # Confirmar la reserva de horario (cambiar a estado 'confirmada')
         ReservaHorario.confirmar_reserva(visita, tipo)
 
