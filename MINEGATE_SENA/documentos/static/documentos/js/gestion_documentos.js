@@ -48,6 +48,11 @@ function _cerrarModal(overlay) {
  * @param {string} tipo - 'success' | 'error' | 'warning' | 'info'
  */
 function mostrarAlerta(mensaje, tipo) {
+    if (typeof window.mAlert === 'function') {
+        window.mAlert(mensaje, tipo || 'info');
+        return;
+    }
+
     tipo = tipo || 'info';
     var modal = _crearModalBase();
 
@@ -83,6 +88,20 @@ function mostrarAlerta(mensaje, tipo) {
  * @param {string} tipo - 'danger' | 'warning' | 'info'
  */
 function mostrarConfirmacion(titulo, mensaje, onConfirmar, tipo) {
+    if (typeof window.mConfirm === 'function') {
+        window.mConfirm(mensaje, {
+            title: titulo || 'Confirmar acción',
+            confirmText: (tipo === 'danger' ? 'Eliminar' : 'Confirmar'),
+            confirmClass: (tipo === 'danger' ? 'cm-btn-danger' : 'cm-btn-primary'),
+            confirmIcon: (tipo === 'danger' ? 'fas fa-trash' : 'fas fa-check')
+        }).then(function (ok) {
+            if (ok && typeof onConfirmar === 'function') {
+                onConfirmar();
+            }
+        });
+        return;
+    }
+
     tipo = tipo || 'danger';
     var modal = _crearModalBase();
 
