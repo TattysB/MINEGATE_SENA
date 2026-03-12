@@ -102,6 +102,41 @@
             ajustarEspacioNavbar();
             window.addEventListener('resize', ajustarEspacioNavbar);
             window.addEventListener('load', ajustarEspacioNavbar);
+
+            // Control manual del menú hamburguesa
+            var navbarToggler = document.querySelector('.navbar-toggler');
+            var navbarCollapse = document.querySelector('.navbar-collapse');
+            var navLinks = document.querySelectorAll('.navbar-nav .nav-link, .navbar-nav .btn');
+
+            function toggleMenu() {
+                navbarCollapse.classList.toggle('show');
+                var isOpen = navbarCollapse.classList.contains('show');
+                navbarToggler.setAttribute('aria-expanded', isOpen);
+            }
+
+            // Evitar que Bootstrap interfiera y hacer toggle manual
+            if (navbarToggler) {
+                navbarToggler.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    toggleMenu();
+                });
+            }
+
+            // Cerrar menú cuando se hace clic en un link
+            navLinks.forEach(function(link) {
+                link.addEventListener('click', function() {
+                    if (navbarCollapse.classList.contains('show')) {
+                        toggleMenu();
+                    }
+                });
+            });
+
+            // Cerrar menú si se hace clic fuera de él
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.navbar') && navbarCollapse.classList.contains('show')) {
+                    toggleMenu();
+                }
+            });
         })();
     </script>
 

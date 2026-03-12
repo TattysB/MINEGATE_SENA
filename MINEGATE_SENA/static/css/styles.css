@@ -235,7 +235,7 @@ b {
     position: fixed;
     bottom: 25px;
     /* Mod rigth por left en caso de que se quiera cambiar */
-    right: 25px;
+    left: 25px;
     width: 60px;
     height: 60px;
     background-color: #00af00;
@@ -260,7 +260,7 @@ b {
     display: none;
     position: fixed;
     bottom: 95px;
-    right: 25px;
+    left: 25px;
     width: 280px;
     background: white;
     border-radius: 12px;
@@ -328,6 +328,19 @@ body.high-contrast-mode .btn {
 body.underline-links a {
     text-decoration: underline !important;
     font-weight: bold;
+}
+
+/* Accessibility Widget - Override para Admin y Coordinador al lado derecho */
+body.admin-page .minegate-acc-trigger,
+body.coordinador-page .minegate-acc-trigger {
+    right: 25px !important;
+    left: auto !important;
+}
+
+body.admin-page .acc-widget-panel,
+body.coordinador-page .acc-widget-panel {
+    right: 25px !important;
+    left: auto !important;
 }
 
 /* Cursor grande */
