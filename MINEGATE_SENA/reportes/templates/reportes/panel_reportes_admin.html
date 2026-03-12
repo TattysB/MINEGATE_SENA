@@ -71,6 +71,7 @@
               <th style="padding:12px 14px;text-align:left;">Fecha Solicitud</th>
               <th style="padding:12px 14px;text-align:left;">Fecha Visita</th>
               <th style="padding:12px 14px;text-align:left;">Estado</th>
+              <th style="padding:12px 14px;text-align:center;">Descargar</th>
             </tr>
           </thead>
           <tbody>
@@ -86,10 +87,18 @@
               <td style="padding:10px 14px;">{{ fila.fecha_solicitud|date:'d/m/Y H:i' }}</td>
               <td style="padding:10px 14px;">{% if fila.fecha_visita %}{{ fila.fecha_visita|date:'d/m/Y' }}{% else %}-{% endif %}</td>
               <td style="padding:10px 14px;">{{ fila.estado }}</td>
+              <td style="padding:10px 14px;white-space:nowrap;text-align:center;">
+                <a href="{% url 'reportes:descargar_pdf_individual' fila.tipo|lower fila.id %}" title="Descargar PDF" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:6px;border:1px solid #dc2626;color:#dc2626;text-decoration:none;margin-right:6px;">
+                  <i class="ri-file-pdf-line"></i>
+                </a>
+                <a href="{% url 'reportes:descargar_excel_individual' fila.tipo|lower fila.id %}" title="Descargar Excel" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:6px;border:1px solid #16a34a;color:#16a34a;text-decoration:none;">
+                  <i class="ri-file-excel-2-line"></i>
+                </a>
+              </td>
             </tr>
             {% empty %}
             <tr>
-              <td colspan="10" style="padding:30px;text-align:center;color:#6b7280;">No hay visitas para los filtros seleccionados.</td>
+              <td colspan="11" style="padding:30px;text-align:center;color:#6b7280;">No hay visitas para los filtros seleccionados.</td>
             </tr>
             {% endfor %}
           </tbody>
@@ -113,7 +122,32 @@
       if (!form || form.dataset.ajaxBound === '1') return;
       form.dataset.ajaxBound = '1';
 
+      const desdeInput = form.querySelector('input[name="fecha_desde"]');
+      const hastaInput = form.querySelector('input[name="fecha_hasta"]');
+
+      const syncFechaHastaMin = () => {
+        if (!desdeInput || !hastaInput) return;
+        hastaInput.min = desdeInput.value || '';
+
+        if (desdeInput.value && hastaInput.value && hastaInput.value < desdeInput.value) {
+          hastaInput.value = desdeInput.value;
+        }
+      };
+
+      if (desdeInput && hastaInput) {
+        syncFechaHastaMin();
+        desdeInput.addEventListener('change', syncFechaHastaMin);
+        hastaInput.addEventListener('change', syncFechaHastaMin);
+      }
+
       form.addEventListener('submit', async function (event) {
+        if (desdeInput && hastaInput && desdeInput.value && hastaInput.value && hastaInput.value < desdeInput.value) {
+          event.preventDefault();
+          hastaInput.value = desdeInput.value;
+          hastaInput.reportValidity();
+          return;
+        }
+
         event.preventDefault();
         const params = new URLSearchParams(new FormData(form));
         const url = `${form.action}?${params.toString()}`;
