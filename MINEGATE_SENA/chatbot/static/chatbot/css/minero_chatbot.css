@@ -1,0 +1,234 @@
+:root {
+    --bot-green-1: #0f5132;
+    --bot-green-2: #198754;
+    --bot-green-3: #2faa66;
+    --bot-surface: #f5fff8;
+    --bot-ink: #153126;
+    --bot-muted: #5d7368;
+}
+
+.minero-chatbot {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 1080;
+    font-family: "Work Sans", sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.minero-chatbot * {
+    box-sizing: border-box;
+}
+
+.minero-chatbot-toggle {
+    background: linear-gradient(135deg, var(--bot-green-1), var(--bot-green-2) 50%, var(--bot-green-3));
+    color: #fff;
+    border: 0;
+    border-radius: 999px;
+    padding: 12px 18px;
+    box-shadow: 0 14px 30px rgba(15, 81, 50, 0.35);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.minero-chatbot-toggle:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 18px 32px rgba(15, 81, 50, 0.45);
+}
+
+.minero-chatbot-window {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 12px);
+    width: min(380px, calc(100vw - 24px));
+    height: min(560px, calc(100vh - 100px));
+    border-radius: 18px;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid rgba(25, 135, 84, 0.2);
+    box-shadow: 0 24px 54px rgba(20, 41, 31, 0.3);
+    transform-origin: bottom right;
+    transform: scale(0.85) translateY(10px);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.minero-chatbot.open .minero-chatbot-window {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.minero-chatbot-header {
+    background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.22), transparent 48%),
+        linear-gradient(130deg, var(--bot-green-1), var(--bot-green-2) 60%, #3ec07a);
+    color: #fff;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.minero-chatbot-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.minero-chatbot-title i {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(3px);
+}
+
+.minero-chatbot-title strong {
+    display: block;
+    font-size: 0.98rem;
+    line-height: 1.2;
+}
+
+.minero-chatbot-title small {
+    display: block;
+    font-size: 0.76rem;
+    opacity: 0.9;
+}
+
+.minero-chatbot-close {
+    color: #fff;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.minero-chatbot-body {
+    flex: 1;
+    background: linear-gradient(180deg, #f8fff9 0%, #eef9f1 100%);
+    padding: 14px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.minero-msg {
+    max-width: 85%;
+    padding: 10px 12px;
+    border-radius: 14px;
+    font-size: 0.93rem;
+    line-height: 1.35;
+}
+
+.minero-msg.bot {
+    align-self: flex-start;
+    background: #fff;
+    color: var(--bot-ink);
+    border: 1px solid rgba(33, 95, 69, 0.14);
+}
+
+.minero-msg.user {
+    align-self: flex-end;
+    background: linear-gradient(135deg, #1f7a4e, #33a56a);
+    color: #fff;
+}
+
+.minero-chatbot-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.minero-chatbot-chip {
+    background: #ffffff;
+    border: 1px solid rgba(25, 135, 84, 0.25);
+    color: #18523a;
+    border-radius: 999px;
+    padding: 6px 11px;
+    font-size: 0.79rem;
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+
+.minero-chatbot-chip:hover {
+    background: #e8f8ee;
+    transform: translateY(-1px);
+}
+
+.minero-chatbot-footer {
+    padding: 12px;
+    border-top: 1px solid #e2f1e8;
+    background: #fff;
+}
+
+.minero-chatbot-form {
+    display: flex;
+    gap: 8px;
+}
+
+.minero-chatbot-input {
+    flex: 1;
+    border: 1px solid #c5dfd0;
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: #264236;
+    outline: none;
+}
+
+.minero-chatbot-input:focus {
+    border-color: #2faa66;
+    box-shadow: 0 0 0 3px rgba(47, 170, 102, 0.18);
+}
+
+.minero-chatbot-send {
+    min-width: 44px;
+    border: 0;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #0f5132, #198754);
+    color: #fff;
+    cursor: pointer;
+}
+
+.minero-chatbot-hint {
+    color: var(--bot-muted);
+    font-size: 0.73rem;
+    margin-top: 8px;
+}
+
+@media (max-width: 640px) {
+    .minero-chatbot {
+        right: 12px;
+        left: 12px;
+        bottom: 12px;
+        align-items: stretch;
+    }
+
+    .minero-chatbot-toggle {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .minero-chatbot-window {
+        right: 0;
+        left: 0;
+        width: 100%;
+        height: min(70vh, 560px);
+    }
+}

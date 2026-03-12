@@ -12,6 +12,7 @@
 
 <section id="hero-section" class="hero-section">
     <link rel="stylesheet" href="{% static 'core/css/index_stl.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'chatbot/css/minero_chatbot.css' %}?v=1">
 
     {% block extra_css %}
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -427,5 +428,58 @@
         </div>
     </section>
 
+
+    <section id="modulo-ayuda-chatbot" aria-label="Modulo de ayuda">
+        <div id="mineroChatbot" class="minero-chatbot" aria-live="polite">
+            <button type="button" class="minero-chatbot-toggle" data-chatbot-toggle>
+                <i class="fa-solid fa-comments"></i>
+                <span>Ayuda?</span>
+            </button>
+
+            <div class="minero-chatbot-window" role="dialog" aria-label="Chat Bot Minero">
+                <div class="minero-chatbot-header">
+                    <div class="minero-chatbot-title">
+                        <i class="fa-solid fa-helmet-safety"></i>
+                        <div>
+                            <strong>Chat Bot Minero</strong>
+                        </div>
+                    </div>
+                    <button type="button" class="minero-chatbot-close" data-chatbot-close aria-label="Cerrar">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <div class="minero-chatbot-body" data-chatbot-body>
+                    <div class="minero-msg bot">
+                        Hola, soy Chat Bot Minero. Te ayudo con dudas sobre SICAM, visitas,
+                        seguridad, calendario y documentos.
+                    </div>
+                    <div class="minero-chatbot-chips" data-chatbot-chips>
+                        <button type="button" class="minero-chatbot-chip">Como registro una visita?</button>
+                        <button type="button" class="minero-chatbot-chip">Que requisitos de seguridad hay?</button>
+                        <button type="button" class="minero-chatbot-chip">Como entreno el chatbot?</button>
+                    </div>
+                </div>
+
+                <div class="minero-chatbot-footer">
+                    <form class="minero-chatbot-form" data-chatbot-form>
+                        <input
+                            type="text"
+                            class="minero-chatbot-input"
+                            data-chatbot-input
+                            placeholder="Escribe tu pregunta..."
+                            autocomplete="off"
+                            maxlength="240"
+                        >
+                        <button class="minero-chatbot-send" type="submit" aria-label="Enviar">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="{% static 'chatbot/js/minero_chatbot.js' %}?v=1"></script>
 
     {% endblock content %}
