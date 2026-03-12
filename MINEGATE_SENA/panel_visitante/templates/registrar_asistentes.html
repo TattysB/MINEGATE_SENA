@@ -605,11 +605,24 @@
                     <i class="fas fa-file-pdf me-1" style="color:#dc2626;"></i>
                     Formato Auto Reporte de Condiciones de Salud <span style="color:#dc2626;">*</span>
                 </label>
-                <input type="file" id="inputDocSalud" name="documento_salud_" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required style="padding:10px; border:2px solid #e5e7eb; border-radius:8px; font-size:14px;">
+                <input type="file" id="inputDocSalud" name="documento_salud_" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" style="padding:10px; border:2px solid #e5e7eb; border-radius:8px; font-size:14px;">
                 <small style="color:#6b7280; display:block; margin-top:6px;">
-                    Formatos aceptados: PDF, JPG, PNG, DOC, DOCX (Máx. 10MB)
+                    Formatos aceptados: PDF, JPG, PNG, DOC, DOCX (Máx. 10MB). Use este campo si rechazaron el auto reporte.
                 </small>
             </div>
+            <div style="margin-bottom:18px;">
+                <label style="font-weight:600; color:#333; display:block; margin-bottom:8px;">
+                    <i class="fas fa-file-signature me-1" style="color:#d97706;"></i>
+                    Formato Autorización de Padres (si aplica)
+                </label>
+                <input type="file" id="inputFormatoPadres" name="formato_padres_" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" style="padding:10px; border:2px solid #e5e7eb; border-radius:8px; font-size:14px;">
+                <small style="color:#6b7280; display:block; margin-top:6px;">
+                    Use este campo cuando el rechazo sea por autorización de padres.
+                </small>
+            </div>
+            <small style="color:#6b7280; display:block; margin-top:-8px; margin-bottom:12px;">
+                Debe adjuntar al menos un archivo para guardar la corrección.
+            </small>
             <div style="display:flex; gap:10px; margin-top:24px; justify-content:flex-end;">
                 <button type="button" onclick="cerrarModalActualizarDoc()" style="background:#e5e7eb; color:#374151; font-weight:600; padding:10px 24px; border:none; border-radius:8px; cursor:pointer;">
                     Cancelar
@@ -629,6 +642,7 @@ var visitaIdGlobal = {{ visita.id }};
 function abrirModalActualizarDoc(asistenteId, nombreAsistente, tipo) {
     document.getElementById('nombreAsistenteModal').textContent = nombreAsistente;
     document.getElementById('inputDocSalud').name = 'documento_salud_' + asistenteId;
+    document.getElementById('inputFormatoPadres').name = 'formato_padres_' + asistenteId;
     const baseUrl = '/visitante/actualizar-documento/';
     const actionUrl = baseUrl + tipo + '/' + asistenteId + '/';
     document.getElementById('formActualizarDoc').action = actionUrl;
@@ -639,6 +653,7 @@ function abrirModalActualizarDoc(asistenteId, nombreAsistente, tipo) {
 function cerrarModalActualizarDoc() {
     document.getElementById('modalActualizarDoc').style.display = 'none';
     document.getElementById('inputDocSalud').value = '';
+    document.getElementById('inputFormatoPadres').value = '';
     document.body.style.overflow = '';
 }
 
