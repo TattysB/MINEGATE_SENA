@@ -42,5 +42,8 @@ class RegistroVisitante(models.Model):
 		"""Retorna el nombre del campo de email (requerido por default_token_generator)"""
 		return 'correo'
 
+	class Meta:
+		db_table = 'registro_visitante'
+
 	def __str__(self):
 		return f"{self.nombre} {self.apellido} - {self.get_tipo_documento_display()} {self.documento}"

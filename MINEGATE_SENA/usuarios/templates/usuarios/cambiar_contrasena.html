@@ -1,45 +1,26 @@
+{%extends 'core/panel_administrativo.html' %}
 {% load bootstrap5 %} {% load static %} {% block content %}
-<link
-  rel="stylesheet"
-  href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css"
-/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" />
 <link rel="stylesheet" href="{% static 'css/cambiar_contrasena.css' %}" />
 
-<nav class="navbar sticky-top">
-    <div class="container">
-        <a class="navbar-brand">
-            <img src="{% static 'img/LogoMine.png' %}" alt="Logo MINEGATE" class="navbar-logo">
-            MINEGATE
-        </a>
-    </div>
-</nav>
-
-<div class="password-wrapper">
-  <div class="password-card">
-    <!-- HEADER CON GRADIENTE VERDE -->
+<div class="modal-password-overlay">
+  <div class="modal-password-card">
+    <!-- HEADER CON FLECHA DE REGRESO -->
     <div class="password-header">
       <h3>
         <i class="ri-lock-password-fill"></i>
         Cambiar Contraseña
       </h3>
+      <a href="{% url 'usuarios:configuracion_perfil' %}" class="btn-close-password">
+        <i class="bi bi-arrow-left"></i>
+      </a>
     </div>
 
     <!-- BODY DEL CARD -->
     <div class="password-body">
-      <form method="post" novalidate>
+      <form method="post" novalidate id="changePasswordForm">
         {% csrf_token %}
-
-        <!-- Alerta de Errores -->
-        {% if form.non_field_errors %}
-        <div class="alert-danger">
-          <strong><i class="ri-error-warning-fill"></i> Error:</strong>
-          <ul class="mb-0 mt-2">
-            {% for error in form.non_field_errors %}
-            <li>{{ error }}</li>
-            {% endfor %}
-          </ul>
-        </div>
-        {% endif %}
 
         <!-- SECCIÓN: CONTRASEÑA ACTUAL -->
         <div class="form-section">
@@ -50,13 +31,14 @@
               {{ form.old_password.label }}
               <span>*</span>
             </label>
-            {% if form.old_password.errors %} {{ form.old_password }}
-            <div class="text-danger">
+            {{ form.old_password }}
+            {% if form.old_password.errors %}
               {% for error in form.old_password.errors %}
-              <i class="ri-error-warning-line"></i> {{ error }}<br />
+                <div class="error-text">
+                  <i class="ri-error-warning-line"></i> {{ error }}
+                </div>
               {% endfor %}
-            </div>
-            {% else %} {{ form.old_password }} {% endif %}
+            {% endif %}
           </div>
 
           <!-- ENLACE: ¿OLVIDASTE TU CONTRASEÑA? -->
@@ -77,17 +59,14 @@
               {{ form.new_password1.label }}
               <span>*</span>
             </label>
-            {% if form.new_password1.errors %} {{ form.new_password1 }}
-            <div class="text-danger">
+            {{ form.new_password1 }}
+            {% if form.new_password1.errors %}
               {% for error in form.new_password1.errors %}
-              <i class="ri-error-warning-line"></i> {{ error }}<br />
+                <div class="error-text">
+                  <i class="ri-error-warning-line"></i> {{ error }}
+                </div>
               {% endfor %}
-            </div>
-            {% else %} {{ form.new_password1 }} {% if form.new_password1.help_text %}
-            <small class="form-text">
-              {{ form.new_password1.help_text|safe }}
-            </small>
-            {% endif %} {% endif %}
+            {% endif %}
           </div>
 
           <!-- Campo: Confirmar Contraseña -->
@@ -96,24 +75,29 @@
               {{ form.new_password2.label }}
               <span>*</span>
             </label>
-            {% if form.new_password2.errors %} {{ form.new_password2 }}
-            <div class="text-danger">
+            {{ form.new_password2 }}
+            {% if form.new_password2.errors %}
               {% for error in form.new_password2.errors %}
-              <i class="ri-error-warning-line"></i> {{ error }}<br />
+                <div class="error-text">
+                  <i class="ri-error-warning-line"></i> {{ error }}
+                </div>
               {% endfor %}
-            </div>
-            {% else %} {{ form.new_password2 }} {% endif %}
+            {% endif %}
           </div>
+        </div>
+
+        <!-- TEXTO INFORMATIVO -->
+        <div class="helper-text">
+          <i class="ri-information-line"></i>
+          Los campos marcados con <span class="required-fields">*</span> son
+          obligatorios.
+          <br />
+          Por tu seguridad, usa una contraseña con mayúsculas, minúsculas, números y
+          símbolos.
         </div>
 
         <!-- BOTONES DE ACCIÓN -->
         <div class="button-group">
-          <a
-            href="{% url 'usuarios:configuracion_perfil' %}"
-            class="btn btn-secondary-custom"
-          >
-            <i class="ri-close-line"></i> Cancelar
-          </a>
           <button type="submit" class="btn btn-primary-custom">
             <i class="ri-save-3-line"></i> Actualizar Contraseña
           </button>
@@ -121,15 +105,7 @@
       </form>
     </div>
   </div>
-
-  <!-- TEXTO INFORMATIVO -->
-  <div class="helper-text">
-    <i class="ri-information-line"></i>
-    Los campos marcados con <span class="required-fields">*</span> son
-    obligatorios.
-    <br />
-    Por tu seguridad, usa una contraseña con mayúsculas, minúsculas, números y
-    símbolos.
-  </div>
 </div>
+<script src="{% static 'js/cambiar_contrasena.js' %}"></script>
+
 {% endblock %}

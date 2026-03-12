@@ -36,6 +36,7 @@ class Programa(models.Model):
         verbose_name = 'Programa'
         verbose_name_plural = 'Programas'
         ordering = ['nombre']
+        db_table = 'programa'
 
     def __str__(self):
         return self.nombre
@@ -91,6 +92,7 @@ class Ficha(models.Model):
         verbose_name = 'Ficha'
         verbose_name_plural = 'Fichas'
         ordering = ['-numero']
+        db_table = 'ficha'
 
     def __str__(self):
         return f'Ficha {self.numero} - {self.programa.nombre}'    
@@ -136,7 +138,7 @@ class Aprendiz(models.Model):
     )
     
     numero_documento = models.CharField(
-        max_length=50,
+        max_length=10,
         verbose_name='Número de Documento'
     )
     
@@ -147,7 +149,8 @@ class Aprendiz(models.Model):
     telefono = models.CharField(
         max_length=20,
         blank=True,
-        verbose_name='Teléfono'
+        verbose_name='Teléfono',
+        null=True
     )
     
     # Documentos requeridos
@@ -155,8 +158,6 @@ class Aprendiz(models.Model):
         upload_to='aprendices/documentos/%Y/%m/',
         blank=True,
         null=True,
-        verbose_name='Documento de Identidad (PDF/Imagen)',
-        help_text='PDF o imagen del documento de identidad'
     )
     
     documento_adicional = models.FileField(
@@ -186,6 +187,7 @@ class Aprendiz(models.Model):
         verbose_name_plural = 'Aprendices'
         ordering = ['apellido', 'nombre']
         unique_together = ['ficha', 'numero_documento']
+        db_table = 'aprendiz'
     
     def __str__(self):
         return f"{self.nombre} {self.apellido} - Ficha {self.ficha.numero}"

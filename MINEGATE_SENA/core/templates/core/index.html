@@ -4,6 +4,8 @@
 {% block title %}SICAM - Sistema Informativo del Control y Acceso a la Mina{% endblock %}
 {% block content %}
 
+{% get_media_prefix as MEDIA_PREFIX %}
+
 {% load bootstrap5 %}
 {% bootstrap_css %}
 {% bootstrap_javascript %}
@@ -22,49 +24,67 @@
     <div id="heroCarouselBackground" class="carousel slide carousel-fade position-absolute w-100 h-100"
         data-bs-ride="carousel" data-bs-interval="4000"
         style="top: 0; left: 0; z-index: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; background-color: #222;">
+        {% if elementos_encabezado %}
+        <div class="carousel-indicators">
+            {% for slide in elementos_encabezado %}
+            <button type="button" data-bs-target="#heroCarouselBackground" data-bs-slide-to="{{ forloop.counter0 }}"
+                class="{% if forloop.first %}active{% endif %}" {% if forloop.first %}aria-current="true"{% endif %}
+                aria-label="Slide {{ forloop.counter }}"></button>
+            {% endfor %}
+        </div>
+        {% endif %}
+
         <div class="carousel-inner w-100 h-100">
+            {% if elementos_encabezado %}
+            {% for slide in elementos_encabezado %}
+            <div class="carousel-item {% if forloop.first %}active{% endif %} w-100 h-100">
+                <img src="{{ slide.imagen.url }}{% if slide.actualizado_en %}?v={{ slide.actualizado_en|date:'U' }}{% endif %}" class="d-block w-100 h-100"
+                    style="object-fit: cover; object-position: center;" alt="Slide {{ forloop.counter }}">
+                <div class="carousel-caption d-block h-100 d-flex flex-column justify-content-center align-items-center">
+                    {% if slide.titulo %}
+                    <h1 class="sicam-title">{{ slide.titulo }}</h1>
+                    {% endif %}
+                    {% if slide.texto %}
+                    <p class="sicam-tagline mt-3">{{ slide.texto }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
             <div class="carousel-item active w-100 h-100">
-                <img src="{% static 'core/img/grupal.jpg' %}" class="d-block w-100 h-100"
+                <img src="{% if contenido_pagina and contenido_pagina.imagen_principal %}{{ contenido_pagina.imagen_principal.url }}{% else %}{{ MEDIA_PREFIX }}img/grupal.jpg{% endif %}" class="d-block w-100 h-100"
                     style="object-fit: cover; object-position: center 20%;" alt="Fondo Grupal">
                 <div
                     class="carousel-caption d-block h-100 d-flex flex-column justify-content-center align-items-center">
-                    <h1 class="sicam-title"> Centro Minero de Morcá </h1>
+                    <h1 class="sicam-title">{{ contenido_pagina.titulo_principal|default:'Centro Minero de Morcá' }}</h1>
                     <p class="sicam-tagline mt-3">
-                        <i class="fas fa-calendar-check me-2"> </i> Agenda tu experiencia minera de forma fácil, segura
-                        y digital.
+                        <i class="fas fa-calendar-check me-2"> </i> {{ contenido_pagina.texto_principal|default:'Agenda tu experiencia minera de forma fácil, segura y digital.' }}
                     </p>
                 </div>
             </div>
             <div class="carousel-item w-100 h-100">
-                <img src="{% static 'core/img/mina.jpg' %}" class="d-block w-100 h-100"
+                <img src="{% if contenido_pagina and contenido_pagina.imagen_secundaria %}{{ contenido_pagina.imagen_secundaria.url }}{% else %}{{ MEDIA_PREFIX }}img/mina.jpg{% endif %}" class="d-block w-100 h-100"
                     style="object-fit: cover; object-position: center;" alt="Fondo Mina">
                 <div
                     class="carousel-caption d-block h-100 d-flex flex-column justify-content-center align-items-center">
                     <p class="sicam-invitation fs-4">
-                        <i class="fas fa-hard-hat me-2"></i> Ven, visita el SENA y vive la minería como una
-                        experiencia de
-                        aprendizaje.
+                        <i class="fas fa-hard-hat me-2"></i> {{ contenido_pagina.texto_secundario|default:'Ven, visita el SENA y vive la minería como una experiencia de aprendizaje.' }}
                     </p>
                 </div>
             </div>
             <div class="carousel-item w-100 h-100">
-                <img src="{% static 'core/img/aprendices.jpg' %}" class="d-block w-100 h-100"
+                <img src="{% if contenido_pagina and contenido_pagina.imagen_terciaria %}{{ contenido_pagina.imagen_terciaria.url }}{% else %}{{ MEDIA_PREFIX }}img/aprendices.jpg{% endif %}" class="d-block w-100 h-100"
                     style="object-fit: cover; object-position: center;" alt="Fondo Aprendices">
                 <div
                     class="carousel-caption d-block h-100 d-flex flex-column justify-content-center align-items-center">
                     <div class="sicam-description px-4">
                         <p class="fs-5">
-                            <i class="fa-solid fa-computer"></i> El <strong>SENA Centro Minero de Morcá</strong>, a
-                            través de la plataforma
-                            <strong>SICAM</strong>,
-                            ofrece un sistema digital para la gestión y programación de visitas a la mina didáctica,
-                            facilitando el acceso a estudiantes, instituciones educativas y visitantes
-                            interesados
-                            en conocer la minería desde un enfoque <em>formativo, práctico y seguro</em>.
+                            <i class="fa-solid fa-computer"></i> {{ contenido_pagina.texto_descripcion|default:'El SENA Centro Minero de Morcá, a través de la plataforma SICAM, ofrece un sistema digital para la gestión y programación de visitas a la mina didáctica.' }}
                         </p>
                     </div>
                 </div>
             </div>
+            {% endif %}
         </div>
     </div>
 </section>
@@ -139,26 +159,10 @@
             </div>
         </div>
 
-        <!-- Alerta Importante -->
-        <div class="important-note shadow-sm p-4 rounded-4"
-            style="background: rgba(63, 165, 0, 0.05); border: 1px solid rgba(63, 165, 0, 0.1);">
-            <div class="d-flex align-items-center flex-column flex-md-row gap-4">
-                <div class="important-icon-box">
-                    <i class="fas fa-triangle-exclamation"></i>
-                </div>
-                <div class="text-center text-md-start">
-                    <h4 class="text-dark fw-bold mb-2">Importante</h4>
-                    <p class="text-secondary mb-0">
-                        Todos los visitantes deben completar el formulario de salud y firmar el consentimiento informado
-                        antes de ingresar a la mina didáctica. La seguridad de nuestros visitantes es nuestra máxima
-                        prioridad.
-                    </p>
-                </div>
-            </div>
+        <div class="my-4 my-md-5" aria-hidden="true">
+            <div class="mx-auto" style="max-width: 1140px; border-top: 1px solid #d9dee3;"></div>
         </div>
-    </div>
-</section>
-<section>
+
     <!-- Publicidad / Características -->
     <div class="container mt-5 mb-4">
         <div class="row g-4">
@@ -261,13 +265,12 @@
 
                 <!-- Título Grande y en Negrita -->
                 <h2 class="fw-bold display-3 mb-4" style="font-family: 'Work Sans', sans-serif; color: #1a1a1a;">
-                    Explora Nuestras Instalaciones
+                    {{ contenido_pagina.titulo_galeria|default:'Explora Nuestras Instalaciones' }}
                 </h2>
 
                 <!-- Descripción Refinada -->
                 <p class="text-muted lead mx-auto mb-4" style="max-width: 850px; font-size: 1.4rem;">
-                    Conoce la mina didáctica aquí podras ver algunas de las experiencias que viven nuestros
-                    aprendices
+                    {{ contenido_pagina.descripcion_galeria|default:'Conoce la mina didáctica y las experiencias que viven nuestros aprendices.' }}
                 </p>
 
                 <!-- Divisor Verde Corto -->
@@ -277,6 +280,40 @@
 
             <div class="card shadow-lg border-0 rounded-4 overflow-hidden map-card-hover">
                 <div id="minegateCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000">
+                    {% if elementos_galeria %}
+                    <div class="carousel-indicators">
+                        {% for elemento in elementos_galeria %}
+                        <button type="button" data-bs-target="#minegateCarousel" data-bs-slide-to="{{ forloop.counter0 }}"
+                            class="{% if forloop.first %}active{% endif %}" {% if forloop.first %}aria-current="true"{% endif %}
+                            aria-label="Slide {{ forloop.counter }}"></button>
+                        {% endfor %}
+                    </div>
+
+                    <div class="carousel-inner">
+                        {% for elemento in elementos_galeria %}
+                        <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                            {% if elemento.tipo == 'video' %}
+                            <video class="d-block w-100"
+                                style="height: 600px; object-fit: contain; background-color: #000;" autoplay loop muted
+                                playsinline>
+                                <source src="{{ elemento.archivo.url }}?v={{ elemento.actualizado_en|date:'U' }}" type="{{ elemento.mime_type|default:'video/mp4' }}">
+                            </video>
+                            {% else %}
+                            <img src="{{ elemento.archivo.url }}?v={{ elemento.actualizado_en|date:'U' }}" class="d-block w-100"
+                                style="height: 600px; object-fit: contain; background-color: #000;"
+                                alt="{{ elemento.titulo }}">
+                            {% endif %}
+
+                            <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded-3 p-3 mb-4">
+                                <h5 class="fw-bold">{{ elemento.titulo }}</h5>
+                                {% if elemento.descripcion %}
+                                <p>{{ elemento.descripcion }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
                     <div class="carousel-indicators">
                         <button type="button" data-bs-target="#minegateCarousel" data-bs-slide-to="0" class="active"
                             aria-current="true" aria-label="Slide 1"></button>
@@ -284,154 +321,41 @@
                             aria-label="Slide 2"></button>
                         <button type="button" data-bs-target="#minegateCarousel" data-bs-slide-to="2"
                             aria-label="Slide 3"></button>
-                        <button type="button" data-bs-target="#minegateCarousel" data-bs-slide-to="3"
-                            aria-label="Slide 4"></button>
-                        <button type="button" data-bs-target="#minegateCarousel" data-bs-slide-to="4"
-                            aria-label="Slide 5"></button>
-                        <button type="button" data-bs-target="#minegateCarousel" data-bs-slide-to="5"
-                            aria-label="Slide 6"></button>
-                        <button type="button" data-bs-target="#minegateCarousel" data-bs-slide-to="6"
-                            aria-label="Slide 7"></button>
-                        <button type="button" data-bs-target="#minegateCarousel" data-bs-slide-to="7"
-                            aria-label="Slide 8"></button>
-                        <button type="button" data-bs-target="#minegateCarousel" data-bs-slide-to="8"
-                            aria-label="Slide 9"></button>
-                        <button type="button" data-bs-target="#minegateCarousel" data-bs-slide-to="9"
-                            aria-label="Slide 10"></button>
-                        <button type="button" data-bs-target="#minegateCarousel" data-bs-slide-to="10"
-                            aria-label="Slide 11"></button>
-                        <button type="button" data-bs-target="#minegateCarousel" data-bs-slide-to="11"
-                            aria-label="Slide 12"></button>
-                        <button type="button" data-bs-target="#minegateCarousel" data-bs-slide-to="12"
-                            aria-label="Slide 13"></button>
                     </div>
 
                     <div class="carousel-inner">
-                        <!-- Video 1: General -->
                         <div class="carousel-item active">
                             <video class="d-block w-100"
                                 style="height: 600px; object-fit: contain; background-color: #000;" autoplay loop muted
                                 playsinline>
-                                <source src="{% static 'core/img/video1.mp4' %}" type="video/mp4">
+                                <source src="{{ MEDIA_PREFIX }}img/video1.mp4" type="video/mp4">
                             </video>
                             <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded-3 p-3 mb-4">
                                 <h5 class="fw-bold">Vista General</h5>
                                 <p>Recorrido por las instalaciones externas e internas del centro.</p>
                             </div>
                         </div>
-                        <!-- Imagen 1: Entrada -->
                         <div class="carousel-item">
-                            <img src="{% static 'core/img/entrada 1.jpg' %}" class="d-block w-100"
+                            <img src="{{ MEDIA_PREFIX }}img/entrada 1.jpg" class="d-block w-100"
                                 style="height: 600px; object-fit: contain; background-color: #000;" alt="Entrada">
                             <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded-3 p-3 mb-4">
                                 <h5 class="fw-bold">Acceso Principal</h5>
                                 <p>Entrada al Centro Minero de Morcá.</p>
                             </div>
                         </div>
-                        <!-- Video 2: Vagón -->
                         <div class="carousel-item">
                             <video class="d-block w-100"
                                 style="height: 600px; object-fit: contain; background-color: #000;" autoplay loop muted
                                 playsinline>
-                                <source src="{% static 'core/img/vagon.mp4' %}" type="video/mp4">
+                                <source src="{{ MEDIA_PREFIX }}img/vagon.mp4" type="video/mp4">
                             </video>
                             <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded-3 p-3 mb-4">
                                 <h5 class="fw-bold">Transporte en Mina</h5>
                                 <p>Operación de vagones en la mina didáctica.</p>
                             </div>
                         </div>
-                        <!-- Imagen 2: Visita -->
-                        <div class="carousel-item">
-                            <img src="{% static 'core/img/visi3.jpg' %}" class="d-block w-100"
-                                style="height: 600px; object-fit: contain; background-color: #000;" alt="Visita">
-                            <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded-3 p-3 mb-4">
-                                <h5 class="fw-bold">Jornada de Visita</h5>
-                                <p>Estudiantes conociendo de cerca los procesos mineros.</p>
-                            </div>
-                        </div>
-                        <!-- Video 3: Ejercicios -->
-                        <div class="carousel-item">
-                            <video class="d-block w-100"
-                                style="height: 600px; object-fit: contain; background-color: #000;" autoplay loop muted
-                                playsinline>
-                                <source src="{% static 'core/img/ejercicios.mp4' %}" type="video/mp4">
-                            </video>
-                            <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded-3 p-3 mb-4">
-                                <h5 class="fw-bold">Ejercicios Prácticos</h5>
-                                <p>Simulaciones y entrenamiento en campo.</p>
-                            </div>
-                        </div>
-                        <!-- Imagen 3: Grupo -->
-                        <div class="carousel-item">
-                            <img src="{% static 'core/img/grupo1.jpg' %}" class="d-block w-100"
-                                style="height: 600px; object-fit: contain; background-color: #000;" alt="Grupo">
-                            <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded-3 p-3 mb-4">
-                                <h5 class="fw-bold">Trabajo en Equipo</h5>
-                                <p>Nuestros aprendices en formación colaborativa.</p>
-                            </div>
-                        </div>
-
-                        <div class="carousel-item">
-                            <img src="{% static 'core/img/grupo.jpg' %}" class="d-block w-100"
-                                style="height: 600px; object-fit: contain; background-color: #000;" alt="Grupo">
-                            <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded-3 p-3 mb-4">
-                                <h5 class="fw-bold">🤝 El Futuro se Construye en Equipo</h5>
-                            </div>
-                        </div>
-
-                        <!-- Imagen 4: Mina de fondo -->
-                        <div class="carousel-item">
-                            <img src="{% static 'core/img/mina.jpg' %}" class="d-block w-100"
-                                style="height: 600px; object-fit: contain; background-color: #000;" alt="Interior Mina">
-                            <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded-3 p-3 mb-4">
-                                <h5 class="fw-bold">Frente de Trabajo</h5>
-                                <p>Interior de la mina didáctica totalmente equipada.</p>
-                            </div>
-                        </div>
-
-                        <div class="carousel-item">
-                            <img src="{% static 'core/img/visi2.jpg' %}" class="d-block w-100"
-                                style="height: 600px; object-fit: contain; background-color: #000;" alt="Interior Mina">
-                            <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded-3 p-3 mb-4">
-                                <h5 class="fw-bold">🌟 Una Inmersión al Corazón de la Tierra</h5>
-                            </div>
-                        </div>
-
-                        <div class="carousel-item">
-                            <img src="{% static 'core/img/visi4.jpg' %}" class="d-block w-100"
-                                style="height: 600px; object-fit: contain; background-color: #000;" alt="Interior Mina">
-                            <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded-3 p-3 mb-4">
-                                <h5 class="fw-bold">🚀 Impulsando el Conocimiento Minero</h5>
-                            </div>
-                        </div>
-
-                        <div class="carousel-item">
-                            <img src="{% static 'core/img/visi5.jpg' %}" class="d-block w-100"
-                                style="height: 600px; object-fit: contain; background-color: #000;" alt="Interior Mina">
-                            <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded-3 p-3 mb-4">
-                                <h5 class="fw-bold">Siente la energía de la mina y prepárate para el éxito. 💪</h5>
-                            </div>
-                        </div>
-
-                        <div class="carousel-item">
-                            <img src="{% static 'core/img/jefe.jpg' %}" class="d-block w-100"
-                                style="height: 600px; object-fit: contain; background-color: #000;" alt="Jefe de Mina">
-                            <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded-3 p-3 mb-4">
-                                <h5 class="fw-bold">👩‍✈️ Liderazgo y Experiencia en Campo</h5>
-                                <p>Nuestra Jefe de Mina coordina cada detalle para tu seguridad y aprendizaje. 👮‍♀️✨
-                                </p>
-                            </div>
-                        </div>
-
-                        <div class="carousel-item">
-                            <img src="{% static 'core/img/visitantes.jpg' %}" class="d-block w-100"
-                                style="height: 600px; object-fit: contain; background-color: #000;" alt="Visitantes">
-                            <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded-3 p-3 mb-4">
-                                <h5 class="fw-bold">🚩 Tu Próximo Gran Destino de Aprendizaje</h5>
-                                <p>Únete a los cientos de visitantes que ya han vivido la magia de Morcá. 🌍✨</p>
-                            </div>
-                        </div>
                     </div>
+                    {% endif %}
 
                     <button class="carousel-control-prev" type="button" data-bs-target="#minegateCarousel"
                         data-bs-slide="prev">

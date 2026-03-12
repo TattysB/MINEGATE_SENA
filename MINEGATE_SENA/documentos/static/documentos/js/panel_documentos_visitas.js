@@ -54,7 +54,7 @@ function mostrarDocumentosPorEstado(filtro) {
   window._filtroDocsActual = filtro;
 
   const tipoParam = window.tipoVisitaActual ? `&tipo=${window.tipoVisitaActual}` : '';
-  fetch(`/gestion/api/documentos-revision/?${cfg.queryParams}${tipoParam}`)
+  fetch(`/gestion/documentos-revision/?${cfg.queryParams}${tipoParam}`)
     .then(r => r.json())
     .then(data => {
       const docs = data.documentos || [];
@@ -148,7 +148,14 @@ function mostrarDocumentosPorEstado(filtro) {
           }
 
           if (a.documentos_subidos && a.documentos_subidos.length > 0) {
-            a.documentos_subidos.forEach(ds => {
+            // Filtrar SOLO documentos que NO sean los archivos finales (para evitar duplicados)
+            const categorias_finales = ['📝 ATS', '🤸🏻‍♂️ Charla de Seguridad y Calestenia', '📜 Formato Inducción y Reinducción'];
+            const documentos_personales = a.documentos_subidos.filter(ds =>
+              !categorias_finales.some(cat => ds.categoria && ds.categoria.includes(cat))
+            );
+
+            // Mostrar solo documentos personales del asistente (no los finales)
+            documentos_personales.forEach(ds => {
               let badgeDoc = '';
               if (ds.estado === 'aprobado') {
                 badgeDoc = '<span style="background:#d1fae5;color:#065f46;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;">Aprobado</span>';
@@ -253,7 +260,7 @@ async function aprobarDocDesdeListado(tipo, asistenteId, filtroActual) {
   formData.append('observaciones', '');
   window.addCsrfToFormData(formData);
 
-  fetch(`/gestion/api/asistentes/${tipo}/${asistenteId}/aprobar/`, {
+  fetch(`/gestion/asistentes/${tipo}/${asistenteId}/aprobar/`, {
     method: 'POST',
     body: formData
   })
@@ -290,7 +297,7 @@ async function rechazarDocDesdeListado(tipo, asistenteId, nombre, filtroActual) 
   formData.append('observaciones', obs);
   window.addCsrfToFormData(formData);
 
-  fetch(`/gestion/api/asistentes/${tipo}/${asistenteId}/rechazar/`, {
+  fetch(`/gestion/asistentes/${tipo}/${asistenteId}/rechazar/`, {
     method: 'POST',
     body: formData
   })
@@ -456,7 +463,7 @@ function revisarDocumento(tipo, asistente_id, accion, observaciones = '') {
   formData.append('observaciones', observaciones);
   window.addCsrfToFormData(formData);
 
-  fetch(`/gestion/api/asistentes/${tipo}/${asistente_id}/${accion}/`, {
+  fetch(`/gestion/asistentes/${tipo}/${asistente_id}/${accion}/`, {
     method: 'POST',
     body: formData
   })
@@ -506,7 +513,7 @@ async function aprobarDocRevision(tipo, asistenteId) {
   formData.append('observaciones', '');
   window.addCsrfToFormData(formData);
 
-  fetch(`/gestion/api/asistentes/${tipo}/${asistenteId}/aprobar/`, {
+  fetch(`/gestion/asistentes/${tipo}/${asistenteId}/aprobar/`, {
     method: 'POST',
     body: formData
   })
@@ -539,7 +546,7 @@ async function rechazarDocRevision(tipo, asistenteId, nombre) {
     formData.append('observaciones', obs);
     window.addCsrfToFormData(formData);
 
-    fetch(`/gestion/api/asistentes/${tipo}/${asistenteId}/rechazar/`, {
+    fetch(`/gestion/asistentes/${tipo}/${asistenteId}/rechazar/`, {
       method: 'POST',
       body: formData
     })

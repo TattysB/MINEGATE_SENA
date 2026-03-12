@@ -57,6 +57,9 @@ def registro_publico_asistentes(request, token, tipo):
             telefono = request.POST.get("telefono", "").strip()
             documento_identidad = request.FILES.get("documento_identidad")
             documento_adicional = request.FILES.get("documento_adicional")
+            formato_autorizacion_padres = request.FILES.get(
+                "formato_autorizacion_padres"
+            )
 
             if nombre and tipo_doc and num_doc:
                 try:
@@ -74,6 +77,10 @@ def registro_publico_asistentes(request, token, tipo):
                             nuevo_asistente.documento_identidad = documento_identidad
                         if documento_adicional:
                             nuevo_asistente.documento_adicional = documento_adicional
+                        if formato_autorizacion_padres:
+                            nuevo_asistente.formato_autorizacion_padres = (
+                                formato_autorizacion_padres
+                            )
                         nuevo_asistente.save()
                     else:
                         nuevo_asistente = AsistenteVisitaExterna(
@@ -89,6 +96,10 @@ def registro_publico_asistentes(request, token, tipo):
                             nuevo_asistente.documento_identidad = documento_identidad
                         if documento_adicional:
                             nuevo_asistente.documento_adicional = documento_adicional
+                        if formato_autorizacion_padres:
+                            nuevo_asistente.formato_autorizacion_padres = (
+                                formato_autorizacion_padres
+                            )
                         nuevo_asistente.save()
 
                     messages.success(
@@ -213,7 +224,7 @@ def listar_documentos_api(request):
         data.append(
             {
                 "id": doc.id,
-                "titulo": doc.titulo,
+                "titulo": doc.categoria,
                 "archivo_url": archivo_url,
                 "nombre_archivo": doc.nombre_archivo,
                 "categoria": doc.categoria,
@@ -227,6 +238,22 @@ def listar_documentos_api(request):
         )
 
     return JsonResponse({"documentos": data, "total": len(data)})
+
+
+@login_required(login_url="usuarios:login")
+def categorias_faltantes_api(request):
+    """API: Retorna categorías pendientes por cargar."""
+    cats_validas = [c[0] for c in Documento.CATEGORIA_CHOICES]
+    categorias_ocupadas = set(Documento.objects.values_list("categoria", flat=True))
+    categorias_faltantes = [c for c in cats_validas if c not in categorias_ocupadas]
+
+    return JsonResponse(
+        {
+            "categorias_faltantes": categorias_faltantes,
+            "categorias_ocupadas": list(categorias_ocupadas),
+            "total_faltantes": len(categorias_faltantes),
+        }
+    )
 
 
 @login_required(login_url="usuarios:login")
@@ -247,16 +274,8 @@ def subir_documentos_api(request):
     # Extensiones permitidas
     extensiones_permitidas = [
         ".pdf",
-        ".jpg",
-        ".jpeg",
-        ".png",
         ".doc",
         ".docx",
-        ".xls",
-        ".xlsx",
-        ".ppt",
-        ".pptx",
-        ".txt",
     ]
     max_size = 10 * 1024 * 1024  # 10 MB
 
@@ -265,6 +284,17 @@ def subir_documentos_api(request):
 
     # Categorías válidas del modelo
     cats_validas = [c[0] for c in Documento.CATEGORIA_CHOICES]
+    categorias_existentes = set(Documento.objects.values_list("categoria", flat=True))
+
+    # Normalizar nombres de archivo ya existentes en BD
+    nombres_existentes = {
+        os.path.basename(nombre).lower()
+        for nombre in Documento.objects.values_list("archivo", flat=True)
+        if nombre
+    }
+
+    categorias_en_lote = set()
+    nombres_en_lote = set()
 
     for idx, archivo in enumerate(archivos):
         _, ext = os.path.splitext(archivo.name)
@@ -278,7 +308,13 @@ def subir_documentos_api(request):
             errores.append(f'"{archivo.name}": excede el tamaño máximo de 10 MB.')
             continue
 
-        titulo = os.path.splitext(archivo.name)[0]
+        nombre_normalizado = archivo.name.lower()
+        if (
+            nombre_normalizado in nombres_existentes
+            or nombre_normalizado in nombres_en_lote
+        ):
+            errores.append(f'"{archivo.name}": ya existe un archivo con ese nombre.')
+            continue
 
         # Obtener categoría individual del archivo
         cat_archivo = (
@@ -289,6 +325,15 @@ def subir_documentos_api(request):
         if cat_archivo not in cats_validas:
             cat_archivo = cats_validas[0] if cats_validas else "EPP Necesarios"
 
+        if cat_archivo in categorias_existentes or cat_archivo in categorias_en_lote:
+            errores.append(
+                f'"{archivo.name}": la categoría "{cat_archivo}" ya fue cargada.'
+            )
+            continue
+
+        # El título visible debe ser el label del formato/categoría
+        titulo = cat_archivo
+
         doc = Documento(
             titulo=titulo,
             archivo=archivo,
@@ -298,10 +343,12 @@ def subir_documentos_api(request):
             tamaño=archivo.size,
         )
         doc.save()
+        nombres_en_lote.add(nombre_normalizado)
+        categorias_en_lote.add(cat_archivo)
         documentos_creados.append(
             {
                 "id": doc.id,
-                "titulo": doc.titulo,
+                "titulo": doc.categoria,
                 "nombre_archivo": doc.nombre_archivo,
             }
         )
@@ -529,10 +576,12 @@ def revisar_documento_asistente_api(request, documento_subido_id):
             "nuevo_estado": estado,
         }
     )
+
+
 @require_POST
 def enviar_solicitud_final(request, token, tipo):
     """
-    Cambia el estado de la visita a 'documentos_enviados' para indicar que 
+    Cambia el estado de la visita a 'documentos_enviados' para indicar que
     el organizador ha finalizado el registro de asistentes.
     """
     if tipo == "interna":
@@ -544,15 +593,21 @@ def enviar_solicitud_final(request, token, tipo):
 
     if visita.estado != "aprobada_inicial":
         return JsonResponse(
-            {"success": False, "error": "La solicitud ya fue enviada o no se puede enviar en este estado."}, 
-            status=400
+            {
+                "success": False,
+                "error": "La solicitud ya fue enviada o no se puede enviar en este estado.",
+            },
+            status=400,
         )
 
     # Verificar que haya al menos un asistente registrado
     if visita.asistentes.count() == 0:
         return JsonResponse(
-            {"success": False, "error": "Debe registrar al menos un asistente antes de enviar la solicitud final."}, 
-            status=400
+            {
+                "success": False,
+                "error": "Debe registrar al menos un asistente antes de enviar la solicitud final.",
+            },
+            status=400,
         )
 
     visita.estado = "documentos_enviados"

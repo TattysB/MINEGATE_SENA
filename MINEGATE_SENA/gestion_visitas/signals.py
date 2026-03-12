@@ -18,14 +18,15 @@ logger = logging.getLogger(__name__)
 def generar_qr_asistente_interno(sender, instance, created, update_fields, **kwargs):
     """
     Signal que se dispara cuando se cambia el estado de un asistente interno
-    a "documentos_aprobados". Genera y envía el QR por correo.
+    a "documentos_aprobados" y la visita ya esta "confirmada".
     """
     # Verificar si es una actualización del estado
     if update_fields and 'estado' not in update_fields:
         return
     
-    # Verificar si el estado es aprobado y aún no se ha generado el QR
+    # Verificar estado aprobado, visita confirmada y que no exista QR previo
     if (instance.estado == 'documentos_aprobados' and 
+        instance.visita.estado == 'confirmada' and
         not instance.qr_generado and 
         instance.correo):
         
@@ -60,14 +61,15 @@ def generar_qr_asistente_interno(sender, instance, created, update_fields, **kwa
 def generar_qr_asistente_externo(sender, instance, created, update_fields, **kwargs):
     """
     Signal que se dispara cuando se cambia el estado de un asistente externo
-    a "documentos_aprobados". Genera y envía el QR por correo.
+    a "documentos_aprobados" y la visita ya esta "confirmada".
     """
     # Verificar si es una actualización del estado
     if update_fields and 'estado' not in update_fields:
         return
     
-    # Verificar si el estado es aprobado y aún no se ha generado el QR
+    # Verificar estado aprobado, visita confirmada y que no exista QR previo
     if (instance.estado == 'documentos_aprobados' and 
+        instance.visita.estado == 'confirmada' and
         not instance.qr_generado and 
         instance.correo):
         
