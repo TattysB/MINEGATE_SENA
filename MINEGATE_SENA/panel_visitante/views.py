@@ -333,8 +333,8 @@ def registrar_asistentes(request, tipo, visita_id):
                     for doc in docs:
                         archivo = request.FILES.get(f"archivo_final_{doc.id}")
                         if archivo:
-                            # Guardar el archivo asociado al primer asistente de la visita
-                            DocumentoSubidoAsistente.objects.create(
+                            # Reemplazar la versión anterior para permitir nueva revisión
+                            DocumentoSubidoAsistente.objects.update_or_create(
                                 documento_requerido=doc,
                                 asistente_interna=(
                                     primer_asistente if tipo == "interna" else None
@@ -342,12 +342,23 @@ def registrar_asistentes(request, tipo, visita_id):
                                 asistente_externa=(
                                     primer_asistente if tipo == "externa" else None
                                 ),
-                                archivo=archivo,
-                                estado="pendiente",
+                                defaults={
+                                    "archivo": archivo,
+                                    "estado": "pendiente",
+                                    "observaciones_revision": "",
+                                },
                             )
                             archivos_subidos.append(doc.titulo)
 
             if archivos_subidos:
+                primer_asistente.estado = "pendiente_documentos"
+                primer_asistente.observaciones_revision = ""
+                primer_asistente.save(update_fields=["estado", "observaciones_revision"])
+
+                if visita.estado in ["documentos_enviados", "en_revision_documentos"]:
+                    visita.estado = "aprobada_inicial"
+                    visita.save(update_fields=["estado"])
+
                 messages.success(request, "Archivos finales subidos con éxito.")
                 return redirect(
                     "panel_visitante:registrar_asistentes",
@@ -653,11 +664,29 @@ def enviar_solicitud_final(request, tipo, visita_id):
         )
         return _redirect_segun_rol(request, tipo, visita_id)
 
+    cantidad_maxima = (
+        visita.cantidad_aprendices if tipo == "interna" else visita.cantidad_visitantes
+    )
+    if cantidad_maxima < 1:
+        messages.error(
+            request,
+            "La visita debe tener una cantidad de asistentes mayor a cero antes de enviar la solicitud final.",
+        )
+        return _redirect_segun_rol(request, tipo, visita_id)
+
     # Verificar que haya al menos un asistente registrado
     if visita.asistentes.count() == 0:
         messages.error(
             request,
             "Debe registrar al menos un asistente antes de enviar la solicitud final.",
+        )
+        return _redirect_segun_rol(request, tipo, visita_id)
+
+    # Evitar reenvío mientras existan rechazos pendientes de corrección
+    if visita.asistentes.filter(estado="documentos_rechazados").exists():
+        messages.error(
+            request,
+            "Hay asistentes con documentos rechazados. Corrija los archivos antes de reenviar la solicitud.",
         )
         return _redirect_segun_rol(request, tipo, visita_id)
 
@@ -982,20 +1011,36 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
                     documento_requerido=doc_salud,
                     asistente_interna=asistente,
                     asistente_externa=None,
-                    defaults={"archivo": archivo, "estado": "pendiente"},
+                    defaults={
+                        "archivo": archivo,
+                        "estado": "pendiente",
+                        "observaciones_revision": "",
+                    },
                 )
             else:
                 doc_subido, created = DocumentoSubidoAsistente.objects.update_or_create(
                     documento_requerido=doc_salud,
                     asistente_interna=None,
                     asistente_externa=asistente,
-                    defaults={"archivo": archivo, "estado": "pendiente"},
+                    defaults={
+                        "archivo": archivo,
+                        "estado": "pendiente",
+                        "observaciones_revision": "",
+                    },
                 )
+
+            asistente.estado = "pendiente_documentos"
+            asistente.observaciones_revision = ""
+            asistente.save(update_fields=["estado", "observaciones_revision"])
+
+            if visita.estado in ["documentos_enviados", "en_revision_documentos"]:
+                visita.estado = "aprobada_inicial"
+                visita.save(update_fields=["estado"])
 
             action = "actualizado" if not created else "registrado"
             messages.success(
                 request,
-                f"Documento de salud {action} correctamente para {asistente.nombre_completo}.",
+                f"Documento de salud {action} correctamente para {asistente.nombre_completo}. Ya puede reenviar la solicitud final.",
             )
         else:
             messages.error(request, "Debe seleccionar un archivo para subir.")

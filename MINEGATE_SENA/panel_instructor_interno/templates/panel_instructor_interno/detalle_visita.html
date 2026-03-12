@@ -59,6 +59,18 @@
   .estado-aprobada { background:#d1fae5; color:#065f46; padding:4px 12px; border-radius:50px; font-size:0.8rem; font-weight:700; }
   .info-box-aprobada { background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:1rem 1.3rem; font-size:0.88rem; color:#166534; }
   .info-box-enviado { background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; padding:1rem 1.3rem; font-size:0.88rem; color:#1e40af; }
+
+  .doc-resumen-box { background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:1rem 1.2rem; margin-bottom:1rem; color:#92400e; }
+  .doc-ok-box { background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:1rem 1.2rem; margin-bottom:1rem; color:#166534; }
+  .doc-issue-item { background:#f9fafb; border:1px solid #e5e7eb; border-radius:10px; padding:0.9rem 1rem; margin-bottom:0.7rem; }
+  .doc-issue-title { font-weight:700; font-size:0.9rem; color:#111827; margin-bottom:0.4rem; }
+  .doc-issue-sub { color:#6b7280; font-size:0.78rem; display:block; margin-top:0.1rem; }
+  .doc-issue-line { display:flex; align-items:flex-start; gap:8px; margin-top:6px; }
+  .estado-pill-mini { font-size:0.68rem; font-weight:700; border-radius:999px; padding:3px 8px; white-space:nowrap; display:inline-block; }
+  .estado-pill-mini.faltante { background:#fee2e2; color:#991b1b; }
+  .estado-pill-mini.rechazado { background:#fecaca; color:#7f1d1d; }
+  .estado-pill-mini.pendiente { background:#fef3c7; color:#92400e; }
+  .estado-pill-mini.aprobado { background:#d1fae5; color:#065f46; }
 </style>
 </head>
 <body>
@@ -149,6 +161,100 @@
       {% endwith %}
     </div>
   </div>
+
+  <!-- ===== DETALLES DE LA VISITA ===== -->
+  <div class="detail-card">
+    <div class="detail-card-header azul"><i class="fas fa-calendar-check"></i>Detalles de la Visita</div>
+    <div class="detail-card-body">
+      <div class="info-grid">
+        <div class="info-item">
+          <label>Fecha de la visita</label>
+          <span>{% if visita.fecha_visita %}{{ visita.fecha_visita|date:"d M Y" }}{% else %}Por definir{% endif %}</span>
+        </div>
+        <div class="info-item">
+          <label>Horario programado</label>
+          <span>
+            {% if visita.hora_inicio and visita.hora_fin %}
+              {{ visita.hora_inicio|time:"h:i A" }} - {{ visita.hora_fin|time:"h:i A" }}
+            {% elif visita.hora_inicio %}
+              Desde {{ visita.hora_inicio|time:"h:i A" }}
+            {% else %}
+              Por definir
+            {% endif %}
+          </span>
+        </div>
+        <div class="info-item">
+          <label>Estado actual</label>
+          <span>{{ visita.get_estado_display }}</span>
+        </div>
+        <div class="info-item">
+          <label>Cantidad de aprendices</label>
+          <span>{{ visita.cantidad_aprendices }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if visita.estado == 'documentos_enviados' or visita.estado == 'en_revision_documentos' or visita.estado == 'confirmada' %}
+  <!-- ===== REPORTE DE DILIGENCIAMIENTO DOCUMENTAL ===== -->
+  <div class="detail-card">
+    <div class="detail-card-header {% if reporte_documental.hay_alertas %}morado{% else %}verde{% endif %}">
+      <i class="fas fa-file-circle-check"></i>Reporte de Diligenciamiento
+      <span class="ms-auto" style="font-size:0.8rem; color:#6b7280; font-weight:600;">
+        {% if reporte_documental.hay_alertas %}{{ reporte_documental.total_alertas }} novedad(es){% else %}Sin novedades{% endif %}
+      </span>
+    </div>
+    <div class="detail-card-body">
+      {% if reporte_documental.hay_alertas %}
+        <div class="doc-resumen-box">
+          <i class="fas fa-triangle-exclamation me-2"></i>
+          Hay archivos con inconsistencias, faltantes o rechazo. Revise el detalle por persona y por archivos finales.
+        </div>
+
+        {% if reporte_documental.asistentes_con_alertas %}
+          <h6 style="font-weight:800; color:#111827; margin-bottom:10px;">Novedades por asistente</h6>
+          {% for asistente_alerta in reporte_documental.asistentes_con_alertas %}
+            <div class="doc-issue-item">
+              <div class="doc-issue-title">
+                <i class="fas fa-user me-2" style="color:#6b21a8;"></i>{{ asistente_alerta.nombre }}
+                <span class="doc-issue-sub">{{ asistente_alerta.documento }}</span>
+              </div>
+              {% for incidencia in asistente_alerta.incidencias %}
+                <div class="doc-issue-line">
+                  <span class="estado-pill-mini {% if incidencia.tipo == 'faltante' %}faltante{% else %}rechazado{% endif %}">
+                    {% if incidencia.tipo == 'faltante' %}FALTANTE{% else %}RECHAZADO{% endif %}
+                  </span>
+                  <span style="font-size:0.82rem; color:#374151;">{{ incidencia.detalle }}</span>
+                </div>
+              {% endfor %}
+            </div>
+          {% endfor %}
+        {% endif %}
+
+        <h6 style="font-weight:800; color:#111827; margin:14px 0 10px;">Estado de archivos finales</h6>
+        {% for archivo in reporte_documental.archivos_finales_estado %}
+          <div class="doc-issue-item" style="margin-bottom:8px;">
+            <div class="doc-issue-line" style="justify-content:space-between; flex-wrap:wrap; gap:10px; margin-top:0;">
+              <div>
+                <strong style="font-size:0.86rem; color:#1f2937;">{{ archivo.titulo }}</strong>
+                <span class="doc-issue-sub">{{ archivo.categoria }}</span>
+              </div>
+              <span class="estado-pill-mini {{ archivo.estado }}">
+                {% if archivo.estado == 'faltante' %}FALTANTE{% elif archivo.estado == 'rechazado' %}RECHAZADO{% elif archivo.estado == 'pendiente' %}EN REVISIÓN{% else %}APROBADO{% endif %}
+              </span>
+            </div>
+            <div style="font-size:0.82rem; color:#4b5563; margin-top:6px;">{{ archivo.detalle }}</div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="doc-ok-box">
+          <i class="fas fa-circle-check me-2"></i>
+          Todos los documentos cargados en esta visita se encuentran completos y sin observaciones de rechazo.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
 
   <!-- ===== SECCIÓN REGISTRO DE APRENDICES (visible solo cuando corresponde) ===== -->
   {% if visita.estado == 'aprobada_inicial' or visita.estado == 'documentos_enviados' or visita.estado == 'en_revision_documentos' or visita.estado == 'confirmada' %}
