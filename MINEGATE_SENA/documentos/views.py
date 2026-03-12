@@ -9,6 +9,13 @@ from visitaExterna.models import VisitaExterna, AsistenteVisitaExterna
 from .models import Documento, DocumentoSubidoAsistente
 
 
+def devolver_visita_a_agendador(visita):
+    """Retorna la visita a estado editable para permitir correcciones y reenvío."""
+    if visita and visita.estado in ["documentos_enviados", "en_revision_documentos"]:
+        visita.estado = "aprobada_inicial"
+        visita.save(update_fields=["estado"])
+
+
 def registro_publico_asistentes(request, token, tipo):
     """
     Vista pública para registro de asistentes usando enlace único con token.
@@ -184,6 +191,65 @@ def eliminar_asistente_publico(request, tipo, token, asistente_id):
     else:
         messages.error(request, "Tipo de visita no válido.")
         return redirect("core:index")
+
+
+@require_POST
+def actualizar_asistente_publico(request, tipo, token, asistente_id):
+    """Permite corregir archivos de un asistente registrado desde el enlace público."""
+    if tipo == "interna":
+        visita = get_object_or_404(VisitaInterna, token_acceso=token)
+        asistente = get_object_or_404(
+            AsistenteVisitaInterna, id=asistente_id, visita=visita
+        )
+        redirect_name = "documentos:registro_publico_interna"
+        docs_qs = DocumentoSubidoAsistente.objects.filter(asistente_interna=asistente)
+    elif tipo == "externa":
+        visita = get_object_or_404(VisitaExterna, token_acceso=token)
+        asistente = get_object_or_404(
+            AsistenteVisitaExterna, id=asistente_id, visita=visita
+        )
+        redirect_name = "documentos:registro_publico_externa"
+        docs_qs = DocumentoSubidoAsistente.objects.filter(asistente_externa=asistente)
+    else:
+        messages.error(request, "Tipo de visita no válido.")
+        return redirect("core:index")
+
+    if visita.estado not in ["aprobada_inicial", "documentos_enviados", "en_revision_documentos"]:
+        messages.error(
+            request,
+            "La visita no está disponible para correcciones en este momento.",
+        )
+        return redirect(redirect_name, token=token)
+
+    documento_identidad = request.FILES.get("documento_identidad")
+    documento_adicional = request.FILES.get("documento_adicional")
+    formato_autorizacion_padres = request.FILES.get("formato_autorizacion_padres")
+
+    if not any([documento_identidad, documento_adicional, formato_autorizacion_padres]):
+        messages.error(request, "Debe adjuntar al menos un archivo para corregir.")
+        return redirect(redirect_name, token=token)
+
+    if documento_identidad:
+        asistente.documento_identidad = documento_identidad
+    if documento_adicional:
+        asistente.documento_adicional = documento_adicional
+    if formato_autorizacion_padres:
+        asistente.formato_autorizacion_padres = formato_autorizacion_padres
+        asistente.estado_autorizacion_padres = "pendiente"
+        asistente.observaciones_autorizacion_padres = ""
+
+    asistente.estado = "pendiente_documentos"
+    asistente.observaciones_revision = ""
+    asistente.save()
+
+    docs_qs.filter(estado="rechazado").update(estado="pendiente", observaciones_revision="")
+    devolver_visita_a_agendador(visita)
+
+    messages.success(
+        request,
+        f"Se actualizaron los archivos de {asistente.nombre_completo}. Ya puede reenviar la solicitud final.",
+    )
+    return redirect(redirect_name, token=token)
 
 
 # =============================================
@@ -523,20 +589,27 @@ def revisar_documento_asistente_api(request, documento_subido_id):
     doc.observaciones_revision = observaciones
     doc.save()
 
+    asistente = doc.asistente_interna or doc.asistente_externa
+
     # Sincronizar estado del asistente si hay un rechazo
     if estado == "rechazado":
-        asistente = doc.asistente_interna or doc.asistente_externa
         if asistente:
             asistente.estado = "documentos_rechazados"
-            # Si no hay observaciones en el asistente, copiar la del documento
-            if not asistente.observaciones_revision:
-                asistente.observaciones_revision = f"Documento '{doc.documento_requerido.titulo}' rechazado: {observaciones}"
+            asistente.observaciones_revision = (
+                f"Documento '{doc.documento_requerido.titulo}' rechazado: {observaciones}"
+                if observaciones
+                else f"Documento '{doc.documento_requerido.titulo}' rechazado."
+            )
             asistente.save()
 
     return JsonResponse(
         {
             "success": True,
-            "message": f"Documento marcado como {estado} correctamente.",
+            "message": (
+                f"Documento marcado como {estado} correctamente."
+                if estado == "aprobado"
+                else "Documento rechazado. Queda pendiente de corrección."
+            ),
             "nuevo_estado": estado,
         }
     )
@@ -564,12 +637,34 @@ def enviar_solicitud_final(request, token, tipo):
             status=400,
         )
 
+    cantidad_maxima = (
+        visita.cantidad_aprendices if tipo == "interna" else visita.cantidad_visitantes
+    )
+    if cantidad_maxima < 1:
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "La visita debe tener una cantidad de asistentes mayor a cero antes de enviar la solicitud final.",
+            },
+            status=400,
+        )
+
     # Verificar que haya al menos un asistente registrado
     if visita.asistentes.count() == 0:
         return JsonResponse(
             {
                 "success": False,
                 "error": "Debe registrar al menos un asistente antes de enviar la solicitud final.",
+            },
+            status=400,
+        )
+
+    # No permitir reenvío si aún hay asistentes con rechazo pendiente de corrección
+    if visita.asistentes.filter(estado="documentos_rechazados").exists():
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "Hay asistentes con documentos rechazados. Corrija los archivos antes de reenviar.",
             },
             status=400,
         )
