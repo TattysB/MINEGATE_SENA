@@ -199,6 +199,8 @@ def registrar_asistentes(request, tipo, visita_id):
     """
     Formulario para registrar asistentes a una visita aprobada.
     """
+    es_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
+
     # Verificar autenticación
     if not request.session.get("responsable_autenticado"):
         messages.warning(request, "Debe iniciar sesión para acceder.")
