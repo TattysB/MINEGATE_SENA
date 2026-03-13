@@ -135,10 +135,19 @@ function getEstadoBadge(estado) {
     'aprobada_inicial': '<span style="background:#bbf7d0;color:#166534;padding:4px 10px;border-radius:20px;font-size:11px;">✅ Aprobada Inicial</span>',
     'documentos_enviados': '<span style="background:#dbeafe;color:#1e40af;padding:4px 10px;border-radius:20px;font-size:11px;">📄 Docs Enviados</span>',
     'en_revision_documentos': '<span style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:20px;font-size:11px;">🔍 En Revisión</span>',
+    'reprogramacion_solicitada': '<span style="background:#fee2e2;color:#9f1239;padding:4px 10px;border-radius:20px;font-size:11px;">📆 Reprogramación solicitada</span>',
     'confirmada': '<span style="background:#d1fae5;color:#065f46;padding:4px 10px;border-radius:20px;font-size:11px;">✅✅ Confirmada</span>',
     'rechazada': '<span style="background:#fee2e2;color:#991b1b;padding:4px 10px;border-radius:20px;font-size:11px;">❌ Rechazada</span>',
   };
   return badges[estado] || estado;
+}
+
+function puedeSolicitarReprogramacionAdmin(estado) {
+  return ['pendiente', 'aprobada_inicial', 'documentos_enviados', 'en_revision_documentos'].includes(estado);
+}
+
+function puedeDevolverCorreccion(estado, tieneRechazos) {
+  return Boolean(tieneRechazos) && ['documentos_enviados', 'en_revision_documentos'].includes(estado);
 }
 
 function getEstadoDocumentoBadge(estado) {
@@ -171,6 +180,20 @@ function getBadgeRevisionDocumento(ds, opts = {}) {
   return badges.join('');
 }
 
+function normalizarCategoriaTexto(value) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function esCategoriaArchivoFinal(categoria) {
+  const cat = normalizarCategoriaTexto(categoria);
+  if (cat.includes('ats')) return true;
+  if (cat.includes('induccion y reinduccion')) return true;
+  return cat.includes('charla de seguridad') && (cat.includes('calestenia') || cat.includes('calistenia'));
+}
+
 function getAccionesVisita(v) {
   let acciones = `<button onclick="verDetalleVisita('${v.tipo}', ${v.id})" style="background:#6b7280;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">👁️ Ver</button>`;
 
@@ -182,6 +205,10 @@ function getAccionesVisita(v) {
   if (v.estado === 'pendiente') {
     acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'aprobar')" style="background:#10b981;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">✅ Aprobar</button>`;
     acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'rechazar')" style="background:#ef4444;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">❌</button>`;
+  }
+
+  if (puedeSolicitarReprogramacionAdmin(v.estado)) {
+    acciones += `<button onclick="solicitarReprogramacionVisita('${v.tipo}', ${v.id})" style="background:#f59e0b;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">📆 Reprogramar</button>`;
   }
 
   if (v.estado === 'documentos_enviados') {
@@ -387,19 +414,23 @@ function mostrarDocumentosPorEstado(filtro) {
               </div>
               <div style="padding:12px 18px;">`;
 
-        // Extraer y mostrar los documentos finales UNA SOLA VEZ (al inicio, antes de los asistentes)
-        const categorias_finales = ['📝 ATS', '🤸🏻‍♂️ Charla de Seguridad y Calestenia', '📜 Formato Inducción y Reinducción'];
-        let documentos_finales_visita = [];
-
-        // Obtener documentos finales del primer asistente que los tenga
-        for (const asistente of visita.asistentes) {
-          if (asistente.documentos_subidos && asistente.documentos_subidos.length > 0) {
-            documentos_finales_visita = asistente.documentos_subidos.filter(ds =>
-              categorias_finales.some(cat => ds.categoria && ds.categoria.includes(cat))
-            );
-            if (documentos_finales_visita.length > 0) break;
-          }
-        }
+        // Extraer y mostrar documentos finales de toda la visita (ultima version por categoria+titulo)
+        const finalesPorClave = {};
+        visita.asistentes.forEach(asistente => {
+          (asistente.documentos_subidos || []).forEach(ds => {
+            if (!esCategoriaArchivoFinal(ds.categoria)) return;
+            const clave = `${(ds.categoria || '').trim()}::${(ds.titulo || '').trim()}`;
+            if (!finalesPorClave[clave] || Number(ds.id) > Number(finalesPorClave[clave].id)) {
+              finalesPorClave[clave] = ds;
+            }
+          });
+        });
+        let documentos_finales_visita = Object.values(finalesPorClave);
+        documentos_finales_visita.sort((a, b) => {
+          const catCmp = String(a.categoria || '').localeCompare(String(b.categoria || ''));
+          if (catCmp !== 0) return catCmp;
+          return String(a.titulo || '').localeCompare(String(b.titulo || ''));
+        });
 
         // Mostrar documentos finales de la visita (una sola vez)
         if (documentos_finales_visita.length > 0) {
@@ -414,21 +445,36 @@ function mostrarDocumentosPorEstado(filtro) {
 
           documentos_finales_visita.forEach(ds => {
             const badgeDoc = getBadgeRevisionDocumento(ds);
+            const observacionFinal = ds.estado === 'rechazado' && ds.observaciones_revision
+              ? `<div style="margin-top:4px;padding:6px 10px;background:#fff7ed;border:1px solid #fdba74;border-radius:6px;color:#9a3412;font-size:11px;">📝 ${ds.observaciones_revision}</div>`
+              : '';
 
             html += `
-              <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
-                <div style="display:flex;gap:4px;align-items:center;">
-                  <button onclick="visualizarDocumento('${ds.url}', '${ds.titulo} - ${visita.responsable}', {id: ${ds.id}, estado: '${ds.estado}'})" 
-                          style="background:#059669;color:white;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;font-size:11px;display:inline-flex;align-items:center;gap:4px;font-weight:500;">
-                    <i class="ri-eye-line"></i> 📋 ${ds.titulo}
-                  </button>
-                  <a href="${ds.download_url || ds.url}" download style="background:#6b7280;color:white;padding:5px 8px;border-radius:6px;text-decoration:none;font-size:11px;display:inline-flex;align-items:center;" title="Descargar">
-                    <i class="ri-download-line"></i>
-                  </a>
+              <div>
+                <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
+                  <div style="display:flex;gap:4px;align-items:center;">
+                    <button onclick="visualizarDocumento('${ds.url}', '${ds.titulo} - ${visita.responsable}', {id: ${ds.id}, estado: '${ds.estado}'})" 
+                            style="background:#059669;color:white;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;font-size:11px;display:inline-flex;align-items:center;gap:4px;font-weight:500;">
+                      <i class="ri-eye-line"></i> 📋 ${ds.titulo}
+                    </button>
+                    <a href="${ds.download_url || ds.url}" download style="background:#6b7280;color:white;padding:5px 8px;border-radius:6px;text-decoration:none;font-size:11px;display:inline-flex;align-items:center;" title="Descargar">
+                      <i class="ri-download-line"></i>
+                    </a>
+                  </div>
+                  ${badgeDoc}
                 </div>
-                ${badgeDoc}
+                ${observacionFinal}
               </div>`;
           });
+
+          const documentosFinalesRechazados = documentos_finales_visita.filter(ds => ds.estado === 'rechazado');
+          if (documentosFinalesRechazados.length > 0) {
+            const nombresDocsRechazados = documentosFinalesRechazados.map(ds => ds.titulo).join(', ');
+            html += `
+              <div style="margin-top:8px;display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:4px 0;">
+                <span style="color:#9a3412;font-size:12px;font-weight:600;">⚠️ Archivo final rechazado: ${nombresDocsRechazados}</span>
+              </div>`;
+          }
 
           html += `
               </div>
@@ -436,6 +482,14 @@ function mostrarDocumentosPorEstado(filtro) {
         }
 
         visita.asistentes.forEach(a => {
+          // Si solo falló un archivo final (ATS/inducción/charla), no marcar al asistente como rechazado.
+          const documentosSubidosAsistente = a.documentos_subidos || [];
+          const documentosPersonalesAsistente = documentosSubidosAsistente.filter(ds =>
+            !esCategoriaArchivoFinal(ds.categoria)
+          );
+          const tieneRechazosPersonales = a.estado === 'documentos_rechazados' &&
+            documentosPersonalesAsistente.some(ds => ds.estado === 'rechazado');
+
           let aBadge = '';
           let borderLeft = '#d1d5db';
           if (a.estado === 'pendiente_documentos') {
@@ -444,9 +498,12 @@ function mostrarDocumentosPorEstado(filtro) {
           } else if (a.estado === 'documentos_aprobados') {
             aBadge = '<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">✅ Aprobado</span>';
             borderLeft = '#10b981';
-          } else if (a.estado === 'documentos_rechazados') {
+          } else if (tieneRechazosPersonales) {
             aBadge = '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">⚠️ Pendiente corrección</span>';
             borderLeft = '#ef4444';
+          } else if (a.estado === 'documentos_rechazados') {
+            aBadge = '<span style="background:#e2e8f0;color:#334155;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">ℹ️ Sin novedad personal</span>';
+            borderLeft = '#94a3b8';
           }
 
           let botonesDoc = '';
@@ -462,14 +519,13 @@ function mostrarDocumentosPorEstado(filtro) {
                         <i class="ri-download-line"></i>
                       </a>
                     </div>
-                    ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (a.estado === 'documentos_rechazados' ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Pendiente corrección</span>' : '')}
+                    ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (tieneRechazosPersonales ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Pendiente corrección</span>' : '')}
                   </div>`;
           }
           if (a.documentos_subidos && a.documentos_subidos.length > 0) {
             // Filtrar SOLO documentos que NO sean los archivos finales (para evitar duplicados)
-            const categorias_finales = ['📝 ATS', '🤸🏻‍♂️ Charla de Seguridad y Calestenia', '📜 Formato Inducción y Reinducción'];
             const documentos_personales = a.documentos_subidos.filter(ds =>
-              !categorias_finales.some(cat => ds.categoria && ds.categoria.includes(cat))
+              !esCategoriaArchivoFinal(ds.categoria)
             );
 
             // Mostrar solo documentos personales del asistente (no los finales)
@@ -500,7 +556,7 @@ function mostrarDocumentosPorEstado(filtro) {
                           style="background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;padding:5px 14px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px;">
                     <i class="ri-check-line"></i> Aprobar
                   </button>
-                  <button onclick="event.stopPropagation();rechazarDocDesdeListado('${a.visita_tipo}', ${a.asistente_id}, '${a.nombre_completo.replace(/'/g, "\\'")}', '${filtro}')" 
+                  <button onclick="event.stopPropagation();rechazarDocDesdeListado('${a.visita_tipo}', ${a.asistente_id}, '${a.nombre_completo.replace(/'/g, "\\\'")}', '${filtro}')" 
                           style="background:linear-gradient(135deg,#ef4444,#dc2626);color:white;border:none;padding:5px 14px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px;">
                     <i class="ri-close-line"></i> Rechazar
                   </button>
@@ -508,8 +564,15 @@ function mostrarDocumentosPorEstado(filtro) {
           }
 
           let obsHtml = '';
-          if (a.observaciones_revision) {
+          if (a.observaciones_revision && tieneRechazosPersonales) {
             obsHtml = `<div style="margin-top:6px;padding:6px 10px;background:#fef3c7;border-radius:5px;font-size:11px;color:#92400e;border:1px solid #fcd34d;">📝 ${a.observaciones_revision}</div>`;
+          }
+
+          let advertenciaCorreccionHtml = '';
+          if (tieneRechazosPersonales) {
+            advertenciaCorreccionHtml = `<div style="margin-top:6px;padding:8px 10px;background:#fff7ed;border-radius:6px;font-size:11px;color:#9a3412;border:1px solid #fdba74;">
+              ⚠️ Este aprendiz tiene documentos rechazados. Solicita al instructor actualizar y volver a subir los archivos.
+            </div>`;
           }
 
           html += `
@@ -526,6 +589,7 @@ function mostrarDocumentosPorEstado(filtro) {
                 <div style="display:flex;flex-direction:column;gap:6px;width:100%;margin-top:8px;">
                   ${botonesDoc}
                 </div>
+                ${advertenciaCorreccionHtml}
                 ${obsHtml}
               </div>`;
         });
@@ -628,7 +692,9 @@ function visualizarDocumento(url, titulo, extraOptions = null) {
 
   if (extraOptions && (extraOptions.id || extraOptions.mode === 'autorizacion_padres')) {
     footer.style.display = 'flex';
-    if (extraOptions.estado && extraOptions.estado === 'aprobado') {
+    const estadoDocumento = extraOptions.estado || 'pendiente';
+
+    if (estadoDocumento === 'aprobado' || estadoDocumento === 'rechazado') {
       btnAprobar.style.setProperty('display', 'none', 'important');
       btnRechazar.style.setProperty('display', 'none', 'important');
 
@@ -639,8 +705,13 @@ function visualizarDocumento(url, titulo, extraOptions = null) {
         footer.appendChild(statusBadge);
       }
       statusBadge.style.display = 'inline-block';
-      statusBadge.innerHTML = '<i class="ri-checkbox-circle-line"></i> DOCUMENTO APROBADO';
-      statusBadge.style.cssText = 'background:#10b981;color:white;padding:8px 20px;border-radius:8px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;';
+      if (estadoDocumento === 'aprobado') {
+        statusBadge.innerHTML = '<i class="ri-checkbox-circle-line"></i> DOCUMENTO APROBADO';
+        statusBadge.style.cssText = 'background:#10b981;color:white;padding:8px 20px;border-radius:8px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;';
+      } else {
+        statusBadge.innerHTML = '<i class="ri-close-circle-line"></i> DOCUMENTO RECHAZADO (esperando corrección)';
+        statusBadge.style.cssText = 'background:#dc2626;color:white;padding:8px 20px;border-radius:8px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;';
+      }
     } else {
       btnAprobar.style.setProperty('display', 'flex', 'important');
       btnRechazar.style.setProperty('display', 'flex', 'important');
@@ -771,6 +842,10 @@ async function revisarDocumentoIndividual(docSubidoId, estado) {
     .then(data => {
       if (data.success) {
         mAlert(data.message, 'success');
+        cargarVisitas();
+        if (window._filtroDocsActual) {
+          mostrarDocumentosPorEstado(window._filtroDocsActual);
+        }
         cerrarModalVisualizarDoc();
         if (window.detalleVisitaActual) {
           verDetalleVisita(window.detalleVisitaActual.tipo, window.detalleVisitaActual.id);
@@ -815,18 +890,23 @@ function verDetalleVisita(tipo, id) {
   fetch(`/gestion/visitas/${tipo}/${id}/`)
     .then(response => response.json())
     .then(data => {
-      // Extraer documentos finales una sola vez (del primer asistente que los tenga)
-      const categorias_finales = ['📝 ATS', '🤸🏻‍♂️ Charla de Seguridad y Calestenia', '📜 Formato Inducción y Reinducción'];
-      let documentos_finales = [];
-
-      for (const asistente of data.asistentes) {
-        if (asistente.documentos_subidos && asistente.documentos_subidos.length > 0) {
-          documentos_finales = asistente.documentos_subidos.filter(ds =>
-            categorias_finales.some(cat => ds.categoria && ds.categoria.includes(cat))
-          );
-          if (documentos_finales.length > 0) break;
-        }
-      }
+      // Extraer documentos finales de toda la visita (ultima version por categoria+titulo)
+      const finalesPorClave = {};
+      data.asistentes.forEach(asistente => {
+        (asistente.documentos_subidos || []).forEach(ds => {
+          if (!esCategoriaArchivoFinal(ds.categoria)) return;
+          const clave = `${(ds.categoria || '').trim()}::${(ds.titulo || '').trim()}`;
+          if (!finalesPorClave[clave] || Number(ds.id) > Number(finalesPorClave[clave].id)) {
+            finalesPorClave[clave] = ds;
+          }
+        });
+      });
+      let documentos_finales = Object.values(finalesPorClave);
+      documentos_finales.sort((a, b) => {
+        const catCmp = String(a.categoria || '').localeCompare(String(b.categoria || ''));
+        if (catCmp !== 0) return catCmp;
+        return String(a.titulo || '').localeCompare(String(b.titulo || ''));
+      });
 
       // Construir HTML de archivos finales
       let archivosFinalesHtml = '';
@@ -845,24 +925,39 @@ function verDetalleVisita(tipo, id) {
             borderRadius: '6px',
             marginLeft: '0px'
           });
+          const observacionFinal = ds.estado === 'rechazado' && ds.observaciones_revision
+            ? `<div style="margin-top:6px;padding:8px 10px;background:#fff7ed;border:1px solid #fdba74;border-radius:6px;color:#9a3412;font-size:11px;">📝 ${ds.observaciones_revision}</div>`
+            : '';
           if (!badgeDoc) {
             badgeDoc = '<span style="background:#fef3c7;color:#92400e;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Pendiente</span>';
           }
 
           archivosFinalesHtml += `
-              <div style="display:flex;justify-content:space-between;align-items:center;background:white;padding:10px;border-radius:6px;border:1px solid #d1faf0;">
-                <div style="display:flex;gap:6px;align-items:center;">
-                  <button onclick="visualizarDocumento('${ds.url}', '${ds.titulo} - ${data.responsable}', {id: ${ds.id}, estado: '${ds.estado}'})" 
-                          style="background:#059669;color:white;padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:5px;font-weight:500;">
-                    <i class="ri-eye-line"></i> 📋 ${ds.titulo}
-                  </button>
-                  <a href="${ds.download_url || ds.url}" download style="background:#6b7280;color:white;padding:7px 10px;border-radius:6px;text-decoration:none;font-size:12px;display:inline-flex;align-items:center;" title="Descargar">
-                    <i class="ri-download-line"></i>
-                  </a>
+              <div style="background:white;padding:10px;border-radius:6px;border:1px solid #d1faf0;">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+                  <div style="display:flex;gap:6px;align-items:center;">
+                    <button onclick="visualizarDocumento('${ds.url}', '${ds.titulo} - ${data.responsable}', {id: ${ds.id}, estado: '${ds.estado}'})" 
+                            style="background:#059669;color:white;padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:5px;font-weight:500;">
+                      <i class="ri-eye-line"></i> 📋 ${ds.titulo}
+                    </button>
+                    <a href="${ds.download_url || ds.url}" download style="background:#6b7280;color:white;padding:7px 10px;border-radius:6px;text-decoration:none;font-size:12px;display:inline-flex;align-items:center;" title="Descargar">
+                      <i class="ri-download-line"></i>
+                    </a>
+                  </div>
+                  ${badgeDoc}
                 </div>
-                ${badgeDoc}
+                ${observacionFinal}
               </div>`;
         });
+
+        const finalesRechazados = documentos_finales.filter(ds => ds.estado === 'rechazado');
+        if (finalesRechazados.length > 0) {
+          const nombresFinales = finalesRechazados.map(ds => ds.titulo).join(', ');
+          archivosFinalesHtml += `
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#fff7ed;border:1px solid #fdba74;color:#9a3412;padding:10px;border-radius:8px;">
+              <span style="font-size:12px;font-weight:600;">⚠️ Archivo final rechazado: ${nombresFinales}</span>
+            </div>`;
+        }
 
         archivosFinalesHtml += `
             </div>
@@ -872,6 +967,13 @@ function verDetalleVisita(tipo, id) {
       let asistentesHtml = '';
       if (data.asistentes.length > 0) {
         asistentesHtml = data.asistentes.map(a => {
+          const documentosSubidosAsistente = a.documentos_subidos || [];
+          const documentosPersonalesAsistente = documentosSubidosAsistente.filter(ds =>
+            !esCategoriaArchivoFinal(ds.categoria)
+          );
+          const tieneRechazosPersonales = a.estado === 'documentos_rechazados' &&
+            documentosPersonalesAsistente.some(ds => ds.estado === 'rechazado');
+
           let botonesDoc = '';
           let tieneDocs = false;
           if (a.documento_identidad) {
@@ -887,7 +989,7 @@ function verDetalleVisita(tipo, id) {
                         <i class="ri-download-line"></i>
                       </a>
                     </div>
-                    ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (a.estado === 'documentos_rechazados' ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Pendiente corrección</span>' : '')}
+                    ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (tieneRechazosPersonales ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Pendiente corrección</span>' : '')}
                   </div>`;
           }
           if (a.documento_adicional) {
@@ -903,7 +1005,7 @@ function verDetalleVisita(tipo, id) {
                         <i class="ri-download-line"></i>
                       </a>
                     </div>
-                    ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (a.estado === 'documentos_rechazados' ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Pendiente corrección</span>' : '')}
+                    ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (tieneRechazosPersonales ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Pendiente corrección</span>' : '')}
                   </div>`;
           }
           if (a.formato_autorizacion_padres) {
@@ -939,9 +1041,8 @@ function verDetalleVisita(tipo, id) {
           }
           if (a.documentos_subidos && a.documentos_subidos.length > 0) {
             // Filtrar SOLO documentos que NO sean los archivos finales
-            const categorias_finales = ['📝 ATS', '🤸🏻‍♂️ Charla de Seguridad y Calestenia', '📜 Formato Inducción y Reinducción'];
             const documentos_personales = a.documentos_subidos.filter(ds =>
-              !categorias_finales.some(cat => ds.categoria && ds.categoria.includes(cat))
+              !esCategoriaArchivoFinal(ds.categoria)
             );
 
             if (documentos_personales.length > 0) {
@@ -980,9 +1081,12 @@ function verDetalleVisita(tipo, id) {
           } else if (a.estado === 'documentos_aprobados') {
             borderColor = '#10b981';
             estadoBadge = '<span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">✅ Aprobado</span>';
-          } else if (a.estado === 'documentos_rechazados') {
+          } else if (tieneRechazosPersonales) {
             borderColor = '#ef4444';
             estadoBadge = '<span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">⚠️ Pendiente corrección</span>';
+          } else if (a.estado === 'documentos_rechazados') {
+            borderColor = '#94a3b8';
+            estadoBadge = '<span style="background:#e2e8f0;color:#334155;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">ℹ️ Sin novedad personal</span>';
           }
 
           let accionesDocHtml = '';
@@ -1034,10 +1138,15 @@ function verDetalleVisita(tipo, id) {
                     <i class="ri-close-line"></i> Rechazar Todo
                   </button>
                 </div>`;
+          } else if (tieneRechazosPersonales) {
+            accionesDocHtml = `
+                <div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px dashed #d1d5db;align-items:center;flex-wrap:wrap;">
+                  <span style="font-size:12px;font-weight:600;color:#9a3412;background:#fff7ed;border:1px solid #fdba74;border-radius:6px;padding:6px 10px;">⚠️ Requiere actualización de documentos</span>
+                </div>`;
           }
 
           let obsRevHtml = '';
-          if (a.observaciones_revision) {
+          if (a.observaciones_revision && tieneRechazosPersonales) {
             obsRevHtml = `<div style="margin-top:10px;padding:10px;background:#fef3c7;border-radius:6px;font-size:12px;color:#92400e;border:1px solid #fcd34d;">📝 <strong>Observaciones:</strong> ${a.observaciones_revision}</div>`;
           }
 
@@ -1111,6 +1220,10 @@ function revisarDocumento(tipo, asistente_id, accion, observaciones = '') {
     .then(data => {
       if (data.success) {
         mAlert(data.message, 'success');
+        cargarVisitas();
+        if (window._filtroDocsActual) {
+          mostrarDocumentosPorEstado(window._filtroDocsActual);
+        }
         if (window.detalleVisitaActual) {
           verDetalleVisita(window.detalleVisitaActual.tipo, window.detalleVisitaActual.id);
         }
@@ -1190,6 +1303,16 @@ async function accionVisita(tipo, id, accion) {
     });
     if (!ok) return;
   }
+  if (accion === 'devolver_correccion') {
+    const ok = await mConfirm('¿Devolver esta visita al instructor para que actualice documentos rechazados?', {
+      title: 'Devolver a Corrección',
+      icon: '<i class="ri-arrow-go-back-line"></i>',
+      iconClass: 'cm-warning',
+      confirmText: 'Sí, devolver',
+      confirmClass: 'cm-btn-warning'
+    });
+    if (!ok) return;
+  }
 
   const formData = new FormData();
   formData.append('observaciones', observaciones);
@@ -1217,6 +1340,48 @@ async function accionVisita(tipo, id, accion) {
     .catch(() => {
       mAlert('Error de conexión. Verifique su red e intente de nuevo.', 'error');
     });
+}
+
+async function solicitarReprogramacionVisita(tipo, id) {
+  const motivo = await mPrompt('Indique el motivo para solicitar reprogramación al instructor:', {
+    title: 'Solicitar Reprogramación',
+    icon: '<i class="ri-calendar-event-line"></i>',
+    iconClass: 'cm-warning',
+    placeholder: 'Ejemplo: conflicto de agenda, capacidad, mantenimiento... ',
+    confirmText: 'Solicitar',
+    confirmClass: 'cm-btn-warning'
+  });
+
+  if (motivo === null) return;
+  if (!motivo.trim()) {
+    mAlert('Debe ingresar un motivo para solicitar la reprogramación.', 'warning');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('motivo', motivo.trim());
+  addCsrfToFormData(formData);
+
+  fetch(`/gestion/reprogramacion/solicitar/${tipo}/${id}/`, {
+    method: 'POST',
+    body: formData
+  })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        mAlert(data.message, 'success');
+        cargarVisitas();
+        if (window._filtroDocsActual) {
+          mostrarDocumentosPorEstado(window._filtroDocsActual);
+        }
+        if (window.detalleVisitaActual) {
+          verDetalleVisita(window.detalleVisitaActual.tipo, window.detalleVisitaActual.id);
+        }
+      } else {
+        mAlert('Error: ' + (data.message || data.error || 'No se pudo solicitar la reprogramación'), 'error');
+      }
+    })
+    .catch(() => mAlert('Error de conexión. Verifique su red e intente de nuevo.', 'error'));
 }
 
 async function aprobarDocRevision(tipo, asistenteId) {

@@ -199,6 +199,8 @@ def registrar_asistentes(request, tipo, visita_id):
     """
     Formulario para registrar asistentes a una visita aprobada.
     """
+    es_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
+
     # Verificar autenticación
     if not request.session.get("responsable_autenticado"):
         messages.warning(request, "Debe iniciar sesión para acceder.")
@@ -993,6 +995,7 @@ def actualizar_perfil(request):
         return redirect("panel_visitante:login_responsable")
 
     documento = request.session.get("responsable_documento")
+    rol = request.session.get("responsable_rol")
     visitante = RegistroVisitante.objects.filter(documento=documento).first()
 
     if not visitante:
@@ -1045,6 +1048,14 @@ def actualizar_perfil(request):
 
                 if visitante.check_password(contrasena_actual):
                     nueva_contrasena = form_contrasena.cleaned_data["nueva_contrasena"]
+
+                    if visitante.check_password(nueva_contrasena):
+                        messages.error(
+                            request,
+                            "La nueva contraseña no puede ser igual a la actual.",
+                        )
+                        return redirect("panel_visitante:actualizar_perfil")
+
                     visitante.set_password(nueva_contrasena)
                     visitante.save()
 
@@ -1072,6 +1083,15 @@ def actualizar_perfil(request):
         "form_contrasena": form_contrasena,
         "visitante": visitante,
         "titulo": "Actualizar Perfil",
+        "volver_url": (
+            reverse("panel_instructor_interno:panel")
+            if rol == "interno"
+            else (
+                reverse("panel_instructor_externo:panel")
+                if rol == "externo"
+                else reverse("panel_visitante:panel_responsable")
+            )
+        ),
     }
     return render(request, "actualizar_perfil.html", context)
 
@@ -1123,12 +1143,9 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
 
     from documentos.models import Documento as DocumentoModel
 
-    doc_salud = DocumentoModel.objects.filter(
-        categoria="Formato Auto Reporte Condiciones de Salud"
-    ).first()
-
     # Para AJAX llega "archivo_correccion". Para formulario tradicional,
     # se mantiene la compatibilidad con los nombres por asistente.
+    documento_subido_id = (request.POST.get("documento_subido_id") or "").strip()
     archivo_salud = request.FILES.get("archivo_correccion") or request.FILES.get(
         f"documento_salud_{asistente_id}"
     )
@@ -1149,6 +1166,51 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
     }
 
     if archivo_salud:
+        if documento_subido_id:
+            filtros_doc = {"id": documento_subido_id}
+            if tipo == "interna":
+                filtros_doc["asistente_interna"] = asistente
+            else:
+                filtros_doc["asistente_externa"] = asistente
+
+            doc_objetivo = DocumentoSubidoAsistente.objects.select_related(
+                "documento_requerido"
+            ).filter(**filtros_doc).first()
+
+            if not doc_objetivo:
+                error_msg = "No se encontró el documento rechazado para este asistente."
+                if es_ajax:
+                    return JsonResponse({"success": False, "error": error_msg}, status=400)
+                messages.error(request, error_msg)
+                return redirect("panel_visitante:registrar_asistentes", tipo=tipo, visita_id=visita.id)
+
+            DocumentoSubidoAsistente.objects.create(
+                documento_requerido=doc_objetivo.documento_requerido,
+                asistente_interna=asistente if tipo == "interna" else None,
+                asistente_externa=asistente if tipo == "externa" else None,
+                archivo=archivo_salud,
+                estado="pendiente",
+                observaciones_revision="",
+            )
+        else:
+            doc_salud = DocumentoModel.objects.filter(
+                categoria="Formato Auto Reporte Condiciones de Salud"
+            ).first()
+            if not doc_salud:
+                error_msg = "No se encontró el documento base de salud para registrar la corrección."
+                if es_ajax:
+                    return JsonResponse({"success": False, "error": error_msg}, status=400)
+                messages.error(request, error_msg)
+                return redirect("panel_visitante:registrar_asistentes", tipo=tipo, visita_id=visita.id)
+
+            DocumentoSubidoAsistente.objects.create(
+                documento_requerido=doc_salud,
+                asistente_interna=asistente if tipo == "interna" else None,
+                asistente_externa=asistente if tipo == "externa" else None,
+                archivo=archivo_salud,
+                estado="pendiente",
+                observaciones_revision="",
+            )
         if not doc_salud:
             error_msg = "Documento de salud no encontrado en el sistema."
             if es_ajax:
