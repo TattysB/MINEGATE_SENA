@@ -10,8 +10,10 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+  <link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}?v=20260311c">
 <style>
   :root { --sena-verde: #39a900; --sena-verde-oscuro: #2d8600; }
+  body { padding-top: 0 !important; margin-top: 0 !important; }
   .page-header { background: linear-gradient(135deg, #7c3700, #f97316); color: white; padding: 2rem 0; }
   .page-header h2 { font-weight: 800; }
   .breadcrumb-nav a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.85rem; }
@@ -188,6 +190,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'core/js/custom_modal.js' %}?v=20260311c"></script>
 <script>
   // Variable global para almacenar la URL del programa en edición
   let urlProgramaEnEdicion = null;
@@ -197,12 +200,6 @@
   // Función para abrir modal de confirmación de eliminación
   function confirmarEliminarPrograma(url) {
     urlProgramaEliminar = url;
-    const modalBody = document.getElementById('modalEliminarProgramaBody');
-    modalBody.innerHTML = '<div class="spinner-border text-danger" role="status"><span class="visually-hidden">Cargando...</span></div>';
-    
-    // Abrir el modal
-    const modal = new bootstrap.Modal(document.getElementById('modalEliminarPrograma'));
-    modal.show();
     
     // Cargar información del programa
     fetch(url + '?ajax=true', {
@@ -212,25 +209,51 @@
     })
     .then(response => response.json())
     .then(data => {
-      modalBody.innerHTML = `
-        <div class="alert alert-warning" role="alert">
-          <i class="fas fa-exclamation-triangle me-2"></i>
-          <strong>¿Estás seguro de que deseas eliminar este programa?</strong>
-        </div>
-        <div class="card border-0" style="background-color: #f8f9fa;">
-          <div class="card-body">
-            <p class="mb-2"><strong>Nombre:</strong> ${data.nombre}</p>
-            <p class="mb-0"><strong>Descripción:</strong> ${data.descripcion}</p>
+      const mensaje = '<strong>¿Estás seguro de que deseas eliminar este programa?</strong><br><br>' +
+                      '<strong>Nombre:</strong> ' + data.nombre + '<br>' +
+                      '<strong>Descripción:</strong> ' + data.descripcion + '<br><br>' +
+                      '<small style="color: #6b7280;">Esta acción no se puede deshacer.</small>';
+      
+      if (typeof window.mConfirm === 'function') {
+        window.mConfirm(mensaje, {
+          title: 'Eliminar Programa',
+          confirmText: 'Eliminar',
+          confirmClass: 'cm-btn-danger',
+          confirmIcon: 'fas fa-trash'
+        }).then(function(resultado) {
+          if (resultado) {
+            eliminarPrograma();
+          }
+        });
+      } else {
+        // Fallback: usar Bootstrap modal si mConfirm no está disponible
+        const modalBody = document.getElementById('modalEliminarProgramaBody');
+        modalBody.innerHTML = `
+          <div class="alert alert-warning" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>¿Estás seguro de que deseas eliminar este programa?</strong>
           </div>
-        </div>
-        <p class="text-muted mt-3 mb-0">
-          <small><i class="fas fa-info-circle me-1"></i>Esta acción no se puede deshacer.</small>
-        </p>
-      `;
+          <div class="card border-0" style="background-color: #f8f9fa;">
+            <div class="card-body">
+              <p class="mb-2"><strong>Nombre:</strong> ${data.nombre}</p>
+              <p class="mb-0"><strong>Descripción:</strong> ${data.descripcion}</p>
+            </div>
+          </div>
+          <p class="text-muted mt-3 mb-0">
+            <small><i class="fas fa-info-circle me-1"></i>Esta acción no se puede deshacer.</small>
+          </p>
+        `;
+        const modal = new bootstrap.Modal(document.getElementById('modalEliminarPrograma'));
+        modal.show();
+      }
     })
     .catch(error => {
       console.error('Error:', error);
-      modalBody.innerHTML = '<p class="text-danger">Error al cargar la información. Intenta nuevamente.</p>';
+      if (typeof window.mAlert === 'function') {
+        window.mAlert('Error al cargar la información. Intenta nuevamente.');
+      } else {
+        alert('Error al cargar la información. Intenta nuevamente.');
+      }
     });
   }
 

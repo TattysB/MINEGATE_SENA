@@ -107,7 +107,7 @@
 						<label for="{{ form.telefono.id_for_label }}">
 							<i class="fas fa-phone"></i> Telefono
 						</label>
-						<input type="tel" name="telefono" id="id_telefono" class="form-control" maxlength="10" pattern="\d{1,10}" placeholder="Ingrese el número" required>
+						<input type="tel" name="telefono" id="id_telefono" class="form-control" maxlength="10" minlength="10" pattern="\d{10}" title="Ingrese exactamente 10 numeros" placeholder="Ingrese 10 numeros" value="{{ form.telefono.value|default:'' }}" required>
 						{% if form.telefono.errors %}
 							<span class="field-error">{{ form.telefono.errors|striptags }}</span>
 						{% endif %}

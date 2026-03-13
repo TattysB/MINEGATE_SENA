@@ -14,6 +14,8 @@
 <style>
   :root { --sena-verde: #39a900; --sena-verde-oscuro: #2d8600; }
 
+  body { padding-top: 0 !important; margin-top: 0 !important; }
+
   .page-header { background: linear-gradient(135deg, #1a5c00, var(--sena-verde)); color: white; padding: 2rem 0; }
   .page-header h2 { font-weight: 800; }
   .breadcrumb-nav a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.85rem; }
@@ -366,7 +368,7 @@
           </button>
           <form method="post" action="{% url 'panel_visitante:enviar_solicitud_final' tipo='interna' visita_id=visita.id %}" style="display:inline;">
             {% csrf_token %}
-            <button type="submit" id="btnEnviarSolicitudFinal" class="btn-enviar" disabled style="opacity: 0.5; cursor: not-allowed;" onclick="return confirm('¿Enviar la solicitud final? Asegúrate de haber registrado todos los aprendices.');">
+            <button type="submit" id="btnEnviarSolicitudFinal" class="btn-enviar" disabled style="opacity: 0.5; cursor: not-allowed;" onclick="return confirmarEnvioSolicitudFinal(event, this, 'aprendices');">
               <i class="fas fa-paper-plane"></i> Enviar solicitud final
             </button>
           </form>
@@ -507,7 +509,7 @@
                     <p class="final-doc-subtitle" style="font-size:0.98rem; font-weight:700; color:#334155; margin:0;">{{ doc.nombre_archivo }}</p>
                   </div>
                 </div>
-                <input type="file" name="archivo_final_{{ doc.id }}" id="input_archivo_{{ doc.id }}" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" class="final-doc-input">
+                <input type="file" name="archivo_final_{{ doc.id }}" id="input_archivo_{{ doc.id }}" accept=".pdf,.doc,.docx" class="final-doc-input">
                 <span class="error-mensaje" id="error_{{ doc.id }}" style="display: none; color: #dc2626; font-size: 0.875rem; margin-top: 4px;"><i class="fas fa-exclamation-circle me-1"></i>No ha seleccionado ningún archivo</span>
               </div>
             {% endfor %}
@@ -623,6 +625,35 @@
 </div>
 
 <script>
+  function confirmarEnvioSolicitudFinal(event, boton, tipoPersona) {
+    const mensaje = '¿Enviar la solicitud final? Asegúrate de haber registrado todos los ' + tipoPersona + '.';
+    const form = boton && boton.form ? boton.form : null;
+
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    if (typeof window.mConfirm === 'function') {
+      window.mConfirm(mensaje, {
+        title: 'Enviar solicitud final',
+        icon: '<i class="fas fa-paper-plane"></i>',
+        iconClass: 'cm-info',
+        confirmText: 'Sí, enviar',
+        confirmClass: 'cm-btn-success',
+        confirmIcon: 'fas fa-paper-plane'
+      }).then(function (ok) {
+        if (ok && form) {
+          form.submit();
+        }
+      });
+      return false;
+    }
+
+    return confirm(mensaje);
+  }
+
+  function abrirModalArchivosFinales() {
   // Variables globales
   let esModalCorreccion = false;
   let archivosClaveFinal = '';
@@ -1026,11 +1057,22 @@
     if (form) {
       // Limpiar mensajes de error cuando se seleccione un archivo
       const fileInputs = form.querySelectorAll('input[type="file"]');
+      const extensionesPermitidas = ['pdf', 'doc', 'docx'];
       fileInputs.forEach(input => {
         input.addEventListener('change', function() {
           const errorId = this.id.replace('input_archivo_', 'error_');
           const errorSpan = document.getElementById(errorId);
-          if (errorSpan && this.files.length > 0) {
+          if (!errorSpan || this.files.length === 0) {
+            return;
+          }
+          const nombre = this.files[0].name || '';
+          const extension = nombre.includes('.') ? nombre.split('.').pop().toLowerCase() : '';
+          if (!extensionesPermitidas.includes(extension)) {
+            errorSpan.innerHTML = '<i class="fas fa-exclamation-circle me-1"></i>Formato no permitido. Solo PDF o Word (.doc, .docx).';
+            errorSpan.style.display = 'block';
+            this.style.borderColor = '#dc2626';
+            this.value = '';
+          } else {
             errorSpan.style.display = 'none';
             this.style.borderColor = '#e5e7eb';
           }
@@ -1045,6 +1087,38 @@
         errorMensajes.forEach(msg => msg.style.display = 'none');
         fileInputs.forEach(input => input.style.borderColor = '#e5e7eb');
         
+        // Validar que se hayan seleccionado TODOS los archivos
+        let hayErrores = false;
+        
+        fileInputs.forEach(input => {
+          if (!input.files || input.files.length === 0) {
+            // Mostrar error en este campo
+            const errorId = input.id.replace('input_archivo_', 'error_');
+            const errorSpan = document.getElementById(errorId);
+            if (errorSpan) {
+              errorSpan.innerHTML = '<i class="fas fa-exclamation-circle me-1"></i>No ha seleccionado ningún archivo';
+              errorSpan.style.display = 'block';
+              input.style.borderColor = '#dc2626';
+              hayErrores = true;
+            }
+          } else {
+            const nombre = input.files[0].name || '';
+            const extension = nombre.includes('.') ? nombre.split('.').pop().toLowerCase() : '';
+            if (!extensionesPermitidas.includes(extension)) {
+              const errorId = input.id.replace('input_archivo_', 'error_');
+              const errorSpan = document.getElementById(errorId);
+              if (errorSpan) {
+                errorSpan.innerHTML = '<i class="fas fa-exclamation-circle me-1"></i>Formato no permitido. Solo PDF o Word (.doc, .docx).';
+                errorSpan.style.display = 'block';
+              }
+              input.style.borderColor = '#dc2626';
+              hayErrores = true;
+            }
+          }
+        });
+        
+        // Si hay errores, no enviar el formulario
+        if (hayErrores) {
         // Permitir corrección parcial: basta con adjuntar al menos un archivo final.
         const hayArchivoSeleccionado = Array.from(fileInputs).some(
           input => input.files && input.files.length > 0

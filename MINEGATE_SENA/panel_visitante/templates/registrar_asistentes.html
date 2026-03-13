@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <link rel="stylesheet" href="{% static 'registrar_asistentes.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}?v=20260311b">
     <style>
         html, body {
             height: 100%;
@@ -398,7 +399,7 @@
                                                style="font-size: 1.1rem; color: {% if doc.extension == '.pdf' %}#dc2626{% elif doc.extension == '.doc' or doc.extension == '.docx' %}#2563eb{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}#059669{% else %}#667eea{% endif %}; margin-right:8px;"></i>
                                             {{ doc.categoria }} <span class="required">*</span>
                                         </label>
-                                        <input type="file" name="documento_{{ doc.id }}" class="form-control" required {% if not puede_agregar %}disabled{% endif %} style="max-width:100%;">
+                                        <input type="file" name="documento_{{ doc.id }}" class="form-control" accept=".pdf,.doc,.docx" required {% if not puede_agregar %}disabled{% endif %} style="max-width:100%;">
                                     </div>
                                 {% endfor %}
                             </div>
@@ -437,7 +438,7 @@
                                                style="font-size: 1.1rem; color: {% if doc.extension == '.pdf' %}#dc2626{% elif doc.extension == '.doc' or doc.extension == '.docx' %}#2563eb{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}#059669{% else %}#667eea{% endif %}; margin-right:8px;"></i>
                                             {{ doc.categoria }} <span style="color: #92400e;">(Requerido para menores de edad)</span>
                                         </label>
-                                        <input type="file" name="documento_{{ doc.id }}" class="form-control" {% if not puede_agregar %}disabled{% endif %} style="max-width:100%;">
+                                        <input type="file" name="documento_{{ doc.id }}" class="form-control" accept=".pdf,.doc,.docx" {% if not puede_agregar %}disabled{% endif %} style="max-width:100%;">
                                         <small class="docs-upload-note">Deja este campo vacío solo si eres mayor de edad</small>
                                     </div>
                                 {% endfor %}
@@ -518,7 +519,7 @@
                         <button type="button" class="btn-edit" onclick="abrirModalActualizarDoc({{ asistente.id }}, '{{ asistente.nombre_completo }}', '{{ tipo }}')">
                             <i class="fas fa-edit me-1"></i>Actualizar
                         </button>
-                        <a href="{% url 'panel_visitante:eliminar_asistente' tipo=tipo asistente_id=asistente.id %}" class="btn-delete" onclick="return confirm('¿Está seguro de eliminar este asistente?')">
+                        <a href="javascript:void(0)" class="btn-delete" onclick="confirmarEliminarAsistente(event, '{% url 'panel_visitante:eliminar_asistente' tipo=tipo asistente_id=asistente.id %}', '{{ asistente.nombre_completo|escapejs }}');">
                             <i class="fas fa-trash-alt me-1"></i>Eliminar
                         </a>
                     </div>
@@ -549,7 +550,7 @@
                                     <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% else %}file-alt{% endif %}" style="font-size: 1.2rem; color: {% if doc.extension == '.pdf' %}#dc2626{% elif doc.extension == '.doc' or doc.extension == '.docx' %}#2563eb{% else %}#059669{% endif %}; margin-right: 6px;"></i>
                                     {{ doc.categoria }}
                                 </label>
-                                <input type="file" name="archivo_final_{{ doc.id }}" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" class="form-control" style="padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px;">
+                                <input type="file" name="archivo_final_{{ doc.id }}" accept=".pdf,.doc,.docx" class="form-control" style="padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px;">
                                 {% if doc.descripcion %}<small style="color: #666; display: block; margin-top: 4px;">{{ doc.descripcion }}</small>{% endif %}
                             </div>
                         {% endfor %}
@@ -605,9 +606,9 @@
                     <i class="fas fa-file-pdf me-1" style="color:#dc2626;"></i>
                     Formato Auto Reporte de Condiciones de Salud <span style="color:#dc2626;">*</span>
                 </label>
-                <input type="file" id="inputDocSalud" name="documento_salud_" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" style="padding:10px; border:2px solid #e5e7eb; border-radius:8px; font-size:14px;">
+                <input type="file" id="inputDocSalud" name="documento_salud_" class="form-control" accept=".pdf,.doc,.docx" required style="padding:10px; border:2px solid #e5e7eb; border-radius:8px; font-size:14px;">
                 <small style="color:#6b7280; display:block; margin-top:6px;">
-                    Formatos aceptados: PDF, JPG, PNG, DOC, DOCX (Máx. 10MB). Use este campo si rechazaron el auto reporte.
+                    Formatos aceptados: PDF, DOC, DOCX (Max. 10MB)
                 </small>
             </div>
             <div style="margin-bottom:18px;">
@@ -638,6 +639,48 @@
 <script>
 var tipoVisitaGlobal = '{{ tipo }}';
 var visitaIdGlobal = {{ visita.id }};
+
+function confirmarEliminarAsistente(event, url, nombre) {
+    const mensaje = '¿Está seguro de eliminar este asistente?' + (nombre ? ('<br><strong>' + nombre + '</strong>') : '');
+
+    if (typeof window.mConfirm === 'function') {
+        window.mConfirm(mensaje, {
+            title: 'Eliminar asistente',
+            confirmText: 'Eliminar',
+            confirmClass: 'cm-btn-danger',
+            confirmIcon: 'fas fa-trash'
+        }).then(function(ok) {
+            if (ok) window.location.href = url;
+        });
+        return false;
+    }
+
+    // Fallback visual para evitar el confirm nativo del navegador.
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.42);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:120000;';
+    const card = document.createElement('div');
+    card.style.cssText = 'background:#f9fafb;border-radius:22px;padding:28px;max-width:94vw;width:520px;text-align:center;box-shadow:0 28px 64px rgba(0,0,0,.24);';
+    card.innerHTML =
+        '<div style="width:80px;height:80px;border-radius:999px;background:#fee2e2;color:#ef4444;display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 18px;"><i class="fas fa-trash"></i></div>' +
+        '<h3 style="font-size:1.6rem;font-weight:800;margin:0 0 10px;color:#1f2937;">Eliminar asistente</h3>' +
+        '<p style="font-size:0.98rem;color:#6b7280;margin:0 0 24px;">' + mensaje + '</p>' +
+        '<div style="display:flex;gap:14px;justify-content:center;">' +
+        '<button id="btnCancelLocal" style="padding:11px 24px;border-radius:14px;border:1px solid #d1d5db;background:#e5e7eb;color:#374151;font-weight:700;font-size:0.92rem;cursor:pointer;">Cancelar</button>' +
+        '<button id="btnOkLocal" style="padding:11px 24px;border-radius:14px;border:none;background:linear-gradient(180deg,#ef4444,#dc2626);color:#fff;font-weight:700;font-size:0.92rem;cursor:pointer;">Eliminar</button>' +
+        '</div>';
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+
+    const close = function(go) {
+        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        if (go) window.location.href = url;
+    };
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) close(false); });
+    card.querySelector('#btnCancelLocal').addEventListener('click', function() { close(false); });
+    card.querySelector('#btnOkLocal').addEventListener('click', function() { close(true); });
+    
+    return false;
+}
 
 function abrirModalActualizarDoc(asistenteId, nombreAsistente, tipo) {
     document.getElementById('nombreAsistenteModal').textContent = nombreAsistente;
@@ -764,5 +807,6 @@ function verDocumento(urlViewer, titulo, extension, urlDescarga) {
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'core/js/custom_modal.js' %}?v=20260311b"></script>
 </body>
 </html>

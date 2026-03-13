@@ -1,9 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.db import IntegrityError
 from django.db import transaction
+import os
 from visitaInterna.models import VisitaInterna
 from .models import Ficha, Programa
 from .forms import VisitaInternaInstructorForm, ProgramaForm, FichaForm
@@ -26,6 +28,24 @@ CATEGORIAS_ARCHIVOS_FINALES = [
     "Formato Inducción y Reinducción",
     "Charla de Seguridad y Calestenia",
 ]
+EXTENSIONES_DOCUMENTOS_APRENDIZ = {".pdf", ".doc", ".docx"}
+
+
+def validar_archivos_documentos_aprendiz(files):
+    """Valida que los documentos dinámicos del aprendiz solo sean PDF o Word."""
+    errores = []
+
+    for campo, archivo in files.items():
+        if not campo.startswith("documento_") or not archivo:
+            continue
+
+        extension = os.path.splitext(archivo.name)[1].lower()
+        if extension not in EXTENSIONES_DOCUMENTOS_APRENDIZ:
+            errores.append(
+                f'❌ El archivo "{archivo.name}" no es válido. Solo se permiten PDF o Word (.doc, .docx).'
+            )
+
+    return errores
 
 
 def _normalizar_categoria_texto(value):
@@ -995,24 +1015,27 @@ def crear_aprendiz(request, ficha_id):
 
     if request.method == "POST":
         form = AprendizForm(request.POST, request.FILES, ficha=ficha)
-        if form.is_valid():
+        errores_archivos = validar_archivos_documentos_aprendiz(request.FILES)
+
+        if form.is_valid() and not errores_archivos:
             aprendiz = form.save(commit=False)
             aprendiz.ficha = ficha
             try:
-                aprendiz.save()
-                
-                # Guardar documentos de apoyo subidos
-                for categoria, docs in documentos_por_categoria.items():
-                    if categoria == '👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud':
-                        for doc in docs:
-                            archivo = request.FILES.get(f"documento_{doc.id}")
-                            if archivo:
-                                DocumentoSubidoAprendiz.objects.create(
-                                    documento_requerido=doc,
-                                    aprendiz=aprendiz,
-                                    archivo=archivo,
-                                    estado='pendiente'
-                                )
+                with transaction.atomic():
+                    aprendiz.save()
+
+                    # Guardar documentos de apoyo subidos
+                    for categoria, docs in documentos_por_categoria.items():
+                        if categoria == '👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud':
+                            for doc in docs:
+                                archivo = request.FILES.get(f"documento_{doc.id}")
+                                if archivo:
+                                    DocumentoSubidoAprendiz.objects.create(
+                                        documento_requerido=doc,
+                                        aprendiz=aprendiz,
+                                        archivo=archivo,
+                                        estado='pendiente'
+                                    )
                 
                 messages.success(
                     request,
@@ -1028,6 +1051,8 @@ def crear_aprendiz(request, ficha_id):
                     f"Cada documento debe ser único por ficha."
                 )
         else:
+            for error in errores_archivos:
+                messages.error(request, error)
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, f"❌ {field}: {error}")
@@ -1059,28 +1084,29 @@ def editar_aprendiz(request, pk):
 
     if request.method == "POST":
         form = AprendizForm(request.POST, request.FILES, instance=aprendiz, ficha=ficha)
-        if form.is_valid():
+        errores_archivos = validar_archivos_documentos_aprendiz(request.FILES)
+
+        if form.is_valid() and not errores_archivos:
             try:
-                form.save()
-                
-                # Guardar documentos de apoyo subidos (actualizar existentes)
-                for categoria, docs in documentos_por_categoria.items():
-                    if categoria == '👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud':
-                        for doc in docs:
-                            archivo = request.FILES.get(f"documento_{doc.id}")
-                            if archivo:
-                                # Eliminar documento anterior si existe
-                                DocumentoSubidoAprendiz.objects.filter(
-                                    documento_requerido=doc,
-                                    aprendiz=aprendiz
-                                ).delete()
-                                # Crear nuevo registro
-                                DocumentoSubidoAprendiz.objects.create(
-                                    documento_requerido=doc,
-                                    aprendiz=aprendiz,
-                                    archivo=archivo,
-                                    estado='pendiente'
-                                )
+                with transaction.atomic():
+                    form.save()
+
+                    # Guardar documentos de apoyo subidos (actualizar existentes)
+                    for categoria, docs in documentos_por_categoria.items():
+                        if categoria == '👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud':
+                            for doc in docs:
+                                archivo = request.FILES.get(f"documento_{doc.id}")
+                                if archivo:
+                                    DocumentoSubidoAprendiz.objects.filter(
+                                        documento_requerido=doc,
+                                        aprendiz=aprendiz
+                                    ).delete()
+                                    DocumentoSubidoAprendiz.objects.create(
+                                        documento_requerido=doc,
+                                        aprendiz=aprendiz,
+                                        archivo=archivo,
+                                        estado='pendiente'
+                                    )
                 
                 messages.success(
                     request, f'✅ Aprendiz "{aprendiz.get_nombre_completo()}" actualizado.'
@@ -1095,6 +1121,8 @@ def editar_aprendiz(request, pk):
                     f"Cada documento debe ser único por ficha."
                 )
         else:
+            for error in errores_archivos:
+                messages.error(request, error)
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, f"❌ {field}: {error}")

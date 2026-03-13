@@ -31,6 +31,7 @@ from .forms import (
 from .models import RegistroVisitante
 from django.conf import settings
 from django.db import IntegrityError
+from pathlib import Path
 from django.http import JsonResponse
 
 
@@ -383,8 +384,10 @@ def registrar_asistentes(request, tipo, visita_id):
         and mostrar_archivos_finales  # Permitir si hay al menos 1 asistente
         and any(f.startswith("archivo_final_") for f in request.FILES)
     ):
-        es_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
+        extensiones_permitidas = {".pdf", ".doc", ".docx"}
         archivos_subidos = []
+        archivos_invalidos = []
+        archivos_a_guardar = []
         # Obtener el primer asistente para asociar los archivos finales
         primer_asistente = asistentes.first() if asistentes.exists() else None
 
@@ -418,7 +421,9 @@ def registrar_asistentes(request, tipo, visita_id):
             if archivos_subidos:
                 primer_asistente.estado = "pendiente_documentos"
                 primer_asistente.observaciones_revision = ""
-                primer_asistente.save(update_fields=["estado", "observaciones_revision"])
+                primer_asistente.save(
+                    update_fields=["estado", "observaciones_revision"]
+                )
 
                 if visita.estado in ["documentos_enviados", "en_revision_documentos"]:
                     visita.estado = "aprobada_inicial"
@@ -489,20 +494,38 @@ def registrar_asistentes(request, tipo, visita_id):
             # Validar que solo el documento de 'Formato Auto Reporte Condiciones de Salud' fue subido
             archivos_ok = False
             archivos_dict = {}
+            extensiones_permitidas_docs = {".pdf", ".doc", ".docx"}
+            archivos_invalidos = []
             for categoria, docs in documentos_por_categoria.items():
                 if categoria == "Formato Auto Reporte Condiciones de Salud":
                     for doc in docs:
                         file_field = f"documento_{doc.id}"
                         archivo = request.FILES.get(file_field)
                         if archivo:
-                            archivos_ok = True
+                            extension = Path(archivo.name).suffix.lower()
+                            if extension not in extensiones_permitidas_docs:
+                                archivos_invalidos.append(doc.categoria or archivo.name)
+                            else:
+                                archivos_ok = True
                         archivos_dict[doc.id] = archivo
                 elif categoria == "Formato Autorización Padres de Familia":
                     for doc in docs:
                         file_field = f"documento_{doc.id}"
                         archivo = request.FILES.get(file_field)
+                        if archivo:
+                            extension = Path(archivo.name).suffix.lower()
+                            if extension not in extensiones_permitidas_docs:
+                                archivos_invalidos.append(doc.categoria or archivo.name)
                         # Este archivo es opcional, por lo que no afecta archivos_ok
                         archivos_dict[doc.id] = archivo
+
+            if archivos_invalidos:
+                docs_invalidos = ", ".join(archivos_invalidos)
+                messages.error(
+                    request,
+                    f"Solo se permiten archivos PDF o Word (.doc, .docx). Revise: {docs_invalidos}.",
+                )
+                campos_ok = False
 
             if campos_ok and archivos_ok:
                 try:
@@ -525,6 +548,7 @@ def registrar_asistentes(request, tipo, visita_id):
                             telefono=telefono,
                         )
                     # Guardar archivos subidos
+
                     # Separar el formato de autorización de padres de los demás documentos
                     formato_padres_archivo = None
                     documentos_regulares = {}
@@ -969,6 +993,7 @@ def actualizar_perfil(request):
         return redirect("panel_visitante:login_responsable")
 
     documento = request.session.get("responsable_documento")
+    rol = request.session.get("responsable_rol")
     visitante = RegistroVisitante.objects.filter(documento=documento).first()
 
     if not visitante:
@@ -1021,6 +1046,14 @@ def actualizar_perfil(request):
 
                 if visitante.check_password(contrasena_actual):
                     nueva_contrasena = form_contrasena.cleaned_data["nueva_contrasena"]
+
+                    if visitante.check_password(nueva_contrasena):
+                        messages.error(
+                            request,
+                            "La nueva contraseña no puede ser igual a la actual.",
+                        )
+                        return redirect("panel_visitante:actualizar_perfil")
+
                     visitante.set_password(nueva_contrasena)
                     visitante.save()
 
@@ -1048,6 +1081,15 @@ def actualizar_perfil(request):
         "form_contrasena": form_contrasena,
         "visitante": visitante,
         "titulo": "Actualizar Perfil",
+        "volver_url": (
+            reverse("panel_instructor_interno:panel")
+            if rol == "interno"
+            else (
+                reverse("panel_instructor_externo:panel")
+                if rol == "externo"
+                else reverse("panel_visitante:panel_responsable")
+            )
+        ),
     }
     return render(request, "actualizar_perfil.html", context)
 
@@ -1061,7 +1103,9 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
 
     if not request.session.get("responsable_autenticado"):
         if es_ajax:
-            return JsonResponse({"success": False, "error": "No autenticado."}, status=401)
+            return JsonResponse(
+                {"success": False, "error": "No autenticado."}, status=401
+            )
         return redirect("panel_visitante:login_responsable")
 
     correo = request.session.get("responsable_correo")
@@ -1088,8 +1132,12 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
 
     if request.method != "POST":
         if es_ajax:
-            return JsonResponse({"success": False, "error": "Método no permitido."}, status=405)
-        return redirect("panel_visitante:registrar_asistentes", tipo=tipo, visita_id=visita.id)
+            return JsonResponse(
+                {"success": False, "error": "Método no permitido."}, status=405
+            )
+        return redirect(
+            "panel_visitante:registrar_asistentes", tipo=tipo, visita_id=visita.id
+        )
 
     from documentos.models import Documento as DocumentoModel
 
@@ -1106,7 +1154,9 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
         if es_ajax:
             return JsonResponse({"success": False, "error": error_msg}, status=400)
         messages.error(request, error_msg)
-        return redirect("panel_visitante:registrar_asistentes", tipo=tipo, visita_id=visita.id)
+        return redirect(
+            "panel_visitante:registrar_asistentes", tipo=tipo, visita_id=visita.id
+        )
 
     actualizaciones_asistente = {
         "estado": "pendiente_documentos",
@@ -1159,6 +1209,52 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
                 estado="pendiente",
                 observaciones_revision="",
             )
+        if not doc_salud:
+            error_msg = "Documento de salud no encontrado en el sistema."
+            if es_ajax:
+                return JsonResponse({"success": False, "error": error_msg}, status=400)
+            messages.error(request, error_msg)
+            return redirect(
+                "panel_visitante:registrar_asistentes", tipo=tipo, visita_id=visita.id
+            )
+
+            extensiones_permitidas_docs = {".pdf", ".doc", ".docx"}
+            extension = Path(archivo_salud.name).suffix.lower()
+            if extension not in extensiones_permitidas_docs:
+                error_msg = "Solo se permiten archivos PDF o Word (.doc, .docx) para este documento."
+                if es_ajax:
+                    return JsonResponse(
+                        {"success": False, "error": error_msg}, status=400
+                    )
+                messages.error(request, error_msg)
+                return redirect(
+                    "panel_visitante:registrar_asistentes",
+                    tipo=tipo,
+                    visita_id=visita.id,
+                )
+
+            if tipo == "interna":
+                DocumentoSubidoAsistente.objects.update_or_create(
+                    documento_requerido=doc_salud,
+                    asistente_interna=asistente,
+                    asistente_externa=None,
+                    defaults={
+                        "archivo": archivo_salud,
+                        "estado": "pendiente",
+                        "observaciones_revision": "",
+                    },
+                )
+            else:
+                DocumentoSubidoAsistente.objects.update_or_create(
+                    documento_requerido=doc_salud,
+                    asistente_interna=None,
+                    asistente_externa=asistente,
+                    defaults={
+                        "archivo": archivo_salud,
+                        "estado": "pendiente",
+                        "observaciones_revision": "",
+                    },
+                )
 
     if archivo_autorizacion:
         actualizaciones_asistente.update(
@@ -1185,7 +1281,9 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
         return JsonResponse({"success": True, "message": success_msg})
 
     messages.success(request, success_msg)
-    return redirect("panel_visitante:registrar_asistentes", tipo=tipo, visita_id=visita.id)
+    return redirect(
+        "panel_visitante:registrar_asistentes", tipo=tipo, visita_id=visita.id
+    )
 
 
 def actualizar_info_asistente(request, tipo, asistente_id):

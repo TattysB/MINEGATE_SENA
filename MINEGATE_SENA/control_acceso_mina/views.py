@@ -139,6 +139,7 @@ def porteria_visita(request, tipo_visita, visita_id):
             {
                 'visita': None,
                 'error_visita': 'La visita no existe o no está confirmada para hoy.',
+                'seccion_activa': 'control_acceso',
             },
             status=404,
         )
@@ -149,6 +150,7 @@ def porteria_visita(request, tipo_visita, visita_id):
         {
             'visita': visita_data,
             'error_visita': '',
+            'seccion_activa': 'control_acceso',
         },
     )
 

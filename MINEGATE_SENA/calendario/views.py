@@ -315,6 +315,7 @@ def calendario_mes(request, year=None, month=None):
 				'date': d,
 				'is_other_month': d.month != month,
 				'is_today': d == today,
+				'is_past': d < today,
 				'is_sunday': d.weekday() == 6,
 			})
 		weeks.append(row)
@@ -500,6 +501,9 @@ def update_day_availability(request):
 	if not day_date:
 		return JsonResponse({'ok': False, 'error': 'Fecha inválida'}, status=400)
 
+	if day_date < date.today():
+		return JsonResponse({'ok': False, 'error': 'No se puede habilitar disponibilidad en fechas pasadas'}, status=400)
+
 	if day_date.weekday() == 6:
 		return JsonResponse({'ok': False, 'error': 'No se puede configurar domingo'}, status=400)
 
@@ -572,6 +576,7 @@ def delete_day_availability(request):
 @require_POST
 def save_availability(request):
 	is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.accepts('application/json')
+	today = date.today()
 
 	def json_or_redirect(payload):
 		if is_ajax:
@@ -591,6 +596,8 @@ def save_availability(request):
 			try:
 				d = datetime.strptime(ds.strip(), '%Y-%m-%d').date()
 			except ValueError:
+				continue
+			if d < today:
 				continue
 			# Sólo lunes a sábado
 			if d.weekday() == 6:
@@ -665,6 +672,12 @@ def save_availability(request):
 
 	if end_d < start_d:
 		end_d = start_d
+
+	if end_d < today:
+		return json_or_redirect({'created': 0, 'available_dates': [], 'debug': {'start': start, 'end': end, 'error': 'Rango en fechas pasadas'}})
+
+	if start_d < today:
+		start_d = today
 
 	current = start_d
 	created = 0

@@ -8,305 +8,344 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gestionar Aprendices por Ficha - MINEGATE</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  
-  <style>
-    :root {
-      --sena-verde: #39a900;
-      --sena-verde-oscuro: #2d8600;
-      --card-shadow: 0 4px 20px rgba(0,0,0,0.08);
-      --card-radius: 16px;
-      --transition: all 0.25s ease;
-      --text-dark: #1a202c;
-      --text-muted: #6c757d;
-      --border-light: #f0f0f0;
-    }
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}?v=20260311c">
 
-    body {
-      background: linear-gradient(135deg, #f8fafb 0%, #f3f4f6 100%);
-      min-height: 100vh;
-    }
+    <style>
+        :root {
+            --sena-verde: #39a900;
+            --sena-verde-oscuro: #2d8600;
+            --card-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            --card-radius: 16px;
+            --transition: all 0.25s ease;
+        }
 
-    .container {
-      padding-top: 2rem;
-      padding-bottom: 2rem;
-    }
+        body {
+            padding-top: 0 !important;
+            margin-top: 0 !important;
+            background: #f4f6f9;
+        }
 
-    .page-header {
-      margin-bottom: 2.5rem;
-    }
+        .page-header {
+            background: linear-gradient(135deg, #1a5c00 0%, var(--sena-verde) 60%, #5dc72e 100%);
+            color: white;
+            padding: 2.2rem 0 1.8rem;
+            position: relative;
+            overflow: hidden;
+        }
 
-    .page-header h2 {
-      font-size: 2rem;
-      font-weight: 800;
-      color: var(--text-dark);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 0.5rem;
-    }
+        .page-header::before {
+            content: "";
+            position: absolute;
+            top: -60px;
+            right: -60px;
+            width: 220px;
+            height: 220px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 50%;
+        }
 
-    .page-header h2 i {
-      color: var(--sena-verde);
-    }
+        .breadcrumb-nav a {
+            color: rgba(255,255,255,0.75);
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
 
-    .page-header .text-muted {
-      font-size: 0.95rem;
-      color: var(--text-muted) !important;
-    }
+        .breadcrumb-nav a:hover { color: white; }
 
-    .search-section {
-      margin-bottom: 2rem;
-    }
+        .breadcrumb-nav span {
+            color: rgba(255,255,255,0.45);
+            margin: 0 6px;
+        }
 
-    .search-section .input-group {
-      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-      border-radius: 12px;
-      overflow: hidden;
-    }
+        .page-header h2 {
+            font-size: 1.85rem;
+            font-weight: 800;
+            margin: 0.4rem 0 0.2rem;
+        }
 
-    .search-section .form-control {
-      border: none;
-      padding: 0.8rem 1.2rem;
-      font-size: 0.95rem;
-      background: white;
-    }
+        .page-header .sub {
+            font-size: 0.92rem;
+            color: rgba(255,255,255,0.85);
+            margin: 0;
+        }
 
-    .search-section .form-control:focus {
-      border: none;
-      box-shadow: none;
-      background: #f8fafb;
-    }
+        .btn-volver-header {
+            background: rgba(255,255,255,0.15);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.45);
+            border-radius: 50px;
+            padding: 9px 20px;
+            font-weight: 700;
+            font-size: 0.88rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            transition: var(--transition);
+        }
 
-    .search-section .btn {
-      border: none;
-      padding: 0.8rem 1.5rem;
-      font-weight: 600;
-      background: var(--sena-verde);
-      color: white;
-    }
+        .btn-volver-header:hover {
+            background: rgba(255,255,255,0.28);
+            color: white;
+        }
 
-    .search-section .btn:hover {
-      background: var(--sena-verde-oscuro);
-    }
+        .content-wrap { padding: 1.8rem 0 2.2rem; }
 
-    .search-section .btn-outline-secondary {
-      background: white;
-      color: var(--text-muted);
-      border: 1px solid #e9ecef;
-    }
+        .search-card,
+        .table-card,
+        .summary-card {
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+            border: 1px solid #edf0f3;
+        }
 
-    .search-section .btn-outline-secondary:hover {
-      background: #f8fafb;
-      color: var(--text-dark);
-      border-color: #dee2e6;
-    }
+        .search-card {
+            padding: 1rem 1.2rem;
+            margin-bottom: 1.2rem;
+        }
 
-    .table-responsive {
-      border-radius: var(--card-radius);
-      box-shadow: var(--card-shadow);
-      overflow: hidden;
-      background: white;
-      margin-bottom: 2rem;
-    }
+        .search-input {
+            border-radius: 50px;
+            border: 1.5px solid #d1d5db;
+            padding-left: 1rem;
+            min-height: 40px;
+        }
 
-    .table {
-      margin-bottom: 0;
-    }
+        .search-input:focus {
+            border-color: var(--sena-verde);
+            box-shadow: 0 0 0 3px rgba(57,169,0,0.15);
+        }
 
-    .table thead.table-primary {
-      background: linear-gradient(135deg, #1a5c00 0%, var(--sena-verde) 60%, #5dc72e 100%) !important;
-      color: white;
-      font-weight: 700;
-      text-transform: uppercase;
-      font-size: 0.85rem;
-      letter-spacing: 0.5px;
-    }
+        .btn-buscar {
+            background: var(--sena-verde);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 0 18px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            min-height: 40px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
 
-    .table thead.table-primary th {
-      border: none;
-      padding: 1.2rem;
-      color: white !important;
-      background: transparent !important;
-    }
+        .btn-buscar:hover { background: var(--sena-verde-oscuro); color: white; }
 
-    .table tbody tr {
-      border-bottom: 1px solid #f0f0f0;
-      transition: var(--transition);
-    }
+        .btn-limpiar {
+            border-radius: 50px;
+            min-height: 40px;
+            font-size: 0.86rem;
+            font-weight: 600;
+        }
 
-    .table tbody tr:hover {
-      background: #f8fafb;
-      transform: none;
-    }
+        .table-card { overflow: hidden; }
 
-    .table tbody tr td {
-      padding: 1.2rem;
-      vertical-align: middle;
-      color: var(--text-dark);
-    }
+        .table-card .table { margin: 0; }
 
-    .table tbody tr strong {
-      color: var(--text-dark);
-      font-weight: 700;
-    }
+        .table-card thead th {
+            background: #e8f5e9;
+            color: #1f2937;
+            font-size: 0.82rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.45px;
+            border-bottom: 1px solid #dcefd8;
+            border-top: none;
+            padding: 0.85rem 0.85rem;
+            white-space: nowrap;
+        }
 
-    .table tbody tr .badge {
-      font-size: 0.85rem;
-      padding: 0.4rem 0.8rem;
-      background: var(--sena-verde);
-      color: white;
-      border-radius: 8px;
-    }
+        .table-card tbody td {
+            padding: 0.9rem 0.85rem;
+            vertical-align: middle;
+            border-color: #eef1f4;
+            font-size: 0.9rem;
+        }
 
-    .table tbody tr .text-muted {
-      color: var(--text-muted) !important;
-      font-size: 0.85rem;
-    }
+        .table-card tbody tr:hover { background: #f9fdf6; }
 
-    .table tbody tr .btn-sm {
-      padding: 0.5rem 1rem;
-      font-weight: 600;
-      border-radius: 8px;
-      background: var(--sena-verde);
-      color: white;
-      border: none;
-      transition: var(--transition);
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
+        .ficha-num {
+            font-size: 1.05rem;
+            font-weight: 900;
+            color: #1f2937;
+            line-height: 1;
+        }
 
-    .table tbody tr .btn-sm:hover {
-      background: var(--sena-verde-oscuro);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(57, 169, 0, 0.3);
-    }
+        .ficha-jornada {
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin-top: 4px;
+            display: block;
+        }
 
-    .alert-info {
-      background: linear-gradient(135deg, #dbeafe 0%, #e0f2fe 100%);
-      border: 1px solid #bfdbfe;
-      border-radius: var(--card-radius);
-      color: #1e40af;
-      padding: 1.5rem;
-      font-weight: 500;
-    }
+        .programa-name { font-weight: 600; color: #1f2937; }
 
-    .alert-info i {
-      margin-right: 0.5rem;
-      color: #1e40af;
-    }
+        .badge-activos {
+            background: #d1fae5;
+            color: #065f46;
+            border-radius: 50px;
+            font-size: 0.78rem;
+            font-weight: 800;
+            padding: 4px 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
 
-    .alert-info .alert-link {
-      color: #1e40af;
-      font-weight: 700;
-      text-decoration: underline;
-    }
+        .total-aprendices {
+            font-size: 0.85rem;
+            color: #6b7280;
+            font-weight: 600;
+            margin-left: 4px;
+        }
 
-    .alert-light {
-      background: white;
-      border: 1px solid #e9ecef;
-      border-radius: 12px;
-      padding: 1rem 1.5rem;
-      font-weight: 500;
-      color: var(--text-dark);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    }
+        .btn-ver {
+            background: #eef8e8;
+            color: #276020;
+            border: 1.5px solid #84cc16;
+            border-radius: 50px;
+            padding: 6px 16px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: var(--transition);
+        }
 
-    .alert-light i {
-      color: var(--sena-verde);
-      margin-right: 0.5rem;
-    }
+        .btn-ver:hover {
+            background: var(--sena-verde);
+            color: white;
+            border-color: var(--sena-verde);
+        }
 
-    .btn-outline-secondary {
-      color: var(--text-muted);
-      border: 1px solid #e9ecef;
-      padding: 0.7rem 1.3rem;
-      font-weight: 600;
-      border-radius: 10px;
-      transition: var(--transition);
-    }
+        .summary-card {
+            margin-top: 1rem;
+            padding: 0.9rem 1.1rem;
+            font-size: 0.95rem;
+            color: #374151;
+            font-weight: 600;
+        }
 
-    .btn-outline-secondary:hover {
-      background: #f8fafb;
-      color: var(--text-dark);
-      border-color: #dee2e6;
-    }
+        .summary-card i { color: var(--sena-verde); }
 
-    .btn-outline-secondary i {
-      margin-right: 0.4rem;
-    }
+        .btn-volver-bottom {
+            margin-top: 1rem;
+            background: white;
+            color: #374151;
+            border: 1.5px solid #d1d5db;
+            border-radius: 50px;
+            padding: 8px 18px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            transition: var(--transition);
+        }
 
-    #accessibility-widget,
-    #accessibility-widget * {
-      all: revert !important;
-    }
+        .btn-volver-bottom:hover {
+            background: #f3f4f6;
+            color: #111827;
+            border-color: #9ca3af;
+        }
 
-    .mt-3 {
-      margin-top: 1.5rem !important;
-    }
+        .empty-state {
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+            border: 1px solid #edf0f3;
+            text-align: center;
+            padding: 3rem 1.2rem;
+            color: #6b7280;
+        }
 
-    .text-center {
-      text-align: center;
-    }
+        .empty-state i {
+            font-size: 3rem;
+            color: #9ca3af;
+            margin-bottom: 0.8rem;
+            display: block;
+        }
 
-    .text-md {
-      font-size: 0.95rem;
-    }
-  </style>
+        .empty-state h5 {
+            font-weight: 800;
+            color: #374151;
+            margin-bottom: 0.45rem;
+        }
+
+        .empty-state a { color: var(--sena-verde-oscuro); font-weight: 700; }
+
+        @media (max-width: 768px) {
+            .page-header h2 { font-size: 1.5rem; }
+            .search-card { padding: 0.9rem; }
+            .table-card thead th,
+            .table-card tbody td { font-size: 0.82rem; }
+            .btn-ver { padding: 5px 12px; }
+        }
+    </style>
 </head>
 <body>
-<div class="container mt-4">
-    <div class="row mb-4 page-header">
-        <div class="col-md-8">
-            <h2>
-                <i class="bi bi-people-fill"></i> Aprendices por Ficha
-            </h2>
-            <p class="text-muted">
-                Aquí puedes registrar y gestionar los aprendices de cada ficha.
-            </p>
-        </div>
-        <div class="col-md-4 d-flex justify-content-end align-items-center">
-            <a href="{% url 'panel_instructor_interno:panel' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Volver al Panel
+
+<div class="page-header">
+    <div class="container">
+        <div class="breadcrumb-nav mb-2">
+            <a href="{% url 'panel_instructor_interno:panel' %}"><i class="fas fa-home me-1"></i>Mi Panel</a>
+            <span>&rsaquo;</span>
+            <span style="color: rgba(255,255,255,0.92);">Aprendices por Ficha</span>
+    </div>
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h2 class="mb-0"><i class="fas fa-user-graduate me-2"></i>Aprendices por Ficha</h2>
+                <p class="sub">Aquí puedes registrar y gestionar los aprendices de cada ficha.</p>
+            </div>
+            <a href="{% url 'panel_instructor_interno:panel' %}" class="btn-volver-header">
+                <i class="fas fa-arrow-left"></i> Volver al Panel
             </a>
         </div>
     </div>
+</div>
 
-    <!-- Barra de búsqueda -->
-    <div class="row mb-4 search-section">
-        <div class="col-md-6">
-            <form method="GET" class="input-group">
+<div class="container content-wrap">
+
+        <div class="search-card">
+            <form method="GET" class="row g-2 align-items-center">
+                <div class="col-lg-8 col-md-10">
+                    <div class="input-group">
                 <input 
                     type="text" 
                     name="buscar" 
-                    class="form-control" 
+                                        class="form-control search-input" 
                     placeholder="Buscar por número de ficha o programa..."
                     value="{{ buscar }}"
                 >
-                <button class="btn" type="submit">
-                    <i class="bi bi-search"></i> Buscar
+                                <button class="btn btn-buscar" type="submit">
+                                        <i class="fas fa-search"></i> Buscar
                 </button>
                 {% if buscar %}
-                    <a href="{% url 'panel_instructor_interno:listar_fichas_aprendices' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-x"></i> Limpiar
+                                        <a href="{% url 'panel_instructor_interno:listar_fichas_aprendices' %}" class="btn btn-outline-secondary btn-limpiar">
+                                                <i class="fas fa-times"></i> Limpiar
                     </a>
                 {% endif %}
-            </form>
+                    </div>
         </div>
+            </form>
     </div>
 
-    <!-- Tabla de fichas -->
     {% if fichas_info %}
-    <div class="table-responsive">
-        <table class="table table-hover">
-            <thead class="table-primary">
+        <div class="table-card">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                        <thead>
                 <tr>
-                    <th><i class="bi bi-bookmark-fill"></i> Ficha</th>
-                    <th><i class="bi bi-book"></i> Programa</th>
-                    <th class="text-center"><i class="bi bi-people"></i> Aprendices Registrados</th>
+                                        <th><i class="fas fa-bookmark me-1"></i>Ficha</th>
+                                        <th><i class="fas fa-book me-1"></i>Programa</th>
+                                        <th class="text-center"><i class="fas fa-users me-1"></i>Aprendices Registrados</th>
                     <th class="text-center">Acciones</th>
                 </tr>
             </thead>
@@ -314,70 +353,52 @@
                 {% for item in fichas_info %}
                 <tr>
                     <td>
-                        <strong>{{ item.ficha.numero }}</strong>
-                        <br>
-                        <small class="text-muted">{{ item.ficha.get_jornada_display }}</small>
+                                                <span class="ficha-num">{{ item.ficha.numero }}</span>
+                                                <span class="ficha-jornada">{{ item.ficha.get_jornada_display }}</span>
                     </td>
-                    <td>{{ item.ficha.programa.nombre }}</td>
+                                        <td><span class="programa-name">{{ item.ficha.programa.nombre }}</span></td>
                     <td class="text-center">
-                        <span class="badge">{{ item.aprendices_activos }}</span>
-                        <span class="text-muted">/ {{ item.total_aprendices }}</span>
+                                                <span class="badge-activos"><i class="fas fa-check-circle"></i>{{ item.aprendices_activos }}</span>
+                                                <span class="total-aprendices">/ {{ item.total_aprendices }}</span>
                     </td>
                     <td class="text-center">
                         <a 
                             href="{% url 'panel_instructor_interno:detalle_aprendices_ficha' item.ficha.id %}" 
-                            class="btn btn-sm"
+                                                        class="btn-ver"
                         >
-                            <i class="bi bi-eye"></i> Ver
+                                                        <i class="fas fa-eye"></i> Ver
                         </a>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+            </div>
     </div>
 
-    <div class="alert-light">
-        <i class="bi bi-info-circle"></i> 
-        Total: <strong>{{ total }}</strong> ficha(s)
+        <div class="summary-card">
+                <i class="fas fa-circle-info me-1"></i>
+                Total: <strong>{{ total }}</strong> ficha(s)
     </div>
 
-    <div class="mt-3">
-        <a href="{% url 'panel_instructor_interno:panel' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Volver al Panel
+        <div>
+                <a href="{% url 'panel_instructor_interno:panel' %}" class="btn-volver-bottom">
+                        <i class="fas fa-arrow-left"></i> Volver al Panel
         </a>
     </div>
 
     {% else %}
-    <div class="alert alert-info" role="alert">
-        <i class="bi bi-info-circle"></i> 
-        No hay fichas registradas. 
-        <a href="{% url 'panel_instructor_interno:gestionar_fichas' %}">Crea una ficha primero</a>.
-    </div>
-    <div class="mt-3">
-        <a href="{% url 'panel_instructor_interno:panel' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Volver al Panel
-        </a>
+        <div class="empty-state">
+                <i class="fas fa-folder-open"></i>
+                <h5>No hay fichas registradas</h5>
+                <p class="mb-2">Aún no existen fichas para gestionar aprendices.</p>
+                <p class="mb-4">Puedes crearlas en <a href="{% url 'panel_instructor_interno:gestionar_fichas' %}">Gestionar Fichas</a>.</p>
+                <a href="{% url 'panel_instructor_interno:panel' %}" class="btn-volver-bottom">
+                        <i class="fas fa-arrow-left"></i> Volver al Panel
+                </a>
     </div>
     {% endif %}
 </div>
-
-<!-- Estilos adicionales -->
-<style>
-    .table thead {
-        font-weight: 600;
-    }
-    
-    .badge {
-        font-size: 0.85rem;
-        padding: 0.4rem 0.6rem;
-    }
-    
-    .btn-sm {
-        padding: 0.35rem 0.6rem;
-        font-size: 0.85rem;
-    }
-</style>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 {% accessibility_widget %}
