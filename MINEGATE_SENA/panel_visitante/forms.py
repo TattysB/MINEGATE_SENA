@@ -37,7 +37,7 @@ class RegistroVisitanteForm(forms.Form):
     )
     telefono = forms.CharField(
         label="Telefono",
-        max_length=15,
+        max_length=10,
         required=True,
         widget=forms.TextInput(
             attrs={"class": "form-control", "placeholder": "Telefono"}
@@ -98,9 +98,8 @@ class RegistroVisitanteForm(forms.Form):
         telefono = self.cleaned_data.get("telefono", "").strip()
         if not telefono:
             raise forms.ValidationError("El telefono es obligatorio.")
-        # Permitir solo números, espacios, guiones y paréntesis
-        if not re.match(r"^[\d\s\-\(\)+]+$", telefono):
-            raise forms.ValidationError("El telefono solo debe contener numeros y caracteres validos.")
+        if not re.match(r"^\d{10}$", telefono):
+            raise forms.ValidationError("El telefono debe tener exactamente 10 numeros.")
         return telefono
 
     def clean_documento(self):
@@ -276,7 +275,7 @@ class ActualizarPerfilForm(forms.Form):
     )
     telefono = forms.CharField(
         label="Teléfono",
-        max_length=15,
+        max_length=10,
         required=True,
         widget=forms.TextInput(
             attrs={"class": "form-control", "placeholder": "Teléfono"}
@@ -313,8 +312,8 @@ class ActualizarPerfilForm(forms.Form):
         telefono = self.cleaned_data.get("telefono", "").strip()
         if not telefono:
             raise forms.ValidationError("El teléfono es obligatorio.")
-        if not re.match(r"^[\d\s\-\(\)+]+$", telefono):
-            raise forms.ValidationError("El teléfono solo debe contener números y caracteres válidos.")
+        if not re.match(r"^\d{10}$", telefono):
+            raise forms.ValidationError("El teléfono debe tener exactamente 10 números.")
         return telefono
 
     def clean_correo(self):

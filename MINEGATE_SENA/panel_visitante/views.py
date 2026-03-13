@@ -993,6 +993,7 @@ def actualizar_perfil(request):
         return redirect("panel_visitante:login_responsable")
 
     documento = request.session.get("responsable_documento")
+    rol = request.session.get("responsable_rol")
     visitante = RegistroVisitante.objects.filter(documento=documento).first()
 
     if not visitante:
@@ -1045,6 +1046,14 @@ def actualizar_perfil(request):
 
                 if visitante.check_password(contrasena_actual):
                     nueva_contrasena = form_contrasena.cleaned_data["nueva_contrasena"]
+
+                    if visitante.check_password(nueva_contrasena):
+                        messages.error(
+                            request,
+                            "La nueva contraseña no puede ser igual a la actual.",
+                        )
+                        return redirect("panel_visitante:actualizar_perfil")
+
                     visitante.set_password(nueva_contrasena)
                     visitante.save()
 
@@ -1072,6 +1081,15 @@ def actualizar_perfil(request):
         "form_contrasena": form_contrasena,
         "visitante": visitante,
         "titulo": "Actualizar Perfil",
+        "volver_url": (
+            reverse("panel_instructor_interno:panel")
+            if rol == "interno"
+            else (
+                reverse("panel_instructor_externo:panel")
+                if rol == "externo"
+                else reverse("panel_visitante:panel_responsable")
+            )
+        ),
     }
     return render(request, "actualizar_perfil.html", context)
 
