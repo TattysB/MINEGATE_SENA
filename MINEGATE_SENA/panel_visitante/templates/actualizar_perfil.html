@@ -161,6 +161,13 @@
 		display: flex;
 		align-items: center;
 		gap: 0.75rem;
+		font-weight: 600;
+		box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+	}
+
+	.alert i {
+		font-size: 1rem;
+		min-width: 18px;
 	}
 	
 	.alert-success {
@@ -173,6 +180,18 @@
 		background: #fee2e2;
 		color: #991b1b;
 		border-left: 4px solid #ef4444;
+	}
+
+	.alert-warning {
+		background: #fef3c7;
+		color: #92400e;
+		border-left: 4px solid #f59e0b;
+	}
+
+	.alert-info {
+		background: #e0f2fe;
+		color: #075985;
+		border-left: 4px solid #0ea5e9;
 	}
 	
 	.form-row {
@@ -262,10 +281,12 @@
 	<div class="perfil-card">
 		{% if messages %}
 			{% for message in messages %}
-				<div class="alert alert-{{ message.tags }}">
-					<i class="fas fa-{% if message.tags == 'success' %}check-circle{% else %}exclamation-circle{% endif %}"></i>
-					{{ message }}
-				</div>
+				{% with tags=message.tags %}
+					<div class="alert {% if 'error' in tags %}alert-danger{% elif 'success' in tags %}alert-success{% elif 'warning' in tags %}alert-warning{% else %}alert-info{% endif %}">
+						<i class="fas {% if 'success' in tags %}fa-check-circle{% elif 'error' in tags %}fa-triangle-exclamation{% elif 'warning' in tags %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}"></i>
+						<span>{{ message }}</span>
+					</div>
+				{% endwith %}
 			{% endfor %}
 		{% endif %}
 		
@@ -273,6 +294,7 @@
 		<form method="POST">
 			{% csrf_token %}
 			<input type="hidden" name="action" value="actualizar_datos">
+			<input type="hidden" name="tipo_documento" value="{{ visitante.tipo_documento }}">
 			
 			<div class="section-divider">
 				<h2><i class="fas fa-id-card"></i> Datos Personales</h2>
@@ -330,7 +352,7 @@
 			<div class="form-row">
 				<div class="form-group">
 					<label for="id_telefono">Teléfono</label>
-					<input type="tel" name="telefono" id="id_telefono" class="form-control" maxlength="10" pattern="\d{1,10}" placeholder="Ingrese el número" value="{{ form_perfil.telefono.value|default:'' }}" required>
+					<input type="tel" name="telefono" id="id_telefono" class="form-control" maxlength="10" minlength="10" pattern="\d{10}" title="Ingrese exactamente 10 números" placeholder="Ingrese 10 números" value="{{ form_perfil.telefono.value|default:'' }}" required>
 					{% if form_perfil.telefono.errors %}
 						<ul class="errorlist">
 							{% for error in form_perfil.telefono.errors %}
@@ -372,6 +394,9 @@
 			
 			<div class="info-box">
 				<i class="fas fa-shield-alt"></i> La contraseña debe tener al menos 8 caracteres, incluyendo mayúsculas, minúsculas y números.
+			</div>
+			<div id="alerta-contrasena-igual" class="alert alert-danger" style="display: none;">
+				<i class="fas fa-exclamation-triangle"></i> La nueva contraseña no puede ser igual a la contraseña actual.
 			</div>
 			
 			<div class="form-group">
@@ -450,7 +475,7 @@
 				<button type="submit" class="btn-primary">
 					<i class="fas fa-key"></i> Cambiar Contraseña
 				</button>
-				<a href="javascript:history.back()" class="btn-secondary">
+				<a href="{{ volver_url }}" class="btn-secondary">
 					<i class="fas fa-arrow-left"></i> Volver
 				</a>
 			</div>
@@ -493,6 +518,8 @@ document.addEventListener('DOMContentLoaded', function() {
 	// Toggle mostrar/ocultar contraseña - Contraseña Actual
 	const togglePasswordActual = document.getElementById('togglePasswordActual');
 	const passwordActualInput = document.querySelector('input[name="contrasena_actual"]');
+	const passwordForm = document.querySelector('form input[name="action"][value="cambiar_contrasena"]')?.closest('form');
+	const alertaContrasenaIgual = document.getElementById('alerta-contrasena-igual');
 	
 	if (togglePasswordActual && passwordActualInput) {
 		togglePasswordActual.addEventListener('click', function() {
@@ -532,6 +559,35 @@ document.addEventListener('DOMContentLoaded', function() {
 			// Cambiar icono
 			this.classList.toggle('fa-eye');
 			this.classList.toggle('fa-eye-slash');
+		});
+	}
+
+	function validarContrasenaDistinta() {
+		if (!passwordActualInput || !passwordNuevaInput || !alertaContrasenaIgual) {
+			return true;
+		}
+
+		const esIgual =
+			passwordActualInput.value.length > 0 &&
+			passwordNuevaInput.value.length > 0 &&
+			passwordActualInput.value === passwordNuevaInput.value;
+
+		alertaContrasenaIgual.style.display = esIgual ? 'block' : 'none';
+		return !esIgual;
+	}
+
+	if (passwordActualInput && passwordNuevaInput) {
+		passwordActualInput.addEventListener('input', validarContrasenaDistinta);
+		passwordNuevaInput.addEventListener('input', validarContrasenaDistinta);
+	}
+
+	if (passwordForm) {
+		passwordForm.addEventListener('submit', function(e) {
+			if (!validarContrasenaDistinta()) {
+				e.preventDefault();
+				alert('La nueva contraseña no puede ser igual a la contraseña actual.');
+				passwordNuevaInput.focus();
+			}
 		});
 	}
 	
