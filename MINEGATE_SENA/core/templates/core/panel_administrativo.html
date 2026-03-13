@@ -11,7 +11,7 @@
   <title>MineGate</title>
 
   <!-- ESTILOS ANTIGUOS (Comentados para pruebas) -->
-  <link rel="stylesheet" href="{% static 'core/css/nuevos_estilos.css' %}?v=17" />
+  <link rel="stylesheet" href="{% static 'core/css/nuevos_estilos.css' %}?v=19" />
   <!-- Estilos del Dropdown de Usuario -->
   <link rel="stylesheet" href="{% static 'core/css/user_dropdown.css' %}" />
   <link rel="stylesheet" href="{% static 'css/configuracion_perfil.css' %}" />
@@ -64,7 +64,10 @@
             <div class="user-profile-dropdown">
               <button class="user-profile-btn" id="userDropdownBtn" aria-label="User menu">
                 <div class="user-profile-photo-container">
-                  {% if perfil and perfil.foto_perfil %}
+                  {% if perfil_panel and perfil_panel.foto_perfil %}
+                  <img src="{{ perfil_panel.foto_perfil.url }}" alt="Foto de perfil" id="userProfileImg"
+                    class="profile-img-topbar" />
+                  {% elif perfil and perfil.foto_perfil %}
                   <img src="{{ perfil.foto_perfil.url }}" alt="Foto de perfil" id="userProfileImg"
                     class="profile-img-topbar" />
                   {% else %}
@@ -154,12 +157,6 @@
             <i class="ri-shield-check-line"></i><span>Control de Acceso</span>
           </a>
         </li>
-        <li data-content="Escaneo" class="{% if seccion_activa == 'escaneo_documentos' %}active{% endif %}">
-          <a href="{% url 'core:panel_administrativo_seccion' 'escaneo_documentos' %}" class="sidebar-link" title="Escanea y valida documentos con código QR">
-            <i class="ri-qr-scan-line icon-scan"></i><span>Escanear Documentos</span>
-          </a>
-        </li>
-
         <li data-content="PaginaInformativa" class="{% if seccion_activa == 'gestion_pagina_informativa' %}active{% endif %}">
           <a href="{% url 'core:panel_administrativo_seccion' 'gestion_pagina_informativa' %}" class="sidebar-link" title="Edita el contenido de la página informativa">
             <i class="ri-gallery-line icon-documents"></i><span>Página Informativa</span>
@@ -172,12 +169,6 @@
           <i class="ri-shield-user-line icon-permissions"></i><span>Gestión de Permisos</span>
         </li>
         {% endif %}
-
-        <li data-content="Configuracion" class="{% if seccion_activa == 'configuracion' %}active{% endif %}">
-          <a href="{% url 'core:panel_administrativo_seccion' 'configuracion' %}" class="sidebar-link" title="Ajusta la configuración del sistema">
-            <i class="ri-settings-3-line icon-settings"></i><span>Configuración</span>
-          </a>
-        </li>
         <li data-content="Reportes" class="{% if seccion_activa == 'reportes' %}active{% endif %}">
           <a href="{% url 'core:panel_administrativo_seccion' 'reportes' %}" class="sidebar-link" title="Visualiza reportes y análisis del sistema">
             <i class="ri-bar-chart-line icon-reports"></i><span>Reportes</span>
@@ -233,7 +224,9 @@
 
         <div class="modal-body-perfil">
           <div class="perfil-avatar-container">
-            {% if perfil and perfil.foto_perfil %}
+            {% if perfil_panel and perfil_panel.foto_perfil %}
+            <img src="{{ perfil_panel.foto_perfil.url }}" alt="Foto de perfil" class="perfil-avatar" />
+            {% elif perfil and perfil.foto_perfil %}
             <img src="{{ perfil.foto_perfil.url }}" alt="Foto de perfil" class="perfil-avatar" />
             {% else %}
             <img src="{% static 'core/img/usuario.png' %}" alt="Foto de perfil" class="perfil-avatar" />
@@ -405,9 +398,26 @@
     function abrirModalCerrarSesion(event) {
       event.preventDefault();
       event.stopPropagation();
-      const modal = document.getElementById("modalCerrarSesion");
-      if (modal) {
-        modal.style.display = "flex";
+      
+      const mensaje = '¿Estás seguro de que deseas cerrar sesión?<br><br><small style="color: #6b7280;">Se cerrará tu sesión actual y deberás iniciar sesión nuevamente para acceder.</small>';
+      
+      if (typeof window.mConfirm === 'function') {
+        window.mConfirm(mensaje, {
+          title: 'Cerrar Sesión',
+          confirmText: 'Sí, Cerrar Sesión',
+          confirmClass: 'cm-btn-success',
+          confirmIcon: 'fas fa-right-from-bracket'
+        }).then(function(resultado) {
+          if (resultado) {
+            window.location.href = "{% url 'usuarios:logout' %}";
+          }
+        });
+      } else {
+        // Fallback: usar modal antiguo si mConfirm no está disponible
+        const modal = document.getElementById("modalCerrarSesion");
+        if (modal) {
+          modal.style.display = "flex";
+        }
       }
     }
 

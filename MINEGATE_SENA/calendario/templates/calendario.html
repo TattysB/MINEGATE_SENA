@@ -1,6 +1,6 @@
 {% load static %}
 {% if include_assets %}
-<link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}?v=20260309f">
+<link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}?v=20260312b">
 {% endif %}
 
 <div class="calendar-page admin-calendar-page">
@@ -128,3 +128,76 @@
 {% if include_assets %}
 <script src="{% static 'calendario/js/calendario.js' %}?v=20260309f" defer></script>
 {% endif %}
+<script>
+  (function () {
+    function syncDayInspectorHeight() {
+      const page = document.querySelector('.admin-calendar-page');
+      if (!page) return;
+
+      const calendarCard = page.querySelector('.calendar-card');
+      const dayInspector = page.querySelector('#dayInspector');
+      const visitsBlock = page.querySelector('#inspectorVisitsBlock');
+      const visitsList = page.querySelector('#dayInspectorVisits');
+
+      if (!calendarCard || !dayInspector || !visitsBlock || !visitsList) return;
+
+      if (window.innerWidth <= 1180) {
+        dayInspector.style.height = '';
+        visitsBlock.style.minHeight = '';
+        visitsList.style.maxHeight = '';
+        return;
+      }
+
+      const calendarHeight = Math.ceil(calendarCard.getBoundingClientRect().height);
+      if (!calendarHeight) return;
+
+      dayInspector.style.height = calendarHeight + 'px';
+
+      const header = page.querySelector('.day-inspector-head');
+      const date = page.querySelector('.day-inspector-date');
+      const ranges = page.querySelector('#inspectorRangesBlock');
+      const styles = window.getComputedStyle(dayInspector);
+      const paddingTop = parseFloat(styles.paddingTop) || 0;
+      const paddingBottom = parseFloat(styles.paddingBottom) || 0;
+      const visitsStyles = window.getComputedStyle(visitsBlock);
+      const visitsPaddingTop = parseFloat(visitsStyles.paddingTop) || 0;
+      const visitsPaddingBottom = parseFloat(visitsStyles.paddingBottom) || 0;
+
+      const reservedHeight =
+        (header ? header.offsetHeight : 0) +
+        (date ? date.offsetHeight : 0) +
+        (ranges ? ranges.offsetHeight : 0) +
+        paddingTop +
+        paddingBottom +
+        visitsPaddingTop +
+        visitsPaddingBottom +
+        36;
+
+      const availableHeight = Math.max(180, calendarHeight - reservedHeight);
+      visitsBlock.style.minHeight = availableHeight + 'px';
+      visitsList.style.maxHeight = availableHeight + 'px';
+    }
+
+    function bindInspectorHeightSync() {
+      const page = document.querySelector('.admin-calendar-page');
+      if (!page || page.dataset.heightSyncBound === '1') return;
+      page.dataset.heightSyncBound = '1';
+
+      const run = () => window.requestAnimationFrame(syncDayInspectorHeight);
+      window.addEventListener('load', run);
+      window.addEventListener('resize', run);
+      document.addEventListener('DOMContentLoaded', run);
+
+      const calendarCard = page.querySelector('.calendar-card');
+      if (calendarCard && 'ResizeObserver' in window) {
+        const observer = new ResizeObserver(run);
+        observer.observe(calendarCard);
+      }
+
+      setTimeout(run, 150);
+      setTimeout(run, 500);
+    }
+
+    bindInspectorHeightSync();
+  })();
+</script>
