@@ -1,11 +1,28 @@
 from django import forms
 from visitaInterna.models import VisitaInterna
 from .models import Ficha, Programa, Aprendiz
+import os
 import re
 from django.core.exceptions import ValidationError
 
 
 # ==================== VALIDADORES PERSONALIZADOS ====================
+
+EXTENSIONES_DOCUMENTO_APRENDIZ_PERMITIDAS = {'.pdf', '.doc', '.docx'}
+
+
+def validar_archivo_pdf_word(archivo, nombre_campo='archivo'):
+    """Permite solo archivos PDF o Word para documentos del aprendiz."""
+    if not archivo:
+        return archivo
+
+    extension = os.path.splitext(archivo.name)[1].lower()
+    if extension not in EXTENSIONES_DOCUMENTO_APRENDIZ_PERMITIDAS:
+        raise ValidationError(
+            f'El {nombre_campo} debe estar en formato PDF o Word (.doc, .docx).'
+        )
+
+    return archivo
 
 def validar_correo_formato(correo):
     """
@@ -422,12 +439,12 @@ class AprendizForm(forms.ModelForm):
             }),
             'documento_identidad': forms.FileInput(attrs={
                 'class': 'form-control',
-                'accept': 'image/*,.pdf',
+                'accept': '.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                 'required': True,
             }),
             'documento_adicional': forms.FileInput(attrs={
                 'class': 'form-control',
-                'accept': 'image/*,.pdf',
+                'accept': '.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             }),
             'estado': forms.Select(attrs={
                 'class': 'form-select',
@@ -481,6 +498,20 @@ class AprendizForm(forms.ModelForm):
     def clean_telefono(self):
         """Validación de teléfono."""
         return validar_telefono(self.cleaned_data.get('telefono', ''))
+
+    def clean_documento_identidad(self):
+        """Valida formato permitido para documento de identidad."""
+        return validar_archivo_pdf_word(
+            self.cleaned_data.get('documento_identidad'),
+            'documento de identidad'
+        )
+
+    def clean_documento_adicional(self):
+        """Valida formato permitido para documento adicional."""
+        return validar_archivo_pdf_word(
+            self.cleaned_data.get('documento_adicional'),
+            'documento adicional'
+        )
     
     def clean(self):
         """Validación de la combinación única ficha + numero_documento."""
