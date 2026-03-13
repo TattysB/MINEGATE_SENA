@@ -88,6 +88,12 @@
     var ranges = [];
     var currentDay = null;
     var currentDayRanges = [];
+    var todayIso = (function(){
+      var now = new Date();
+      var month = String(now.getMonth() + 1).padStart(2, '0');
+      var day = String(now.getDate()).padStart(2, '0');
+      return now.getFullYear() + '-' + month + '-' + day;
+    })();
 
     function getCookie(name){ var v = document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)'); return v ? v.pop() : ''; }
 
@@ -241,7 +247,17 @@
       .catch(function(err){ console.error(err); alert('No se pudo eliminar el rango.'); });
     }
 
-    function canEnable(){ return selectedDates.size > 0 && ranges.length > 0; }
+    function hasPastSelectedDates(){
+      var list = Array.from(selectedDates);
+      for(var i = 0; i < list.length; i += 1){
+        if(list[i] < todayIso){
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function canEnable(){ return selectedDates.size > 0 && ranges.length > 0 && !hasPastSelectedDates(); }
     function refresh(){ saveBtn.disabled = !canEnable(); }
 
     function getCellState(td){
@@ -433,6 +449,10 @@
           return;
         }
         var day = Array.from(selectedDates)[0];
+        if(day < todayIso){
+          alert('No puedes habilitar disponibilidad en fechas pasadas.');
+          return;
+        }
         var data = new FormData();
         data.append('date', day);
         ranges.forEach(function(r){ data.append('ranges', r); });
@@ -489,6 +509,7 @@
       e.preventDefault();
       if(!selectedDates.size){ alert('Selecciona al menos un día del calendario.'); return false; }
       if(!ranges.length){ alert('Agrega al menos un horario con inicio y fin.'); return false; }
+      if(hasPastSelectedDates()){ alert('No puedes habilitar disponibilidad en fechas pasadas.'); return false; }
 
       var data = new FormData();
       Array.from(selectedDates).forEach(function(d){ data.append('dates', d); });

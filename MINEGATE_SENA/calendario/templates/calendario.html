@@ -37,6 +37,8 @@
                     <td class="occupied{% if day.is_today %} today{% endif %}" data-date="{{ day.date|date:'Y-m-d' }}" title="Día ocupado - Visita confirmada">{{ day.date.day }}</td>
                   {% elif daystr in fechas_pendientes %}
                     <td class="pending{% if day.is_today %} today{% endif %}" data-date="{{ day.date|date:'Y-m-d' }}" title="Pendiente por revisión">{{ day.date.day }}</td>
+                  {% elif day.is_past %}
+                    <td class="disabled" data-date="{{ day.date|date:'Y-m-d' }}" title="Fecha pasada">{{ day.date.day }}</td>
                   {% elif day.is_today %}
                     <td class="today{% if daystr in available_dates %} available{% else %} no-available{% endif %}" data-date="{{ day.date|date:'Y-m-d' }}">{{ day.date.day }}</td>
                   {% else %}
