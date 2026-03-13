@@ -96,6 +96,78 @@ def _serializar_documento_subido(ds, versiones_envio=1, es_reenvio=False):
     }
 
 
+def _calcular_estado_revision_asistente(asistente):
+    """Calcula estado agregado del asistente en función de sus últimos documentos."""
+    documentos_actuales = _documentos_subidos_actuales(asistente)
+    tiene_docs = bool(documentos_actuales)
+    tiene_rechazos = any(
+        doc_actual["ds"].estado == "rechazado" for doc_actual in documentos_actuales
+    )
+    todos_aprobados = tiene_docs and all(
+        doc_actual["ds"].estado == "aprobado" for doc_actual in documentos_actuales
+    )
+
+    tiene_autorizacion_padres = bool(
+        getattr(asistente, "formato_autorizacion_padres", None)
+    )
+    if tiene_autorizacion_padres:
+        estado_autorizacion = getattr(
+            asistente, "estado_autorizacion_padres", "pendiente"
+        )
+        if estado_autorizacion == "rechazado":
+            tiene_rechazos = True
+        elif estado_autorizacion != "aprobado":
+            todos_aprobados = False
+
+    if tiene_rechazos:
+        estado = "documentos_rechazados"
+    elif todos_aprobados and (tiene_docs or tiene_autorizacion_padres):
+        estado = "documentos_aprobados"
+    else:
+        estado = "pendiente_documentos"
+
+    return {
+        "estado": estado,
+        "tiene_rechazos": tiene_rechazos,
+        "todos_aprobados": todos_aprobados,
+    }
+
+
+def _sincronizar_estado_asistente(asistente, observacion_rechazo=""):
+    """Sincroniza el estado agregado del asistente con el estado real de sus documentos."""
+    revision = _calcular_estado_revision_asistente(asistente)
+    update_fields = []
+
+    if asistente.estado != revision["estado"]:
+        asistente.estado = revision["estado"]
+        update_fields.append("estado")
+
+    if revision["estado"] == "documentos_rechazados":
+        nueva_observacion = (observacion_rechazo or "").strip() or (
+            asistente.observaciones_revision or ""
+        )
+        if nueva_observacion and asistente.observaciones_revision != nueva_observacion:
+            asistente.observaciones_revision = nueva_observacion
+            update_fields.append("observaciones_revision")
+    elif asistente.observaciones_revision:
+        asistente.observaciones_revision = ""
+        update_fields.append("observaciones_revision")
+
+    if update_fields:
+        asistente.save(update_fields=update_fields)
+
+    return revision
+
+
+def _marcar_documentos_actuales(asistente, estado, observaciones=""):
+    """Marca la última versión de cada documento subido por el asistente."""
+    for doc_actual in _documentos_subidos_actuales(asistente):
+        ds = doc_actual["ds"]
+        ds.estado = estado
+        ds.observaciones_revision = observaciones if estado == "rechazado" else ""
+        ds.save(update_fields=["estado", "observaciones_revision"])
+
+
 def tiene_aprobacion_previa_coordinacion(visita, tipo):
     if tipo == "interna":
         return HistorialAccionVisitaInterna.objects.filter(
@@ -297,6 +369,8 @@ def api_detalle_visita(request, tipo, visita_id):
             "enviada_coordinacion",
         ]:
             for a in visita.asistentes.all():
+                documentos_actuales = _documentos_subidos_actuales(a)
+                revision = _calcular_estado_revision_asistente(a)
                 asistentes.append(
                     {
                         "id": a.id,
@@ -328,13 +402,15 @@ def api_detalle_visita(request, tipo, visita_id):
                             else None
                         ),
                         "observaciones_revision": a.observaciones_revision,
+                        "tiene_rechazos": revision["tiene_rechazos"],
+                        "todos_aprobados": revision["todos_aprobados"],
                         "documentos_subidos": [
                             _serializar_documento_subido(
                                 doc_actual["ds"],
                                 versiones_envio=doc_actual["versiones_envio"],
                                 es_reenvio=doc_actual["es_reenvio"],
                             )
-                            for doc_actual in _documentos_subidos_actuales(a)
+                            for doc_actual in documentos_actuales
                         ],
                     }
                 )
@@ -381,6 +457,8 @@ def api_detalle_visita(request, tipo, visita_id):
             "enviada_coordinacion",
         ]:
             for a in visita.asistentes.all():
+                documentos_actuales = _documentos_subidos_actuales(a)
+                revision = _calcular_estado_revision_asistente(a)
                 asistentes.append(
                     {
                         "id": a.id,
@@ -402,13 +480,15 @@ def api_detalle_visita(request, tipo, visita_id):
                             else None
                         ),
                         "observaciones_revision": a.observaciones_revision,
+                        "tiene_rechazos": revision["tiene_rechazos"],
+                        "todos_aprobados": revision["todos_aprobados"],
                         "documentos_subidos": [
                             _serializar_documento_subido(
                                 doc_actual["ds"],
                                 versiones_envio=doc_actual["versiones_envio"],
                                 es_reenvio=doc_actual["es_reenvio"],
                             )
-                            for doc_actual in _documentos_subidos_actuales(a)
+                            for doc_actual in documentos_actuales
                         ],
                     }
                 )
@@ -798,6 +878,44 @@ def api_accion_visita(request, tipo, visita_id, accion):
             }
         )
 
+    elif accion == "devolver_correccion":
+        if not es_administrador_panel(request.user):
+            return JsonResponse(
+                {"success": False, "error": "No autorizado para esta acción"},
+                status=403,
+            )
+
+        if visita.estado not in ["documentos_enviados", "en_revision_documentos"]:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "La visita debe estar en revisión de documentos para devolverla a corrección",
+                }
+            )
+
+        asistentes_rechazados = visita.asistentes.filter(
+            estado="documentos_rechazados"
+        ).count()
+        if asistentes_rechazados == 0:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "No hay aprendices con documentos rechazados para devolver a corrección.",
+                }
+            )
+
+        devolver_visita_a_agendador(visita)
+        registrar_accion(
+            "devolucion_correccion",
+            f"Visita devuelta a corrección por {request.user.username}. Aprendices con rechazo: {asistentes_rechazados}.",
+        )
+        return JsonResponse(
+            {
+                "success": True,
+                "message": f"⚠️ Se devolvió la visita al instructor para corregir y volver a subir documentos ({asistentes_rechazados} aprendiz(es) con rechazo).",
+            }
+        )
+
     return JsonResponse({"success": False, "error": "Acción no válida"})
 
 
@@ -826,14 +944,30 @@ def api_revisar_autorizacion_padres(request, tipo, asistente_id, accion):
 
     observaciones = request.POST.get("observaciones", "")
 
+    if asistente.estado_autorizacion_padres != "pendiente":
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "La autorización de padres ya fue revisada. Solo puede gestionar documentos en revisión.",
+            },
+            status=409,
+        )
+
     if accion == "aprobar":
         asistente.estado_autorizacion_padres = "aprobado"
         asistente.observaciones_autorizacion_padres = observaciones
-        asistente.save()
+        asistente.save(
+            update_fields=[
+                "estado_autorizacion_padres",
+                "observaciones_autorizacion_padres",
+            ]
+        )
+        revision = _sincronizar_estado_asistente(asistente)
         return JsonResponse(
             {
                 "success": True,
                 "message": f"✅ Autorización de padres aprobada para {asistente.nombre_completo}",
+                "nuevo_estado": revision["estado"],
             }
         )
     elif accion == "rechazar":
@@ -846,15 +980,21 @@ def api_revisar_autorizacion_padres(request, tipo, asistente_id, accion):
             )
         asistente.estado_autorizacion_padres = "rechazado"
         asistente.observaciones_autorizacion_padres = observaciones
-        asistente.estado = "documentos_rechazados"
-        asistente.observaciones_revision = (
-            f"Autorización de padres rechazada: {observaciones}"
+        asistente.save(
+            update_fields=[
+                "estado_autorizacion_padres",
+                "observaciones_autorizacion_padres",
+            ]
         )
-        asistente.save()
+        revision = _sincronizar_estado_asistente(
+            asistente,
+            observacion_rechazo=f"Autorización de padres rechazada: {observaciones}",
+        )
         return JsonResponse(
             {
                 "success": True,
                 "message": f"❌ Autorización de padres rechazada para {asistente.nombre_completo}. Queda pendiente de corrección.",
+                "nuevo_estado": revision["estado"],
             }
         )
 
@@ -880,8 +1020,19 @@ def api_revisar_documento_asistente(request, tipo, asistente_id, accion):
     if accion == "aprobar":
         documentos_actuales = _documentos_subidos_actuales(asistente)
 
+        if not documentos_actuales and not asistente.formato_autorizacion_padres:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "El asistente no tiene documentos cargados para aprobar.",
+                }
+            )
+
         # Restricción: No se puede aprobar masivamente si la última versión tiene rechazos
-        if any(doc_actual["ds"].estado == "rechazado" for doc_actual in documentos_actuales):
+        if any(
+            doc_actual["ds"].estado == "rechazado"
+            for doc_actual in documentos_actuales
+        ):
             return JsonResponse(
                 {
                     "success": False,
@@ -889,23 +1040,37 @@ def api_revisar_documento_asistente(request, tipo, asistente_id, accion):
                 }
             )
 
-        # Restricción: Debe haber al menos un documento aprobado individualmente
-        if not any(doc_actual["ds"].estado == "aprobado" for doc_actual in documentos_actuales):
+        if any(
+            doc_actual["ds"].estado != "aprobado"
+            for doc_actual in documentos_actuales
+        ):
             return JsonResponse(
                 {
                     "success": False,
-                    "error": "Debe revisar y aprobar al menos un documento individualmente antes de aprobar el resto.",
+                    "error": "Debe aprobar individualmente todos los documentos antes de la aprobación final del asistente.",
+                }
+            )
+
+        if (
+            asistente.formato_autorizacion_padres
+            and asistente.estado_autorizacion_padres != "aprobado"
+        ):
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Debe revisar y aprobar la autorización de padres antes de aprobar al asistente.",
                 }
             )
 
         asistente.estado = "documentos_aprobados"
-        asistente.observaciones_revision = observaciones
-        asistente.save()
+        asistente.observaciones_revision = ""
+        asistente.save(update_fields=["estado", "observaciones_revision"])
+        revision = _sincronizar_estado_asistente(asistente)
         return JsonResponse(
             {
                 "success": True,
                 "message": f"✅ Documentos de {asistente.nombre_completo} aprobados",
-                "nuevo_estado": "documentos_aprobados",
+                "nuevo_estado": revision["estado"],
             }
         )
 
@@ -917,14 +1082,40 @@ def api_revisar_documento_asistente(request, tipo, asistente_id, accion):
                     "error": "Debe proporcionar observaciones al rechazar",
                 }
             )
-        asistente.estado = "documentos_rechazados"
-        asistente.observaciones_revision = observaciones
-        asistente.save()
+
+        documentos_actuales = _documentos_subidos_actuales(asistente)
+        if not documentos_actuales and not asistente.formato_autorizacion_padres:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "El asistente no tiene documentos cargados para rechazar.",
+                }
+            )
+
+        _marcar_documentos_actuales(asistente, "rechazado", observaciones)
+
+        if (
+            asistente.formato_autorizacion_padres
+            and asistente.estado_autorizacion_padres != "aprobado"
+        ):
+            asistente.estado_autorizacion_padres = "rechazado"
+            asistente.observaciones_autorizacion_padres = observaciones
+            asistente.save(
+                update_fields=[
+                    "estado_autorizacion_padres",
+                    "observaciones_autorizacion_padres",
+                ]
+            )
+
+        revision = _sincronizar_estado_asistente(
+            asistente,
+            observacion_rechazo=observaciones,
+        )
         return JsonResponse(
             {
                 "success": True,
                 "message": f"❌ Documentos de {asistente.nombre_completo} rechazados. Queda pendiente de corrección.",
-                "nuevo_estado": "documentos_rechazados",
+                "nuevo_estado": revision["estado"],
             }
         )
 
@@ -1009,6 +1200,8 @@ def api_documentos_revision(request):
             else:
                 qs = qs.filter(estado=estado_asistente)
         for a in qs:
+            documentos_actuales = _documentos_subidos_actuales(a)
+            revision = _calcular_estado_revision_asistente(a)
             documentos_data.append(
                 {
                     "asistente_id": a.id,
@@ -1044,13 +1237,15 @@ def api_documentos_revision(request):
                         else None
                     ),
                     "observaciones_revision": a.observaciones_revision,
+                    "tiene_rechazos": revision["tiene_rechazos"],
+                    "todos_aprobados": revision["todos_aprobados"],
                     "documentos_subidos": [
                         _serializar_documento_subido(
                             doc_actual["ds"],
                             versiones_envio=doc_actual["versiones_envio"],
                             es_reenvio=doc_actual["es_reenvio"],
                         )
-                        for doc_actual in _documentos_subidos_actuales(a)
+                        for doc_actual in documentos_actuales
                     ],
                 }
             )
@@ -1064,6 +1259,8 @@ def api_documentos_revision(request):
             else:
                 qs = qs.filter(estado=estado_asistente)
         for a in qs:
+            documentos_actuales = _documentos_subidos_actuales(a)
+            revision = _calcular_estado_revision_asistente(a)
             documentos_data.append(
                 {
                     "asistente_id": a.id,
@@ -1089,13 +1286,15 @@ def api_documentos_revision(request):
                         a.documento_adicional.url if a.documento_adicional else None
                     ),
                     "observaciones_revision": a.observaciones_revision,
+                    "tiene_rechazos": revision["tiene_rechazos"],
+                    "todos_aprobados": revision["todos_aprobados"],
                     "documentos_subidos": [
                         _serializar_documento_subido(
                             doc_actual["ds"],
                             versiones_envio=doc_actual["versiones_envio"],
                             es_reenvio=doc_actual["es_reenvio"],
                         )
-                        for doc_actual in _documentos_subidos_actuales(a)
+                        for doc_actual in documentos_actuales
                     ],
                 }
             )

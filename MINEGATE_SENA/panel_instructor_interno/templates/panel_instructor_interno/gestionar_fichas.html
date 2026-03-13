@@ -131,11 +131,13 @@
       </tbody>
     </table>
   </div>
-  <div class="d-flex justify-content-between align-items-center">
-      <a href="{% url 'panel_instructor_interno:panel' %}" class="btn btn-outline-secondary">
-        <i class="fas fa-arrow-left me-2"></i>Volver al Panel
-      </a>
-  </div>
+  <section class="mt-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <a href="{% url 'panel_instructor_interno:panel' %}" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left me-2"></i>Volver al Panel
+        </a>
+    </div>
+  </section>  
   {% else %}
   <div class="empty-state">
     <i class="fas fa-id-badge d-block"></i>
@@ -144,11 +146,13 @@
       <i class="fas fa-plus me-2"></i>Crear primera ficha
     </button>
   </div>
-  <div class="d-flex justify-content-between align-items-center">
-      <a href="{% url 'panel_instructor_interno:panel' %}" class="btn btn-outline-secondary">
-        <i class="fas fa-arrow-left me-2"></i>Volver al Panel
-      </a>
-  </div>
+  <section class="mt-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <a href="{% url 'panel_instructor_interno:panel' %}" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left me-2"></i>Volver al Panel
+        </a>
+    </div>
+  </section>  
   {% endif %}
 </div>
 

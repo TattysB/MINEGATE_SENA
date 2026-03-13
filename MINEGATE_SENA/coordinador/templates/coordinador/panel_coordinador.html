@@ -212,13 +212,9 @@
         `Horario: ${visita.hora}`,
       ].join('\n');
 
-      if (typeof mAlert === 'function') {
-        mAlert(texto, 'info');
-      } else {
-        alert(texto);
-      }
+      abrirModalInfoVisita(texto);
     } catch (error) {
-      alert('No se pudo mostrar la información de la visita.');
+      mostrarToast('No se pudo mostrar la información de la visita.', 'error');
     }
   }
 
@@ -279,23 +275,30 @@
   }
 
   async function accionSolicitud(tipo, id, accion) {
-    let observaciones = '';
     if (accion === 'rechazar') {
-      observaciones = prompt('Motivo de rechazo (opcional):') || '';
+      abrirModalRechazo(tipo, id);
+      return;
     }
 
+    // Aprobar directamente
     const csrf = getCookie('csrftoken');
     const formData = new FormData();
-    formData.append('observaciones', observaciones);
+    formData.append('observaciones', '');
 
-    const res = await fetch(`/coordinador/api/solicitudes/${tipo}/${id}/${accion}/`, {
-      method: 'POST',
-      headers: csrf ? { 'X-CSRFToken': csrf } : {},
-      body: formData
-    });
+    let data;
+    try {
+      const res = await fetch(`/coordinador/api/solicitudes/${tipo}/${id}/aprobar/`, {
+        method: 'POST',
+        headers: csrf ? { 'X-CSRFToken': csrf } : {},
+        body: formData
+      });
+      data = await res.json();
+    } catch (e) {
+      mostrarToast('Error de conexión al intentar aprobar.', 'error');
+      return;
+    }
 
-    const data = await res.json();
-    alert(data.message || data.error || 'Operación realizada');
+    mostrarToast(data.message || data.error || 'Operación realizada', data.success ? 'success' : 'error');
     if (data.success) {
       recargarSolicitudes();
       loadCalendar();
@@ -338,5 +341,165 @@
       if (tryFind() || attempts > 20) clearInterval(interval);
     }, 500);
   })();
+
+  // ── Modal Rechazo / Reprogramación ──────────────────────────────
+  let _rechazoTipo = null;
+  let _rechazoId = null;
+
+  function abrirModalRechazo(tipo, id) {
+    _rechazoTipo = tipo;
+    _rechazoId = id;
+    document.getElementById('motivoRechazoInput').value = '';
+    document.getElementById('modalRechazo').style.display = 'flex';
+    document.getElementById('motivoRechazoInput').focus();
+  }
+
+  function cerrarModalRechazo() {
+    document.getElementById('modalRechazo').style.display = 'none';
+    _rechazoTipo = null;
+    _rechazoId = null;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const formRechazo = document.getElementById('formRechazo');
+    if (formRechazo) {
+      formRechazo.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const observaciones = document.getElementById('motivoRechazoInput').value.trim();
+        if (!observaciones) {
+          document.getElementById('motivoRechazoInput').focus();
+          return;
+        }
+
+        const csrf = getCookie('csrftoken');
+        const formData = new FormData();
+        formData.append('observaciones', observaciones);
+
+        let data;
+        try {
+          const res = await fetch(`/coordinador/api/solicitudes/${_rechazoTipo}/${_rechazoId}/rechazar/`, {
+            method: 'POST',
+            headers: csrf ? { 'X-CSRFToken': csrf } : {},
+            body: formData
+          });
+          data = await res.json();
+        } catch (err) {
+          mostrarToast('Error de conexión al intentar enviar a reprogramación.', 'error');
+          cerrarModalRechazo();
+          return;
+        }
+
+        cerrarModalRechazo();
+        mostrarToast(data.message || data.error || 'Operación realizada', data.success ? 'warning' : 'error');
+        if (data.success) {
+          recargarSolicitudes();
+          loadCalendar();
+        }
+      });
+    }
+
+    const modal = document.getElementById('modalRechazo');
+    const modalInfo = document.getElementById('modalInfoVisita');
+    if (modal) {
+      modal.addEventListener('click', (event) => {
+        if (event.target === modal) {
+          cerrarModalRechazo();
+        }
+      });
+    }
+    if (modalInfo) {
+      modalInfo.addEventListener('click', (event) => {
+        if (event.target === modalInfo) {
+          cerrarModalInfoVisita();
+        }
+      });
+    }
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && modal && modal.style.display === 'flex') {
+        cerrarModalRechazo();
+      }
+      if (event.key === 'Escape' && modalInfo && modalInfo.style.display === 'flex') {
+        cerrarModalInfoVisita();
+      }
+    });
+  });
+
+  // ── Toast ────────────────────────────────────────────────────────
+  function mostrarToast(mensaje, tipo) {
+    const toast = document.getElementById('toastCoord');
+    toast.textContent = mensaje;
+    toast.className = 'coord-toast coord-toast-' + (tipo || 'info');
+    toast.style.display = 'block';
+    clearTimeout(toast._hideTimer);
+    toast._hideTimer = setTimeout(() => { toast.style.display = 'none'; }, 4500);
+  }
+
+  function abrirModalInfoVisita(texto) {
+    const modal = document.getElementById('modalInfoVisita');
+    const contenido = document.getElementById('modalInfoVisitaContenido');
+    if (!modal || !contenido) {
+      mostrarToast(texto, 'info');
+      return;
+    }
+    contenido.textContent = texto;
+    modal.style.display = 'flex';
+  }
+
+  function cerrarModalInfoVisita() {
+    const modal = document.getElementById('modalInfoVisita');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  }
 </script>
+
+<!-- Modal: Motivo de rechazo / reprogramación -->
+<div id="modalRechazo" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:12px;padding:28px 24px;max-width:480px;width:calc(100% - 32px);box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+    <h3 style="margin:0 0 6px;color:#1f2937;font-size:1.1rem;">🔄 Enviar a reprogramación</h3>
+    <p style="margin:0 0 16px;font-size:13px;color:#6b7280;">El instructor deberá elegir una nueva fecha para la visita. Indica el motivo del rechazo.</p>
+    <form id="formRechazo">
+      <label for="motivoRechazoInput" style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">Motivo <span style="color:#ef4444;">*</span></label>
+      <textarea id="motivoRechazoInput" rows="4" required
+        placeholder="Ej: La fecha seleccionada no está disponible, conflicto con otra actividad..."
+        style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;resize:vertical;box-sizing:border-box;outline:none;"
+      ></textarea>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+        <button type="button" onclick="cerrarModalRechazo()"
+          style="padding:9px 18px;border:1px solid #d1d5db;background:#fff;color:#374151;border-radius:8px;cursor:pointer;font-weight:600;">
+          Cancelar
+        </button>
+        <button type="submit"
+          style="padding:9px 18px;border:none;background:#f59e0b;color:#fff;border-radius:8px;cursor:pointer;font-weight:600;">
+          🔄 Enviar a reprogramar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: información de la visita -->
+<div id="modalInfoVisita" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9998;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:12px;padding:22px;max-width:520px;width:calc(100% - 32px);box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <h3 style="margin:0;color:#1f2937;font-size:1.05rem;">Detalle de la visita</h3>
+      <button type="button" onclick="cerrarModalInfoVisita()" style="border:none;background:none;color:#6b7280;font-size:1.2rem;cursor:pointer;">&times;</button>
+    </div>
+    <pre id="modalInfoVisitaContenido" style="margin:0;white-space:pre-wrap;font-family:inherit;font-size:13px;color:#374151;line-height:1.5;"></pre>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px;">
+      <button type="button" onclick="cerrarModalInfoVisita()" style="padding:8px 16px;border:none;background:#3b82f6;color:#fff;border-radius:8px;cursor:pointer;">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast de notificación -->
+<div id="toastCoord" style="display:none;position:fixed;bottom:28px;right:28px;z-index:10000;padding:14px 20px;border-radius:10px;font-size:14px;font-weight:600;max-width:380px;box-shadow:0 4px 16px rgba(0,0,0,0.15);"></div>
+
+<style>
+  .coord-toast-success { background:#10b981; color:#fff; }
+  .coord-toast-error   { background:#ef4444; color:#fff; }
+  .coord-toast-warning { background:#f59e0b; color:#fff; }
+  .coord-toast-info    { background:#3b82f6; color:#fff; }
+</style>
 {% endblock %}

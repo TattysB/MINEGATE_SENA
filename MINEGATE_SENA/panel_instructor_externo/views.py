@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Q
 from django.db import transaction
-from visitaExterna.models import VisitaExterna
+from visitaExterna.models import HistorialReprogramacion, VisitaExterna
 from .forms import VisitaExternaInstructorForm
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
@@ -35,9 +35,17 @@ def construir_reporte_documental_visita(visita, tipo_visita):
     asistentes = visita.asistentes.prefetch_related("documentos_subidos__documento_requerido")
     for asistente in asistentes:
         incidencias = []
+        # Tomar solo la version vigente (ultima subida) por documento requerido.
+        latest_por_documento = {}
+        for ds in asistente.documentos_subidos.all():
+            doc_id = ds.documento_requerido_id
+            actual = latest_por_documento.get(doc_id)
+            if not actual or (ds.fecha_subida, ds.id) > (actual.fecha_subida, actual.id):
+                latest_por_documento[doc_id] = ds
+
         documentos_personales = [
             ds
-            for ds in asistente.documentos_subidos.all()
+            for ds in latest_por_documento.values()
             if ds.documento_requerido.categoria not in CATEGORIAS_ARCHIVOS_FINALES
         ]
 
@@ -57,6 +65,7 @@ def construir_reporte_documental_visita(visita, tipo_visita):
                 incidencias.append(
                     {
                         "tipo": "rechazado",
+                        "documento_subido_id": doc_subido.id,
                         "detalle": (
                             f"{doc_subido.documento_requerido.titulo}: "
                             f"{doc_subido.observaciones_revision or 'Documento mal diligenciado.'}"
@@ -81,6 +90,7 @@ def construir_reporte_documental_visita(visita, tipo_visita):
         if incidencias:
             asistentes_con_alertas.append(
                 {
+                    "id": asistente.id,
                     "nombre": asistente.nombre_completo,
                     "documento": f"{asistente.get_tipo_documento_display()} {asistente.numero_documento}",
                     "incidencias": incidencias,
@@ -280,6 +290,11 @@ def reservar_visita_externa(request):
 def detalle_visita_externa(request, pk):
     correo, _ = get_sesion_instructor(request)
     visita = get_object_or_404(VisitaExterna, pk=pk, correo_responsable__iexact=correo)
+    reprogramacion_pendiente = (
+        HistorialReprogramacion.objects.filter(visita_externa=visita, completada=False)
+        .order_by("-fecha_solicitud")
+        .first()
+    )
 
     # Obtener documentos disponibles para descargar, agrupados por categoría
     from documentos.models import Documento
@@ -304,5 +319,6 @@ def detalle_visita_externa(request, pk):
             "correo": correo,
             "documentos_por_categoria": documentos_por_categoria,
             "reporte_documental": reporte_documental,
+            "reprogramacion_pendiente": reprogramacion_pendiente,
         },
     )
