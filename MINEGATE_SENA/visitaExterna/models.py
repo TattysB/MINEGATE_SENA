@@ -6,13 +6,12 @@ import uuid
 
 class VisitaExterna(models.Model):
     ESTADO_CHOICES = [
-        ("pendiente", "Pendiente de revisión"),
-        ("enviada_coordinacion", "Enviada a coordinación"),
-        ("aprobada_inicial", "Aprobada - Registro de asistentes habilitado"),
-        ("documentos_enviados", "Documentos enviados - Pendiente revisión"),
-        ("en_revision_documentos", "En revisión de documentos"),
-        ("confirmada", "Visita Confirmada"),
+        ("pendiente", "Pendiente"),
+        ("aprobada_coord", "Aprobada por Coordinador"),
+        ("correccion_docs", "Requiere Corrección de Documentos"),
+        ("reprogramacion_solicitada", "Reprogramación Solicitada"),
         ("rechazada", "Rechazada"),
+        ("aprobada_final", "Aprobada Final"),
     ]
 
     id = models.AutoField(primary_key=True, verbose_name="ID")
@@ -249,3 +248,68 @@ class HistorialAccionVisitaExterna(models.Model):
     
     def __str__(self):
         return f"{self.get_tipo_accion_display()} - {self.visita} - {self.fecha_hora.strftime('%d/%m/%Y %H:%M')}"
+
+
+class HistorialReprogramacion(models.Model):
+    """
+    Registro de solicitudes de reprogramación de visitas externas.
+    Guarda historial cuando coordinador o administrador solicita cambio de fecha.
+    """
+    TIPO_CHOICES = [
+        ("coordinador", "Coordinador"),
+        ("administrador", "Administrador"),
+    ]
+
+    visita_externa = models.ForeignKey(
+        VisitaExterna,
+        on_delete=models.CASCADE,
+        related_name="reprogramaciones_externa",
+        verbose_name="Visita Externa",
+    )
+
+    fecha_anterior = models.DateTimeField(
+        verbose_name="Fecha y hora anterior de la visita"
+    )
+    
+    motivo = models.TextField(
+        verbose_name="Motivo de la reprogramación"
+    )
+    
+    solicitado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="reprogramaciones_externas_solicitadas",
+        verbose_name="Solicitado por",
+    )
+    
+    tipo = models.CharField(
+        max_length=15,
+        choices=TIPO_CHOICES,
+        verbose_name="Tipo de solicitud",
+    )
+    
+    completada = models.BooleanField(
+        default=False,
+        verbose_name="Reprogramación completada",
+    )
+    
+    fecha_reprogramacion = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Nueva fecha y hora de la visita",
+    )
+    
+    fecha_solicitud = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de solicitud",
+    )
+
+    class Meta:
+        verbose_name = "Historial de Reprogramación"
+        verbose_name_plural = "Históricos de Reprogramación"
+        ordering = ['-fecha_solicitud']
+        db_table = 'historial_reprogramacion_externa'
+
+    def __str__(self):
+        return f"Reprogramación {self.visita_externa} - {self.get_tipo_display()} - {self.fecha_solicitud.strftime('%d/%m/%Y')}"

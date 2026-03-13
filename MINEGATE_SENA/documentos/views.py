@@ -16,6 +16,53 @@ def devolver_visita_a_agendador(visita):
         visita.save(update_fields=["estado"])
 
 
+def _documentos_actuales_asistente(asistente):
+    """Retorna la última versión por documento para un asistente."""
+    docs = asistente.documentos_subidos.order_by(
+        "documento_requerido_id", "-fecha_subida", "-id"
+    )
+    latest_por_documento = {}
+    for ds in docs:
+        if ds.documento_requerido_id not in latest_por_documento:
+            latest_por_documento[ds.documento_requerido_id] = ds
+    return list(latest_por_documento.values())
+
+
+def _sincronizar_estado_asistente(asistente):
+    """Sincroniza estado agregado del asistente según sus documentos actuales."""
+    docs_actuales = _documentos_actuales_asistente(asistente)
+    tiene_rechazos = any(ds.estado == "rechazado" for ds in docs_actuales)
+    todos_aprobados = bool(docs_actuales) and all(
+        ds.estado == "aprobado" for ds in docs_actuales
+    )
+
+    if asistente.formato_autorizacion_padres:
+        if asistente.estado_autorizacion_padres == "rechazado":
+            tiene_rechazos = True
+        elif asistente.estado_autorizacion_padres != "aprobado":
+            todos_aprobados = False
+
+    nuevo_estado = "pendiente_documentos"
+    if tiene_rechazos:
+        nuevo_estado = "documentos_rechazados"
+    elif todos_aprobados:
+        nuevo_estado = "documentos_aprobados"
+
+    update_fields = []
+    if asistente.estado != nuevo_estado:
+        asistente.estado = nuevo_estado
+        update_fields.append("estado")
+
+    if nuevo_estado != "documentos_rechazados" and asistente.observaciones_revision:
+        asistente.observaciones_revision = ""
+        update_fields.append("observaciones_revision")
+
+    if update_fields:
+        asistente.save(update_fields=update_fields)
+
+    return nuevo_estado
+
+
 def registro_publico_asistentes(request, token, tipo):
     """
     Vista pública para registro de asistentes usando enlace único con token.
@@ -621,8 +668,27 @@ def revisar_documento_asistente_api(request, documento_subido_id):
             {"success": False, "error": "Estado no válido."}, status=400
         )
 
+    # Solo se permite revisar documentos que estén pendientes.
+    if doc.estado != "pendiente":
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "Este documento ya fue revisado. Solo puede gestionar documentos en revisión.",
+            },
+            status=409,
+        )
+
+    if estado == "rechazado" and not observaciones.strip():
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "Debe indicar observaciones para rechazar el documento.",
+            },
+            status=400,
+        )
+
     doc.estado = estado
-    doc.observaciones_revision = observaciones
+    doc.observaciones_revision = observaciones if estado == "rechazado" else ""
     doc.save()
 
     asistente = doc.asistente_interna or doc.asistente_externa
@@ -636,7 +702,12 @@ def revisar_documento_asistente_api(request, documento_subido_id):
                 if observaciones
                 else f"Documento '{doc.documento_requerido.titulo}' rechazado."
             )
-            asistente.save()
+            asistente.save(update_fields=["estado", "observaciones_revision"])
+
+    if asistente:
+        nuevo_estado_asistente = _sincronizar_estado_asistente(asistente)
+    else:
+        nuevo_estado_asistente = None
 
     return JsonResponse(
         {
@@ -647,6 +718,7 @@ def revisar_documento_asistente_api(request, documento_subido_id):
                 else "Documento rechazado. Queda pendiente de corrección."
             ),
             "nuevo_estado": estado,
+            "nuevo_estado_asistente": nuevo_estado_asistente,
         }
     )
 

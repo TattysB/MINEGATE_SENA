@@ -9,23 +9,432 @@
   <title>Aprendices - Ficha {{ ficha.numero }} - MINEGATE</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+  
+  <style>
+    :root {
+      --sena-verde: #39a900;
+      --sena-verde-oscuro: #2d8600;
+      --card-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      --card-radius: 16px;
+      --transition: all 0.25s ease;
+      --text-dark: #1a202c;
+      --text-muted: #6c757d;
+      --border-light: #f0f0f0;
+    }
+
+    body {
+      background: linear-gradient(135deg, #f8fafb 0%, #f3f4f6 100%);
+      min-height: 100vh;
+    }
+
+    .container {
+      padding-top: 2rem;
+      padding-bottom: 2rem;
+    }
+
+    .page-header {
+      margin-bottom: 2.5rem;
+    }
+
+    .page-header h2 {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--text-dark);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 0.5rem;
+    }
+
+    .page-header h2 i {
+      color: var(--sena-verde);
+      font-size: 2.2rem;
+    }
+
+    .page-header .mb-3 {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, var(--sena-verde) 0%, #4db820 100%);
+      border: none;
+      padding: 0.8rem 1.8rem;
+      font-weight: 600;
+      border-radius: 10px;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-success:hover {
+      background: linear-gradient(135deg, var(--sena-verde-oscuro) 0%, #3d9600 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(57, 169, 0, 0.3);
+      color: white;
+    }
+
+    .stats-section {
+      margin-bottom: 2.5rem;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: var(--card-radius);
+      padding: 1.5rem;
+      box-shadow: var(--card-shadow);
+      text-align: center;
+      transition: var(--transition);
+      border: 2px solid transparent;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 36px rgba(0,0,0,0.12);
+    }
+
+    .stat-card h3 {
+      font-size: 2rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+      color: var(--sena-verde);
+    }
+
+    .stat-card small {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+
+    .aprendiz-card {
+      background: white;
+      border-radius: var(--card-radius);
+      box-shadow: var(--card-shadow);
+      overflow: hidden;
+      transition: var(--transition);
+      border: 2px solid transparent;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .aprendiz-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+      border-color: var(--sena-verde);
+    }
+
+    .aprendiz-card-header {
+      background: linear-gradient(135deg, #f8fafb 0%, #f3f4f6 100%);
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .aprendiz-card-header .info h6 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-bottom: 0.3rem;
+    }
+
+    .aprendiz-card-header .info small {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    .aprendiz-card-header .badge {
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.8rem;
+      white-space: nowrap;
+    }
+
+    .badge.bg-success {
+      background: linear-gradient(135deg, #c3f0a0 0%, #86efac 100%) !important;
+      color: #16a34a;
+    }
+
+    .badge.bg-warning {
+      background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%) !important;
+      color: #b45309;
+    }
+
+    .badge.bg-danger {
+      background: linear-gradient(135deg, #fca5a5 0%, #f87171 100%) !important;
+      color: #991b1b;
+    }
+
+    .aprendiz-card-body {
+      padding: 1.5rem;
+      flex: 1;
+    }
+
+    .aprendiz-card-body p {
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+    }
+
+    .aprendiz-card-body i {
+      color: var(--sena-verde);
+      margin-right: 0.6rem;
+      width: 20px;
+      text-align: center;
+    }
+
+    .aprendiz-card-body a {
+      color: var(--sena-verde);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .aprendiz-card-body a:hover {
+      text-decoration: underline;
+    }
+
+    .documento-section {
+      margin: 1.2rem 0 0 0;
+      padding-top: 1.2rem;
+      border-top: 1px solid var(--border-light);
+    }
+
+    .documento-section small {
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.5px;
+    }
+
+    .documento-item {
+      margin-bottom: 1rem;
+      padding: 0.8rem;
+      background: #f8fafb;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      transition: var(--transition);
+    }
+
+    .documento-item:hover {
+      background: #f3f4f6;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .documento-badge {
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .documento-badge i {
+      margin-right: 0.3rem;
+    }
+
+    .documento-badge.bg-primary {
+      background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+      color: #1d4ed8;
+    }
+
+    .documento-badge.bg-info {
+      background: linear-gradient(135deg, #cffafe 0%, #a5f3fc 100%);
+      color: #0369a1;
+    }
+
+    .documento-badge.bg-secondary {
+      background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+      color: #374151;
+    }
+
+    .btn-group-doc {
+      display: flex;
+      gap: 0.4rem;
+      margin-left: auto;
+    }
+
+    .btn-group-doc .btn {
+      padding: 0.4rem 0.7rem;
+      font-size: 0.8rem;
+      border-radius: 6px;
+      border: none;
+      transition: var(--transition);
+    }
+
+    .btn-group-doc .btn-outline-secondary {
+      background: white;
+      color: var(--text-muted);
+      border: 1px solid #e5e7eb;
+    }
+
+    .btn-group-doc .btn-outline-secondary:hover {
+      background: var(--sena-verde);
+      color: white;
+      border-color: var(--sena-verde);
+    }
+
+    .aprendiz-card-footer {
+      background: #f8fafb;
+      padding: 1rem;
+      border-top: 1px solid var(--border-light);
+      display: flex;
+      gap: 0.8rem;
+    }
+
+    .aprendiz-card-footer a {
+      flex: 1;
+      padding: 0.7rem 1rem;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border: none;
+    }
+
+    .aprendiz-card-footer .btn-warning {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      color: white;
+    }
+
+    .aprendiz-card-footer .btn-warning:hover {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+
+    .aprendiz-card-footer .btn-danger {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+    }
+
+    .aprendiz-card-footer .btn-danger:hover {
+      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    }
+
+    .alert-info {
+      background: linear-gradient(135deg, #dbeafe 0%, #e0f2fe 100%);
+      border: 1px solid #bfdbfe;
+      border-radius: var(--card-radius);
+      color: #1e40af;
+      padding: 1.5rem;
+      font-weight: 500;
+    }
+
+    .alert-info i {
+      color: #1e40af;
+      margin-right: 0.5rem;
+    }
+
+    .alert-info .alert-link {
+      color: #1e40af;
+      font-weight: 700;
+      text-decoration: underline;
+    }
+
+    .btn-outline-secondary {
+      color: var(--text-muted);
+      border: 1px solid #e9ecef;
+      padding: 0.7rem 1.3rem;
+      font-weight: 600;
+      border-radius: 10px;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-outline-secondary:hover {
+      background: #f8fafb;
+      color: var(--text-dark);
+      border-color: #dee2e6;
+    }
+
+    .filter-section {
+      margin-bottom: 2rem;
+    }
+
+    .filter-section .form-select {
+      border-radius: 10px;
+      border: 1px solid #e9ecef;
+      padding: 0.7rem 1rem;
+      background: white;
+      font-weight: 500;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      transition: var(--transition);
+    }
+
+    .filter-section .form-select:hover {
+      border-color: var(--sena-verde);
+      box-shadow: 0 4px 12px rgba(57, 169, 0, 0.1);
+    }
+
+    .filter-section .form-select:focus {
+      border-color: var(--sena-verde);
+      box-shadow: 0 0 0 0.2rem rgba(57, 169, 0, 0.15);
+    }
+
+    .row {
+      margin-bottom: 1.5rem;
+    }
+
+    .row.mb-4 {
+      margin-bottom: 2rem;
+    }
+
+    .row.mb-3 {
+      margin-bottom: 1.5rem;
+    }
+
+    h4 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 1.5rem;
+    }
+
+    h4 i {
+      color: var(--sena-verde);
+    }
+  </style>
 </head>
 <body>
 <div class="container mt-4">
     <!-- Encabezado -->
-    <div class="row mb-4">
+    <div class="row mb-4 page-header">
         <div class="col-md-8">
             <h2 class="mb-1">
                 <i class="bi bi-people-fill"></i> Aprendices - Ficha {{ ficha.numero }}
             </h2>
-            <p class="text-muted mb-3">
+            <p class="mb-3">
                 <strong>{{ ficha.programa.nombre }}</strong> | Jornada: {{ ficha.get_jornada_display }}
             </p>
         </div>
         <div class="col-md-4 text-end">
             <a 
                 href="{% url 'panel_instructor_interno:crear_aprendiz' ficha.id %}" 
-                class="btn btn-success btn-lg"
+                class="btn btn-success"
             >
                 <i class="bi bi-person-plus"></i> Registrar Aprendiz
             </a>
@@ -33,43 +442,35 @@
     </div>
 
     <!-- Estadísticas -->
-    <div class="row mb-4">
+    <div class="row mb-4 stats-section">
         <div class="col-md-3">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h3 class="card-title mb-0">{{ stats.total }}</h3>
-                    <small class="text-muted">Total Aprendices</small>
-                </div>
+            <div class="stat-card">
+                <h3>{{ stats.total }}</h3>
+                <small>Total Aprendices</small>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-center border-success">
-                <div class="card-body">
-                    <h3 class="card-title text-success mb-0">{{ stats.activos }}</h3>
-                    <small class="text-muted">Activos</small>
-                </div>
+            <div class="stat-card">
+                <h3 style="color: #16a34a;">{{ stats.activos }}</h3>
+                <small>Activos</small>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-center border-warning">
-                <div class="card-body">
-                    <h3 class="card-title text-warning mb-0">{{ stats.inactivos }}</h3>
-                    <small class="text-muted">Inactivos</small>
-                </div>
+            <div class="stat-card">
+                <h3 style="color: #f59e0b;">{{ stats.inactivos }}</h3>
+                <small>Inactivos</small>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-center border-danger">
-                <div class="card-body">
-                    <h3 class="card-title text-danger mb-0">{{ stats.retirados }}</h3>
-                    <small class="text-muted">Retirados</small>
-                </div>
+            <div class="stat-card">
+                <h3 style="color: #ef4444;">{{ stats.retirados }}</h3>
+                <small>Retirados</small>
             </div>
         </div>
     </div>
 
     <!-- Filtro por estado -->
-    <div class="row mb-3">
+    <div class="row filter-section">
         <div class="col-md-6">
             <form method="GET">
                 <div class="input-group">
@@ -86,98 +487,97 @@
 
     <!-- Lista de aprendices -->
     {% if aprendices %}
-    <h4 class="mb-3"><i class="bi bi-people-fill"></i> Aprendices Registrados ({{ aprendices.count }})</h4>
+    <h4><i class="bi bi-people-fill"></i> Aprendices Registrados ({{ aprendices.count }})</h4>
     <div class="row">
         {% for aprendiz in aprendices %}
         <div class="col-md-6 mb-3">
-            <div class="card h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="mb-0">{{ aprendiz.get_nombre_completo }}</h6>
-                        <small class="text-muted">
+            <div class="aprendiz-card">
+                <div class="aprendiz-card-header">
+                    <div class="info">
+                        <h6>{{ aprendiz.get_nombre_completo }}</h6>
+                        <small>
                             {{ aprendiz.get_tipo_documento_display }}: {{ aprendiz.numero_documento }}
                         </small>
                     </div>
                     <div>
                         {% if aprendiz.estado == 'activo' %}
-                            <span class="badge bg-success">Activo</span>
+                            <span class="badge bg-success">✓ Activo</span>
                         {% elif aprendiz.estado == 'inactivo' %}
-                            <span class="badge bg-warning">Inactivo</span>
+                            <span class="badge bg-warning">⏸ Inactivo</span>
                         {% else %}
-                            <span class="badge bg-danger">Retirado</span>
+                            <span class="badge bg-danger">✕ Retirado</span>
                         {% endif %}
                     </div>
                 </div>
-                <div class="card-body">
+                <div class="aprendiz-card-body">
                     
-                    <p class="mb-2">
+                    <p>
                         <i class="bi bi-envelope"></i> 
                         <a href="mailto:{{ aprendiz.correo }}">{{ aprendiz.correo }}</a>
                     </p>
                     {% if aprendiz.telefono %}
-                        <p class="mb-2">
+                        <p>
                             <i class="bi bi-telephone"></i> {{ aprendiz.telefono }}
                         </p>
                     {% endif %}
                     
                     <!-- Documentos -->
                     {% if aprendiz.documento_identidad or aprendiz.documento_adicional or aprendiz.documentos_subidos.all %}
-                        <hr style="margin: 12px 0;">
-                        <small class="text-muted"><i class="bi bi-file-earmark-pdf"></i> <strong>Documentos:</strong></small>
-                        <div class="mt-2" style="font-size: 0.9rem;">
-                            {% if aprendiz.documento_identidad %}
-                                <div class="mb-2 d-flex align-items-center gap-2">
-                                    <span class="badge bg-primary" style="flex-shrink: 0;"><i class="bi bi-file-pdf"></i> Identidad</span>
-                                    <a href="{{ aprendiz.documento_identidad.url }}" download class="btn btn-sm btn-outline-primary py-0 px-2" title="Descargar">
-                                        <i class="bi bi-download"></i> Descargar
-                                    </a>
-                                </div>
-                            {% endif %}
-                            {% if aprendiz.documento_adicional %}
-                                <div class="mb-2 d-flex align-items-center gap-2">
-                                    <span class="badge bg-info" style="flex-shrink: 0;"><i class="bi bi-file-pdf"></i> Reporte</span>
-                                    <button type="button" onclick="verDocumento('{{ aprendiz.documento_adicional.url }}', 'Auto Reporte - {{ aprendiz.get_nombre_completo }}')" class="btn btn-sm btn-outline-info py-0 px-2" title="Ver documento">
-                                        <i class="bi bi-eye"></i> Ver
-                                    </button>
-                                    <a href="{{ aprendiz.documento_adicional.url }}" download class="btn btn-sm btn-outline-info py-0 px-2" title="Descargar">
-                                        <i class="bi bi-download"></i>
-                                    </a>
-                                </div>
-                            {% endif %}
-                            
-                            <!-- Documentos Subidos de Apoyo -->
-                            {% for doc_subido in aprendiz.documentos_subidos.all %}
-                                <div class="mb-2">
-                                    <div class="d-flex justify-content-between align-items-start gap-2">
-                                        <div style="flex: 1;">
-                                            <span class="badge bg-secondary me-2">
-                                                <i class="bi bi-file-earmark-arrow-up"></i> {{ doc_subido.documento_requerido.titulo }}
-                                            </span>
-                                        </div>
-                                        <div class="btn-group btn-group-sm gap-1" role="group">
-                                            <a href="{{ doc_subido.archivo.url }}" download class="btn btn-outline-secondary py-0 px-2" title="Descargar">
+                        <div class="documento-section">
+                            <small><i class="bi bi-file-earmark-pdf"></i> <strong>Documentos:</strong></small>
+                            <div class="mt-2">
+                                {% if aprendiz.documento_identidad %}
+                                    <div class="documento-item">
+                                        <span class="documento-badge bg-primary"><i class="bi bi-file-pdf"></i> Identidad</span>
+                                        <a href="{{ aprendiz.documento_identidad.url }}" download class="btn btn-group-doc" title="Descargar" style="flex: 1; margin-left: auto;">
+                                            <i class="bi bi-download"></i>
+                                        </a>
+                                    </div>
+                                {% endif %}
+                                {% if aprendiz.documento_adicional %}
+                                    <div class="documento-item">
+                                        <span class="documento-badge bg-info"><i class="bi bi-file-pdf"></i> Reporte</span>
+                                        <div class="btn-group-doc">
+                                            <button type="button" onclick="verDocumento('{{ aprendiz.documento_adicional.url }}', 'Auto Reporte - {{ aprendiz.get_nombre_completo }}')" class="btn btn-outline-secondary" title="Ver documento" style="padding: 0.4rem 0.7rem; font-size: 0.8rem;">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <a href="{{ aprendiz.documento_adicional.url }}" download class="btn btn-outline-secondary" title="Descargar" style="padding: 0.4rem 0.7rem; font-size: 0.8rem;">
                                                 <i class="bi bi-download"></i>
                                             </a>
-                                            <button type="button" onclick="verDocumento('{{ doc_subido.archivo.url }}', '{{ doc_subido.documento_requerido.titulo }} - {{ aprendiz.get_nombre_completo }}')" class="btn btn-outline-secondary py-0 px-2" title="Ver">
+                                        </div>
+                                    </div>
+                                {% endif %}
+                                
+                                <!-- Documentos Subidos de Apoyo -->
+                                {% for doc_subido in aprendiz.documentos_subidos.all %}
+                                    <div class="documento-item">
+                                        <span class="documento-badge bg-secondary">
+                                            <i class="bi bi-file-earmark-arrow-up"></i> {{ doc_subido.documento_requerido.titulo|truncatewords:2 }}
+                                        </span>
+                                        <div class="btn-group-doc">
+                                            <a href="{{ doc_subido.archivo.url }}" download class="btn btn-outline-secondary" title="Descargar" style="padding: 0.4rem 0.7rem; font-size: 0.8rem;">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                            <button type="button" onclick="verDocumento('{{ doc_subido.archivo.url }}', '{{ doc_subido.documento_requerido.titulo }} - {{ aprendiz.get_nombre_completo }}')" class="btn btn-outline-secondary" title="Ver" style="padding: 0.4rem 0.7rem; font-size: 0.8rem;">
                                                 <i class="bi bi-eye"></i>
                                             </button>
                                         </div>
                                     </div>
-                                </div>
-                            {% endfor %}
+                                {% endfor %}
+                            </div>
                         </div>
                     {% endif %}
                 </div>
-                <div class="card-footer bg-light d-flex gap-2">
+                <div class="aprendiz-card-footer">
                     <a 
                         href="{% url 'panel_instructor_interno:editar_aprendiz' aprendiz.id %}" 
-                        class="btn btn-sm btn-warning flex-grow-1"
+                        class="btn-warning"
                     >
                         <i class="bi bi-pencil"></i> Editar
                     </a>
                     <a 
                         href="{% url 'panel_instructor_interno:eliminar_aprendiz' aprendiz.id %}" 
-                        class="btn btn-sm btn-danger flex-grow-1"
+                        class="btn-danger"
                     >
                         <i class="bi bi-trash"></i> Eliminar
                     </a>

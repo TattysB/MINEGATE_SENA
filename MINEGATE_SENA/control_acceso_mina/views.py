@@ -11,6 +11,9 @@ from django.views.decorators.http import require_GET, require_POST
 from .models import RegistroAccesoMina
 
 
+ESTADOS_VISITA_CONFIRMADA = ['confirmada', 'aprobada_final']
+
+
 @login_required
 @require_POST
 def registrar_acceso(request):
@@ -221,7 +224,7 @@ def _obtener_visita_confirmada_hoy(tipo_visita, visita_id):
 
             visita = VisitaInterna.objects.filter(
                 id=visita_id,
-                estado='confirmada',
+                estado__in=ESTADOS_VISITA_CONFIRMADA,
                 fecha_visita=hoy,
             ).first()
 
@@ -247,7 +250,7 @@ def _obtener_visita_confirmada_hoy(tipo_visita, visita_id):
 
             visita = VisitaExterna.objects.filter(
                 id=visita_id,
-                estado='confirmada',
+                estado__in=ESTADOS_VISITA_CONFIRMADA,
                 fecha_visita=hoy,
             ).first()
 
@@ -285,7 +288,7 @@ def _buscar_asistente_en_visita(documento, tipo_visita, visita_id, qr_info=None)
                 numero_documento=documento,
                 estado='documentos_aprobados',
                 visita_id=visita_id,
-                visita__estado='confirmada',
+                visita__estado__in=ESTADOS_VISITA_CONFIRMADA,
                 visita__fecha_visita=timezone.localdate(),
             ).first()
 
@@ -307,7 +310,7 @@ def _buscar_asistente_en_visita(documento, tipo_visita, visita_id, qr_info=None)
                 numero_documento=documento,
                 estado='documentos_aprobados',
                 visita_id=visita_id,
-                visita__estado='confirmada',
+                visita__estado__in=ESTADOS_VISITA_CONFIRMADA,
                 visita__fecha_visita=timezone.localdate(),
             ).first()
 
@@ -434,7 +437,7 @@ def _obtener_visitas_hoy_data():
         from visitaInterna.models import VisitaInterna
 
         internas = VisitaInterna.objects.filter(
-            estado='confirmada',
+            estado__in=ESTADOS_VISITA_CONFIRMADA,
             fecha_visita=hoy,
         ).order_by('hora_inicio', 'id')
 
@@ -457,7 +460,7 @@ def _obtener_visitas_hoy_data():
         from visitaExterna.models import VisitaExterna
 
         externas = VisitaExterna.objects.filter(
-            estado='confirmada',
+            estado__in=ESTADOS_VISITA_CONFIRMADA,
             fecha_visita=hoy,
         ).order_by('hora_inicio', 'id')
 

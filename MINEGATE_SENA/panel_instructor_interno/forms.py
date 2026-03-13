@@ -146,10 +146,30 @@ class VisitaInternaInstructorForm(forms.ModelForm):
     Con validaciones exhaustivas para todos los campos.
     """
 
+    numero_ficha = forms.TypedChoiceField(
+        coerce=int,
+        choices=[],
+        empty_value=None,
+        label='Programa y ficha',
+        widget=forms.Select(
+            attrs={
+                'class': 'form-select',
+            }
+        ),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        fichas = Ficha.objects.filter(activa=True).select_related('programa').order_by('numero')
+
+        self.fields['numero_ficha'].choices = [('', 'Seleccione programa y ficha')] + [
+            (f.numero, f'{f.programa.nombre} - Ficha {f.numero}') for f in fichas
+        ]
+
     class Meta:
         model = VisitaInterna
         fields = [
-            'nombre_programa',
             'numero_ficha',
             'responsable',
             'tipo_documento_responsable',
@@ -163,16 +183,6 @@ class VisitaInternaInstructorForm(forms.ModelForm):
             'observaciones',
         ]
         widgets = {
-            'nombre_programa': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Nombre del programa de formación',
-                'maxlength': '200',
-            }),
-            'numero_ficha': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Número de ficha',
-                'min': '1',
-            }),
             'responsable': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Nombre completo del responsable',
@@ -200,7 +210,7 @@ class VisitaInternaInstructorForm(forms.ModelForm):
             }),
             'cantidad_aprendices': forms.NumberInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Cantidad de aprendices',
+                'placeholder': '0',
                 'min': '1',
                 'max': '1000',
             }),
@@ -221,23 +231,16 @@ class VisitaInternaInstructorForm(forms.ModelForm):
             }),
         }
     
-    def clean_nombre_programa(self):
-        """Validación de nombre del programa."""
-        nombre = self.cleaned_data.get('nombre_programa', '').strip()
-        if not nombre:
-            raise ValidationError('El nombre del programa es obligatorio.')
-        if len(nombre) < 3:
-            raise ValidationError('El nombre del programa debe tener al menos 3 caracteres.')
-        if len(nombre) > 200:
-            raise ValidationError('El nombre del programa no puede exceder 200 caracteres.')
-        return nombre
-    
     def clean_numero_ficha(self):
-        """Validación de número de ficha."""
+        """Validación de ficha existente."""
         numero = self.cleaned_data.get('numero_ficha')
         if numero is None or numero == '':
-            raise ValidationError('El número de ficha es obligatorio.')
-        return validar_numero_ficha(numero)
+            raise ValidationError('Debe seleccionar una ficha.')
+
+        if not Ficha.objects.filter(numero=numero, activa=True).exists():
+            raise ValidationError('La ficha seleccionada no es válida o está inactiva.')
+
+        return int(numero)
     
     def clean_responsable(self):
         """Validación de nombre del responsable (solo letras)."""
@@ -328,7 +331,7 @@ class FichaForm(forms.ModelForm):
         widgets = {
             'numero': forms.NumberInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Número de ficha',
+                'placeholder': '0',
                 'min': '1',
                 'max': '9999999999',
             }),
@@ -340,9 +343,9 @@ class FichaForm(forms.ModelForm):
             }),
             'cantidad_aprendices': forms.NumberInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Cantidad de aprendices',
+                'placeholder': '0',
                 'min': '0',
-                'max': '1000',
+                'max': '100',
             }),
             'activa': forms.CheckboxInput(attrs={
                 'class': 'form-check-input',
@@ -360,7 +363,18 @@ class FichaForm(forms.ModelForm):
         """Validación de cantidad."""
         cantidad = self.cleaned_data.get('cantidad_aprendices')
         if cantidad is not None and cantidad != '':
-            return validar_cantidad_minima(cantidad)
+            try:
+                cantidad = int(cantidad)
+            except (TypeError, ValueError):
+                raise ValidationError('La cantidad de aprendices debe ser un número entero válido.')
+
+            if cantidad < 0:
+                raise ValidationError('La cantidad de aprendices no puede ser negativa.')
+
+            if cantidad > 100:
+                raise ValidationError('La cantidad de aprendices por ficha no puede ser mayor a 100.')
+
+            return cantidad
         return 0
 
 

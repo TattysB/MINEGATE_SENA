@@ -4,12 +4,20 @@ from datetime import date
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
+from django.utils import timezone
 
 from calendario.models import ReservaHorario
-from visitaExterna.models import HistorialAccionVisitaExterna, VisitaExterna
-from visitaInterna.models import HistorialAccionVisitaInterna, VisitaInterna
+from visitaExterna.models import (
+	HistorialAccionVisitaExterna,
+	HistorialReprogramacion as HistorialReprogramacionExterna,
+	VisitaExterna,
+)
+from visitaInterna.models import (
+	HistorialAccionVisitaInterna,
+	HistorialReprogramacion as HistorialReprogramacionInterna,
+	VisitaInterna,
+)
 from .models import AprobacionRegistro
-from django.utils import timezone
 from django.contrib.auth.decorators import permission_required
 
 
@@ -309,15 +317,38 @@ def api_accion_coordinacion(request, tipo, visita_id, accion):
 
 	if accion == "rechazar":
 		observaciones = request.POST.get("observaciones", "").strip()
-		visita.estado = "rechazada"
+		fecha_anterior = timezone.now()
+		if getattr(visita, "fecha_visita", None) and getattr(visita, "hora_inicio", None):
+			fecha_anterior = timezone.datetime.combine(visita.fecha_visita, visita.hora_inicio)
+
+		if tipo == "interna":
+			HistorialReprogramacionInterna.objects.create(
+				visita_interna=visita,
+				fecha_anterior=fecha_anterior,
+				motivo=observaciones or "Reprogramación solicitada por coordinación.",
+				solicitado_por=request.user,
+				tipo="coordinador",
+				completada=False,
+			)
+		else:
+			HistorialReprogramacionExterna.objects.create(
+				visita_externa=visita,
+				fecha_anterior=fecha_anterior,
+				motivo=observaciones or "Reprogramación solicitada por coordinación.",
+				solicitado_por=request.user,
+				tipo="coordinador",
+				completada=False,
+			)
+
+		visita.estado = "reprogramacion_solicitada"
 		visita.save(update_fields=["estado"])
 		ReservaHorario.liberar_reserva(visita, tipo)
 		registrar(
-			f"Solicitud rechazada por coordinación ({request.user.username}). Motivo: {observaciones}"
+			f"Solicitud enviada a reprogramación por coordinación ({request.user.username}). Motivo: {observaciones}"
 			if observaciones
-			else f"Solicitud rechazada por coordinación ({request.user.username})."
+			else f"Solicitud enviada a reprogramación por coordinación ({request.user.username})."
 		)
-		return JsonResponse({"success": True, "message": "❌ Solicitud rechazada por coordinación."})
+		return JsonResponse({"success": True, "message": "🔄 Solicitud enviada a reprogramación. El instructor deberá elegir una nueva fecha."})
 
 
 @login_required(login_url="usuarios:login")

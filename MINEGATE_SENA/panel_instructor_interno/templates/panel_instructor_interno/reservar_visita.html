@@ -199,27 +199,12 @@
     </div>
   {% endif %}
 
-  <!-- Fichas disponibles: Helper rápido -->
-  {% if fichas %}
-  <div class="helper-box">
-    <strong><i class="fas fa-lightbulb me-2"></i>Fichas disponibles</strong><br>
-    Puedes usar una de las fichas ya registradas:
-    <div class="mt-2 d-flex flex-wrap gap-2">
-      {% for ficha in fichas|slice:":8" %}
-        <button type="button" class="btn btn-sm btn-outline-success"
-          onclick="document.getElementById('id_numero_ficha').value='{{ ficha.numero }}'; document.getElementById('id_nombre_programa').value='{{ ficha.programa.nombre }}';">
-          <i class="fas fa-tag me-1"></i>{{ ficha.numero }} — {{ ficha.programa.nombre }}
-        </button>
-      {% endfor %}
-      {% if fichas|length > 8 %}<span class="text-muted small align-self-center">y más...</span>{% endif %}
-    </div>
-  </div>
-  {% else %}
+  {% if not fichas %}
   <div class="alert alert-warning">
     <i class="fas fa-exclamation-triangle me-2"></i>
-    No hay fichas registradas aún.
-    <a href="{% url 'panel_instructor_interno:crear_ficha' %}" class="alert-link">Crea una ficha</a> antes de reservar la visita,
-    o ingresa los datos manualmente en el formulario.
+    Para reservar una visita debes seleccionar una ficha existente (incluye su programa).
+    <a href="{% url 'panel_instructor_interno:crear_ficha' %}" class="alert-link">Crea una ficha</a>
+    antes de continuar.
   </div>
   {% endif %}
 
@@ -250,20 +235,15 @@
       </div>
     </div>
 
-    <!-- Datos del Programa -->
+    <!-- Datos de la Ficha -->
     <div class="form-card">
       <div class="form-card-header">
-        <i class="fas fa-graduation-cap"></i>Datos del Programa de Formación
+        <i class="fas fa-graduation-cap"></i>Datos de la Ficha
       </div>
       <div class="form-card-body">
         <div class="row g-3">
           <div class="col-md-8">
-            <label for="id_nombre_programa">Nombre del Programa <span class="text-danger">*</span></label>
-            {{ form.nombre_programa }}
-            {% if form.nombre_programa.errors %}<div class="text-danger small mt-1">{{ form.nombre_programa.errors.0 }}</div>{% endif %}
-          </div>
-          <div class="col-md-4">
-            <label for="id_numero_ficha">Número de Ficha <span class="text-danger">*</span></label>
+            <label for="id_numero_ficha">Programa y Ficha <span class="text-danger">*</span></label>
             {{ form.numero_ficha }}
             {% if form.numero_ficha.errors %}<div class="text-danger small mt-1">{{ form.numero_ficha.errors.0 }}</div>{% endif %}
           </div>
@@ -327,7 +307,7 @@
       <a href="{% url 'panel_instructor_interno:panel' %}" class="btn btn-outline-secondary">
         <i class="fas fa-arrow-left me-2"></i>Volver al Panel
       </a>
-      <button type="submit" class="btn-submit btn" id="btnEnviar">
+      <button type="submit" class="btn-submit btn" id="btnEnviar" {% if not fichas %}disabled{% endif %}>
         <i class="fas fa-paper-plane me-2"></i>Enviar Solicitud
       </button>
     </div>
@@ -339,7 +319,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const container = document.getElementById('calendarioContainer');
   let selectedDate = null;
   let selectedHorario = null;
-  
+
   // Cargar calendario inicial
   loadCalendario();
   

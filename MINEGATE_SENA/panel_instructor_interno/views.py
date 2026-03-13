@@ -14,7 +14,7 @@ from django.conf import settings
 from calendario.models import ReservaHorario
 
 from django.http import JsonResponse
-from visitaInterna.models import VisitaInterna, AsistenteVisitaInterna
+from visitaInterna.models import HistorialReprogramacion, VisitaInterna, AsistenteVisitaInterna
 from .models import Ficha, Programa, Aprendiz
 from .forms import VisitaInternaInstructorForm, ProgramaForm, FichaForm, AprendizForm
 from documentos.models import Documento, DocumentoSubidoAsistente
@@ -26,6 +26,29 @@ CATEGORIAS_ARCHIVOS_FINALES = [
     "Formato Inducción y Reinducción",
     "Charla de Seguridad y Calestenia",
 ]
+
+
+def _normalizar_categoria_texto(value):
+    return (
+        str(value or "")
+        .lower()
+        .replace("á", "a")
+        .replace("é", "e")
+        .replace("í", "i")
+        .replace("ó", "o")
+        .replace("ú", "u")
+    )
+
+
+def _es_categoria_archivo_final(categoria):
+    cat = _normalizar_categoria_texto(categoria)
+    if "ats" in cat:
+        return True
+    if "induccion y reinduccion" in cat:
+        return True
+    return "charla de seguridad" in cat and (
+        "calestenia" in cat or "calistenia" in cat
+    )
 
 
 def construir_reporte_documental_visita(visita, tipo_visita):
@@ -43,10 +66,18 @@ def construir_reporte_documental_visita(visita, tipo_visita):
     asistentes = visita.asistentes.prefetch_related("documentos_subidos__documento_requerido")
     for asistente in asistentes:
         incidencias = []
+        # Tomar solo la version vigente (ultima subida) por documento requerido.
+        latest_por_documento = {}
+        for ds in asistente.documentos_subidos.all():
+            doc_id = ds.documento_requerido_id
+            actual = latest_por_documento.get(doc_id)
+            if not actual or (ds.fecha_subida, ds.id) > (actual.fecha_subida, actual.id):
+                latest_por_documento[doc_id] = ds
+
         documentos_personales = [
             ds
-            for ds in asistente.documentos_subidos.all()
-            if ds.documento_requerido.categoria not in CATEGORIAS_ARCHIVOS_FINALES
+            for ds in latest_por_documento.values()
+            if not _es_categoria_archivo_final(ds.documento_requerido.categoria)
         ]
 
         documentos_salud = [
@@ -65,6 +96,7 @@ def construir_reporte_documental_visita(visita, tipo_visita):
                 incidencias.append(
                     {
                         "tipo": "rechazado",
+                        "documento_subido_id": doc_subido.id,
                         "detalle": (
                             f"{doc_subido.documento_requerido.titulo}: "
                             f"{doc_subido.observaciones_revision or 'Documento mal diligenciado.'}"
@@ -89,6 +121,7 @@ def construir_reporte_documental_visita(visita, tipo_visita):
         if incidencias:
             asistentes_con_alertas.append(
                 {
+                    "id": asistente.id,
                     "nombre": asistente.nombre_completo,
                     "documento": f"{asistente.get_tipo_documento_display()} {asistente.numero_documento}",
                     "incidencias": incidencias,
@@ -134,6 +167,9 @@ def construir_reporte_documental_visita(visita, tipo_visita):
     archivos_finales_con_alerta = [
         a for a in archivos_finales_estado if a["estado"] in ["faltante", "rechazado"]
     ]
+    archivos_finales_rechazados = [
+        a for a in archivos_finales_estado if a["estado"] == "rechazado"
+    ]
     total_incidencias_asistentes = sum(
         len(item["incidencias"]) for item in asistentes_con_alertas
     )
@@ -142,6 +178,7 @@ def construir_reporte_documental_visita(visita, tipo_visita):
         "asistentes_con_alertas": asistentes_con_alertas,
         "archivos_finales_estado": archivos_finales_estado,
         "archivos_finales_con_alerta": archivos_finales_con_alerta,
+        "archivos_finales_rechazados": archivos_finales_rechazados,
         "total_alertas": total_incidencias_asistentes + len(archivos_finales_con_alerta),
         "hay_alertas": bool(asistentes_con_alertas or archivos_finales_con_alerta),
     }
@@ -223,7 +260,29 @@ def reservar_visita_interna(request):
     if request.method == "POST":
         form = VisitaInternaInstructorForm(request.POST)
         if form.is_valid():
+            numero_ficha = form.cleaned_data.get("numero_ficha")
+            ficha = (
+                Ficha.objects.select_related("programa")
+                .filter(numero=numero_ficha, activa=True, programa__activo=True)
+                .first()
+            )
+
+            if not ficha:
+                form.add_error(
+                    "numero_ficha",
+                    "La ficha seleccionada no es válida o está inactiva.",
+                )
+                context = {
+                    "form": form,
+                    "fichas": Ficha.objects.filter(activa=True).select_related("programa"),
+                    "correo": correo,
+                    "titulo": "Reservar Visita Interna",
+                }
+                return render(request, "panel_instructor_interno/reservar_visita.html", context)
+
             visita = form.save(commit=False)
+            visita.nombre_programa = ficha.programa.nombre
+            visita.numero_ficha = ficha.numero
             visita.correo_responsable = correo
             visita.documento_responsable = documento
             visita.estado = "enviada_coordinacion"
@@ -312,11 +371,9 @@ def reservar_visita_interna(request):
             }
         )
     fichas = Ficha.objects.filter(activa=True).select_related("programa")
-    programas = Programa.objects.filter(activo=True)
     context = {
         "form": form,
         "fichas": fichas,
-        "programas": programas,
         "correo": correo,
         "titulo": "Reservar Visita Interna",
     }
@@ -351,6 +408,11 @@ def mis_visitas_internas(request):
 def detalle_visita_interna(request, pk):
     correo, _ = get_sesion_instructor(request)
     visita = get_object_or_404(VisitaInterna, pk=pk, correo_responsable__iexact=correo)
+    reprogramacion_pendiente = (
+        HistorialReprogramacion.objects.filter(visita_interna=visita, completada=False)
+        .order_by("-fecha_solicitud")
+        .first()
+    )
 
     # Obtener documentos disponibles para descargar, agrupados por categoría
     from documentos.models import Documento
@@ -375,6 +437,7 @@ def detalle_visita_interna(request, pk):
             "correo": correo,
             "documentos_por_categoria": documentos_por_categoria,
             "reporte_documental": reporte_documental,
+            "reprogramacion_pendiente": reprogramacion_pendiente,
         },
     )
 
