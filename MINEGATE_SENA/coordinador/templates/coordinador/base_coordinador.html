@@ -10,12 +10,14 @@
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="{% static 'core/css/nuevos_estilos.css' %}?v=16" />
+  <link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}?v=20260311d" />
+  <link rel="stylesheet" href="{% static 'css/configuracion_perfil.css' %}?v=20260312a" />
   <link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}" />
   <link rel="stylesheet" href="{% static 'calendario/css/calendario_seleccion.css' %}" />
   <link rel="stylesheet" href="{% static 'core/css/user_dropdown.css' %}" />
   {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body class="coordinador-page">
   <div class="app-container">
     <button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle menu">
       <i class="ri-menu-line"></i>
@@ -34,17 +36,21 @@
           </div>
         </div>
       </div>
-      <div class="topbar-center">
-        <div class="search-container">
-          <i class="ri-search-line search-icon"></i>
-          <input type="text" placeholder="Buscar módulos, usuarios, docur..." class="search-input">
-        </div>
-      </div>
       <div class="topbar-right">
         <div class="topbar-actions">
           <div class="notification-wrapper">
-            <i class="ri-notification-3-line notification-icon"></i>
-            <span class="notification-badge">3</span>
+            <i class="ri-notification-3-line notification-icon" aria-hidden="true"></i>
+            <span class="notification-badge" id="coordNotifBadge" style="display:none" aria-live="polite" aria-atomic="true">0</span>
+          </div>
+          <!-- Dropdown de notificaciones -->
+          <div class="coord-notif-dropdown" id="coordNotifDropdown" style="position:relative;">
+            <div id="coordNotifList" class="notif-list" style="display:none;position:absolute;right:0;top:36px;background:#fff;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.12);width:320px;z-index:1200;padding:8px;">
+              <div style="padding:8px 12px;border-bottom:1px solid #eee;font-weight:700;">Solicitudes pendientes</div>
+              <div id="coordNotifItems" style="max-height:280px;overflow:auto;"></div>
+              <div style="padding:8px;text-align:center;border-top:1px solid #eee;background:#fafafa;">
+                <a href="{% url 'coordinador:panel' %}" style="text-decoration:none;color:#1f7f55;">Ver todas</a>
+              </div>
+            </div>
           </div>
           <div class="topbar-user-profile">
             <div class="user-profile-dropdown">
@@ -56,6 +62,7 @@
                     <img src="{% static 'core/img/usuario.png' %}" alt="Foto de perfil" class="profile-img-topbar" />
                   {% endif %}
                 </div>
+                <span class="topbar-role-label">{{ panel_role_label|default:'Coordinador' }}</span>
               </button>
               <div class="user-dropdown-menu" id="userDropdownMenu">
                 <div class="user-dropdown-header">
@@ -108,7 +115,33 @@
   <script defer src="{% static 'core/js/Funcionalidades.js' %}"></script>
   <script defer src="{% static 'calendario/js/panel_calendario_loader.js' %}"></script>
   <script>
-    function abrirModalCerrarSesion(e){ e.preventDefault(); const modal=document.getElementById('modalCerrarSesion'); if(modal) modal.style.display='flex'; }
+    function abrirModalCerrarSesion(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      const mensaje = '¿Estás seguro de que deseas cerrar sesión?<br><br><small style="color: #6b7280;">Se cerrará tu sesión actual y deberás iniciar sesión nuevamente para acceder.</small>';
+
+      if (typeof window.mConfirm === 'function') {
+        window.mConfirm(mensaje, {
+          title: 'Cerrar Sesión',
+          confirmText: 'Sí, Cerrar Sesión',
+          confirmClass: 'cm-btn-success',
+          confirmIcon: 'fas fa-right-from-bracket'
+        }).then(function (resultado) {
+          if (resultado) {
+            window.location.href = "{% url 'usuarios:logout' %}";
+          }
+        });
+        return;
+      }
+
+      const modal = document.getElementById('modalCerrarSesion');
+      if (modal) {
+        modal.style.display = 'flex';
+      }
+    }
   </script>
   {% block extra_js %}{% endblock %}
   <!-- Modal Cerrar Sesión -->
@@ -237,6 +270,7 @@
   </div>
 
   <script src="{% static 'accessibility/js/accessibility.js' %}?v=1.1"></script>
+  <script src="{% static 'core/js/custom_modal.js' %}?v=20260311d"></script>
 
   <script>
     // Funciones comunes para modales y perfil (copiadas de la plantilla administrativa)
@@ -378,6 +412,95 @@
         });
       }
     });
+  </script>
+  <script>
+    // Poll coordinator solicitudes and update notification badge
+    function updateCoordinatorBadge() {
+      fetch('/coordinador/api/solicitudes/?tipo=todas&buscar=')
+        .then(r => {
+          if (!r.ok) throw new Error('network');
+          return r.json();
+        })
+        .then(data => {
+          const visitas = Array.isArray(data.visitas) ? data.visitas : [];
+          const count = visitas.length;
+          const badge = document.getElementById('coordNotifBadge');
+          if (!badge) return;
+          if (count > 0) {
+            badge.textContent = count;
+            badge.style.display = 'inline-block';
+          } else {
+            badge.style.display = 'none';
+          }
+        })
+        .catch(() => {});
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      updateCoordinatorBadge();
+      // actualizar cada 30 segundos
+      setInterval(updateCoordinatorBadge, 30000);
+    });
+  </script>
+  <script>
+    // Dropdown interactions for coordinator notifications
+    (function () {
+      function buildItem(v) {
+        const tipoLabel = v.tipo_display || (v.tipo === 'interna' ? 'Interna' : 'Externa');
+        const div = document.createElement('div');
+        div.style.padding = '8px 12px';
+        div.style.borderBottom = '1px solid #f1f1f1';
+        div.style.cursor = 'pointer';
+        div.innerHTML = `<div style="font-weight:600;color:#1f2937;">${tipoLabel} • #${v.id}</div><div style="font-size:13px;color:#6b7280;">${(v.responsable||'Sin responsable')}</div>`;
+        div.addEventListener('click', function () {
+          // nav to panel and request the specific item
+          const tipo = v.tipo === 'interna' ? 'internas' : 'externas';
+          window.location.href = `/coordinador/panel/?tipo=${encodeURIComponent(tipo)}&id=${encodeURIComponent(v.id)}`;
+        });
+        return div;
+      }
+
+      document.addEventListener('click', function (e) {
+        const badge = document.getElementById('coordNotifBadge');
+        const list = document.getElementById('coordNotifList');
+        const items = document.getElementById('coordNotifItems');
+        const notifWrapper = document.querySelector('.notification-wrapper');
+        if (!notifWrapper || !badge || !list || !items) return;
+
+        // Click on bell toggles dropdown
+        notifWrapper.addEventListener('click', function (ev) {
+          ev.stopPropagation();
+          if (list.style.display === 'none' || list.style.display === '') {
+            // populate
+            items.innerHTML = '<div style="padding:12px;text-align:center;color:#6b7280;">Cargando...</div>';
+            fetch('/coordinador/api/solicitudes/?tipo=todas&buscar=')
+              .then(r => r.json())
+              .then(data => {
+                const visitas = Array.isArray(data.visitas) ? data.visitas.slice(0,5) : [];
+                items.innerHTML = '';
+                if (!visitas.length) {
+                  items.innerHTML = '<div style="padding:12px;text-align:center;color:#6b7280;">No hay solicitudes pendientes.</div>';
+                } else {
+                  visitas.forEach(v => items.appendChild(buildItem(v)));
+                }
+                list.style.display = 'block';
+              })
+              .catch(() => {
+                items.innerHTML = '<div style="padding:12px;text-align:center;color:#b91c1c;">Error al cargar.</div>';
+                list.style.display = 'block';
+              });
+          } else {
+            list.style.display = 'none';
+          }
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function () {
+          const l = document.getElementById('coordNotifList');
+          if (l) l.style.display = 'none';
+        });
+      });
+    })();
   </script>
 </body>
 </html>

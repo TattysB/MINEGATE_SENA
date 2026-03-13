@@ -86,6 +86,7 @@
 
     <!-- Lista de aprendices -->
     {% if aprendices %}
+    <h4 class="mb-3"><i class="bi bi-people-fill"></i> Aprendices Registrados ({{ aprendices.count }})</h4>
     <div class="row">
         {% for aprendiz in aprendices %}
         <div class="col-md-6 mb-3">
@@ -108,6 +109,7 @@
                     </div>
                 </div>
                 <div class="card-body">
+                    
                     <p class="mb-2">
                         <i class="bi bi-envelope"></i> 
                         <a href="mailto:{{ aprendiz.correo }}">{{ aprendiz.correo }}</a>
@@ -119,29 +121,50 @@
                     {% endif %}
                     
                     <!-- Documentos -->
-                    {% if aprendiz.documento_identidad or aprendiz.documento_adicional %}
-                        <hr>
+                    {% if aprendiz.documento_identidad or aprendiz.documento_adicional or aprendiz.documentos_subidos.all %}
+                        <hr style="margin: 12px 0;">
                         <small class="text-muted"><i class="bi bi-file-earmark-pdf"></i> <strong>Documentos:</strong></small>
-                        <div class="mt-2">
+                        <div class="mt-2" style="font-size: 0.9rem;">
                             {% if aprendiz.documento_identidad %}
-                                <div class="mb-2">
-                                    <span class="badge bg-primary me-2"><i class="bi bi-file-pdf"></i> Identidad</span>
-                                    <a href="{{ aprendiz.documento_identidad.url }}" download class="btn btn-sm btn-outline-primary" title="Descargar">
+                                <div class="mb-2 d-flex align-items-center gap-2">
+                                    <span class="badge bg-primary" style="flex-shrink: 0;"><i class="bi bi-file-pdf"></i> Identidad</span>
+                                    <a href="{{ aprendiz.documento_identidad.url }}" download class="btn btn-sm btn-outline-primary py-0 px-2" title="Descargar">
                                         <i class="bi bi-download"></i> Descargar
                                     </a>
                                 </div>
                             {% endif %}
                             {% if aprendiz.documento_adicional %}
-                                <div class="mb-0">
-                                    <span class="badge bg-success me-2"><i class="bi bi-file-pdf"></i> Auto Reporte Salud</span>
-                                    <button type="button" onclick="verDocumento('{{ aprendiz.documento_adicional.url }}', 'Auto Reporte - {{ aprendiz.get_nombre_completo }}')" class="btn btn-sm btn-outline-success" title="Ver documento">
+                                <div class="mb-2 d-flex align-items-center gap-2">
+                                    <span class="badge bg-info" style="flex-shrink: 0;"><i class="bi bi-file-pdf"></i> Reporte</span>
+                                    <button type="button" onclick="verDocumento('{{ aprendiz.documento_adicional.url }}', 'Auto Reporte - {{ aprendiz.get_nombre_completo }}')" class="btn btn-sm btn-outline-info py-0 px-2" title="Ver documento">
                                         <i class="bi bi-eye"></i> Ver
                                     </button>
-                                    <a href="{{ aprendiz.documento_adicional.url }}" download class="btn btn-sm btn-outline-success" title="Descargar">
-                                        <i class="bi bi-download"></i> Descargar
+                                    <a href="{{ aprendiz.documento_adicional.url }}" download class="btn btn-sm btn-outline-info py-0 px-2" title="Descargar">
+                                        <i class="bi bi-download"></i>
                                     </a>
                                 </div>
                             {% endif %}
+                            
+                            <!-- Documentos Subidos de Apoyo -->
+                            {% for doc_subido in aprendiz.documentos_subidos.all %}
+                                <div class="mb-2">
+                                    <div class="d-flex justify-content-between align-items-start gap-2">
+                                        <div style="flex: 1;">
+                                            <span class="badge bg-secondary me-2">
+                                                <i class="bi bi-file-earmark-arrow-up"></i> {{ doc_subido.documento_requerido.titulo }}
+                                            </span>
+                                        </div>
+                                        <div class="btn-group btn-group-sm gap-1" role="group">
+                                            <a href="{{ doc_subido.archivo.url }}" download class="btn btn-outline-secondary py-0 px-2" title="Descargar">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                            <button type="button" onclick="verDocumento('{{ doc_subido.archivo.url }}', '{{ doc_subido.documento_requerido.titulo }} - {{ aprendiz.get_nombre_completo }}')" class="btn btn-outline-secondary py-0 px-2" title="Ver">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
                         </div>
                     {% endif %}
                 </div>

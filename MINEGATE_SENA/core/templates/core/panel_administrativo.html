@@ -1,4 +1,5 @@
 {% load static %}
+{% load accesibility_tags %}
 <!doctype html>
 <html lang="es">
 
@@ -10,7 +11,7 @@
   <title>MineGate</title>
 
   <!-- ESTILOS ANTIGUOS (Comentados para pruebas) -->
-  <link rel="stylesheet" href="{% static 'core/css/nuevos_estilos.css' %}?v=17" />
+  <link rel="stylesheet" href="{% static 'core/css/nuevos_estilos.css' %}?v=19" />
   <!-- Estilos del Dropdown de Usuario -->
   <link rel="stylesheet" href="{% static 'core/css/user_dropdown.css' %}" />
   <link rel="stylesheet" href="{% static 'css/configuracion_perfil.css' %}" />
@@ -25,11 +26,12 @@
   <link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}" />
   <link rel="stylesheet" href="{% static 'core/css/gestion_pagina_informativa.css' %}?v=20260305e" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css" />
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
   <script src="{% static 'core/js/custom_modal.js' %}" defer></script>
   <script src="{% static 'documentos/js/gestion_documentos.js' %}" defer></script>
 </head>
 
-<body>
+<body class="admin-page">
   <div class="app-container">
     <!-- Hamburger Button -->
     <button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle menu">
@@ -52,13 +54,6 @@
         </div>
       </div>
 
-      <div class="topbar-center">
-        <div class="search-container">
-          <i class="ri-search-line search-icon"></i>
-          <input type="text" placeholder="Buscar módulos, usuarios, docur..." class="search-input">
-        </div>
-      </div>
-
       <div class="topbar-right">
         <div class="topbar-actions">
           <div class="notification-wrapper">
@@ -69,7 +64,10 @@
             <div class="user-profile-dropdown">
               <button class="user-profile-btn" id="userDropdownBtn" aria-label="User menu">
                 <div class="user-profile-photo-container">
-                  {% if perfil and perfil.foto_perfil %}
+                  {% if perfil_panel and perfil_panel.foto_perfil %}
+                  <img src="{{ perfil_panel.foto_perfil.url }}" alt="Foto de perfil" id="userProfileImg"
+                    class="profile-img-topbar" />
+                  {% elif perfil and perfil.foto_perfil %}
                   <img src="{{ perfil.foto_perfil.url }}" alt="Foto de perfil" id="userProfileImg"
                     class="profile-img-topbar" />
                   {% else %}
@@ -77,6 +75,7 @@
                     class="profile-img-topbar" />
                   {% endif %}
                 </div>
+                <span class="topbar-role-label">{{ panel_role_label|default:'Administrador' }}</span>
               </button>
 
               <!-- desplegable Menu -->
@@ -117,7 +116,7 @@
       <ul>
         {% if solo_coordinador %}
         <li data-content="gestionvisitas">
-          <a href="{% url 'coordinador:panel' %}" class="sidebar-link">
+          <a href="{% url 'coordinador:panel' %}" class="sidebar-link" title="Accede a la gestión de visitas coordinadas">
             <i class="ri-calendar-check-line icon-visit-management"></i>
             <span>Gestión de Visitas</span>
           </a>
@@ -130,61 +129,54 @@
         </li>
         {% else %}
         <li data-content="Panel_principal" class="{% if seccion_activa == 'panel_principal' %}active{% endif %}">
-          <a href="{% url 'core:panel_administrativo_seccion' 'panel_principal' %}" class="sidebar-link">
+          <a href="{% url 'core:panel_administrativo_seccion' 'panel_principal' %}" class="sidebar-link" title="Vista general del sistema y estadísticas principales">
             <i class="ri-dashboard-line icon-dashboard"></i><span>Panel principal</span>
           </a>
         </li>
         <li data-content="calendario" class="{% if seccion_activa == 'gestion_calendario' %}active{% endif %}">
-          <a href="{% url 'core:panel_administrativo_seccion' 'gestion_calendario' %}" class="sidebar-link">
+          <a href="{% url 'core:panel_administrativo_seccion' 'gestion_calendario' %}" class="sidebar-link" title="Gestiona fechas disponibles y disponibilidad">
             <i class="ri-calendar-line icon-calendar"></i>
             <span>Calendario</span>
           </a>
         </li>
 
         <li data-content="gestionvisitas" style="position:relative;" class="{% if seccion_activa == 'gestion_visitas' %}active{% endif %}">
-          <a href="{% url 'core:panel_administrativo_seccion' 'gestion_visitas' %}" class="sidebar-link">
+          <a href="{% url 'core:panel_administrativo_seccion' 'gestion_visitas' %}" class="sidebar-link" title="Administra visitas internas y externas">
             <i class="ri-calendar-check-line icon-visit-management"></i><span>Gestión de Visitas</span>
           </a>
           <span id="sidebarBadgeDocs"
             style="display:none;position:absolute;top:6px;right:10px;background:#ef4444;color:white;border-radius:50%;min-width:20px;height:20px;font-size:11px;font-weight:700;line-height:20px;text-align:center;padding:0 4px;animation:pulseBadge 2s ease-in-out infinite;"></span>
         </li>
         <li data-content="documentos" class="{% if seccion_activa == 'gestion_documentos' %}active{% endif %}">
-          <a href="{% url 'core:panel_administrativo_seccion' 'gestion_documentos' %}" class="sidebar-link">
+          <a href="{% url 'core:panel_administrativo_seccion' 'gestion_documentos' %}" class="sidebar-link" title="Sube y gestiona documentos importantes">
             <i class="ri-file-search-line icon-documents"></i><span> Documentos</span>
           </a>
         </li>
-        <li data-content="Escaneo" class="{% if seccion_activa == 'escaneo_documentos' %}active{% endif %}">
-          <a href="{% url 'core:panel_administrativo_seccion' 'escaneo_documentos' %}" class="sidebar-link">
-            <i class="ri-qr-scan-line icon-scan"></i><span>Escanear Documentos</span>
+        <li data-content="controlacceso" class="{% if seccion_activa == 'control_acceso' %}active{% endif %}">
+          <a href="{% url 'core:panel_administrativo_seccion' 'control_acceso' %}" class="sidebar-link" title="Controla el acceso a la mina en tiempo real">
+            <i class="ri-shield-check-line"></i><span>Control de Acceso</span>
           </a>
         </li>
-
         <li data-content="PaginaInformativa" class="{% if seccion_activa == 'gestion_pagina_informativa' %}active{% endif %}">
-          <a href="{% url 'core:panel_administrativo_seccion' 'gestion_pagina_informativa' %}" class="sidebar-link">
+          <a href="{% url 'core:panel_administrativo_seccion' 'gestion_pagina_informativa' %}" class="sidebar-link" title="Edita el contenido de la página informativa">
             <i class="ri-gallery-line icon-documents"></i><span>Página Informativa</span>
           </a>
         </li>
 
         {% if es_superusuario %}
         <li data-content="GestionPermisos" id="sidebarGestionPermisos"
-          data-url="{% url 'usuarios:gestionar_permisos' %}">
+          data-url="{% url 'usuarios:gestionar_permisos' %}" title="Asigna permisos y roles de usuario">
           <i class="ri-shield-user-line icon-permissions"></i><span>Gestión de Permisos</span>
         </li>
         {% endif %}
-
-        <li data-content="Configuracion" class="{% if seccion_activa == 'configuracion' %}active{% endif %}">
-          <a href="{% url 'core:panel_administrativo_seccion' 'configuracion' %}" class="sidebar-link">
-            <i class="ri-settings-3-line icon-settings"></i><span>Configuración</span>
-          </a>
-        </li>
         <li data-content="Reportes" class="{% if seccion_activa == 'reportes' %}active{% endif %}">
-          <a href="{% url 'core:panel_administrativo_seccion' 'reportes' %}" class="sidebar-link">
+          <a href="{% url 'core:panel_administrativo_seccion' 'reportes' %}" class="sidebar-link" title="Visualiza reportes y análisis del sistema">
             <i class="ri-bar-chart-line icon-reports"></i><span>Reportes</span>
           </a>
         </li>
         {% endif %}
       </ul>
-      <button id="logout" class="logout-button" onclick="abrirModalCerrarSesion(event)">
+      <button id="logout" class="logout-button" onclick="abrirModalCerrarSesion(event)" title="Cierra tu sesión actual">
         <li data-content="cerrar">
           <i class="ri-logout-box-r-line icon-logout"></i><span>Cerrar Sesión</span>
         </li>
@@ -232,7 +224,9 @@
 
         <div class="modal-body-perfil">
           <div class="perfil-avatar-container">
-            {% if perfil and perfil.foto_perfil %}
+            {% if perfil_panel and perfil_panel.foto_perfil %}
+            <img src="{{ perfil_panel.foto_perfil.url }}" alt="Foto de perfil" class="perfil-avatar" />
+            {% elif perfil and perfil.foto_perfil %}
             <img src="{{ perfil.foto_perfil.url }}" alt="Foto de perfil" class="perfil-avatar" />
             {% else %}
             <img src="{% static 'core/img/usuario.png' %}" alt="Foto de perfil" class="perfil-avatar" />
@@ -312,6 +306,8 @@
           }
         });
       </script>
+      {% elif seccion_activa == 'control_acceso' %}
+      {% include 'control_acceso_mina/panel_porteria.html' %}
       {% elif seccion_activa == 'escaneo_documentos' %}
       <div class="contenido-temporal">
         <h2>Escanear Documentos</h2>
@@ -402,9 +398,26 @@
     function abrirModalCerrarSesion(event) {
       event.preventDefault();
       event.stopPropagation();
-      const modal = document.getElementById("modalCerrarSesion");
-      if (modal) {
-        modal.style.display = "flex";
+      
+      const mensaje = '¿Estás seguro de que deseas cerrar sesión?<br><br><small style="color: #6b7280;">Se cerrará tu sesión actual y deberás iniciar sesión nuevamente para acceder.</small>';
+      
+      if (typeof window.mConfirm === 'function') {
+        window.mConfirm(mensaje, {
+          title: 'Cerrar Sesión',
+          confirmText: 'Sí, Cerrar Sesión',
+          confirmClass: 'cm-btn-success',
+          confirmIcon: 'fas fa-right-from-bracket'
+        }).then(function(resultado) {
+          if (resultado) {
+            window.location.href = "{% url 'usuarios:logout' %}";
+          }
+        });
+      } else {
+        // Fallback: usar modal antiguo si mConfirm no está disponible
+        const modal = document.getElementById("modalCerrarSesion");
+        if (modal) {
+          modal.style.display = "flex";
+        }
       }
     }
 
@@ -718,8 +731,8 @@
   </script>
   {% if not solo_coordinador %}
   <script defer src="{% static 'calendario/js/panel_calendario_nueva_visita.js' %}"></script>
-  <script defer src="{% static 'documentos/js/panel_documentos_visitas.js' %}?v=20260309-noapi"></script>
-  <script defer src="{% static 'js/panel_visitas.js' %}?v=20260309-noapi"></script>
+  <script defer src="{% static 'documentos/js/panel_documentos_visitas.js' %}?v=20260311-correccion"></script>
+  <script defer src="{% static 'js/panel_visitas.js' %}?v=20260311-correccion"></script>
   {% endif %}
 
   <!-- Modal Personalizado de Alertas/Confirmaciones -->
@@ -738,52 +751,7 @@
 
 
   <!-- Elementos de accesibilidad -->
-  <div class="minegate-acc-trigger" onclick="toggleAccPanel()" title="Opciones de Accesibilidad">
-    <i class="fas fa-universal-access fa-2x"></i>
-  </div>
-
-  <div id="accPanel" class="acc-widget-panel" style="display: none; max-height: 80vh; overflow-y: auto">
-    <h5 class="text-dark">Herramientas de Accesibilidad</h5>
-    <div class="acc-btn-group">
-      <button class="acc-opt" onclick="handleTextToSpeech()">
-        <span>Escuchar texto</span>
-        <i class="fas fa-volume-up"></i>
-      </button>
-      <button class="acc-opt" onclick="adjustFont(1)">
-        <span>Aumentar letra</span>
-        <i class="fas fa-plus"></i>
-      </button>
-      <button class="acc-opt" onclick="adjustFont(-1)">
-        <span>Disminuir letra</span>
-        <i class="fas fa-minus"></i>
-      </button>
-      <button class="acc-opt" onclick="toggleFeature('extra-spacing')">
-        <span>Espacio entre letras</span>
-        <i class="fas fa-arrows-alt-h"></i>
-      </button>
-      <button class="acc-opt" onclick="handleContrast()">
-        <span>Alto contraste</span>
-        <i class="fas fa-adjust"></i>
-      </button>
-      <button class="acc-opt" onclick="toggleFeature('underline-links')">
-        <span>Subrayar enlaces</span>
-        <i class="fas fa-link"></i>
-      </button>
-      <button class="acc-opt" onclick="toggleFeature('big-cursor')">
-        <span>Cursor grande</span>
-        <i class="fas fa-mouse-pointer"></i>
-      </button>
-      <button class="acc-opt" onclick="toggleReadingGuide()">
-        <span>Guía de lectura</span>
-        <i class="fas fa-grip-lines"></i>
-      </button>
-      <button class="acc-opt bg-danger text-white" onclick="resetAll()">
-        <span>Restablecer</span>
-        <i class="fas fa-sync-alt"></i>
-      </button>
-    </div>
-  </div>
-
+  {% accessibility_widget %}
 
   <script src="{% static 'accessibility/js/accessibility.js' %}?v=1.1"></script>
 

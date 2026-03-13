@@ -13,6 +13,8 @@
 <style>
   :root { --sena-verde: #39a900; --sena-verde-oscuro: #2d8600; }
 
+  body { padding-top: 0 !important; margin-top: 0 !important; }
+
   .page-header { background: linear-gradient(135deg, #1a5c00, var(--sena-verde)); color: white; padding: 2rem 0; }
   .page-header h2 { font-weight: 800; }
   .breadcrumb-nav a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.85rem; }
@@ -50,6 +52,8 @@
   .btn-registrar:hover { background:var(--sena-verde-oscuro); color:white; transform:translateY(-1px); }
   .btn-enviar { background:#6366f1; color:white; border:none; padding:10px 22px; border-radius:50px; font-weight:700; font-size:0.9rem; text-decoration:none; display:inline-flex; align-items:center; gap:7px; transition:all 0.2s; }
   .btn-enviar:hover { background:#4f46e5; color:white; }
+  .btn-actualizar-asi { background:transparent; color:#2563eb; border:1px solid #2563eb; padding:4px 12px; border-radius:50px; font-size:0.78rem; font-weight:600; text-decoration:none; transition:all 0.2s; }
+  .btn-actualizar-asi:hover { background:#dbeafe; color:#1d4ed8; }
   .btn-eliminar-asi { background:transparent; color:#ef4444; border:1px solid #ef4444; padding:4px 12px; border-radius:50px; font-size:0.78rem; font-weight:600; text-decoration:none; transition:all 0.2s; }
   .btn-eliminar-asi:hover { background:#fee2e2; color:#991b1b; }
   .progress-wrap { background:#e9ecef; border-radius:50px; height:12px; overflow:hidden; margin:0.5rem 0; }
@@ -59,6 +63,33 @@
   .estado-aprobada { background:#d1fae5; color:#065f46; padding:4px 12px; border-radius:50px; font-size:0.8rem; font-weight:700; }
   .info-box-aprobada { background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:1rem 1.3rem; font-size:0.88rem; color:#166534; }
   .info-box-enviado { background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; padding:1rem 1.3rem; font-size:0.88rem; color:#1e40af; }
+
+  .doc-resumen-box { background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:1rem 1.2rem; margin-bottom:1rem; color:#92400e; }
+  .doc-ok-box { background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:1rem 1.2rem; margin-bottom:1rem; color:#166534; }
+  .doc-issue-item { background:#f9fafb; border:1px solid #e5e7eb; border-radius:10px; padding:0.9rem 1rem; margin-bottom:0.7rem; }
+  .doc-issue-title { font-weight:700; font-size:0.9rem; color:#111827; margin-bottom:0.4rem; }
+  .doc-issue-sub { color:#6b7280; font-size:0.78rem; display:block; margin-top:0.1rem; }
+  .doc-issue-line { display:flex; align-items:flex-start; gap:8px; margin-top:6px; }
+  .estado-pill-mini { font-size:0.68rem; font-weight:700; border-radius:999px; padding:3px 8px; white-space:nowrap; display:inline-block; }
+  .estado-pill-mini.faltante { background:#fee2e2; color:#991b1b; }
+  .estado-pill-mini.rechazado { background:#fecaca; color:#7f1d1d; }
+  .estado-pill-mini.pendiente { background:#fef3c7; color:#92400e; }
+  .estado-pill-mini.aprobado { background:#d1fae5; color:#065f46; }
+  .final-doc-item { margin-bottom: 10px; padding: 10px; border: 1px solid #d7dee7; border-radius: 10px; background: #ffffff; box-shadow: 0 3px 8px rgba(15, 23, 42, 0.04); }
+  .final-doc-head { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .final-doc-icon { width:34px; height:34px; border-radius:9px; background:#eef9e8; color:#228B22; display:flex; align-items:center; justify-content:center; font-size:0.9rem; }
+  .final-doc-title { font-weight: 800; color: #1f2937; margin:0; font-size: 0.94rem; line-height:1.2; }
+  .final-doc-subtitle { margin:2px 0 0; color:#6b7280; font-size:0.8rem; }
+  .final-doc-input { display: block; margin-top: 4px; padding: 7px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%; background:#fff; }
+  .final-cat-card { border: 1px solid #c7dfb3; border-radius: 12px; background: #fff; overflow: hidden; margin-bottom: 14px; }
+  .final-cat-top { display:flex; align-items:center; gap:10px; background: #edf6e7; padding: 10px 12px; border-bottom: 1px solid #d8e9cb; }
+  .final-cat-top-icon { width:44px; height:44px; border-radius: 12px; background: #3faa08; color:#fff; display:flex; align-items:center; justify-content:center; box-shadow: 0 8px 14px rgba(63,170,8,0.24); font-size: 1rem; }
+  .final-cat-top-title { margin:0; font-size: 1.05rem; font-weight: 800; color: #0f172a; line-height: 1.1; }
+  .final-cat-top-sub { margin:3px 0 0; color:#5b677a; font-size:0.76rem; font-weight:600; }
+  .final-cat-body { padding: 10px; background: #f8fafc; }
+  .final-modal-title { color: #145a32; margin: 0 0 8px; display:flex; align-items:center; gap:10px; font-size: 2.2rem; font-weight: 800; letter-spacing: 0.2px; line-height: 1.1; }
+  .final-modal-title-icon { width:48px; height:48px; border-radius:12px; display:inline-flex; align-items:center; justify-content:center; background: linear-gradient(135deg, #39a900, #2d8600); color:#fff; box-shadow: 0 8px 16px rgba(57, 169, 0, 0.28); font-size: 1.25rem; }
+  .final-modal-subtitle { color: #4b5563; margin: 0 0 16px; font-size: 0.95rem; font-weight: 500; }
 </style>
 </head>
 <body>
@@ -150,6 +181,120 @@
     </div>
   </div>
 
+  <!-- ===== DETALLES DE LA VISITA ===== -->
+  <div class="detail-card">
+    <div class="detail-card-header azul"><i class="fas fa-calendar-check"></i>Detalles de la Visita</div>
+    <div class="detail-card-body">
+      <div class="info-grid">
+        <div class="info-item">
+          <label>Fecha de la visita</label>
+          <span>{% if visita.fecha_visita %}{{ visita.fecha_visita|date:"d M Y" }}{% else %}Por definir{% endif %}</span>
+        </div>
+        <div class="info-item">
+          <label>Horario programado</label>
+          <span>
+            {% if visita.hora_inicio and visita.hora_fin %}
+              {{ visita.hora_inicio|time:"h:i A" }} - {{ visita.hora_fin|time:"h:i A" }}
+            {% elif visita.hora_inicio %}
+              Desde {{ visita.hora_inicio|time:"h:i A" }}
+            {% else %}
+              Por definir
+            {% endif %}
+          </span>
+        </div>
+        <div class="info-item">
+          <label>Estado actual</label>
+          <span>{{ visita.get_estado_display }}</span>
+        </div>
+        <div class="info-item">
+          <label>Cantidad de aprendices</label>
+          <span>{{ visita.cantidad_aprendices }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if visita.estado == 'documentos_enviados' or visita.estado == 'en_revision_documentos' or visita.estado == 'confirmada' %}
+  <!-- ===== REPORTE DE DILIGENCIAMIENTO DOCUMENTAL ===== -->
+  <div class="detail-card">
+    <div class="detail-card-header {% if reporte_documental.hay_alertas %}morado{% else %}verde{% endif %}">
+      <i class="fas fa-file-circle-check"></i>Reporte de Diligenciamiento
+      <span class="ms-auto" style="font-size:0.8rem; color:#6b7280; font-weight:600;">
+        {% if reporte_documental.hay_alertas %}{{ reporte_documental.total_alertas }} novedad(es){% else %}Sin novedades{% endif %}
+      </span>
+    </div>
+    <div class="detail-card-body">
+      {% if reporte_documental.hay_alertas %}
+        <div class="doc-resumen-box">
+          <i class="fas fa-triangle-exclamation me-2"></i>
+          Hay archivos con inconsistencias, faltantes o rechazo. Revise el detalle por persona y por archivos finales.
+        </div>
+
+        {% if visita.estado != 'confirmada' and visita.asistentes.count > 0 %}
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <button type="button" onclick="abrirModalArchivosFinales(true)" class="btn-registrar" style="background: linear-gradient(135deg, #eae1b2 0%, #fff177 100%); color: #333; border: none; cursor: pointer;">
+            <i class="fas fa-upload"></i> Corregir / subir archivo final
+          </button>
+          <a href="{% url 'panel_visitante:registrar_asistentes' tipo='interna' visita_id=visita.id %}" class="btn-registrar">
+            <i class="fas fa-eye"></i> Ver registro completo
+          </a>
+        </div>
+        {% endif %}
+
+        {% if reporte_documental.asistentes_con_alertas %}
+          <h6 style="font-weight:800; color:#111827; margin-bottom:10px;">Novedades por asistente</h6>
+          {% for asistente_alerta in reporte_documental.asistentes_con_alertas %}
+            <div class="doc-issue-item">
+              <div class="doc-issue-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
+                <div>
+                  <i class="fas fa-user me-2" style="color:#6b21a8;"></i>{{ asistente_alerta.nombre }}
+                  <span class="doc-issue-sub">{{ asistente_alerta.documento }}</span>
+                </div>
+                {% for incidencia in asistente_alerta.incidencias %}
+                  {% if incidencia.tipo == 'rechazado' %}
+                    <button type="button" class="btn" style="padding:4px 8px; font-size:0.75rem; background:#ef4444; color:white; border:none; border-radius:4px; cursor:pointer;" onclick="abrirModalSubirPorAsistente('{{ asistente_alerta.nombre }}', '{{ asistente_alerta.id }}', '{{ incidencia.detalle }}')">
+                      <i class="fas fa-upload me-1"></i>Subir corrección
+                    </button>
+                  {% endif %}
+                {% endfor %}
+              </div>
+              {% for incidencia in asistente_alerta.incidencias %}
+                <div class="doc-issue-line">
+                  <span class="estado-pill-mini {% if incidencia.tipo == 'faltante' %}faltante{% else %}rechazado{% endif %}">
+                    {% if incidencia.tipo == 'faltante' %}FALTANTE{% else %}RECHAZADO{% endif %}
+                  </span>
+                  <span style="font-size:0.82rem; color:#374151;">{{ incidencia.detalle }}</span>
+                </div>
+              {% endfor %}
+            </div>
+          {% endfor %}
+        {% endif %}
+
+        <h6 style="font-weight:800; color:#111827; margin:14px 0 10px;">Estado de archivos finales</h6>
+        {% for archivo in reporte_documental.archivos_finales_estado %}
+          <div class="doc-issue-item" style="margin-bottom:8px;">
+            <div class="doc-issue-line" style="justify-content:space-between; flex-wrap:wrap; gap:10px; margin-top:0;">
+              <div>
+                <strong style="font-size:0.86rem; color:#1f2937;">{{ archivo.titulo }}</strong>
+                <span class="doc-issue-sub">{{ archivo.categoria }}</span>
+              </div>
+              <span class="estado-pill-mini {{ archivo.estado }}">
+                {% if archivo.estado == 'faltante' %}FALTANTE{% elif archivo.estado == 'rechazado' %}RECHAZADO{% elif archivo.estado == 'pendiente' %}EN REVISIÓN{% else %}APROBADO{% endif %}
+              </span>
+            </div>
+            <div style="font-size:0.82rem; color:#4b5563; margin-top:6px;">{{ archivo.detalle }}</div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="doc-ok-box">
+          <i class="fas fa-circle-check me-2"></i>
+          Todos los documentos cargados en esta visita se encuentran completos y sin observaciones de rechazo.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
   <!-- ===== SECCIÓN REGISTRO DE APRENDICES (visible solo cuando corresponde) ===== -->
   {% if visita.estado == 'aprobada_inicial' or visita.estado == 'documentos_enviados' or visita.estado == 'en_revision_documentos' or visita.estado == 'confirmada' %}
   <div class="detail-card">
@@ -183,12 +328,12 @@
             <i class="fas fa-user-plus"></i> Registrar / Ver aprendices
           </a>
           {% if visita.asistentes.count > 0 %}
-          <button type="button" onclick="abrirModalArchivosFinales()" class="btn-registrar" style="background: linear-gradient(135deg, #eae1b2 0%, #fff177 100%); color: #333; border: none; cursor: pointer;">
+          <button type="button" onclick="abrirModalArchivosFinales(false)" class="btn-registrar" style="background: linear-gradient(135deg, #eae1b2 0%, #fff177 100%); color: #333; border: none; cursor: pointer;">
             <i class="fas fa-folder-open"></i> Subir archivos finales
           </button>
           <form method="post" action="{% url 'panel_visitante:enviar_solicitud_final' tipo='interna' visita_id=visita.id %}" style="display:inline;">
             {% csrf_token %}
-            <button type="submit" id="btnEnviarSolicitudFinal" class="btn-enviar" disabled style="opacity: 0.5; cursor: not-allowed;" onclick="return confirm('¿Enviar la solicitud final? Asegúrate de haber registrado todos los aprendices.');">
+            <button type="submit" id="btnEnviarSolicitudFinal" class="btn-enviar" disabled style="opacity: 0.5; cursor: not-allowed;" onclick="return confirmarEnvioSolicitudFinal(event, this, 'aprendices');">
               <i class="fas fa-paper-plane"></i> Enviar solicitud final
             </button>
           </form>
@@ -199,9 +344,16 @@
           <i class="fas fa-search me-2"></i>
           <strong>Solicitud final enviada.</strong> El administrador está revisando los documentos de los aprendices.
         </div>
-        <a href="{% url 'panel_visitante:registrar_asistentes' tipo='interna' visita_id=visita.id %}" class="btn-registrar mb-3">
-          <i class="fas fa-eye"></i> Ver aprendices registrados
-        </a>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <a href="{% url 'panel_visitante:registrar_asistentes' tipo='interna' visita_id=visita.id %}" class="btn-registrar">
+            <i class="fas fa-eye"></i> Ver aprendices registrados
+          </a>
+          {% if visita.asistentes.count > 0 %}
+          <button type="button" onclick="abrirModalArchivosFinales(true)" class="btn-registrar" style="background: linear-gradient(135deg, #eae1b2 0%, #fff177 100%); color: #333; border: none; cursor: pointer;">
+            <i class="fas fa-upload"></i> Corregir / subir archivo final
+          </button>
+          {% endif %}
+        </div>
       {% elif visita.estado == 'confirmada' %}
         <a href="{% url 'panel_visitante:registrar_asistentes' tipo='interna' visita_id=visita.id %}" class="btn-registrar mb-3">
           <i class="fas fa-eye"></i> Ver lista de aprendices
@@ -217,11 +369,17 @@
             <small>{{ asistente.get_tipo_documento_display }}: {{ asistente.numero_documento }}</small>
           </div>
           {% if visita.estado == 'aprobada_inicial' %}
-          <a href="{% url 'panel_instructor_interno:eliminar_asistente_visita' visita_id=visita.id asistente_id=asistente.id tipo='interna' %}"
-             class="btn-eliminar-asi"
-             onclick="return confirm('¿Eliminar a {{ asistente.nombre_completo }}?')">
-            <i class="fas fa-trash me-1"></i>Eliminar
-          </a>
+          <div class="d-flex gap-2">
+            <a href="{% url 'panel_visitante:actualizar_info_asistente' tipo='interna' asistente_id=asistente.id %}"
+               class="btn-actualizar-asi">
+              <i class="fas fa-pen me-1"></i>Actualizar
+            </a>
+            <a href="{% url 'panel_instructor_interno:eliminar_asistente_visita' visita_id=visita.id asistente_id=asistente.id tipo='interna' %}"
+               class="btn-eliminar-asi"
+               onclick="return confirm('¿Eliminar a {{ asistente.nombre_completo }}?')">
+              <i class="fas fa-trash me-1"></i>Eliminar
+            </a>
+          </div>
           {% endif %}
         </div>
         {% endfor %}
@@ -286,24 +444,41 @@
 </div>
 
 <!-- Modal Archivos Finales -->
-<div id="modalArchivosFinales" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
-  <div style="background: #fff; padding: 32px 24px; border-radius: 12px; max-width: 600px; margin: 80px auto; box-shadow: 0 8px 32px rgba(0,0,0,0.2); position: relative;">
+<div id="modalArchivosFinales" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); overflow-y: auto; padding: 24px 0;">
+  <div style="background: #fff; padding: 32px 24px; border-radius: 12px; max-width: 600px; max-height: 88vh; overflow-y: auto; margin: 24px auto; box-shadow: 0 8px 32px rgba(0,0,0,0.2); position: relative;">
     <button onclick="cerrarModalArchivosFinales()" style="position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 1.5rem; color: #888; cursor: pointer;">&times;</button>
-    <h2 style="color: #145A32; margin-bottom: 18px;"><i class="fas fa-folder-open me-2"></i> Archivos Finales</h2>
-    <p style="color: #333; margin-bottom: 18px;">Suba los archivos requeridos para finalizar el proceso:</p>
+    <h2 class="final-modal-title"><span class="final-modal-title-icon"><i class="fas fa-folder-open"></i></span>Archivos Finales</h2>
+    <p class="final-modal-subtitle">Suba los archivos requeridos para finalizar el proceso:</p>
     <form method="post" enctype="multipart/form-data" id="formArchivosFinales" action="{% url 'panel_visitante:registrar_asistentes' tipo='interna' visita_id=visita.id %}">
       {% csrf_token %}
       {% for categoria, docs in documentos_por_categoria.items %}
-        {% if categoria == '📝 ATS' or categoria == '📜 Formato Inducción y Reinducción' or categoria == '🤸🏻‍♂️ Charla de Seguridad y Calestenia' %}
-          <div style="margin-bottom: 20px;">
-            <h5 style="color: #228B22; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #e5e7eb;">{{ categoria }}</h5>
+        {% if 'ATS' in categoria or 'Inducción y Reinducción' in categoria or 'Charla de Seguridad y Calestenia' in categoria or 'Charla de Seguridad y Calistenia' in categoria %}
+          <div class="final-cat-card">
+            <div class="final-cat-top">
+              <div class="final-cat-top-icon">
+                <i class="fas fa-{% if 'ATS' in categoria %}clipboard-list{% elif 'Inducción' in categoria %}graduation-cap{% else %}users{% endif %}"></i>
+              </div>
+              <div>
+                <h5 class="final-cat-top-title">{% if 'ATS' in categoria %}ATS{% elif 'Inducción y Reinducción' in categoria %}Formato Inducción y Reinducción{% elif 'Charla de Seguridad y Calestenia' in categoria or 'Charla de Seguridad y Calistenia' in categoria %}Charla de Seguridad y Calistenia{% else %}{{ categoria }}{% endif %}</h5>
+                <p class="final-cat-top-sub">Documento requerido para completar el proceso</p>
+              </div>
+            </div>
+            <div class="final-cat-body">
             {% for doc in docs %}
-              <div style="margin-bottom: 12px;">
-                <label style="font-weight: 600; color: #333;">{{ doc.titulo }}</label>
-                <input type="file" name="archivo_final_{{ doc.id }}" id="input_archivo_{{ doc.id }}" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" style="display: block; margin-top: 6px; padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px; width: 100%;">
+              <div class="final-doc-item">
+                <div class="final-doc-head">
+                  <div class="final-doc-icon">
+                    <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% else %}file-alt{% endif %}"></i>
+                  </div>
+                  <div>
+                    <p class="final-doc-subtitle" style="font-size:0.98rem; font-weight:700; color:#334155; margin:0;">{{ doc.nombre_archivo }}</p>
+                  </div>
+                </div>
+                <input type="file" name="archivo_final_{{ doc.id }}" id="input_archivo_{{ doc.id }}" accept=".pdf,.doc,.docx" class="final-doc-input">
                 <span class="error-mensaje" id="error_{{ doc.id }}" style="display: none; color: #dc2626; font-size: 0.875rem; margin-top: 4px;"><i class="fas fa-exclamation-circle me-1"></i>No ha seleccionado ningún archivo</span>
               </div>
             {% endfor %}
+            </div>
           </div>
         {% endif %}
       {% endfor %}
@@ -322,8 +497,101 @@
   </div>
 </div>
 
+<!-- ===== MODAL PARA SUBIR DOCUMENTO POR ASISTENTE ===== -->
+<div id="modalSubirPorAsistente" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); overflow-y: auto; padding: 24px 0;">
+  <div style="background: #fff; padding: 32px 24px; border-radius: 12px; max-width: 500px; max-height: 88vh; overflow-y: auto; margin: 24px auto; box-shadow: 0 8px 32px rgba(0,0,0,0.2); position: relative;">
+    <button onclick="cerrarModalSubirPorAsistente()" style="position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 1.5rem; color: #888; cursor: pointer;">&times;</button>
+    <h2 class="final-modal-title"><span class="final-modal-title-icon"><i class="fas fa-user-check"></i></span>Subir Corrección</h2>
+    <p class="final-modal-subtitle" id="modalAsistenteInfo" style="margin-bottom: 20px;"></p>
+    <form method="post" enctype="multipart/form-data" id="formSubirPorAsistente" action="{% url 'panel_visitante:actualizar_documento_asistente' tipo='interna' asistente_id=0 %}">
+      {% csrf_token %}
+      <div class="final-doc-item" style="background: #f9fafb; padding: 16px; border-radius: 8px;">
+        <div class="final-doc-head" style="margin-bottom: 12px;">
+          <div class="final-doc-icon">
+            <i class="fas fa-file-upload"></i>
+          </div>
+          <div>
+            <p class="final-doc-subtitle" style="font-size:0.98rem; font-weight:700; color:#334155; margin:0;" id="modalDocumentoNombre">Documento rechazado</p>
+          </div>
+        </div>
+        <input type="file" name="archivo_correccion" id="inputArchivoCorreccion" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" class="final-doc-input">
+        <span class="error-mensaje" id="errorArchivoCorreccion" style="display: none; color: #dc2626; font-size: 0.875rem; margin-top: 4px;"><i class="fas fa-exclamation-circle me-1"></i>Debe seleccionar un archivo</span>
+      </div>
+      <div id="statusMensajeAsistente" style="margin-top: 15px; display: none;">
+        <div id="statusContenidoAsistente"></div>
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end;">
+        <button type="button" onclick="cerrarModalSubirPorAsistente()" style="background: #e5e7eb; color: #374151; font-weight: 600; padding: 10px 24px; border: none; border-radius: 8px; cursor: pointer;">
+          Cancelar
+        </button>
+        <button type="submit" style="background: linear-gradient(90deg, #228B22, #2ecc40); color: #fff; font-weight: bold; padding: 10px 28px; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;" id="btnEnviarAsistente">
+          <i class="fas fa-upload me-2"></i>Subir Corrección
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== MODAL DE CONFIRMACIÓN ANTES DE ENVIAR ===== -->
+<div id="modalConfirmacionEnvio" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); overflow-y: auto; padding: 24px 0;">
+  <div style="background: #fff; padding: 32px 24px; border-radius: 12px; max-width: 500px; margin: 24px auto; box-shadow: 0 8px 32px rgba(0,0,0,0.2); position: relative; text-align: center;">
+    <button onclick="cerrarModalConfirmacion()" style="position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 1.5rem; color: #888; cursor: pointer;">&times;</button>
+    <div style="font-size: 3rem; color: #f59e0b; margin-bottom: 16px;">
+      <i class="fas fa-exclamation-circle"></i>
+    </div>
+    <h2 style="font-size: 1.5rem; font-weight: 800; color: #1f2937; margin-bottom: 12px;">¿Está seguro?</h2>
+    <p style="font-size: 0.95rem; color: #4b5563; margin-bottom: 24px; line-height: 1.6;">
+      Asegúrese de que todos los documentos estén corregidos y listos. Una vez enviados, serán revisados por el administrador.
+    </p>
+    <div style="display: flex; gap: 10px; justify-content: center;">
+      <button type="button" onclick="cerrarModalConfirmacion()" style="background: #e5e7eb; color: #374151; font-weight: 600; padding: 12px 28px; border: none; border-radius: 8px; cursor: pointer;">
+        Cancelar
+      </button>
+      <button type="button" onclick="confirmarEnvioFinal()" style="background: linear-gradient(90deg, #228B22, #2ecc40); color: #fff; font-weight: bold; padding: 12px 28px; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;">
+        <i class="fas fa-paper-plane me-2"></i>Sí, Enviar Documentos
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
+  function confirmarEnvioSolicitudFinal(event, boton, tipoPersona) {
+    const mensaje = '¿Enviar la solicitud final? Asegúrate de haber registrado todos los ' + tipoPersona + '.';
+    const form = boton && boton.form ? boton.form : null;
+
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    if (typeof window.mConfirm === 'function') {
+      window.mConfirm(mensaje, {
+        title: 'Enviar solicitud final',
+        icon: '<i class="fas fa-paper-plane"></i>',
+        iconClass: 'cm-info',
+        confirmText: 'Sí, enviar',
+        confirmClass: 'cm-btn-success',
+        confirmIcon: 'fas fa-paper-plane'
+      }).then(function (ok) {
+        if (ok && form) {
+          form.submit();
+        }
+      });
+      return false;
+    }
+
+    return confirm(mensaje);
+  }
+
   function abrirModalArchivosFinales() {
+  // Variables globales
+  let esModalCorreccion = false;
+  let archivosClaveFinal = '';
+  let urlEnviarSolicitudFinal = "{% url 'panel_visitante:enviar_solicitud_final' tipo='interna' visita_id=visita.id %}";
+  let csrfTokenGlobal = '';
+
+  function abrirModalArchivosFinales(esCorreccion) {
+    esModalCorreccion = esCorreccion;
     document.getElementById('modalArchivosFinales').style.display = 'block';
     document.body.style.overflow = 'hidden';
   }
@@ -331,6 +599,7 @@
   function cerrarModalArchivosFinales() {
     document.getElementById('modalArchivosFinales').style.display = 'none';
     document.body.style.overflow = '';
+    esModalCorreccion = false;
     // Limpiar formulario
     const form = document.getElementById('formArchivosFinales');
     if (form) {
@@ -349,6 +618,98 @@
     }
   }
 
+  function abrirModalSubirPorAsistente(nombre, asistenteId, documentoNombre) {
+    document.getElementById('modalSubirPorAsistente').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+    document.getElementById('modalAsistenteInfo').innerHTML = `<strong>${nombre}</strong> - Cargue el archivo rechazado: <em>${documentoNombre}</em>`;
+    document.getElementById('modalDocumentoNombre').textContent = documentoNombre;
+    
+    // Actualizar la acción del formulario
+    const formSubir = document.getElementById('formSubirPorAsistente');
+    formSubir.action = "{% url 'panel_visitante:actualizar_documento_asistente' tipo='interna' asistente_id=0 %}".replace('/0/', '/' + asistenteId + '/');
+  }
+
+  function cerrarModalSubirPorAsistente() {
+    document.getElementById('modalSubirPorAsistente').style.display = 'none';
+    document.body.style.overflow = '';
+    const form = document.getElementById('formSubirPorAsistente');
+    if (form) {
+      form.reset();
+      const errorMensaje = document.getElementById('errorArchivoCorreccion');
+      if (errorMensaje) errorMensaje.style.display = 'none';
+      const statusMensaje = document.getElementById('statusMensajeAsistente');
+      if (statusMensaje) statusMensaje.style.display = 'none';
+    }
+  }
+
+  function abrirModalConfirmacion() {
+    document.getElementById('modalConfirmacionEnvio').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function cerrarModalConfirmacion() {
+    document.getElementById('modalConfirmacionEnvio').style.display = 'none';
+    document.body.style.overflow = '';
+  }
+
+  function confirmarEnvioFinal() {
+    cerrarModalConfirmacion();
+    ejecutarEnvioFinal();
+  }
+
+  async function ejecutarEnvioFinal() {
+    const btnSolicitudFinal = document.getElementById('btnEnviarSolicitudFinal');
+    const statusMensaje = document.getElementById('statusMensaje');
+    const statusContenido = document.getElementById('statusContenido');
+    
+    if (statusMensaje) {
+      statusMensaje.style.display = 'block';
+      statusContenido.innerHTML = '<div style="background: #e0f2fe; border-left: 4px solid #0284c7; padding: 12px; border-radius: 6px; color: #075985;"><i class="fas fa-spinner fa-spin me-2"></i>Enviando solicitud...</div>';
+    }
+
+    try {
+      const formDataEnvioFinal = new FormData();
+      if (csrfTokenGlobal) {
+        formDataEnvioFinal.append('csrfmiddlewaretoken', csrfTokenGlobal);
+      }
+
+      const respuestaEnvioFinal = await fetch(urlEnviarSolicitudFinal, {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formDataEnvioFinal
+      });
+      const dataEnvioFinal = await respuestaEnvioFinal.json().catch(() => ({}));
+
+      if (!respuestaEnvioFinal.ok || dataEnvioFinal.success === false) {
+        if (statusMensaje && statusContenido) {
+          statusContenido.innerHTML = `<div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; border-radius: 6px; color: #92400e;"><i class="fas fa-exclamation-triangle me-2"></i>Error al enviar: ${dataEnvioFinal.error || 'revise el estado de la visita.'}</div>`;
+        }
+        return;
+      }
+
+      if (btnSolicitudFinal) {
+        btnSolicitudFinal.disabled = false;
+        btnSolicitudFinal.style.opacity = '1';
+        btnSolicitudFinal.style.cursor = 'pointer';
+      }
+
+      if (statusMensaje && statusContenido) {
+        statusContenido.innerHTML = '<div style="background: #d1fae5; border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; color: #065f46;"><i class="fas fa-check-circle me-2"></i>¡Listo! Documentos corregidos enviados para revisión final.</div>';
+      }
+
+      setTimeout(function() {
+        location.reload();
+      }, 1500);
+    } catch (error) {
+      console.error('Error:', error);
+      if (statusMensaje && statusContenido) {
+        statusContenido.innerHTML = '<div style="background: #fee2e2; border-left: 4px solid #dc2626; padding: 12px; border-radius: 6px; color: #991b1b;"><i class="fas fa-exclamation-circle me-2"></i>Error de conexión. Por favor intente nuevamente.</div>';
+      }
+    }
+  }
+
   // Manejar envío del formulario con AJAX
   document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('formArchivosFinales');
@@ -358,8 +719,8 @@
     
     // Verificar si ya se subieron archivos previamente
     const visitaId = '{{ visita.id }}';
-    const archivosClave = 'archivos_subidos_' + visitaId;
-    if (localStorage.getItem(archivosClave) === 'true') {
+    archivosClaveFinal = 'archivos_subidos_' + visitaId;
+    if (localStorage.getItem(archivosClaveFinal) === 'true') {
       if (btnSolicitudFinal) {
         btnSolicitudFinal.disabled = false;
         btnSolicitudFinal.style.opacity = '1';
@@ -370,18 +731,29 @@
     if (form) {
       // Limpiar mensajes de error cuando se seleccione un archivo
       const fileInputs = form.querySelectorAll('input[type="file"]');
+      const extensionesPermitidas = ['pdf', 'doc', 'docx'];
       fileInputs.forEach(input => {
         input.addEventListener('change', function() {
           const errorId = this.id.replace('input_archivo_', 'error_');
           const errorSpan = document.getElementById(errorId);
-          if (errorSpan && this.files.length > 0) {
+          if (!errorSpan || this.files.length === 0) {
+            return;
+          }
+          const nombre = this.files[0].name || '';
+          const extension = nombre.includes('.') ? nombre.split('.').pop().toLowerCase() : '';
+          if (!extensionesPermitidas.includes(extension)) {
+            errorSpan.innerHTML = '<i class="fas fa-exclamation-circle me-1"></i>Formato no permitido. Solo PDF o Word (.doc, .docx).';
+            errorSpan.style.display = 'block';
+            this.style.borderColor = '#dc2626';
+            this.value = '';
+          } else {
             errorSpan.style.display = 'none';
             this.style.borderColor = '#e5e7eb';
           }
         });
       });
       
-      form.addEventListener('submit', function(e) {
+      form.addEventListener('submit', async function(e) {
         e.preventDefault();
         
         // Limpiar mensajes de error previos
@@ -398,7 +770,21 @@
             const errorId = input.id.replace('input_archivo_', 'error_');
             const errorSpan = document.getElementById(errorId);
             if (errorSpan) {
+              errorSpan.innerHTML = '<i class="fas fa-exclamation-circle me-1"></i>No ha seleccionado ningún archivo';
               errorSpan.style.display = 'block';
+              input.style.borderColor = '#dc2626';
+              hayErrores = true;
+            }
+          } else {
+            const nombre = input.files[0].name || '';
+            const extension = nombre.includes('.') ? nombre.split('.').pop().toLowerCase() : '';
+            if (!extensionesPermitidas.includes(extension)) {
+              const errorId = input.id.replace('input_archivo_', 'error_');
+              const errorSpan = document.getElementById(errorId);
+              if (errorSpan) {
+                errorSpan.innerHTML = '<i class="fas fa-exclamation-circle me-1"></i>Formato no permitido. Solo PDF o Word (.doc, .docx).';
+                errorSpan.style.display = 'block';
+              }
               input.style.borderColor = '#dc2626';
               hayErrores = true;
             }
@@ -407,10 +793,20 @@
         
         // Si hay errores, no enviar el formulario
         if (hayErrores) {
+        // Permitir corrección parcial: basta con adjuntar al menos un archivo final.
+        const hayArchivoSeleccionado = Array.from(fileInputs).some(
+          input => input.files && input.files.length > 0
+        );
+        if (!hayArchivoSeleccionado) {
+          const statusMensaje = document.getElementById('statusMensaje');
+          const statusContenido = document.getElementById('statusContenido');
+          statusMensaje.style.display = 'block';
+          statusContenido.innerHTML = '<div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; border-radius: 6px; color: #92400e;"><i class="fas fa-exclamation-circle me-2"></i>Debe adjuntar al menos un archivo para corregir.</div>';
           return;
         }
         
         const formData = new FormData(this);
+        csrfTokenGlobal = formData.get('csrfmiddlewaretoken');
         
         // Cambiar estado del botón
         btnEnviar.disabled = true;
@@ -418,65 +814,128 @@
         btnEnviar.style.background = 'linear-gradient(90deg, #FF9800, #FFB74D)';
         btnEnviar.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Procesando...';
         
-        // Enviar con AJAX
-        fetch(form.action, {
-          method: 'POST',
-          body: formData
-        })
-        .then(response => {
-          // Mostrar mensaje de éxito
-          const statusMensaje = document.getElementById('statusMensaje');
-          const statusContenido = document.getElementById('statusContenido');
-          statusMensaje.style.display = 'block';
-          
-          if (response.ok) {
-            statusContenido.innerHTML = '<div style="background: #d1fae5; border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; color: #065f46;"><i class="fas fa-check-circle me-2"></i>¡Archivos subidos exitosamente!</div>';
-            
-            // Guardar en localStorage que los archivos fueron subidos
-            localStorage.setItem(archivosClave, 'true');
-            
-            // Habilitar botón de enviar solicitud final
+        const statusMensaje = document.getElementById('statusMensaje');
+        const statusContenido = document.getElementById('statusContenido');
+        statusMensaje.style.display = 'block';
+
+        try {
+          const respuestaSubida = await fetch(form.action, {
+            method: 'POST',
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+          });
+          const dataSubida = await respuestaSubida.json().catch(() => ({}));
+
+          if (!respuestaSubida.ok || dataSubida.success === false) {
+            statusContenido.innerHTML = `<div style="background: #fee2e2; border-left: 4px solid #dc2626; padding: 12px; border-radius: 6px; color: #991b1b;"><i class="fas fa-exclamation-circle me-2"></i>${dataSubida.error || 'Error al subir archivos. Por favor intente nuevamente.'}</div>`;
+            btnEnviar.disabled = false;
+            btnCancelar.disabled = false;
+            btnEnviar.style.background = 'linear-gradient(90deg, #228B22, #2ecc40)';
+            btnEnviar.innerHTML = '<i class="fas fa-upload me-2"></i>Subir Archivos Finales';
+            return;
+          }
+
+          // Si NO es corrección (es primer envío), solo mostrar éxito
+          if (!esModalCorreccion) {
+            localStorage.setItem(archivosClaveFinal, 'true');
             if (btnSolicitudFinal) {
               btnSolicitudFinal.disabled = false;
               btnSolicitudFinal.style.opacity = '1';
               btnSolicitudFinal.style.cursor = 'pointer';
             }
-            
-            // Actualizar botón a verde
+            statusContenido.innerHTML = '<div style="background: #d1fae5; border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; color: #065f46;"><i class="fas fa-check-circle me-2"></i>¡Archivos finales cargados exitosamente! Ahora puedes hacer clic en "Enviar solicitud final".</div>';
+            btnEnviar.style.background = 'linear-gradient(90deg, #10b981, #059669)';
+            btnEnviar.innerHTML = '<i class="fas fa-check me-2"></i>Enviado correctamente';
+            btnEnviar.disabled = true;
             setTimeout(function() {
-              btnEnviar.style.background = 'linear-gradient(90deg, #10b981, #059669)';
-              btnEnviar.innerHTML = '<i class="fas fa-check me-2"></i>¡Archivos Subidos!';
-              btnEnviar.disabled = true;
-              
-              // Cerrar modal después de 2 segundos
-              setTimeout(function() {
-                cerrarModalArchivosFinales();
-                // Recargar página para ver cambios
-                location.reload();
-              }, 2000);
-            }, 500);
-          } else {
-            statusContenido.innerHTML = '<div style="background: #fee2e2; border-left: 4px solid #dc2626; padding: 12px; border-radius: 6px; color: #991b1b;"><i class="fas fa-exclamation-circle me-2"></i>Error al subir archivos. Por favor intente nuevamente.</div>';
-            
-            // Restaurar botón
-            btnEnviar.disabled = false;
-            btnCancelar.disabled = false;
-            btnEnviar.style.background = 'linear-gradient(90deg, #228B22, #2ecc40)';
-            btnEnviar.innerHTML = '<i class="fas fa-upload me-2"></i>Subir Archivos Finales';
+              cerrarModalArchivosFinales();
+              location.reload();
+            }, 1800);
+            return;
           }
-        })
-        .catch(error => {
+
+          // SI es corrección, mostrar modal de confirmación
+          statusContenido.innerHTML = '<div style="background: #d1fae5; border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; color: #065f46;"><i class="fas fa-check-circle me-2"></i>Documentos corregidos cargados exitosamente.</div>';
+          btnEnviar.style.background = 'linear-gradient(90deg, #10b981, #059669)';
+          btnEnviar.innerHTML = '<i class="fas fa-check me-2"></i>Enviado correctamente';
+          btnEnviar.disabled = true;
+
+          // Mostrar modal de confirmación
+          setTimeout(function() {
+            cerrarModalArchivosFinales();
+            abrirModalConfirmacion();
+          }, 1200);
+
+        } catch (error) {
           console.error('Error:', error);
-          const statusMensaje = document.getElementById('statusMensaje');
-          const statusContenido = document.getElementById('statusContenido');
-          statusMensaje.style.display = 'block';
           statusContenido.innerHTML = '<div style="background: #fee2e2; border-left: 4px solid #dc2626; padding: 12px; border-radius: 6px; color: #991b1b;"><i class="fas fa-exclamation-circle me-2"></i>Error de conexión. Por favor intente nuevamente.</div>';
-          
           btnEnviar.disabled = false;
           btnCancelar.disabled = false;
           btnEnviar.style.background = 'linear-gradient(90deg, #228B22, #2ecc40)';
           btnEnviar.innerHTML = '<i class="fas fa-upload me-2"></i>Subir Archivos Finales';
-        });
+        }
+      });
+    }
+
+    // Manejar subida por asistente
+    const formSubirAsistente = document.getElementById('formSubirPorAsistente');
+    if (formSubirAsistente) {
+      formSubirAsistente.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const inputArchivo = document.getElementById('inputArchivoCorreccion');
+        const errorMensaje = document.getElementById('errorArchivoCorreccion');
+        const btnEnviarAsistente = document.getElementById('btnEnviarAsistente');
+        const statusMensaje = document.getElementById('statusMensajeAsistente');
+        const statusContenido = document.getElementById('statusContenidoAsistente');
+
+        if (!inputArchivo.files || inputArchivo.files.length === 0) {
+          errorMensaje.style.display = 'block';
+          return;
+        }
+
+        errorMensaje.style.display = 'none';
+        btnEnviarAsistente.disabled = true;
+        btnEnviarAsistente.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Procesando...';
+        statusMensaje.style.display = 'block';
+        statusContenido.innerHTML = '<div style="background: #e0f2fe; border-left: 4px solid #0284c7; padding: 12px; border-radius: 6px; color: #075985;"><i class="fas fa-spinner fa-spin me-2"></i>Subiendo corrección...</div>';
+
+        try {
+          const formData = new FormData(this);
+          const response = await fetch(this.action, {
+            method: 'POST',
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+          });
+
+          const data = await response.json().catch(() => ({}));
+
+          if (!response.ok || data.success === false) {
+            statusContenido.innerHTML = `<div style="background: #fee2e2; border-left: 4px solid #dc2626; padding: 12px; border-radius: 6px; color: #991b1b;"><i class="fas fa-exclamation-circle me-2"></i>${data.error || 'Error al subir el archivo.'}</div>`;
+            btnEnviarAsistente.disabled = false;
+            btnEnviarAsistente.innerHTML = '<i class="fas fa-upload me-2"></i>Subir Corrección';
+            return;
+          }
+
+          statusContenido.innerHTML = '<div style="background: #d1fae5; border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; color: #065f46;"><i class="fas fa-check-circle me-2"></i>Archivo subido correctamente.</div>';
+          btnEnviarAsistente.style.background = 'linear-gradient(90deg, #10b981, #059669)';
+          btnEnviarAsistente.innerHTML = '<i class="fas fa-check me-2"></i>Subido correctamente';
+          btnEnviarAsistente.disabled = true;
+
+          setTimeout(function() {
+            cerrarModalSubirPorAsistente();
+            location.reload();
+          }, 1500);
+        } catch (error) {
+          console.error('Error:', error);
+          statusContenido.innerHTML = '<div style="background: #fee2e2; border-left: 4px solid #dc2626; padding: 12px; border-radius: 6px; color: #991b1b;"><i class="fas fa-exclamation-circle me-2"></i>Error de conexión.</div>';
+          btnEnviarAsistente.disabled = false;
+          btnEnviarAsistente.innerHTML = '<i class="fas fa-upload me-2"></i>Subir Corrección';
+        }
       });
     }
   });

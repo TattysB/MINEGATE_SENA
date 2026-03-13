@@ -131,3 +131,53 @@ class DocumentoSubidoAsistente(models.Model):
     def extension(self):
         _, ext = os.path.splitext(self.archivo.name)
         return ext.lower()
+
+
+class DocumentoSubidoAprendiz(models.Model):
+    """Documento subido por un aprendiz para un documento requerido"""
+
+    documento_requerido = models.ForeignKey(
+        Documento,
+        on_delete=models.CASCADE,
+        related_name="documentos_subidos_aprendices",
+        verbose_name="Documento requerido",
+    )
+    aprendiz = models.ForeignKey(
+        "panel_instructor_interno.Aprendiz",
+        on_delete=models.CASCADE,
+        related_name="documentos_subidos",
+        verbose_name="Aprendiz",
+    )
+    ESTADO_CHOICES = [
+        ("pendiente", "Pendiente de revisión"),
+        ("aprobado", "Aprobado"),
+        ("rechazado", "Rechazado"),
+    ]
+    estado = models.CharField(
+        max_length=20, choices=ESTADO_CHOICES, default="pendiente"
+    )
+    observaciones_revision = models.TextField(blank=True, null=True)
+    archivo = models.FileField(
+        upload_to="documentos_aprendices/%Y/%m/",
+        max_length=500,
+        verbose_name="Archivo subido",
+    )
+    fecha_subida = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Documento Subido por Aprendiz"
+        verbose_name_plural = "Documentos Subidos por Aprendices"
+        ordering = ["-fecha_subida"]
+        unique_together = ["aprendiz", "documento_requerido"]
+
+    def __str__(self):
+        return f"{self.aprendiz.get_nombre_completo()} - {self.documento_requerido.titulo}"
+
+    @property
+    def nombre_archivo(self):
+        return os.path.basename(self.archivo.name)
+
+    @property
+    def extension(self):
+        _, ext = os.path.splitext(self.archivo.name)
+        return ext.lower()

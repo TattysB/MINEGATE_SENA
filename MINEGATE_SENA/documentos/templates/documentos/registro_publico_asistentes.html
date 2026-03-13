@@ -194,7 +194,7 @@
                     <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% elif doc.extension == '.jpg' or doc.extension == '.jpeg' or doc.extension == '.png' %}file-image{% else %}file-alt{% endif %}"
                         class="extension-icon-{{ doc.extension|slice:'1:' }}"></i>
                     <div>
-                        <strong style="color: #333;">{{ doc.titulo }}</strong>
+                        <strong style="color: #333;">{{ doc.categoria }}</strong>
                         <br>
                         <small style="color: #888;">{{ doc.nombre_archivo }} · {{ doc.tamaño_legible }}</small>
                         {% if doc.descripcion %}
@@ -382,6 +382,16 @@
                         {% endif %}
                     </small>
                 </p>
+                {% if asistente.estado == 'documentos_rechazados' and asistente.observaciones_revision %}
+                <div style="margin-top: 10px; padding: 10px 12px; border-left: 4px solid #ef4444; background: #fef2f2; border-radius: 8px;">
+                    <small style="color: #991b1b;"><strong>Motivo del rechazo:</strong> {{ asistente.observaciones_revision }}</small>
+                </div>
+                {% endif %}
+                {% if asistente.estado_autorizacion_padres == 'rechazado' and asistente.observaciones_autorizacion_padres %}
+                <div style="margin-top: 10px; padding: 10px 12px; border-left: 4px solid #f59e0b; background: #fffbeb; border-radius: 8px;">
+                    <small style="color: #92400e;"><strong>Observación autorización de padres:</strong> {{ asistente.observaciones_autorizacion_padres }}</small>
+                </div>
+                {% endif %}
             </div>
             <div class="asistente-estado">
                 <span
@@ -394,17 +404,23 @@
                     <i class="fas fa-times-circle me-1"></i> Rechazado
                     {% endif %}
                 </span>
+                {% if asistente.estado == 'documentos_rechazados' and visita.estado != 'confirmada' %}
+                <button type="button" class="btn-delete" style="background: #f59e0b;"
+                    onclick="abrirModalCorreccion({{ asistente.id }}, '{{ asistente.nombre_completo|escapejs }}')">
+                    <i class="fas fa-edit me-1"></i>Corregir archivos
+                </button>
+                {% endif %}
                 {% if visita.estado == 'aprobada_inicial' %}
                 {% if tipo == 'interna' %}
                 <a href="{% url 'documentos:eliminar_asistente_publico_interna' token=token asistente_id=asistente.id %}"
                     class="btn-delete"
-                    onclick="return confirm('¿Está seguro de eliminar a {{ asistente.nombre_completo }}?')">
+                    onclick="return confirmarEliminarAsistente(event, this.href, '{{ asistente.nombre_completo|escapejs }}');">
                     <i class="fas fa-trash-alt me-1"></i>Eliminar
                 </a>
                 {% else %}
                 <a href="{% url 'documentos:eliminar_asistente_publico_externa' token=token asistente_id=asistente.id %}"
                     class="btn-delete"
-                    onclick="return confirm('¿Está seguro de eliminar a {{ asistente.nombre_completo }}?')">
+                    onclick="return confirmarEliminarAsistente(event, this.href, '{{ asistente.nombre_completo|escapejs }}');">
                     <i class="fas fa-trash-alt me-1"></i>Eliminar
                 </a>
                 {% endif %}
@@ -422,15 +438,148 @@
     </div>
 </div>
 
+<div id="modalCorreccionAsistente"
+    style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.72); overflow-y: auto;">
+    <div
+        style="background: #fff; margin: 4% auto; padding: 24px; border-radius: 12px; width: 92%; max-width: 560px; box-shadow: 0 12px 35px rgba(0,0,0,0.25);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h4 style="margin: 0; color: #1f2937;"><i class="fas fa-file-upload me-2"></i>Corregir archivos</h4>
+            <button type="button" onclick="cerrarModalCorreccion()"
+                style="border: none; background: transparent; font-size: 26px; line-height: 1; color: #6b7280; cursor: pointer;">&times;</button>
+        </div>
+        <p style="color: #4b5563; margin-bottom: 18px;">Asistente: <strong id="nombreAsistenteCorreccion"></strong></p>
+
+        <form id="formCorreccionAsistente" method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label>Documento de Identidad</label>
+                <input type="file" name="documento_identidad" accept=".pdf,.jpg,.jpeg,.png" class="form-control">
+            </div>
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label>Documento Adicional (Opcional)</label>
+                <input type="file" name="documento_adicional" accept=".pdf,.jpg,.jpeg,.png" class="form-control">
+            </div>
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label>Formato Autorización Padres de Familia (si aplica)</label>
+                <input type="file" name="formato_autorizacion_padres" accept=".pdf,.jpg,.jpeg,.png" class="form-control">
+            </div>
+            <p style="font-size: 0.85rem; color: #6b7280; margin-bottom: 14px;">Debe adjuntar al menos un archivo para enviar la corrección.</p>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="cerrarModalCorreccion()"
+                    style="background: #e5e7eb; color: #111827; border: none; border-radius: 8px; padding: 10px 16px;">Cancelar</button>
+                <button type="submit"
+                    style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none; border-radius: 8px; padding: 10px 16px; font-weight: 600;">
+                    Guardar corrección
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
+    function confirmarVisualFallback(titulo, mensaje, textoAceptar, textoCancelar) {
+        return new Promise((resolve) => {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.42);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:120000;';
+
+            const card = document.createElement('div');
+            card.style.cssText = 'background:#f9fafb;border-radius:22px;padding:28px;max-width:94vw;width:520px;text-align:center;box-shadow:0 28px 64px rgba(0,0,0,.24);';
+            card.innerHTML =
+                '<div style="width:80px;height:80px;border-radius:999px;background:#fee2e2;color:#ef4444;display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 18px;"><i class="fas fa-trash"></i></div>' +
+                    '<h3 style="font-size:1.6rem;font-weight:800;margin:0 0 10px;color:#1f2937;">' + titulo + '</h3>' +
+                    '<p style="font-size:0.98rem;color:#6b7280;margin:0 0 24px;">' + mensaje + '</p>' +
+                '<div style="display:flex;gap:14px;justify-content:center;">' +
+                '<button id="btnCancelLocal" style="padding:12px 28px;border-radius:14px;border:1px solid #d1d5db;background:#e5e7eb;color:#374151;font-weight:700;cursor:pointer;">' + textoCancelar + '</button>' +
+                '<button id="btnOkLocal" style="padding:12px 28px;border-radius:14px;border:none;background:linear-gradient(180deg,#ef4444,#dc2626);color:#fff;font-weight:700;cursor:pointer;">' + textoAceptar + '</button>' +
+                '</div>';
+
+            overlay.appendChild(card);
+            document.body.appendChild(overlay);
+
+            const cerrar = (val) => {
+                if (overlay.parentNode) {
+                    overlay.parentNode.removeChild(overlay);
+                }
+                resolve(val);
+            };
+
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) cerrar(false);
+            });
+            card.querySelector('#btnCancelLocal').addEventListener('click', () => cerrar(false));
+            card.querySelector('#btnOkLocal').addEventListener('click', () => cerrar(true));
+        });
+    }
+
+    async function confirmarEliminarAsistente(event, url, nombre) {
+        event.preventDefault();
+
+        const mensaje = '¿Está seguro de eliminar a ' + nombre + '?';
+        let ok = false;
+
+        if (window.mConfirm) {
+            ok = await window.mConfirm(mensaje, {
+                title: 'Eliminar asistente',
+                confirmText: 'Eliminar',
+                confirmClass: 'cm-btn-danger',
+                confirmIcon: 'fas fa-trash'
+            });
+        } else {
+            ok = await confirmarVisualFallback('Eliminar asistente', mensaje, 'Eliminar', 'Cancelar');
+        }
+
+        if (ok) {
+            window.location.href = url;
+        }
+        return false;
+    }
+
+    async function confirmarEnvioFinal() {
+    {% if tipo == 'interna' %}
+    const baseCorreccionUrl = "{% url 'documentos:actualizar_asistente_publico_interna' token=token asistente_id=0 %}";
+    {% else %}
+    const baseCorreccionUrl = "{% url 'documentos:actualizar_asistente_publico_externa' token=token asistente_id=0 %}";
+    {% endif %}
+
+    function abrirModalCorreccion(asistenteId, nombreAsistente) {
+        const modal = document.getElementById('modalCorreccionAsistente');
+        const form = document.getElementById('formCorreccionAsistente');
+        const labelNombre = document.getElementById('nombreAsistenteCorreccion');
+        labelNombre.textContent = nombreAsistente;
+        form.action = baseCorreccionUrl.replace('/0/', '/' + asistenteId + '/');
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function cerrarModalCorreccion() {
+        const modal = document.getElementById('modalCorreccionAsistente');
+        const form = document.getElementById('formCorreccionAsistente');
+        modal.style.display = 'none';
+        form.reset();
+        document.body.style.overflow = '';
+    }
+
     function confirmarEnvioFinal() {
         const cantAsistentes = parseInt("{{ asistentes_actuales|default:0 }}");
         if (cantAsistentes === 0) {
-            alert("Debe registrar al menos un asistente antes de enviar la solicitud final.");
+            if (window.mAlert) {
+                window.mAlert("Debe registrar al menos un asistente antes de enviar la solicitud final.", "warning");
+            } else {
+                alert("Debe registrar al menos un asistente antes de enviar la solicitud final.");
+            }
             return;
         }
 
-        if (confirm("¿Está seguro de finalizar el registro? Una vez enviado, no podrá agregar ni eliminar más asistentes.")) {
+        const confirmar = window.mConfirm
+            ? await window.mConfirm("¿Está seguro de finalizar el registro? Una vez enviado, no podrá agregar ni eliminar más asistentes.", {
+                title: "Finalizar registro",
+                confirmText: "Sí, finalizar",
+                confirmClass: "cm-btn-danger",
+                confirmIcon: "fas fa-paper-plane"
+            })
+            : confirm("¿Está seguro de finalizar el registro? Una vez enviado, no podrá agregar ni eliminar más asistentes.");
+
+        if (confirmar) {
             const btn = document.getElementById('btn-envio-final');
             const status = document.getElementById('status-envio-final');
 
@@ -450,14 +599,22 @@
                     if (data.success) {
                         window.location.reload();
                     } else {
-                        alert("Error: " + data.error);
+                        if (window.mAlert) {
+                            window.mAlert("Error: " + data.error, "error");
+                        } else {
+                            alert("Error: " + data.error);
+                        }
                         btn.disabled = false;
                         btn.style.opacity = '1';
                         status.style.display = 'none';
                     }
                 })
                 .catch(err => {
-                    alert("Error de conexión al enviar la solicitud.");
+                    if (window.mAlert) {
+                        window.mAlert("Error de conexión al enviar la solicitud.", "error");
+                    } else {
+                        alert("Error de conexión al enviar la solicitud.");
+                    }
                     btn.disabled = false;
                     btn.style.opacity = '1';
                     status.style.display = 'none';
@@ -494,6 +651,12 @@
             upload.classList.remove('has-file');
         }
     }
+
+    document.getElementById('modalCorreccionAsistente').addEventListener('click', function (e) {
+        if (e.target === this) {
+            cerrarModalCorreccion();
+        }
+    });
 </script>
 {% endif %}
 {% endblock %}

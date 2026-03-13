@@ -26,6 +26,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('',include('core.urls')),
     path('auth/',include('usuarios.urls')),
+    path('chatbot/', include('chatbot.urls')),
     # Nuevas apps organizadas
     path('gestion/', include('gestion_visitas.urls')),
     path('visitante/', include('panel_visitante.urls')),
@@ -38,6 +39,7 @@ urlpatterns = [
     path('instructor/externo/', include('panel_instructor_externo.urls')),    
     path('coordinador/', include('coordinador.urls')),
     path('reportes/', include('reportes.urls')),
+    path('porteria/', include('control_acceso_mina.urls')),
     
     path('favicon.ico', RedirectView.as_view(url='/static/img/LogoMine.png')), # Usar el logo como favicon temporal
 ]
