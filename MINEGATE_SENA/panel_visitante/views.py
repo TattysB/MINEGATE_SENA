@@ -30,7 +30,7 @@ from .forms import (
 )
 from .models import RegistroVisitante
 from django.conf import settings
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from pathlib import Path
 from django.http import JsonResponse
 
@@ -499,6 +499,20 @@ def registrar_asistentes(request, tipo, visita_id):
     # Permitir archivos finales si hay al menos 1 asistente registrado
     mostrar_archivos_finales = asistentes_actuales > 0
 
+    solicitud_final_enviada = visita.estado in [
+        "documentos_enviados",
+        "en_revision_documentos",
+        "confirmada",
+    ]
+    resumen_pendientes = _resumen_pendientes_correccion(visita, tipo)
+    flujo_completo_con_finales = (
+        asistentes_actuales >= max_asistentes
+        and resumen_pendientes["archivos_finales_faltantes"] == 0
+    )
+    puede_actualizar_asistentes = not (
+        solicitud_final_enviada or flujo_completo_con_finales
+    )
+
     context = {
         "visita": visita,
         "tipo": tipo,
@@ -510,6 +524,7 @@ def registrar_asistentes(request, tipo, visita_id):
         "asistentes_previos": asistentes_previos,
         "tiene_asistentes_previos": len(asistentes_previos) > 0,
         "mostrar_archivos_finales": mostrar_archivos_finales,
+        "puede_actualizar_asistentes": puede_actualizar_asistentes,
     }
 
     # Procesar archivos finales si se envía el formulario del modal
@@ -808,6 +823,7 @@ def registrar_asistentes(request, tipo, visita_id):
         "max_asistentes": max_asistentes,
         "puede_agregar": puede_agregar,
         "documentos_por_categoria": documentos_por_categoria,
+        "puede_actualizar_asistentes": puede_actualizar_asistentes,
     }
 
     return render(request, "registrar_asistentes.html", context)
@@ -964,7 +980,7 @@ def enviar_solicitud_final(request, tipo, visita_id):
     # Enviar correo al responsable informando que la solicitud final fue enviada
     try:
         if tipo == "interna":
-            panel_path = reverse("panel_instructor_interno:mis_visitas")
+            panel_path = reverse("panel_instructor_interno:panel")
             template_name = "emails/solicitud_final_enviada_interna.html"
         else:
             panel_path = reverse("panel_instructor_externo:panel")
@@ -1267,6 +1283,33 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
         messages.error(request, error_msg)
         return _redirect_segun_rol(request)
 
+    max_asistentes = (
+        visita.cantidad_aprendices if tipo == "interna" else visita.cantidad_visitantes
+    )
+    asistentes_actuales = visita.asistentes.count()
+    solicitud_final_enviada = visita.estado in [
+        "documentos_enviados",
+        "en_revision_documentos",
+        "confirmada",
+    ]
+    resumen_pendientes = _resumen_pendientes_correccion(visita, tipo)
+    flujo_completo_con_finales = (
+        asistentes_actuales >= max_asistentes
+        and resumen_pendientes["archivos_finales_faltantes"] == 0
+    )
+
+    if solicitud_final_enviada or flujo_completo_con_finales:
+        error_msg = (
+            "Ya no se puede actualizar este asistente porque la solicitud final "
+            "ya fue enviada o la visita ya tiene los archivos finales cargados."
+        )
+        if es_ajax:
+            return JsonResponse({"success": False, "error": error_msg}, status=400)
+        messages.warning(request, error_msg)
+        return redirect(
+            "panel_visitante:registrar_asistentes", tipo=tipo, visita_id=visita.id
+        )
+
     if request.method != "POST":
         if es_ajax:
             return JsonResponse(
@@ -1446,6 +1489,7 @@ def actualizar_info_asistente(request, tipo, asistente_id):
         numero_doc = request.POST.get("numero_documento", "").strip()
         correo_asistente = request.POST.get("correo", "").strip()
         telefono = request.POST.get("telefono", "").strip()
+        numero_doc_anterior = asistente.numero_documento
 
         if not nombre or not tipo_doc or not numero_doc:
             messages.error(
@@ -1490,9 +1534,100 @@ def actualizar_info_asistente(request, tipo, asistente_id):
         asistente.telefono = telefono
 
         try:
-            asistente.save()
+            aprendiz_a_actualizar = None
+            campos_aprendiz_update = []
+
+            if tipo == "interna":
+                from panel_instructor_interno.models import Aprendiz, Ficha
+
+                ficha = Ficha.objects.filter(numero=visita.numero_ficha).first()
+                if ficha:
+                    # Buscar el aprendiz vinculado por documento anterior para mantener el mismo registro.
+                    aprendiz_a_actualizar = Aprendiz.objects.filter(
+                        ficha=ficha, numero_documento=numero_doc_anterior
+                    ).first()
+                    if not aprendiz_a_actualizar:
+                        aprendiz_a_actualizar = Aprendiz.objects.filter(
+                            ficha=ficha, numero_documento=numero_doc
+                        ).first()
+
+                    if aprendiz_a_actualizar:
+                        duplicado_aprendiz = Aprendiz.objects.filter(
+                            ficha=ficha, numero_documento=numero_doc
+                        ).exclude(id=aprendiz_a_actualizar.id)
+                        if duplicado_aprendiz.exists():
+                            messages.error(
+                                request,
+                                "No se puede actualizar porque ya existe otro aprendiz en la ficha con ese numero de documento.",
+                            )
+                            return render(
+                                request,
+                                "actualizar_info_asistente.html",
+                                {
+                                    "asistente": asistente,
+                                    "tipo": tipo,
+                                    "visita": visita,
+                                    "tipo_documento_choices": asistente.TIPO_DOCUMENTO_CHOICES,
+                                },
+                            )
+
+                        partes_nombre = [p for p in nombre.split() if p]
+                        apellido_actual_partes = [
+                            p
+                            for p in (aprendiz_a_actualizar.apellido or "").split()
+                            if p
+                        ]
+
+                        # Intenta conservar apellidos compuestos usando la cantidad de palabras
+                        # del apellido actual; si no hay referencia, asume 1 apellido.
+                        if len(partes_nombre) <= 1:
+                            nuevo_nombre = partes_nombre[0] if partes_nombre else nombre
+                            nuevo_apellido = aprendiz_a_actualizar.apellido or "-"
+                        else:
+                            apellido_len = (
+                                len(apellido_actual_partes)
+                                if apellido_actual_partes
+                                else 1
+                            )
+                            apellido_len = max(1, min(apellido_len, len(partes_nombre) - 1))
+                            nuevo_apellido = " ".join(partes_nombre[-apellido_len:])
+                            nuevo_nombre = " ".join(partes_nombre[:-apellido_len])
+
+                        aprendiz_a_actualizar.nombre = nuevo_nombre
+                        aprendiz_a_actualizar.apellido = nuevo_apellido
+                        aprendiz_a_actualizar.tipo_documento = tipo_doc
+                        aprendiz_a_actualizar.numero_documento = numero_doc
+                        aprendiz_a_actualizar.correo = correo_asistente
+                        aprendiz_a_actualizar.telefono = telefono
+                        campos_aprendiz_update = [
+                            "nombre",
+                            "apellido",
+                            "tipo_documento",
+                            "numero_documento",
+                            "correo",
+                            "telefono",
+                            "fecha_actualizacion",
+                        ]
+
+                if not aprendiz_a_actualizar:
+                    messages.warning(
+                        request,
+                        "Se actualizó el asistente, pero no se encontró un aprendiz asociado en la ficha para sincronizar.",
+                    )
+
+            with transaction.atomic():
+                asistente.save()
+                if aprendiz_a_actualizar and campos_aprendiz_update:
+                    aprendiz_a_actualizar.save(update_fields=campos_aprendiz_update)
+
             messages.success(
-                request, "Informacion del asistente actualizada correctamente."
+                request,
+                "Informacion del asistente actualizada correctamente."
+                + (
+                    " También se sincronizó en la ficha del aprendiz."
+                    if tipo == "interna" and aprendiz_a_actualizar
+                    else ""
+                ),
             )
             return _redirect_segun_rol(request, tipo=tipo, visita_id=visita.id)
         except IntegrityError:

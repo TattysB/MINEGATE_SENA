@@ -31,6 +31,22 @@ def construir_reporte_documental_visita(visita, tipo_visita):
         )
     )
 
+    filtros_finales_visita = {
+        "documento_requerido__categoria__in": CATEGORIAS_ARCHIVOS_FINALES
+    }
+    if tipo_visita == "interna":
+        filtros_finales_visita["asistente_interna__visita"] = visita
+    else:
+        filtros_finales_visita["asistente_externa__visita"] = visita
+
+    existe_archivo_final_subido = DocumentoSubidoAsistente.objects.filter(
+        **filtros_finales_visita
+    ).exists()
+    mostrar_faltantes_finales_como_alerta = (
+        visita.estado in ["documentos_enviados", "en_revision_documentos", "confirmada"]
+        or existe_archivo_final_subido
+    )
+
     asistentes_con_alertas = []
     asistentes = visita.asistentes.prefetch_related("documentos_subidos__documento_requerido")
     for asistente in asistentes:
@@ -134,7 +150,10 @@ def construir_reporte_documental_visita(visita, tipo_visita):
         )
 
     archivos_finales_con_alerta = [
-        a for a in archivos_finales_estado if a["estado"] in ["faltante", "rechazado"]
+        a
+        for a in archivos_finales_estado
+        if a["estado"] == "rechazado"
+        or (a["estado"] == "faltante" and mostrar_faltantes_finales_como_alerta)
     ]
     total_incidencias_asistentes = sum(
         len(item["incidencias"]) for item in asistentes_con_alertas

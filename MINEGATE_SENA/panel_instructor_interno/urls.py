@@ -8,7 +8,6 @@ urlpatterns = [
     path("", views.panel_instructor_interno, name="panel"),
     # Módulo: Reservar visita interna
     path("reservar/", views.reservar_visita_interna, name="reservar_visita"),
-    path("mis-visitas/", views.mis_visitas_internas, name="mis_visitas"),
     path("mis-visitas/<int:pk>/", views.detalle_visita_interna, name="detalle_visita"),
     # Módulo: Gestionar Programas
     path("programas/", views.gestionar_programas, name="gestionar_programas"),
