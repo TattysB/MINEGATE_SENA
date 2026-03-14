@@ -168,6 +168,30 @@ def _marcar_documentos_actuales(asistente, estado, observaciones=""):
         ds.save(update_fields=["estado", "observaciones_revision"])
 
 
+def _formatear_fecha_visita(visita, incluir_hora=False):
+    """Retorna la fecha programada real de la visita (incluye reprogramaciones)."""
+    fecha_programada = getattr(visita, "fecha_visita", None)
+    if fecha_programada:
+        fecha_txt = fecha_programada.strftime("%d/%m/%Y")
+    elif getattr(visita, "fecha_solicitud", None):
+        fecha_txt = visita.fecha_solicitud.strftime("%d/%m/%Y")
+    else:
+        return "N/A"
+
+    if incluir_hora:
+        hora_inicio = getattr(visita, "hora_inicio", None)
+        hora_fin = getattr(visita, "hora_fin", None)
+        if hora_inicio and hora_fin:
+            return (
+                f"{fecha_txt} "
+                f"{hora_inicio.strftime('%H:%M')} - {hora_fin.strftime('%H:%M')}"
+            )
+        if hora_inicio:
+            return f"{fecha_txt} {hora_inicio.strftime('%H:%M')}"
+
+    return fecha_txt
+
+
 def tiene_aprobacion_previa_coordinacion(visita, tipo):
     if tipo == "interna":
         return HistorialAccionVisitaInterna.objects.filter(
@@ -220,11 +244,7 @@ def api_listar_visitas(request):
                     "institucion": v.nombre_programa or "N/A",
                     "correo": v.correo_responsable,
                     "telefono": v.telefono_responsable,
-                    "fecha_visita": (
-                        v.fecha_solicitud.strftime("%d/%m/%Y")
-                        if v.fecha_solicitud
-                        else "N/A"
-                    ),
+                    "fecha_visita": _formatear_fecha_visita(v),
                     "cantidad": v.cantidad_aprendices,
                     "estado": v.estado,
                     "tiene_rechazos": v.asistentes.filter(
@@ -295,11 +315,7 @@ def api_listar_visitas(request):
                     "institucion": v.nombre or "N/A",
                     "correo": v.correo_responsable,
                     "telefono": v.telefono_responsable,
-                    "fecha_visita": (
-                        v.fecha_solicitud.strftime("%d/%m/%Y")
-                        if v.fecha_solicitud
-                        else "N/A"
-                    ),
+                    "fecha_visita": _formatear_fecha_visita(v),
                     "cantidad": v.cantidad_visitantes,
                     "estado": v.estado,
                     "tiene_rechazos": v.asistentes.filter(
@@ -432,11 +448,7 @@ def api_detalle_visita(request, tipo, visita_id):
             "programa": visita.nombre_programa,
             "ficha": visita.numero_ficha,
             "cantidad": visita.cantidad_aprendices,
-            "fecha_visita": (
-                visita.fecha_solicitud.strftime("%d/%m/%Y")
-                if visita.fecha_solicitud
-                else "N/A"
-            ),
+            "fecha_visita": _formatear_fecha_visita(visita, incluir_hora=True),
             "estado": visita.estado,
             "observaciones": visita.observaciones or "",
             "fecha_solicitud": (
@@ -509,11 +521,7 @@ def api_detalle_visita(request, tipo, visita_id):
             "telefono": visita.telefono_responsable,
             "institucion": visita.nombre,
             "cantidad": visita.cantidad_visitantes,
-            "fecha_visita": (
-                visita.fecha_solicitud.strftime("%d/%m/%Y")
-                if visita.fecha_solicitud
-                else "N/A"
-            ),
+            "fecha_visita": _formatear_fecha_visita(visita, incluir_hora=True),
             "estado": visita.estado,
             "observaciones": visita.observacion or "",
             "fecha_solicitud": (
