@@ -16,11 +16,19 @@ from django.conf import settings
 from calendario.models import ReservaHorario
 
 from django.http import JsonResponse
-from visitaInterna.models import HistorialReprogramacion, VisitaInterna, AsistenteVisitaInterna
+from visitaInterna.models import (
+    HistorialReprogramacion,
+    VisitaInterna,
+    AsistenteVisitaInterna,
+)
 from .models import Ficha, Programa, Aprendiz
 from .forms import VisitaInternaInstructorForm, ProgramaForm, FichaForm, AprendizForm
 from documentos.models import Documento, DocumentoSubidoAsistente
-from documentos.models import Documento, DocumentoSubidoAprendiz, DocumentoSubidoAsistente
+from documentos.models import (
+    Documento,
+    DocumentoSubidoAprendiz,
+    DocumentoSubidoAsistente,
+)
 
 CATEGORIA_DOC_SALUD = "Formato Auto Reporte Condiciones de Salud"
 CATEGORIAS_ARCHIVOS_FINALES = [
@@ -66,15 +74,15 @@ def _es_categoria_archivo_final(categoria):
         return True
     if "induccion y reinduccion" in cat:
         return True
-    return "charla de seguridad" in cat and (
-        "calestenia" in cat or "calistenia" in cat
-    )
+    return "charla de seguridad" in cat and ("calestenia" in cat or "calistenia" in cat)
 
 
 def construir_reporte_documental_visita(visita, tipo_visita):
     """Genera un resumen de faltantes y rechazos por asistente y archivos finales."""
     doc_salud_ids = set(
-        Documento.objects.filter(categoria=CATEGORIA_DOC_SALUD).values_list("id", flat=True)
+        Documento.objects.filter(categoria=CATEGORIA_DOC_SALUD).values_list(
+            "id", flat=True
+        )
     )
     docs_finales_requeridos = list(
         Documento.objects.filter(categoria__in=CATEGORIAS_ARCHIVOS_FINALES).order_by(
@@ -83,7 +91,9 @@ def construir_reporte_documental_visita(visita, tipo_visita):
     )
 
     asistentes_con_alertas = []
-    asistentes = visita.asistentes.prefetch_related("documentos_subidos__documento_requerido")
+    asistentes = visita.asistentes.prefetch_related(
+        "documentos_subidos__documento_requerido"
+    )
     for asistente in asistentes:
         incidencias = []
         # Tomar solo la version vigente (ultima subida) por documento requerido.
@@ -91,7 +101,10 @@ def construir_reporte_documental_visita(visita, tipo_visita):
         for ds in asistente.documentos_subidos.all():
             doc_id = ds.documento_requerido_id
             actual = latest_por_documento.get(doc_id)
-            if not actual or (ds.fecha_subida, ds.id) > (actual.fecha_subida, actual.id):
+            if not actual or (ds.fecha_subida, ds.id) > (
+                actual.fecha_subida,
+                actual.id,
+            ):
                 latest_por_documento[doc_id] = ds
 
         documentos_personales = [
@@ -101,7 +114,9 @@ def construir_reporte_documental_visita(visita, tipo_visita):
         ]
 
         documentos_salud = [
-            ds for ds in documentos_personales if ds.documento_requerido_id in doc_salud_ids
+            ds
+            for ds in documentos_personales
+            if ds.documento_requerido_id in doc_salud_ids
         ]
         if doc_salud_ids and not documentos_salud:
             incidencias.append(
@@ -124,9 +139,10 @@ def construir_reporte_documental_visita(visita, tipo_visita):
                     }
                 )
 
-        if (
-            getattr(asistente, "estado_autorizacion_padres", "") == "rechazado"
-            and getattr(asistente, "observaciones_autorizacion_padres", "")
+        if getattr(
+            asistente, "estado_autorizacion_padres", ""
+        ) == "rechazado" and getattr(
+            asistente, "observaciones_autorizacion_padres", ""
         ):
             incidencias.append(
                 {
@@ -167,7 +183,9 @@ def construir_reporte_documental_visita(visita, tipo_visita):
             detalle = "No se ha cargado este archivo final."
         elif ultimo_archivo.estado == "rechazado":
             estado = "rechazado"
-            detalle = ultimo_archivo.observaciones_revision or "Archivo final rechazado."
+            detalle = (
+                ultimo_archivo.observaciones_revision or "Archivo final rechazado."
+            )
         elif ultimo_archivo.estado == "pendiente":
             estado = "pendiente"
             detalle = "Archivo final cargado y en revisión."
@@ -199,7 +217,8 @@ def construir_reporte_documental_visita(visita, tipo_visita):
         "archivos_finales_estado": archivos_finales_estado,
         "archivos_finales_con_alerta": archivos_finales_con_alerta,
         "archivos_finales_rechazados": archivos_finales_rechazados,
-        "total_alertas": total_incidencias_asistentes + len(archivos_finales_con_alerta),
+        "total_alertas": total_incidencias_asistentes
+        + len(archivos_finales_con_alerta),
         "hay_alertas": bool(asistentes_con_alertas or archivos_finales_con_alerta),
     }
 
@@ -294,11 +313,15 @@ def reservar_visita_interna(request):
                 )
                 context = {
                     "form": form,
-                    "fichas": Ficha.objects.filter(activa=True).select_related("programa"),
+                    "fichas": Ficha.objects.filter(activa=True).select_related(
+                        "programa"
+                    ),
                     "correo": correo,
                     "titulo": "Reservar Visita Interna",
                 }
-                return render(request, "panel_instructor_interno/reservar_visita.html", context)
+                return render(
+                    request, "panel_instructor_interno/reservar_visita.html", context
+                )
 
             visita = form.save(commit=False)
             visita.nombre_programa = ficha.programa.nombre
@@ -966,6 +989,37 @@ def listar_fichas_aprendices(request):
     )
 
 
+from django.views.decorators.clickjacking import xframe_options_exempt
+
+
+@xframe_options_exempt
+@instructor_interno_required
+def ver_documento_aprendiz_inline(request, aprendiz_id, campo):
+    """Sirve un campo de archivo de un Aprendiz (documento_identidad o documento_adicional) inline."""
+    import mimetypes
+    from django.http import FileResponse, HttpResponseNotFound, HttpResponseBadRequest
+
+    campos_permitidos = ["documento_identidad", "documento_adicional"]
+    if campo not in campos_permitidos:
+        return HttpResponseBadRequest("Campo no válido")
+
+    aprendiz = get_object_or_404(Aprendiz, id=aprendiz_id)
+    archivo = getattr(aprendiz, campo)
+    if not archivo or not archivo.storage.exists(archivo.name):
+        return HttpResponseNotFound("El archivo no existe")
+
+    nombre = os.path.basename(archivo.name)
+    f = archivo.open("rb")
+    tipo_mime, _ = mimetypes.guess_type(archivo.name)
+    if not tipo_mime:
+        tipo_mime = "application/octet-stream"
+
+    response = FileResponse(f, content_type=tipo_mime)
+    response["Content-Disposition"] = f'inline; filename="{nombre}"'
+    response["X-Frame-Options"] = "SAMEORIGIN"
+    return response
+
+
 @instructor_interno_required
 def detalle_aprendices_ficha(request, pk):
     """
@@ -1026,7 +1080,10 @@ def crear_aprendiz(request, ficha_id):
 
                     # Guardar documentos de apoyo subidos
                     for categoria, docs in documentos_por_categoria.items():
-                        if categoria == '👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud':
+                        if (
+                            categoria
+                            == "👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud"
+                        ):
                             for doc in docs:
                                 archivo = request.FILES.get(f"documento_{doc.id}")
                                 if archivo:
@@ -1034,9 +1091,9 @@ def crear_aprendiz(request, ficha_id):
                                         documento_requerido=doc,
                                         aprendiz=aprendiz,
                                         archivo=archivo,
-                                        estado='pendiente'
+                                        estado="pendiente",
                                     )
-                
+
                 messages.success(
                     request,
                     f'✅ Aprendiz "{aprendiz.get_nombre_completo()}" registrado correctamente con documentos.',
@@ -1046,9 +1103,9 @@ def crear_aprendiz(request, ficha_id):
                 )
             except IntegrityError:
                 messages.error(
-                    request, 
+                    request,
                     f"❌ Ya existe un aprendiz con el documento {aprendiz.numero_documento} en esta ficha. "
-                    f"Cada documento debe ser único por ficha."
+                    f"Cada documento debe ser único por ficha.",
                 )
         else:
             for error in errores_archivos:
@@ -1093,32 +1150,35 @@ def editar_aprendiz(request, pk):
 
                     # Guardar documentos de apoyo subidos (actualizar existentes)
                     for categoria, docs in documentos_por_categoria.items():
-                        if categoria == '👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud':
+                        if (
+                            categoria
+                            == "👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud"
+                        ):
                             for doc in docs:
                                 archivo = request.FILES.get(f"documento_{doc.id}")
                                 if archivo:
                                     DocumentoSubidoAprendiz.objects.filter(
-                                        documento_requerido=doc,
-                                        aprendiz=aprendiz
+                                        documento_requerido=doc, aprendiz=aprendiz
                                     ).delete()
                                     DocumentoSubidoAprendiz.objects.create(
                                         documento_requerido=doc,
                                         aprendiz=aprendiz,
                                         archivo=archivo,
-                                        estado='pendiente'
+                                        estado="pendiente",
                                     )
-                
+
                 messages.success(
-                    request, f'✅ Aprendiz "{aprendiz.get_nombre_completo()}" actualizado.'
+                    request,
+                    f'✅ Aprendiz "{aprendiz.get_nombre_completo()}" actualizado.',
                 )
                 return redirect(
                     "panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id
                 )
             except IntegrityError:
                 messages.error(
-                    request, 
+                    request,
                     f"❌ Ya existe un aprendiz con el documento {aprendiz.numero_documento} en esta ficha. "
-                    f"Cada documento debe ser único por ficha."
+                    f"Cada documento debe ser único por ficha.",
                 )
         else:
             for error in errores_archivos:
@@ -1391,8 +1451,8 @@ def crear_aprendiz(request, ficha_id):
                 )
             except IntegrityError:
                 messages.error(
-                    request, 
-                    f"❌ Ya existe un aprendiz con el documento {aprendiz.numero_documento} en esta ficha."
+                    request,
+                    f"❌ Ya existe un aprendiz con el documento {aprendiz.numero_documento} en esta ficha.",
                 )
         else:
             for field, errors in form.errors.items():
@@ -1428,15 +1488,16 @@ def editar_aprendiz(request, pk):
                 form.save()
                 guardar_documentos_aprendiz(aprendiz, request.FILES, docs_cat)
                 messages.success(
-                    request, f'✅ Aprendiz "{aprendiz.get_nombre_completo()}" actualizado.'
+                    request,
+                    f'✅ Aprendiz "{aprendiz.get_nombre_completo()}" actualizado.',
                 )
                 return redirect(
                     "panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id
                 )
             except IntegrityError:
                 messages.error(
-                    request, 
-                    f"❌ Ya existe un aprendiz con el documento {aprendiz.numero_documento} en esta ficha."
+                    request,
+                    f"❌ Ya existe un aprendiz con el documento {aprendiz.numero_documento} en esta ficha.",
                 )
         else:
             for field, errors in form.errors.items():
