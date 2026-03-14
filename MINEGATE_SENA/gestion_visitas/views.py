@@ -221,9 +221,13 @@ def api_listar_visitas(request):
                     "correo": v.correo_responsable,
                     "telefono": v.telefono_responsable,
                     "fecha_visita": (
-                        v.fecha_solicitud.strftime("%d/%m/%Y")
-                        if v.fecha_solicitud
-                        else "N/A"
+                        v.fecha_visita.strftime("%d/%m/%Y")
+                        if v.fecha_visita
+                        else (
+                            v.fecha_solicitud.strftime("%d/%m/%Y")
+                            if v.fecha_solicitud
+                            else "N/A"
+                        )
                     ),
                     "cantidad": v.cantidad_aprendices,
                     "estado": v.estado,
@@ -296,9 +300,13 @@ def api_listar_visitas(request):
                     "correo": v.correo_responsable,
                     "telefono": v.telefono_responsable,
                     "fecha_visita": (
-                        v.fecha_solicitud.strftime("%d/%m/%Y")
-                        if v.fecha_solicitud
-                        else "N/A"
+                        v.fecha_visita.strftime("%d/%m/%Y")
+                        if v.fecha_visita
+                        else (
+                            v.fecha_solicitud.strftime("%d/%m/%Y")
+                            if v.fecha_solicitud
+                            else "N/A"
+                        )
                     ),
                     "cantidad": v.cantidad_visitantes,
                     "estado": v.estado,
@@ -381,13 +389,53 @@ def api_detalle_visita(request, tipo, visita_id):
                         "telefono": a.telefono,
                         "estado": a.estado,
                         "documento_identidad": (
-                            a.documento_identidad.url if a.documento_identidad else None
+                            reverse(
+                                "documentos:ver_campo_asistente_inline",
+                                kwargs={
+                                    "tipo": "interna",
+                                    "asistente_id": a.id,
+                                    "campo": "documento_identidad",
+                                },
+                            )
+                            if a.documento_identidad
+                            else None
+                        ),
+                        "documento_identidad_nombre": (
+                            a.documento_identidad.name.split("/")[-1]
+                            if a.documento_identidad
+                            else None
                         ),
                         "documento_adicional": (
-                            a.documento_adicional.url if a.documento_adicional else None
+                            reverse(
+                                "documentos:ver_campo_asistente_inline",
+                                kwargs={
+                                    "tipo": "interna",
+                                    "asistente_id": a.id,
+                                    "campo": "documento_adicional",
+                                },
+                            )
+                            if a.documento_adicional
+                            else None
+                        ),
+                        "documento_adicional_nombre": (
+                            a.documento_adicional.name.split("/")[-1]
+                            if a.documento_adicional
+                            else None
                         ),
                         "formato_autorizacion_padres": (
-                            a.formato_autorizacion_padres.url
+                            reverse(
+                                "documentos:ver_campo_asistente_inline",
+                                kwargs={
+                                    "tipo": "interna",
+                                    "asistente_id": a.id,
+                                    "campo": "formato_autorizacion_padres",
+                                },
+                            )
+                            if a.formato_autorizacion_padres
+                            else None
+                        ),
+                        "formato_autorizacion_padres_nombre": (
+                            a.formato_autorizacion_padres.name.split("/")[-1]
                             if a.formato_autorizacion_padres
                             else None
                         ),
@@ -433,13 +481,22 @@ def api_detalle_visita(request, tipo, visita_id):
             "ficha": visita.numero_ficha,
             "cantidad": visita.cantidad_aprendices,
             "fecha_visita": (
-                visita.fecha_solicitud.strftime("%d/%m/%Y")
-                if visita.fecha_solicitud
-                else "N/A"
+                visita.fecha_visita.strftime("%d/%m/%Y")
+                if visita.fecha_visita
+                else (
+                    visita.fecha_solicitud.strftime("%d/%m/%Y")
+                    if visita.fecha_solicitud
+                    else "N/A"
+                )
             ),
             "estado": visita.estado,
             "observaciones": visita.observaciones or "",
             "fecha_solicitud": (
+                visita.fecha_solicitud.strftime("%d/%m/%Y %H:%M")
+                if visita.fecha_solicitud
+                else "N/A"
+            ),
+            "fecha_registro": (
                 visita.fecha_solicitud.strftime("%d/%m/%Y %H:%M")
                 if visita.fecha_solicitud
                 else "N/A"
@@ -469,13 +526,53 @@ def api_detalle_visita(request, tipo, visita_id):
                         "telefono": a.telefono,
                         "estado": a.estado,
                         "documento_identidad": (
-                            a.documento_identidad.url if a.documento_identidad else None
+                            reverse(
+                                "documentos:ver_campo_asistente_inline",
+                                kwargs={
+                                    "tipo": "externa",
+                                    "asistente_id": a.id,
+                                    "campo": "documento_identidad",
+                                },
+                            )
+                            if a.documento_identidad
+                            else None
+                        ),
+                        "documento_identidad_nombre": (
+                            a.documento_identidad.name.split("/")[-1]
+                            if a.documento_identidad
+                            else None
                         ),
                         "documento_adicional": (
-                            a.documento_adicional.url if a.documento_adicional else None
+                            reverse(
+                                "documentos:ver_campo_asistente_inline",
+                                kwargs={
+                                    "tipo": "externa",
+                                    "asistente_id": a.id,
+                                    "campo": "documento_adicional",
+                                },
+                            )
+                            if a.documento_adicional
+                            else None
+                        ),
+                        "documento_adicional_nombre": (
+                            a.documento_adicional.name.split("/")[-1]
+                            if a.documento_adicional
+                            else None
                         ),
                         "formato_autorizacion_padres": (
-                            a.formato_autorizacion_padres.url
+                            reverse(
+                                "documentos:ver_campo_asistente_inline",
+                                kwargs={
+                                    "tipo": "externa",
+                                    "asistente_id": a.id,
+                                    "campo": "formato_autorizacion_padres",
+                                },
+                            )
+                            if a.formato_autorizacion_padres
+                            else None
+                        ),
+                        "formato_autorizacion_padres_nombre": (
+                            a.formato_autorizacion_padres.name.split("/")[-1]
                             if a.formato_autorizacion_padres
                             else None
                         ),
@@ -510,13 +607,22 @@ def api_detalle_visita(request, tipo, visita_id):
             "institucion": visita.nombre,
             "cantidad": visita.cantidad_visitantes,
             "fecha_visita": (
-                visita.fecha_solicitud.strftime("%d/%m/%Y")
-                if visita.fecha_solicitud
-                else "N/A"
+                visita.fecha_visita.strftime("%d/%m/%Y")
+                if visita.fecha_visita
+                else (
+                    visita.fecha_solicitud.strftime("%d/%m/%Y")
+                    if visita.fecha_solicitud
+                    else "N/A"
+                )
             ),
             "estado": visita.estado,
             "observaciones": visita.observacion or "",
             "fecha_solicitud": (
+                visita.fecha_solicitud.strftime("%d/%m/%Y %H:%M")
+                if visita.fecha_solicitud
+                else "N/A"
+            ),
+            "fecha_registro": (
                 visita.fecha_solicitud.strftime("%d/%m/%Y %H:%M")
                 if visita.fecha_solicitud
                 else "N/A"
@@ -1030,8 +1136,7 @@ def api_revisar_documento_asistente(request, tipo, asistente_id, accion):
 
         # Restricción: No se puede aprobar masivamente si la última versión tiene rechazos
         if any(
-            doc_actual["ds"].estado == "rechazado"
-            for doc_actual in documentos_actuales
+            doc_actual["ds"].estado == "rechazado" for doc_actual in documentos_actuales
         ):
             return JsonResponse(
                 {
@@ -1041,8 +1146,7 @@ def api_revisar_documento_asistente(request, tipo, asistente_id, accion):
             )
 
         if any(
-            doc_actual["ds"].estado != "aprobado"
-            for doc_actual in documentos_actuales
+            doc_actual["ds"].estado != "aprobado" for doc_actual in documentos_actuales
         ):
             return JsonResponse(
                 {
@@ -1221,10 +1325,38 @@ def api_documentos_revision(request):
                     "numero_documento": a.numero_documento,
                     "estado": a.estado,
                     "documento_identidad": (
-                        a.documento_identidad.url if a.documento_identidad else None
+                        reverse(
+                            "documentos:ver_campo_asistente_inline",
+                            kwargs={
+                                "tipo": "interna",
+                                "asistente_id": a.id,
+                                "campo": "documento_identidad",
+                            },
+                        )
+                        if a.documento_identidad
+                        else None
+                    ),
+                    "documento_identidad_nombre": (
+                        a.documento_identidad.name.split("/")[-1]
+                        if a.documento_identidad
+                        else None
                     ),
                     "documento_adicional": (
-                        a.documento_adicional.url if a.documento_adicional else None
+                        reverse(
+                            "documentos:ver_campo_asistente_inline",
+                            kwargs={
+                                "tipo": "interna",
+                                "asistente_id": a.id,
+                                "campo": "documento_adicional",
+                            },
+                        )
+                        if a.documento_adicional
+                        else None
+                    ),
+                    "documento_adicional_nombre": (
+                        a.documento_adicional.name.split("/")[-1]
+                        if a.documento_adicional
+                        else None
                     ),
                     "estado_autorizacion_padres": (
                         a.estado_autorizacion_padres
@@ -1280,10 +1412,38 @@ def api_documentos_revision(request):
                     "numero_documento": a.numero_documento,
                     "estado": a.estado,
                     "documento_identidad": (
-                        a.documento_identidad.url if a.documento_identidad else None
+                        reverse(
+                            "documentos:ver_campo_asistente_inline",
+                            kwargs={
+                                "tipo": "externa",
+                                "asistente_id": a.id,
+                                "campo": "documento_identidad",
+                            },
+                        )
+                        if a.documento_identidad
+                        else None
+                    ),
+                    "documento_identidad_nombre": (
+                        a.documento_identidad.name.split("/")[-1]
+                        if a.documento_identidad
+                        else None
                     ),
                     "documento_adicional": (
-                        a.documento_adicional.url if a.documento_adicional else None
+                        reverse(
+                            "documentos:ver_campo_asistente_inline",
+                            kwargs={
+                                "tipo": "externa",
+                                "asistente_id": a.id,
+                                "campo": "documento_adicional",
+                            },
+                        )
+                        if a.documento_adicional
+                        else None
+                    ),
+                    "documento_adicional_nombre": (
+                        a.documento_adicional.name.split("/")[-1]
+                        if a.documento_adicional
+                        else None
                     ),
                     "observaciones_revision": a.observaciones_revision,
                     "tiene_rechazos": revision["tiene_rechazos"],

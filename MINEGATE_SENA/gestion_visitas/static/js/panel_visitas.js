@@ -16,7 +16,7 @@ function cambiarTabVisita(tipo) {
   tipoVisitaActual = tipo;
   document.querySelectorAll('.tab-visita').forEach(tab => {
     if (tab.getAttribute('data-tipo') === tipo) {
-      tab.style.background = '#8b5cf6';
+      tab.style.background = '#059669';
       tab.style.color = 'white';
       tab.classList.add('active');
     } else {
@@ -130,7 +130,7 @@ function cargarVisitas() {
 
 function getEstadoBadge(estado) {
   const badges = {
-    'enviada_coordinacion': '<span style="background:#ede9fe;color:#5b21b6;padding:4px 10px;border-radius:20px;font-size:11px;">🕒 Pendiente coordinación</span>',
+    'enviada_coordinacion': '<span style="background:#dcfce7;color:#166534;padding:4px 10px;border-radius:20px;font-size:11px;">🕒 Pendiente coordinación</span>',
     'pendiente': '<span style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:20px;font-size:11px;">⏳ Pendiente</span>',
     'aprobada_inicial': '<span style="background:#bbf7d0;color:#166534;padding:4px 10px;border-radius:20px;font-size:11px;">✅ Aprobada Inicial</span>',
     'documentos_enviados': '<span style="background:#dbeafe;color:#1e40af;padding:4px 10px;border-radius:20px;font-size:11px;">📄 Docs Enviados</span>',
@@ -198,7 +198,7 @@ function getAccionesVisita(v) {
   let acciones = `<button onclick="verDetalleVisita('${v.tipo}', ${v.id})" style="background:#6b7280;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">👁️ Ver</button>`;
 
   if (v.estado === 'enviada_coordinacion') {
-    acciones += `<span style="display:inline-block;background:#ede9fe;color:#5b21b6;padding:5px 10px;border-radius:5px;margin:2px;font-size:11px;">🕒 Esperando coordinación</span>`;
+    acciones += `<span style="display:inline-block;background:#dcfce7;color:#166534;padding:5px 10px;border-radius:5px;margin:2px;font-size:11px;">🕒 Esperando coordinación</span>`;
     return acciones;
   }
 
@@ -446,7 +446,7 @@ function mostrarDocumentosPorEstado(filtro) {
           documentos_finales_visita.forEach(ds => {
             const badgeDoc = getBadgeRevisionDocumento(ds);
             const observacionFinal = ds.estado === 'rechazado' && ds.observaciones_revision
-              ? `<div style="margin-top:4px;padding:6px 10px;background:#fff7ed;border:1px solid #fdba74;border-radius:6px;color:#9a3412;font-size:11px;">📝 ${ds.observaciones_revision}</div>`
+              ? `<div style="margin-top:4px;padding:6px 10px;background:#fff7ed;border:1px solid #fdba74;border-radius:6px;color:#9a3412;font-size:11px;display:flex;align-items:flex-start;gap:5px;"><i class="ri-error-warning-line" style="flex-shrink:0;"></i><span>${ds.observaciones_revision}</span></div>`
               : '';
 
             html += `
@@ -454,11 +454,11 @@ function mostrarDocumentosPorEstado(filtro) {
                 <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
                   <div style="display:flex;gap:4px;align-items:center;">
                     <button onclick="visualizarDocumento('${ds.url}', '${ds.titulo} - ${visita.responsable}', {id: ${ds.id}, estado: '${ds.estado}'})" 
-                            style="background:#059669;color:white;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;font-size:11px;display:inline-flex;align-items:center;gap:4px;font-weight:500;">
-                      <i class="ri-eye-line"></i> 📋 ${ds.titulo}
+                            style="background:linear-gradient(135deg,#059669,#047857);color:white;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;font-size:11px;display:inline-flex;align-items:center;gap:4px;font-weight:600;">
+                      <i class="ri-file-text-line"></i> ${ds.titulo}
                     </button>
-                    <a href="${ds.download_url || ds.url}" download style="background:#6b7280;color:white;padding:5px 8px;border-radius:6px;text-decoration:none;font-size:11px;display:inline-flex;align-items:center;" title="Descargar">
-                      <i class="ri-download-line"></i>
+                    <a href="${ds.download_url || ds.url}" download style="background:#f3f4f6;color:#374151;padding:5px 8px;border-radius:6px;text-decoration:none;font-size:11px;display:inline-flex;align-items:center;border:1px solid #e5e7eb;" title="Descargar">
+                      <i class="ri-download-2-line"></i>
                     </a>
                   </div>
                   ${badgeDoc}
@@ -471,8 +471,9 @@ function mostrarDocumentosPorEstado(filtro) {
           if (documentosFinalesRechazados.length > 0) {
             const nombresDocsRechazados = documentosFinalesRechazados.map(ds => ds.titulo).join(', ');
             html += `
-              <div style="margin-top:8px;display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:4px 0;">
-                <span style="color:#9a3412;font-size:12px;font-weight:600;">⚠️ Archivo final rechazado: ${nombresDocsRechazados}</span>
+              <div style="margin-top:8px;display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:6px 10px;background:#fff7ed;border:1px solid #fca5a5;border-radius:6px;border-left:3px solid #ef4444;">
+                <i class="ri-alert-fill" style="color:#ef4444;font-size:13px;"></i>
+                <span style="color:#9a3412;font-size:12px;font-weight:600;">Archivo final rechazado: ${nombresDocsRechazados}</span>
               </div>`;
           }
 
@@ -512,11 +513,11 @@ function mostrarDocumentosPorEstado(filtro) {
                   <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
                     <div style="display:flex;gap:4px;align-items:center;">
                       <button onclick="visualizarDocumento('${a.documento_adicional}', 'Doc. Adicional - ${a.nombre_completo}', {estado: '${a.estado === 'documentos_aprobados' ? 'aprobado' : 'pendiente'}'})" 
-                              style="background:#8b5cf6;color:white;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;font-size:11px;display:inline-flex;align-items:center;gap:4px;font-weight:500;">
-                        <i class="ri-eye-line"></i> 📎 Doc. Adicional
+                              style="background:linear-gradient(135deg,#10b981,#059669);color:white;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;font-size:11px;display:inline-flex;align-items:center;gap:4px;font-weight:600;">
+                        <i class="ri-file-copy-2-line"></i> Doc. Adicional
                       </button>
-                      <a href="${a.documento_adicional}" download style="background:#6b7280;color:white;padding:5px 8px;border-radius:6px;text-decoration:none;font-size:11px;display:inline-flex;align-items:center;" title="Descargar">
-                        <i class="ri-download-line"></i>
+                      <a href="${a.documento_adicional}" download style="background:#f3f4f6;color:#374151;padding:5px 8px;border-radius:6px;text-decoration:none;font-size:11px;display:inline-flex;align-items:center;border:1px solid #e5e7eb;" title="Descargar">
+                        <i class="ri-download-2-line"></i>
                       </a>
                     </div>
                     ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (tieneRechazosPersonales ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Pendiente corrección</span>' : '')}
@@ -536,11 +537,11 @@ function mostrarDocumentosPorEstado(filtro) {
                   <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
                     <div style="display:flex;gap:4px;align-items:center;">
                       <button onclick="visualizarDocumento('${ds.url}', '${ds.titulo} - ${a.nombre_completo}', {id: ${ds.id}, estado: '${ds.estado}'})" 
-                              style="background:#059669;color:white;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;font-size:11px;display:inline-flex;align-items:center;gap:4px;font-weight:500;">
-                        <i class="ri-eye-line"></i> 📋 ${ds.titulo}
+                              style="background:linear-gradient(135deg,#059669,#047857);color:white;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;font-size:11px;display:inline-flex;align-items:center;gap:4px;font-weight:600;">
+                        <i class="ri-file-text-line"></i> ${ds.titulo}
                       </button>
-                      <a href="${ds.download_url || ds.url}" download style="background:#6b7280;color:white;padding:5px 8px;border-radius:6px;text-decoration:none;font-size:11px;display:inline-flex;align-items:center;" title="Descargar">
-                        <i class="ri-download-line"></i>
+                      <a href="${ds.download_url || ds.url}" download style="background:#f3f4f6;color:#374151;padding:5px 8px;border-radius:6px;text-decoration:none;font-size:11px;display:inline-flex;align-items:center;border:1px solid #e5e7eb;" title="Descargar">
+                        <i class="ri-download-2-line"></i>
                       </a>
                     </div>
                     ${badgeDoc}
@@ -565,13 +566,13 @@ function mostrarDocumentosPorEstado(filtro) {
 
           let obsHtml = '';
           if (a.observaciones_revision && tieneRechazosPersonales) {
-            obsHtml = `<div style="margin-top:6px;padding:6px 10px;background:#fef3c7;border-radius:5px;font-size:11px;color:#92400e;border:1px solid #fcd34d;">📝 ${a.observaciones_revision}</div>`;
+            obsHtml = `<div style="margin-top:6px;padding:6px 10px;background:#fef3c7;border-radius:5px;font-size:11px;color:#92400e;border:1px solid #fcd34d;display:flex;align-items:flex-start;gap:5px;"><i class="ri-sticky-note-2-line"></i><span>${a.observaciones_revision}</span></div>`;
           }
 
           let advertenciaCorreccionHtml = '';
           if (tieneRechazosPersonales) {
-            advertenciaCorreccionHtml = `<div style="margin-top:6px;padding:8px 10px;background:#fff7ed;border-radius:6px;font-size:11px;color:#9a3412;border:1px solid #fdba74;">
-              ⚠️ Este aprendiz tiene documentos rechazados. Solicita al instructor actualizar y volver a subir los archivos.
+            advertenciaCorreccionHtml = `<div style="margin-top:6px;padding:8px 10px;background:#fff7ed;border-radius:6px;font-size:11px;color:#9a3412;border:1px solid #fdba74;display:flex;align-items:flex-start;gap:6px;">
+              <i class="ri-alert-fill" style="flex-shrink:0;margin-top:1px;"></i><span>Este aprendiz tiene documentos rechazados. Solicita al instructor actualizar y volver a subir los archivos.</span>
             </div>`;
           }
 
@@ -581,7 +582,7 @@ function mostrarDocumentosPorEstado(filtro) {
                   <div style="display:flex;align-items:center;gap:8px;">
                     <i class="ri-user-line" style="color:#8b5cf6;"></i>
                     <strong style="font-size:13px;">${a.nombre_completo}</strong>
-                    <span style="color:#9ca3af;font-size:11px;">🪪 ${a.tipo_documento}: ${a.numero_documento}</span>
+                    <span style="color:#9ca3af;font-size:11px;display:inline-flex;align-items:center;gap:3px;"><i class="ri-id-card-line"></i> ${a.tipo_documento}: ${a.numero_documento}</span>
                     ${aBadge}
                   </div>
                   ${accionesHtml}
@@ -884,7 +885,7 @@ function verDetalleVisita(tipo, id) {
   const modal = document.getElementById('modalDetalleVisita');
   const contenido = document.getElementById('contenidoDetalleVisita');
   document.getElementById('detalleVisitaId').textContent = id;
-  contenido.innerHTML = '<p style="text-align:center;padding:20px;"><i class="ri-loader-4-line" style="animation:spin 1s linear infinite;"></i> Cargando...</p>';
+  contenido.innerHTML = '<div style="text-align:center;padding:40px 20px;"><i class="ri-loader-4-line" style="font-size:36px;color:#22c55e;animation:spin 1s linear infinite;"></i><p style="color:#6b7280;margin-top:10px;font-size:14px;">Cargando detalle...</p></div>';
   modal.style.display = 'block';
 
   fetch(`/gestion/visitas/${tipo}/${id}/`)
@@ -912,9 +913,10 @@ function verDetalleVisita(tipo, id) {
       let archivosFinalesHtml = '';
       if (documentos_finales.length > 0) {
         archivosFinalesHtml = `
-          <div style="background:#f0fdf4;padding:16px;border-radius:10px;border:1px solid #bbf7d0;border-left:4px solid #22c55e;margin-bottom:20px;">
-            <h4 style="color:#166534;margin:0 0 12px 0;display:flex;align-items:center;gap:8px;">
-              <i class="ri-file-text-line"></i> 📁 Archivos Finales - ${data.responsable}
+          <div style="background:linear-gradient(135deg,#ecfdf5,#dcfce7);padding:18px;border-radius:12px;border:1px solid #86efac;border-left:5px solid #22c55e;margin-bottom:20px;box-shadow:0 2px 8px rgba(34,197,94,0.12);">
+            <h4 style="color:#065f46;margin:0 0 14px 0;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;">
+              <span style="background:#22c55e;color:white;border-radius:7px;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ri-folder-open-fill" style="font-size:14px;"></i></span>
+              Archivos Finales &mdash; ${data.responsable}
             </h4>
             <div style="display:flex;flex-direction:column;gap:8px;">`;
 
@@ -926,22 +928,22 @@ function verDetalleVisita(tipo, id) {
             marginLeft: '0px'
           });
           const observacionFinal = ds.estado === 'rechazado' && ds.observaciones_revision
-            ? `<div style="margin-top:6px;padding:8px 10px;background:#fff7ed;border:1px solid #fdba74;border-radius:6px;color:#9a3412;font-size:11px;">📝 ${ds.observaciones_revision}</div>`
+            ? `<div style="margin-top:6px;padding:8px 10px;background:#fff7ed;border:1px solid #fdba74;border-radius:6px;color:#9a3412;font-size:11px;display:flex;align-items:flex-start;gap:6px;"><i class="ri-error-warning-line" style="flex-shrink:0;margin-top:1px;"></i><span>${ds.observaciones_revision}</span></div>`
             : '';
           if (!badgeDoc) {
             badgeDoc = '<span style="background:#fef3c7;color:#92400e;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Pendiente</span>';
           }
 
           archivosFinalesHtml += `
-              <div style="background:white;padding:10px;border-radius:6px;border:1px solid #d1faf0;">
+              <div style="background:white;padding:10px 12px;border-radius:8px;border:1px solid #d1fae5;box-shadow:0 1px 3px rgba(0,0,0,0.04);transition:box-shadow .2s;">
                 <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
                   <div style="display:flex;gap:6px;align-items:center;">
                     <button onclick="visualizarDocumento('${ds.url}', '${ds.titulo} - ${data.responsable}', {id: ${ds.id}, estado: '${ds.estado}'})" 
-                            style="background:#059669;color:white;padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:5px;font-weight:500;">
-                      <i class="ri-eye-line"></i> 📋 ${ds.titulo}
+                            style="background:linear-gradient(135deg,#22c55e,#16a34a);color:white;padding:7px 14px;border-radius:7px;border:none;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:6px;font-weight:600;box-shadow:0 2px 5px rgba(34,197,94,0.28);">
+                      <i class="ri-file-text-line"></i> ${ds.titulo}
                     </button>
-                    <a href="${ds.download_url || ds.url}" download style="background:#6b7280;color:white;padding:7px 10px;border-radius:6px;text-decoration:none;font-size:12px;display:inline-flex;align-items:center;" title="Descargar">
-                      <i class="ri-download-line"></i>
+                    <a href="${ds.download_url || ds.url}" download style="background:#f3f4f6;color:#374151;padding:7px 10px;border-radius:7px;text-decoration:none;font-size:12px;display:inline-flex;align-items:center;border:1px solid #e5e7eb;" title="Descargar">
+                      <i class="ri-download-2-line"></i>
                     </a>
                   </div>
                   ${badgeDoc}
@@ -954,8 +956,9 @@ function verDetalleVisita(tipo, id) {
         if (finalesRechazados.length > 0) {
           const nombresFinales = finalesRechazados.map(ds => ds.titulo).join(', ');
           archivosFinalesHtml += `
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#fff7ed;border:1px solid #fdba74;color:#9a3412;padding:10px;border-radius:8px;">
-              <span style="font-size:12px;font-weight:600;">⚠️ Archivo final rechazado: ${nombresFinales}</span>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#fff7ed;border:1px solid #fca5a5;color:#9a3412;padding:10px 14px;border-radius:8px;border-left:4px solid #ef4444;">
+              <i class="ri-alert-fill" style="color:#ef4444;font-size:15px;flex-shrink:0;"></i>
+              <span style="font-size:12px;font-weight:600;">Archivo final rechazado: ${nombresFinales}</span>
             </div>`;
         }
 
@@ -982,11 +985,11 @@ function verDetalleVisita(tipo, id) {
                   <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
                     <div style="display:flex;gap:4px;align-items:center;">
                       <button onclick="visualizarDocumento('${a.documento_identidad}', 'Documento de Identidad - ${a.nombre_completo}', {estado: '${a.estado === 'documentos_aprobados' ? 'aprobado' : 'pendiente'}'})" 
-                              style="background:#3b82f6;color:white;padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:5px;font-weight:500;">
-                        <i class="ri-eye-line"></i> 🪪 Doc. Identidad
+                              style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:white;padding:7px 14px;border-radius:7px;border:none;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:6px;font-weight:600;box-shadow:0 2px 5px rgba(59,130,246,0.25);">
+                        <i class="ri-id-card-line"></i> Doc. Identidad
                       </button>
-                      <a href="${a.documento_identidad}" download style="background:#6b7280;color:white;padding:7px 10px;border-radius:6px;text-decoration:none;font-size:12px;display:inline-flex;align-items:center;" title="Descargar">
-                        <i class="ri-download-line"></i>
+                      <a href="${a.documento_identidad}" download style="background:#f3f4f6;color:#374151;padding:7px 10px;border-radius:7px;text-decoration:none;font-size:12px;display:inline-flex;align-items:center;border:1px solid #e5e7eb;" title="Descargar">
+                        <i class="ri-download-2-line"></i>
                       </a>
                     </div>
                     ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (tieneRechazosPersonales ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Pendiente corrección</span>' : '')}
@@ -998,11 +1001,11 @@ function verDetalleVisita(tipo, id) {
                   <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
                     <div style="display:flex;gap:4px;align-items:center;">
                       <button onclick="visualizarDocumento('${a.documento_adicional}', 'Documento Adicional - ${a.nombre_completo}', {estado: '${a.estado === 'documentos_aprobados' ? 'aprobado' : 'pendiente'}'})" 
-                              style="background:#8b5cf6;color:white;padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:5px;font-weight:500;">
-                        <i class="ri-eye-line"></i> 📎 Ver Doc. Adicional
+                              style="background:linear-gradient(135deg,#22c55e,#16a34a);color:white;padding:7px 14px;border-radius:7px;border:none;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:6px;font-weight:600;box-shadow:0 2px 5px rgba(34,197,94,0.28);">
+                        <i class="ri-file-copy-2-line"></i> Doc. Adicional
                       </button>
-                      <a href="${a.documento_adicional}" download style="background:#6b7280;color:white;padding:7px 10px;border-radius:6px;text-decoration:none;font-size:12px;display:inline-flex;align-items:center;" title="Descargar">
-                        <i class="ri-download-line"></i>
+                      <a href="${a.documento_adicional}" download style="background:#f3f4f6;color:#374151;padding:7px 10px;border-radius:7px;text-decoration:none;font-size:12px;display:inline-flex;align-items:center;border:1px solid #e5e7eb;" title="Descargar">
+                        <i class="ri-download-2-line"></i>
                       </a>
                     </div>
                     ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (tieneRechazosPersonales ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Pendiente corrección</span>' : '')}
@@ -1024,19 +1027,19 @@ function verDetalleVisita(tipo, id) {
                     <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
                       <div style="display:flex;gap:4px;align-items:center;">
                         <button onclick="visualizarDocumento('${a.formato_autorizacion_padres}', 'Formato Autorización Padres - ${a.nombre_completo}', {mode: 'autorizacion_padres', tipo: '${tipo}', asistenteId: ${a.id}, nombre: '${a.nombre_completo.replace(/'/g, "\\'")}', estado: '${estadoAutPadres}'})" 
-                                style="background:#f59e0b;color:white;padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:5px;font-weight:500;">
-                          <i class="ri-eye-line"></i> 📋 Autorización Padres
+                                style="background:linear-gradient(135deg,#f59e0b,#d97706);color:white;padding:7px 14px;border-radius:7px;border:none;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:6px;font-weight:600;box-shadow:0 2px 5px rgba(245,158,11,0.25);">
+                          <i class="ri-parent-line"></i> Autorización Padres
                         </button>
-                        <a href="${a.formato_autorizacion_padres}" download style="background:#92400e;color:white;padding:7px 10px;border-radius:6px;text-decoration:none;font-size:12px;display:inline-flex;align-items:center;" title="Descargar">
-                          <i class="ri-download-line"></i>
+                        <a href="${a.formato_autorizacion_padres}" download style="background:#f3f4f6;color:#374151;padding:7px 10px;border-radius:7px;text-decoration:none;font-size:12px;display:inline-flex;align-items:center;border:1px solid #e5e7eb;" title="Descargar">
+                          <i class="ri-download-2-line"></i>
                         </a>
                       </div>
                       <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
-                        <span style="background:#fcd34d;color:#78350f;font-size:10px;padding:3px 8px;border-radius:6px;font-weight:600;">👶 Menor</span>
+                        <span style="background:#fef3c7;color:#78350f;font-size:10px;padding:3px 8px;border-radius:6px;font-weight:600;display:inline-flex;align-items:center;gap:4px;border:1px solid #fcd34d;"><i class="ri-user-heart-line"></i> Menor</span>
                         ${badgeAutPadres}
                       </div>
                     </div>
-                    ${a.observaciones_autorizacion_padres ? `<div style="font-size:10px;color:#991b1b;font-style:italic;margin-top:6px;">❌ ${a.observaciones_autorizacion_padres}</div>` : ''}
+                    ${a.observaciones_autorizacion_padres ? `<div style="font-size:11px;color:#991b1b;margin-top:6px;display:flex;align-items:flex-start;gap:5px;"><i class="ri-close-circle-fill" style="flex-shrink:0;margin-top:1px;"></i><span>${a.observaciones_autorizacion_padres}</span></div>` : ''}
                   </div>`;
           }
           if (a.documentos_subidos && a.documentos_subidos.length > 0) {
@@ -1056,21 +1059,21 @@ function verDetalleVisita(tipo, id) {
                   <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
                     <div style="display:flex;gap:4px;align-items:center;">
                       <button onclick="visualizarDocumento('${ds.url}', '${ds.titulo} - ${a.nombre_completo}', {id: ${ds.id}, estado: '${ds.estado}'})" 
-                              style="background:#059669;color:white;padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:5px;font-weight:500;">
-                        <i class="ri-eye-line"></i> 📋 ${ds.titulo}
+                              style="background:linear-gradient(135deg,#22c55e,#16a34a);color:white;padding:7px 14px;border-radius:7px;border:none;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:6px;font-weight:600;box-shadow:0 2px 5px rgba(34,197,94,0.28);">
+                        <i class="ri-file-text-line"></i> ${ds.titulo}
                       </button>
-                      <a href="${ds.download_url || ds.url}" download style="background:#6b7280;color:white;padding:7px 10px;border-radius:6px;text-decoration:none;font-size:12px;display:inline-flex;align-items:center;" title="Descargar">
-                        <i class="ri-download-line"></i>
+                      <a href="${ds.download_url || ds.url}" download style="background:#f3f4f6;color:#374151;padding:7px 10px;border-radius:7px;text-decoration:none;font-size:12px;display:inline-flex;align-items:center;border:1px solid #e5e7eb;" title="Descargar">
+                        <i class="ri-download-2-line"></i>
                       </a>
                     </div>
                     ${badgeDoc}
                   </div>
-                  ${ds.observaciones_revision ? `<div style="font-size:10px;color:#991b1b;font-style:italic;margin-left:4px;margin-top:-2px;margin-bottom:6px;">❌ ${ds.observaciones_revision}</div>` : ''}`;
+                  ${ds.observaciones_revision ? `<div style="font-size:11px;color:#991b1b;margin-left:4px;margin-top:4px;margin-bottom:2px;display:flex;align-items:flex-start;gap:5px;"><i class="ri-close-circle-fill" style="flex-shrink:0;margin-top:1px;"></i><span>${ds.observaciones_revision}</span></div>` : ''}`;
             });
           }
 
           if (!tieneDocs) {
-            botonesDoc = `<span style="color:#9ca3af;font-size:12px;font-style:italic;">📭 Sin documentos subidos aún</span>`;
+            botonesDoc = `<span style="color:#9ca3af;font-size:12px;display:inline-flex;align-items:center;gap:5px;"><i class="ri-inbox-2-line" style="font-size:14px;"></i> Sin documentos subidos aún</span>`;
           }
 
           let estadoBadge = '';
@@ -1079,7 +1082,7 @@ function verDetalleVisita(tipo, id) {
             borderColor = '#f59e0b';
             estadoBadge = '<span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">⏳ Pendiente</span>';
           } else if (a.estado === 'documentos_aprobados') {
-            borderColor = '#10b981';
+            borderColor = '#22c55e';
             estadoBadge = '<span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">✅ Aprobado</span>';
           } else if (tieneRechazosPersonales) {
             borderColor = '#ef4444';
@@ -1124,7 +1127,7 @@ function verDetalleVisita(tipo, id) {
             } else {
               btnAprobarMask = `
                 <button onclick="event.stopPropagation();aprobarDocRevision('${tipo}', ${a.id})" 
-                        style="background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px;transition:all .2s;box-shadow:0 2px 6px rgba(16,185,129,0.3);">
+                        style="background:linear-gradient(135deg,#22c55e,#16a34a);color:white;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px;transition:all .2s;box-shadow:0 2px 6px rgba(34,197,94,0.32);">
                   <i class="ri-check-double-line"></i> Aprobación Final
                 </button>`;
             }
@@ -1141,28 +1144,28 @@ function verDetalleVisita(tipo, id) {
           } else if (tieneRechazosPersonales) {
             accionesDocHtml = `
                 <div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px dashed #d1d5db;align-items:center;flex-wrap:wrap;">
-                  <span style="font-size:12px;font-weight:600;color:#9a3412;background:#fff7ed;border:1px solid #fdba74;border-radius:6px;padding:6px 10px;">⚠️ Requiere actualización de documentos</span>
+                  <span style="font-size:12px;font-weight:600;color:#9a3412;background:#fff7ed;border:1px solid #fdba74;border-radius:6px;padding:6px 10px;display:inline-flex;align-items:center;gap:6px;"><i class="ri-alert-fill"></i> Requiere actualización de documentos</span>
                 </div>`;
           }
 
           let obsRevHtml = '';
           if (a.observaciones_revision && tieneRechazosPersonales) {
-            obsRevHtml = `<div style="margin-top:10px;padding:10px;background:#fef3c7;border-radius:6px;font-size:12px;color:#92400e;border:1px solid #fcd34d;">📝 <strong>Observaciones:</strong> ${a.observaciones_revision}</div>`;
+            obsRevHtml = `<div style="margin-top:10px;padding:10px 12px;background:#fef3c7;border-radius:8px;font-size:12px;color:#92400e;border:1px solid #fcd34d;display:flex;align-items:flex-start;gap:7px;"><i class="ri-sticky-note-2-line" style="flex-shrink:0;font-size:14px;margin-top:1px;"></i><span><strong>Observaciones:</strong> ${a.observaciones_revision}</span></div>`;
           }
 
           return `
-              <div style="padding:14px;background:#f9fafb;margin:8px 0;border-radius:10px;border:1px solid ${borderColor};border-left:4px solid ${borderColor};box-shadow:0 1px 4px rgba(0,0,0,0.04);">
+              <div style="padding:16px;background:#f9fafb;margin:8px 0;border-radius:12px;border:1px solid ${borderColor};border-left:4px solid ${borderColor};box-shadow:0 2px 8px rgba(0,0,0,0.05);">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
                   <div>
                     <div style="display:flex;align-items:center;gap:8px;">
-                      <i class="ri-user-line" style="color:#8b5cf6;"></i>
+                      <i class="ri-user-line" style="color:#22c55e;"></i>
                       <strong style="font-size:14px;">${a.nombre_completo}</strong>
                       ${estadoBadge}
                     </div>
-                    <div style="color:#6b7280;font-size:12px;padding-left:24px;">🪪 ${a.tipo_documento}: ${a.numero_documento}</div>
+                    <div style="color:#6b7280;font-size:12px;padding-left:24px;display:flex;align-items:center;gap:4px;"><i class="ri-id-card-line" style="color:#22c55e;"></i> ${a.tipo_documento}: ${a.numero_documento}</div>
                     <div style="display:flex;gap:14px;padding-left:24px;margin-top:4px;flex-wrap:wrap;">
-                      ${a.correo ? `<span style="color:#6b7280;font-size:12px;">✉️ ${a.correo}</span>` : ''}
-                      ${a.telefono ? `<span style="color:#6b7280;font-size:12px;">📞 ${a.telefono}</span>` : ''}
+                      ${a.correo ? `<span style="color:#6b7280;font-size:12px;display:inline-flex;align-items:center;gap:4px;"><i class="ri-mail-line" style="color:#22c55e;"></i> ${a.correo}</span>` : ''}
+                      ${a.telefono ? `<span style="color:#6b7280;font-size:12px;display:inline-flex;align-items:center;gap:4px;"><i class="ri-phone-line" style="color:#22c55e;"></i> ${a.telefono}</span>` : ''}
                     </div>
                   </div>
                 </div>
@@ -1176,25 +1179,42 @@ function verDetalleVisita(tipo, id) {
       }
 
       let html = `
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;background:#f9fafb;padding:14px;border-radius:10px;">
-            <div><strong>Responsable:</strong> ${data.responsable}</div>
-            <div><strong>Estado:</strong> ${getEstadoBadge(data.estado)}</div>
-            <div><strong>${tipo === 'interna' ? 'Programa' : 'Institución'}:</strong> ${data.programa || data.institucion || 'N/A'}</div>
-            <div><strong>Fecha:</strong> ${data.fecha_solicitud}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;background:linear-gradient(135deg,#f8fafc,#f1f5f9);padding:16px;border-radius:12px;border:1px solid #e2e8f0;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="background:#22c55e;color:white;border-radius:6px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ri-user-3-line" style="font-size:13px;"></i></span>
+              <div><span style="font-size:11px;color:#6b7280;display:block;">Responsable</span><strong style="font-size:13px;color:#111827;">${data.responsable}</strong></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="background:#22c55e;color:white;border-radius:6px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ri-checkbox-circle-line" style="font-size:13px;"></i></span>
+              <div><span style="font-size:11px;color:#6b7280;display:block;">Estado</span>${getEstadoBadge(data.estado)}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="background:#22c55e;color:white;border-radius:6px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ri-building-4-line" style="font-size:13px;"></i></span>
+              <div><span style="font-size:11px;color:#6b7280;display:block;">${tipo === 'interna' ? 'Programa' : 'Institución'}</span><strong style="font-size:13px;color:#111827;">${data.programa || data.institucion || 'N/A'}</strong></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="background:#22c55e;color:white;border-radius:6px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ri-calendar-2-line" style="font-size:13px;"></i></span>
+              <div><span style="font-size:11px;color:#6b7280;display:block;">Fecha de la visita</span><strong style="font-size:13px;color:#111827;">${data.fecha_visita || data.fecha_solicitud}</strong></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="background:#22c55e;color:white;border-radius:6px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ri-time-line" style="font-size:13px;"></i></span>
+              <div><span style="font-size:11px;color:#6b7280;display:block;">Registrada</span><strong style="font-size:13px;color:#111827;">${data.fecha_registro || data.fecha_solicitud}</strong></div>
+            </div>
           </div>
           
           ${archivosFinalesHtml}
           
-          <h4 style="color:#374151;border-bottom:2px solid #8b5cf6;padding-bottom:8px;margin-bottom:8px;display:flex;align-items:center;gap:8px;">
-            👥 Asistentes Registrados
-            <span style="background:#dbeafe;color:#1e40af;padding:2px 10px;border-radius:12px;font-size:13px;">${data.asistentes.length} asistente(s)</span>
+          <h4 style="color:#374151;border-bottom:2px solid #22c55e;padding-bottom:10px;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+            <span style="background:#22c55e;color:white;border-radius:7px;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;"><i class="ri-group-line" style="font-size:14px;"></i></span>
+            Asistentes Registrados
+            <span style="background:#bbf7d0;color:#166534;padding:3px 12px;border-radius:12px;font-size:12px;font-weight:600;border:1px solid #4ade80;">${data.asistentes.length} asistente(s)</span>
           </h4>
           
           ${data.asistentes.length > 0
-          ? `<div style="max-height:450px;overflow-y:auto;">${asistentesHtml}</div>`
-          : `<div style="text-align:center;padding:30px;color:#9ca3af;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
-                <i class="ri-user-add-line" style="font-size:36px;margin-bottom:6px;"></i>
-                <p style="margin:0;">No hay asistentes registrados aún</p>
+          ? `<div style="max-height:460px;overflow-y:auto;padding-right:2px;">${asistentesHtml}</div>`
+          : `<div style="text-align:center;padding:36px;color:#9ca3af;background:#f9fafb;border-radius:12px;border:2px dashed #e5e7eb;">
+                <i class="ri-user-add-line" style="font-size:40px;margin-bottom:8px;display:block;"></i>
+                <p style="margin:0;font-size:14px;">No hay asistentes registrados aún</p>
               </div>`
         }
         `;
@@ -1203,7 +1223,7 @@ function verDetalleVisita(tipo, id) {
       window.detalleVisitaActual = data;
     })
     .catch(() => {
-      contenido.innerHTML = '<p style="color:#ef4444;text-align:center;">Error al cargar el detalle</p>';
+      contenido.innerHTML = '<div style="text-align:center;padding:30px;color:#ef4444;"><i class="ri-error-warning-line" style="font-size:30px;"></i><p>Error al cargar el detalle</p></div>';
     });
 }
 
