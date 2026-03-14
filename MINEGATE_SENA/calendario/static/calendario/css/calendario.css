@@ -255,6 +255,24 @@
   font-size: 18px;
 }
 
+/* Coordinator-specific adjustments to keep nav arrows inside the card and
+   avoid overlapping the app header/panel. These override generic .nav values. */
+#coordinadorCalendarPage .card-top {
+  padding-top: 10px; /* ensure space at top inside the card */
+}
+#coordinadorCalendarPage .card-top .nav {
+  top: 18px; /* position relative to the card */
+  width: 40px;
+  height: 40px;
+  z-index: 2; /* keep them above card content but below global header */
+}
+#coordinadorCalendarPage .card-top .nav#prev {
+  left: 18px;
+}
+#coordinadorCalendarPage .card-top .nav#next {
+  right: 18px;
+}
+
 .calendar-page .card-top {
   display: flex;
   align-items: center;
