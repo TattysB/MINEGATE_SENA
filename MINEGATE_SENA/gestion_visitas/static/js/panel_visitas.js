@@ -236,7 +236,13 @@ function getAccionesVisita(v) {
 
   if (v.estado === 'documentos_enviados') {
     acciones += `<button onclick="verDetalleVisita('${v.tipo}', ${v.id})" style="background:#f59e0b;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;font-weight:600;">📄 Revisar Docs</button>`;
-    acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'iniciar_revision')" style="background:#3b82f6;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">🔍 Finalizar Revisión</button>`;
+    if (v.puede_confirmar) {
+      acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'confirmar_visita')" style="background:#10b981;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">✅✅ Confirmar</button>`;
+    } else if (v.tiene_rechazos) {
+      acciones += `<span style="display:inline-block;background:#fee2e2;color:#991b1b;padding:5px 10px;border-radius:5px;margin:2px;font-size:11px;">⚠️ Pendiente corrección</span>`;
+    } else {
+      acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'iniciar_revision')" style="background:#3b82f6;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">🔍 Finalizar Revisión</button>`;
+    }
   }
 
   if (v.estado === 'en_revision_documentos') {
@@ -1210,7 +1216,7 @@ function verDetalleVisita(tipo, id) {
             <div><strong>Responsable:</strong> ${data.responsable}</div>
             <div><strong>Estado:</strong> ${getEstadoBadge(data.estado)}</div>
             <div><strong>${tipo === 'interna' ? 'Programa' : 'Institución'}:</strong> ${data.programa || data.institucion || 'N/A'}</div>
-            <div><strong>Fecha:</strong> ${data.fecha_solicitud}</div>
+            <div><strong>Fecha:</strong> ${data.fecha_visita}</div>
           </div>
           
           ${archivosFinalesHtml}
