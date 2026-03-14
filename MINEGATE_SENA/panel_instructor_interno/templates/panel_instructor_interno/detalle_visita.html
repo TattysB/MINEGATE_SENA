@@ -229,7 +229,7 @@
         <div style="font-weight:700;color:#9a3412;margin-bottom:4px;">Motivo</div>
         <div style="color:#7c2d12;">{{ reprogramacion_pendiente.motivo }}</div>
       </div>
-      <button type="button" class="btn-enviar" onclick="abrirModalReprogramacionInstructor()" style="background:#f59e0b;">
+      <button type="button" id="btnReprogramarAhora" class="btn-enviar" onclick="abrirModalReprogramacionInstructor()" style="background:#f59e0b;">
         <i class="fas fa-calendar-plus"></i> Reprogramar ahora
       </button>
       {% else %}
@@ -239,7 +239,7 @@
   </div>
   {% endif %}
 
-  {% if visita.estado == 'documentos_enviados' or visita.estado == 'en_revision_documentos' or visita.estado == 'confirmada' %}
+  {% if visita.estado == 'documentos_enviados' or visita.estado == 'en_revision_documentos' or visita.estado == 'confirmada' or visita.estado == 'aprobada_inicial' and visita.asistentes.count > 0 %}
   <!-- ===== REPORTE DE DILIGENCIAMIENTO DOCUMENTAL ===== -->
   <div class="detail-card">
     <div class="detail-card-header {% if reporte_documental.hay_alertas %}morado{% else %}verde{% endif %}">
@@ -653,7 +653,6 @@
     return confirm(mensaje);
   }
 
-  function abrirModalArchivosFinales() {
   // Variables globales
   let esModalCorreccion = false;
   let archivosClaveFinal = '';
@@ -661,6 +660,7 @@
   const urlCompletarReprogramacion = "{% url 'gestion_visitas:completar_reprogramacion_legacy' tipo='interna' visita_id=visita.id %}";
   let csrfTokenGlobal = '';
   let reprogramacionSeleccion = { fecha: null, horario: null };
+  let enviandoSolicitudFinal = false;
 
   function obtenerCSRFToken() {
     const nombre = 'csrftoken=';
@@ -860,8 +860,42 @@
     }
   }
 
+  function restablecerEstadoSubidaArchivosFinales() {
+    const btnEnviar = document.getElementById('btnEnviarCompleto');
+    const btnCancelar = document.getElementById('btnCancelarModal');
+    const statusMensaje = document.getElementById('statusMensaje');
+    const statusContenido = document.getElementById('statusContenido');
+
+    if (btnEnviar) {
+      btnEnviar.disabled = false;
+      btnEnviar.style.background = 'linear-gradient(90deg, #228B22, #2ecc40)';
+      btnEnviar.innerHTML = '<i class="fas fa-upload me-2"></i>Subir Archivos Finales';
+    }
+
+    if (btnCancelar) {
+      btnCancelar.disabled = false;
+    }
+
+    if (statusMensaje) {
+      statusMensaje.style.display = 'none';
+    }
+
+    if (statusContenido) {
+      statusContenido.innerHTML = '';
+    }
+  }
+
+  function habilitarEnvioFinal() {
+    const btnSolicitudFinal = document.getElementById('btnEnviarSolicitudFinal');
+    if (!btnSolicitudFinal) return;
+    btnSolicitudFinal.disabled = false;
+    btnSolicitudFinal.style.opacity = '1';
+    btnSolicitudFinal.style.cursor = 'pointer';
+  }
+
   function abrirModalArchivosFinales(esCorreccion) {
     esModalCorreccion = esCorreccion;
+    restablecerEstadoSubidaArchivosFinales();
     document.getElementById('modalArchivosFinales').style.display = 'block';
     document.body.style.overflow = 'hidden';
   }
@@ -886,6 +920,7 @@
     if (statusMensaje) {
       statusMensaje.style.display = 'none';
     }
+    restablecerEstadoSubidaArchivosFinales();
   }
 
   function abrirModalSubirPorAsistente(nombre, asistenteId, documentoNombre, documentoSubidoId) {
@@ -932,14 +967,23 @@
   function cerrarModalConfirmacion() {
     document.getElementById('modalConfirmacionEnvio').style.display = 'none';
     document.body.style.overflow = '';
+    restablecerEstadoSubidaArchivosFinales();
   }
 
   function confirmarEnvioFinal() {
+    if (enviandoSolicitudFinal) {
+      return;
+    }
     cerrarModalConfirmacion();
     ejecutarEnvioFinal();
   }
 
   async function ejecutarEnvioFinal() {
+    if (enviandoSolicitudFinal) {
+      return;
+    }
+    enviandoSolicitudFinal = true;
+
     const btnSolicitudFinal = document.getElementById('btnEnviarSolicitudFinal');
     const statusMensaje = document.getElementById('statusMensaje');
     const statusContenido = document.getElementById('statusContenido');
@@ -950,6 +994,10 @@
     }
 
     try {
+      if (!csrfTokenGlobal) {
+        csrfTokenGlobal = obtenerCSRFToken();
+      }
+
       const formDataEnvioFinal = new FormData();
       if (csrfTokenGlobal) {
         formDataEnvioFinal.append('csrfmiddlewaretoken', csrfTokenGlobal);
@@ -958,16 +1006,20 @@
       const respuestaEnvioFinal = await fetch(urlEnviarSolicitudFinal, {
         method: 'POST',
         headers: {
-          'X-Requested-With': 'XMLHttpRequest'
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': csrfTokenGlobal || obtenerCSRFToken()
         },
         body: formDataEnvioFinal
       });
       const dataEnvioFinal = await respuestaEnvioFinal.json().catch(() => ({}));
 
       if (!respuestaEnvioFinal.ok || dataEnvioFinal.success === false) {
+        const mensajeErrorEnvio = dataEnvioFinal.error || 'revise el estado de la visita.';
         if (statusMensaje && statusContenido) {
-          statusContenido.innerHTML = `<div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; border-radius: 6px; color: #92400e;"><i class="fas fa-exclamation-triangle me-2"></i>Error al enviar: ${dataEnvioFinal.error || 'revise el estado de la visita.'}</div>`;
+          statusContenido.innerHTML = `<div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; border-radius: 6px; color: #92400e;"><i class="fas fa-exclamation-triangle me-2"></i>Error al enviar: ${mensajeErrorEnvio}</div>`;
         }
+        mostrarPopupEmergente('No se pudo enviar la solicitud final: ' + mensajeErrorEnvio, 'error');
+        enviandoSolicitudFinal = false;
         return;
       }
 
@@ -980,6 +1032,8 @@
       if (statusMensaje && statusContenido) {
         statusContenido.innerHTML = '<div style="background: #d1fae5; border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; color: #065f46;"><i class="fas fa-check-circle me-2"></i>¡Listo! Documentos corregidos enviados para revisión final.</div>';
       }
+      mostrarPopupEmergente('Solicitud final enviada correctamente.', 'success');
+      localStorage.removeItem(archivosClaveFinal);
 
       setTimeout(function() {
         location.reload();
@@ -989,11 +1043,20 @@
       if (statusMensaje && statusContenido) {
         statusContenido.innerHTML = '<div style="background: #fee2e2; border-left: 4px solid #dc2626; padding: 12px; border-radius: 6px; color: #991b1b;"><i class="fas fa-exclamation-circle me-2"></i>Error de conexión. Por favor intente nuevamente.</div>';
       }
+      mostrarPopupEmergente('Error de conexión al enviar la solicitud final.', 'error');
+      enviandoSolicitudFinal = false;
     }
   }
 
   // Manejar envío del formulario con AJAX
   document.addEventListener('DOMContentLoaded', function() {
+    const btnReprogramarAhora = document.getElementById('btnReprogramarAhora');
+    if (btnReprogramarAhora) {
+      btnReprogramarAhora.addEventListener('click', function() {
+        abrirModalReprogramacionInstructor();
+      });
+    }
+
     const formReprogramacion = document.getElementById('formReprogramacionInstructor');
     if (formReprogramacion) {
       formReprogramacion.addEventListener('submit', async function(e) {
@@ -1130,6 +1193,7 @@
           statusContenido.innerHTML = '<div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; border-radius: 6px; color: #92400e;"><i class="fas fa-exclamation-circle me-2"></i>Debe adjuntar al menos un archivo para corregir.</div>';
           return;
         }
+        }
         
         const formData = new FormData(this);
         csrfTokenGlobal = formData.get('csrfmiddlewaretoken');
@@ -1163,14 +1227,13 @@
             return;
           }
 
+          const pendientesCorreccion = Number(dataSubida.pendientes_correccion || 0);
+          const listoParaConfirmar = dataSubida.listo_para_confirmar_envio === true || pendientesCorreccion === 0;
+
           // Si NO es corrección (es primer envío), solo mostrar éxito
           if (!esModalCorreccion) {
             localStorage.setItem(archivosClaveFinal, 'true');
-            if (btnSolicitudFinal) {
-              btnSolicitudFinal.disabled = false;
-              btnSolicitudFinal.style.opacity = '1';
-              btnSolicitudFinal.style.cursor = 'pointer';
-            }
+            habilitarEnvioFinal();
             statusContenido.innerHTML = '<div style="background: #d1fae5; border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; color: #065f46;"><i class="fas fa-check-circle me-2"></i>¡Archivos finales cargados exitosamente! Ahora puedes hacer clic en "Enviar solicitud final".</div>';
             btnEnviar.style.background = 'linear-gradient(90deg, #10b981, #059669)';
             btnEnviar.innerHTML = '<i class="fas fa-check me-2"></i>Enviado correctamente';
@@ -1182,8 +1245,23 @@
             return;
           }
 
-          // SI es corrección, mostrar modal de confirmación
-          statusContenido.innerHTML = '<div style="background: #d1fae5; border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; color: #065f46;"><i class="fas fa-check-circle me-2"></i>Documentos corregidos cargados exitosamente.</div>';
+          // SI es corrección y aún faltan correcciones, no mostrar confirmación final.
+          if (!listoParaConfirmar) {
+            statusContenido.innerHTML = `<div style="background: #e0f2fe; border-left: 4px solid #0284c7; padding: 12px; border-radius: 6px; color: #075985;"><i class="fas fa-info-circle me-2"></i>Corrección cargada. Aún faltan ${pendientesCorreccion} corrección(es) por enviar.</div>`;
+            btnEnviar.style.background = 'linear-gradient(90deg, #10b981, #059669)';
+            btnEnviar.innerHTML = '<i class="fas fa-check me-2"></i>Guardado';
+            btnEnviar.disabled = true;
+            setTimeout(function() {
+              cerrarModalArchivosFinales();
+              location.reload();
+            }, 1500);
+            return;
+          }
+
+          // Si ya todo está corregido, habilitar envío y mostrar confirmación final.
+          localStorage.setItem(archivosClaveFinal, 'true');
+          habilitarEnvioFinal();
+          statusContenido.innerHTML = '<div style="background: #d1fae5; border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; color: #065f46;"><i class="fas fa-check-circle me-2"></i>Todos los archivos corregidos fueron cargados. Ya puedes reenviar la solicitud final.</div>';
           btnEnviar.style.background = 'linear-gradient(90deg, #10b981, #059669)';
           btnEnviar.innerHTML = '<i class="fas fa-check me-2"></i>Enviado correctamente';
           btnEnviar.disabled = true;
@@ -1261,15 +1339,32 @@
             return;
           }
 
-          statusContenido.innerHTML = '<div style="background: #d1fae5; border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; color: #065f46;"><i class="fas fa-check-circle me-2"></i>Archivo subido correctamente.</div>';
+          const pendientesCorreccion = Number(data.pendientes_correccion || 0);
+          const listoParaConfirmar = data.listo_para_confirmar_envio === true || pendientesCorreccion === 0;
+
+          if (listoParaConfirmar) {
+            localStorage.setItem(archivosClaveFinal, 'true');
+            habilitarEnvioFinal();
+            statusContenido.innerHTML = '<div style="background: #d1fae5; border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; color: #065f46;"><i class="fas fa-check-circle me-2"></i>Archivo subido. Todas las correcciones están completas.</div>';
+          } else {
+            statusContenido.innerHTML = `<div style="background: #e0f2fe; border-left: 4px solid #0284c7; padding: 12px; border-radius: 6px; color: #075985;"><i class="fas fa-check-circle me-2"></i>Archivo subido. Aún faltan ${pendientesCorreccion} corrección(es).</div>`;
+          }
+
           btnEnviarAsistente.style.background = 'linear-gradient(90deg, #10b981, #059669)';
           btnEnviarAsistente.innerHTML = '<i class="fas fa-check me-2"></i>Subido correctamente';
           btnEnviarAsistente.disabled = true;
 
-          setTimeout(function() {
-            cerrarModalSubirPorAsistente();
-            location.reload();
-          }, 1500);
+          if (listoParaConfirmar) {
+            setTimeout(function() {
+              cerrarModalSubirPorAsistente();
+              abrirModalConfirmacion();
+            }, 1200);
+          } else {
+            setTimeout(function() {
+              cerrarModalSubirPorAsistente();
+              location.reload();
+            }, 1400);
+          }
         } catch (error) {
           console.error('Error:', error);
           statusContenido.innerHTML = '<div style="background: #fee2e2; border-left: 4px solid #dc2626; padding: 12px; border-radius: 6px; color: #991b1b;"><i class="fas fa-exclamation-circle me-2"></i>Error de conexión.</div>';
