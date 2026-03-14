@@ -194,6 +194,29 @@ function esCategoriaArchivoFinal(categoria) {
   return cat.includes('charla de seguridad') && (cat.includes('calestenia') || cat.includes('calistenia'));
 }
 
+function calcularEstadoVisualAsistente(asistente, documentosPersonales, hayRechazoFinalVisita) {
+  const estadoBase = String(asistente.estado || '');
+  const tieneRechazoPersonal = (documentosPersonales || []).some(ds => ds.estado === 'rechazado');
+  const rechazoSoloArchivoFinal =
+    (estadoBase === 'documentos_rechazados' || estadoBase === 'pendiente_documentos') &&
+    hayRechazoFinalVisita &&
+    !tieneRechazoPersonal;
+
+  if (!rechazoSoloArchivoFinal) {
+    return estadoBase;
+  }
+
+  const todosAprobadosPersonales =
+    (documentosPersonales || []).length > 0 &&
+    (documentosPersonales || []).every(ds => ds.estado === 'aprobado');
+
+  if (todosAprobadosPersonales) {
+    return 'documentos_aprobados';
+  }
+
+  return 'pendiente_documentos';
+}
+
 function getAccionesVisita(v) {
   let acciones = `<button onclick="verDetalleVisita('${v.tipo}', ${v.id})" style="background:#6b7280;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">👁️ Ver</button>`;
 
@@ -213,7 +236,13 @@ function getAccionesVisita(v) {
 
   if (v.estado === 'documentos_enviados') {
     acciones += `<button onclick="verDetalleVisita('${v.tipo}', ${v.id})" style="background:#f59e0b;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;font-weight:600;">📄 Revisar Docs</button>`;
-    acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'iniciar_revision')" style="background:#3b82f6;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">🔍 Finalizar Revisión</button>`;
+    if (v.puede_confirmar) {
+      acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'confirmar_visita')" style="background:#10b981;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">✅✅ Confirmar</button>`;
+    } else if (v.tiene_rechazos) {
+      acciones += `<span style="display:inline-block;background:#fee2e2;color:#991b1b;padding:5px 10px;border-radius:5px;margin:2px;font-size:11px;">⚠️ Pendiente corrección</span>`;
+    } else {
+      acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'iniciar_revision')" style="background:#3b82f6;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">🔍 Finalizar Revisión</button>`;
+    }
   }
 
   if (v.estado === 'en_revision_documentos') {
@@ -431,6 +460,7 @@ function mostrarDocumentosPorEstado(filtro) {
           if (catCmp !== 0) return catCmp;
           return String(a.titulo || '').localeCompare(String(b.titulo || ''));
         });
+        const documentosFinalesRechazados = documentos_finales_visita.filter(ds => ds.estado === 'rechazado');
 
         // Mostrar documentos finales de la visita (una sola vez)
         if (documentos_finales_visita.length > 0) {
@@ -467,7 +497,6 @@ function mostrarDocumentosPorEstado(filtro) {
               </div>`;
           });
 
-          const documentosFinalesRechazados = documentos_finales_visita.filter(ds => ds.estado === 'rechazado');
           if (documentosFinalesRechazados.length > 0) {
             const nombresDocsRechazados = documentosFinalesRechazados.map(ds => ds.titulo).join(', ');
             html += `
@@ -483,26 +512,29 @@ function mostrarDocumentosPorEstado(filtro) {
         }
 
         visita.asistentes.forEach(a => {
-          // Si solo falló un archivo final (ATS/inducción/charla), no marcar al asistente como rechazado.
           const documentosSubidosAsistente = a.documentos_subidos || [];
           const documentosPersonalesAsistente = documentosSubidosAsistente.filter(ds =>
             !esCategoriaArchivoFinal(ds.categoria)
           );
-          const tieneRechazosPersonales = a.estado === 'documentos_rechazados' &&
-            documentosPersonalesAsistente.some(ds => ds.estado === 'rechazado');
+          const tieneRechazosPersonales = documentosPersonalesAsistente.some(ds => ds.estado === 'rechazado');
+          const estadoVisualAsistente = calcularEstadoVisualAsistente(
+            a,
+            documentosPersonalesAsistente,
+            documentosFinalesRechazados.length > 0
+          );
 
           let aBadge = '';
           let borderLeft = '#d1d5db';
-          if (a.estado === 'pendiente_documentos') {
+          if (estadoVisualAsistente === 'pendiente_documentos') {
             aBadge = '<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">⏳ Pendiente</span>';
             borderLeft = '#f59e0b';
-          } else if (a.estado === 'documentos_aprobados') {
+          } else if (estadoVisualAsistente === 'documentos_aprobados') {
             aBadge = '<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">✅ Aprobado</span>';
             borderLeft = '#10b981';
           } else if (tieneRechazosPersonales) {
             aBadge = '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">⚠️ Pendiente corrección</span>';
             borderLeft = '#ef4444';
-          } else if (a.estado === 'documentos_rechazados') {
+          } else if (estadoVisualAsistente === 'documentos_rechazados') {
             aBadge = '<span style="background:#e2e8f0;color:#334155;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">ℹ️ Sin novedad personal</span>';
             borderLeft = '#94a3b8';
           }
@@ -520,7 +552,7 @@ function mostrarDocumentosPorEstado(filtro) {
                         <i class="ri-download-2-line"></i>
                       </a>
                     </div>
-                    ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (tieneRechazosPersonales ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Pendiente corrección</span>' : '')}
+                    ${estadoVisualAsistente === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (estadoVisualAsistente === 'documentos_rechazados' && tieneRechazosPersonales ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Pendiente corrección</span>' : '')}
                   </div>`;
           }
           if (a.documentos_subidos && a.documentos_subidos.length > 0) {
@@ -550,7 +582,7 @@ function mostrarDocumentosPorEstado(filtro) {
           }
 
           let accionesHtml = '';
-          if (a.estado === 'pendiente_documentos') {
+          if (estadoVisualAsistente === 'pendiente_documentos') {
             accionesHtml = `
                 <div style="display:flex;gap:6px;margin-left:auto;">
                   <button onclick="event.stopPropagation();aprobarDocDesdeListado('${a.visita_tipo}', ${a.asistente_id}, '${filtro}')" 
@@ -565,14 +597,14 @@ function mostrarDocumentosPorEstado(filtro) {
           }
 
           let obsHtml = '';
-          if (a.observaciones_revision && tieneRechazosPersonales) {
-            obsHtml = `<div style="margin-top:6px;padding:6px 10px;background:#fef3c7;border-radius:5px;font-size:11px;color:#92400e;border:1px solid #fcd34d;display:flex;align-items:flex-start;gap:5px;"><i class="ri-sticky-note-2-line"></i><span>${a.observaciones_revision}</span></div>`;
+          if (a.observaciones_revision && estadoVisualAsistente === 'documentos_rechazados' && tieneRechazosPersonales) {
+            obsHtml = `<div style="margin-top:6px;padding:6px 10px;background:#fef3c7;border-radius:5px;font-size:11px;color:#92400e;border:1px solid #fcd34d;">📝 ${a.observaciones_revision}</div>`;
           }
 
           let advertenciaCorreccionHtml = '';
-          if (tieneRechazosPersonales) {
-            advertenciaCorreccionHtml = `<div style="margin-top:6px;padding:8px 10px;background:#fff7ed;border-radius:6px;font-size:11px;color:#9a3412;border:1px solid #fdba74;display:flex;align-items:flex-start;gap:6px;">
-              <i class="ri-alert-fill" style="flex-shrink:0;margin-top:1px;"></i><span>Este aprendiz tiene documentos rechazados. Solicita al instructor actualizar y volver a subir los archivos.</span>
+          if (estadoVisualAsistente === 'documentos_rechazados' && tieneRechazosPersonales) {
+            advertenciaCorreccionHtml = `<div style="margin-top:6px;padding:8px 10px;background:#fff7ed;border-radius:6px;font-size:11px;color:#9a3412;border:1px solid #fdba74;">
+              ⚠️ Este aprendiz tiene documentos rechazados. Solicita al instructor actualizar y volver a subir los archivos.
             </div>`;
           }
 
@@ -908,6 +940,7 @@ function verDetalleVisita(tipo, id) {
         if (catCmp !== 0) return catCmp;
         return String(a.titulo || '').localeCompare(String(b.titulo || ''));
       });
+      const finalesRechazados = documentos_finales.filter(ds => ds.estado === 'rechazado');
 
       // Construir HTML de archivos finales
       let archivosFinalesHtml = '';
@@ -952,7 +985,6 @@ function verDetalleVisita(tipo, id) {
               </div>`;
         });
 
-        const finalesRechazados = documentos_finales.filter(ds => ds.estado === 'rechazado');
         if (finalesRechazados.length > 0) {
           const nombresFinales = finalesRechazados.map(ds => ds.titulo).join(', ');
           archivosFinalesHtml += `
@@ -974,8 +1006,12 @@ function verDetalleVisita(tipo, id) {
           const documentosPersonalesAsistente = documentosSubidosAsistente.filter(ds =>
             !esCategoriaArchivoFinal(ds.categoria)
           );
-          const tieneRechazosPersonales = a.estado === 'documentos_rechazados' &&
-            documentosPersonalesAsistente.some(ds => ds.estado === 'rechazado');
+          const tieneRechazosPersonales = documentosPersonalesAsistente.some(ds => ds.estado === 'rechazado');
+          const estadoVisualAsistente = calcularEstadoVisualAsistente(
+            a,
+            documentosPersonalesAsistente,
+            finalesRechazados.length > 0
+          );
 
           let botonesDoc = '';
           let tieneDocs = false;
@@ -984,15 +1020,15 @@ function verDetalleVisita(tipo, id) {
             botonesDoc += `
                   <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
                     <div style="display:flex;gap:4px;align-items:center;">
-                      <button onclick="visualizarDocumento('${a.documento_identidad}', 'Documento de Identidad - ${a.nombre_completo}', {estado: '${a.estado === 'documentos_aprobados' ? 'aprobado' : 'pendiente'}'})" 
-                              style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:white;padding:7px 14px;border-radius:7px;border:none;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:6px;font-weight:600;box-shadow:0 2px 5px rgba(59,130,246,0.25);">
-                        <i class="ri-id-card-line"></i> Doc. Identidad
+                      <button onclick="visualizarDocumento('${a.documento_identidad}', 'Documento de Identidad - ${a.nombre_completo}', {estado: '${estadoVisualAsistente === 'documentos_aprobados' ? 'aprobado' : 'pendiente'}'})" 
+                              style="background:#3b82f6;color:white;padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:5px;font-weight:500;">
+                        <i class="ri-eye-line"></i> 🪪 Doc. Identidad
                       </button>
                       <a href="${a.documento_identidad}" download style="background:#f3f4f6;color:#374151;padding:7px 10px;border-radius:7px;text-decoration:none;font-size:12px;display:inline-flex;align-items:center;border:1px solid #e5e7eb;" title="Descargar">
                         <i class="ri-download-2-line"></i>
                       </a>
                     </div>
-                    ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (tieneRechazosPersonales ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Pendiente corrección</span>' : '')}
+                    ${estadoVisualAsistente === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (estadoVisualAsistente === 'documentos_rechazados' && tieneRechazosPersonales ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Pendiente corrección</span>' : '')}
                   </div>`;
           }
           if (a.documento_adicional) {
@@ -1000,15 +1036,15 @@ function verDetalleVisita(tipo, id) {
             botonesDoc += `
                   <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
                     <div style="display:flex;gap:4px;align-items:center;">
-                      <button onclick="visualizarDocumento('${a.documento_adicional}', 'Documento Adicional - ${a.nombre_completo}', {estado: '${a.estado === 'documentos_aprobados' ? 'aprobado' : 'pendiente'}'})" 
-                              style="background:linear-gradient(135deg,#22c55e,#16a34a);color:white;padding:7px 14px;border-radius:7px;border:none;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:6px;font-weight:600;box-shadow:0 2px 5px rgba(34,197,94,0.28);">
-                        <i class="ri-file-copy-2-line"></i> Doc. Adicional
+                      <button onclick="visualizarDocumento('${a.documento_adicional}', 'Documento Adicional - ${a.nombre_completo}', {estado: '${estadoVisualAsistente === 'documentos_aprobados' ? 'aprobado' : 'pendiente'}'})" 
+                              style="background:#8b5cf6;color:white;padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:5px;font-weight:500;">
+                        <i class="ri-eye-line"></i> 📎 Ver Doc. Adicional
                       </button>
                       <a href="${a.documento_adicional}" download style="background:#f3f4f6;color:#374151;padding:7px 10px;border-radius:7px;text-decoration:none;font-size:12px;display:inline-flex;align-items:center;border:1px solid #e5e7eb;" title="Descargar">
                         <i class="ri-download-2-line"></i>
                       </a>
                     </div>
-                    ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (tieneRechazosPersonales ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Pendiente corrección</span>' : '')}
+                    ${estadoVisualAsistente === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (estadoVisualAsistente === 'documentos_rechazados' && tieneRechazosPersonales ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Pendiente corrección</span>' : '')}
                   </div>`;
           }
           if (a.formato_autorizacion_padres) {
@@ -1078,22 +1114,22 @@ function verDetalleVisita(tipo, id) {
 
           let estadoBadge = '';
           let borderColor = '#e5e7eb';
-          if (a.estado === 'pendiente_documentos') {
+          if (estadoVisualAsistente === 'pendiente_documentos') {
             borderColor = '#f59e0b';
             estadoBadge = '<span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">⏳ Pendiente</span>';
-          } else if (a.estado === 'documentos_aprobados') {
-            borderColor = '#22c55e';
+          } else if (estadoVisualAsistente === 'documentos_aprobados') {
+            borderColor = '#10b981';
             estadoBadge = '<span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">✅ Aprobado</span>';
           } else if (tieneRechazosPersonales) {
             borderColor = '#ef4444';
             estadoBadge = '<span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">⚠️ Pendiente corrección</span>';
-          } else if (a.estado === 'documentos_rechazados') {
+          } else if (estadoVisualAsistente === 'documentos_rechazados') {
             borderColor = '#94a3b8';
             estadoBadge = '<span style="background:#e2e8f0;color:#334155;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">ℹ️ Sin novedad personal</span>';
           }
 
           let accionesDocHtml = '';
-          if (a.estado === 'pendiente_documentos' && tieneDocs) {
+          if (estadoVisualAsistente === 'pendiente_documentos' && tieneDocs) {
             let btnAprobarMask = '';
 
             // Verificar rechazos (incluyendo autorización de padres si existe)

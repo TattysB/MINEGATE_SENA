@@ -471,6 +471,19 @@ def detalle_visita_interna(request, pk):
         documentos_por_categoria[cat_display].append(doc)
 
     reporte_documental = construir_reporte_documental_visita(visita, "interna")
+    hay_alertas_documentales = bool(reporte_documental.get("hay_alertas"))
+
+    enviar_final_habilitado = (
+        visita.estado == "aprobada_inicial"
+        and visita.asistentes.exists()
+        and not hay_alertas_documentales
+    )
+
+    mostrar_boton_subir_archivos_finales = (
+        visita.estado == "aprobada_inicial"
+        and visita.asistentes.exists()
+        and hay_alertas_documentales
+    )
 
     return render(
         request,
@@ -481,6 +494,8 @@ def detalle_visita_interna(request, pk):
             "documentos_por_categoria": documentos_por_categoria,
             "reporte_documental": reporte_documental,
             "reprogramacion_pendiente": reprogramacion_pendiente,
+            "enviar_final_habilitado": enviar_final_habilitado,
+            "mostrar_boton_subir_archivos_finales": mostrar_boton_subir_archivos_finales,
         },
     )
 

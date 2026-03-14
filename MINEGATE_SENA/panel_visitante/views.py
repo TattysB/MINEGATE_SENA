@@ -35,6 +35,14 @@ from pathlib import Path
 from django.http import JsonResponse
 
 
+CATEGORIAS_ARCHIVOS_FINALES = {
+    "ats",
+    "formato induccion y reinduccion",
+    "charla de seguridad y calestenia",
+    "charla de seguridad y calistenia",
+}
+
+
 def _redirect_segun_rol(request, tipo=None, visita_id=None):
     """
     Redirige al panel correcto según el rol de la sesión.
@@ -69,6 +77,130 @@ def _tiene_acceso_por_correo(visita, correo):
     if not correo:
         return False
     return (visita.correo_responsable or "").strip().lower() == correo.strip().lower()
+
+
+def _normalizar_categoria_texto(valor):
+    return (
+        str(valor or "")
+        .strip()
+        .lower()
+        .replace("á", "a")
+        .replace("é", "e")
+        .replace("í", "i")
+        .replace("ó", "o")
+        .replace("ú", "u")
+    )
+
+
+def _es_categoria_archivo_final(categoria):
+    return _normalizar_categoria_texto(categoria) in CATEGORIAS_ARCHIVOS_FINALES
+
+
+def _documentos_actuales_asistente(asistente, tipo):
+    filtros = {
+        "asistente_interna": asistente
+    } if tipo == "interna" else {"asistente_externa": asistente}
+
+    docs = (
+        DocumentoSubidoAsistente.objects.filter(**filtros)
+        .select_related("documento_requerido")
+        .order_by("documento_requerido_id", "-fecha_subida", "-id")
+    )
+
+    latest_por_documento = {}
+    for ds in docs:
+        if ds.documento_requerido_id not in latest_por_documento:
+            latest_por_documento[ds.documento_requerido_id] = ds
+
+    return list(latest_por_documento.values())
+
+
+def _sincronizar_estado_asistente_por_docs(asistente, tipo):
+    docs_actuales = _documentos_actuales_asistente(asistente, tipo)
+    docs_personales = [
+        ds
+        for ds in docs_actuales
+        if not _es_categoria_archivo_final(ds.documento_requerido.categoria)
+    ]
+
+    tiene_rechazos = any(ds.estado == "rechazado" for ds in docs_personales)
+    todos_aprobados = bool(docs_personales) and all(
+        ds.estado == "aprobado" for ds in docs_personales
+    )
+
+    if getattr(asistente, "formato_autorizacion_padres", None):
+        estado_autorizacion = getattr(
+            asistente, "estado_autorizacion_padres", "pendiente"
+        )
+        if estado_autorizacion == "rechazado":
+            tiene_rechazos = True
+        elif estado_autorizacion != "aprobado":
+            todos_aprobados = False
+
+    if tiene_rechazos:
+        nuevo_estado = "documentos_rechazados"
+    elif todos_aprobados:
+        nuevo_estado = "documentos_aprobados"
+    else:
+        nuevo_estado = "pendiente_documentos"
+
+    update_fields = []
+    if asistente.estado != nuevo_estado:
+        asistente.estado = nuevo_estado
+        update_fields.append("estado")
+
+    if nuevo_estado != "documentos_rechazados" and asistente.observaciones_revision:
+        asistente.observaciones_revision = ""
+        update_fields.append("observaciones_revision")
+
+    if update_fields:
+        asistente.save(update_fields=update_fields)
+
+    return nuevo_estado
+
+
+def _resumen_pendientes_correccion(visita, tipo):
+    asistentes_rechazados = visita.asistentes.filter(estado="documentos_rechazados").count()
+
+    docs_finales_requeridos = Documento.objects.filter(
+        categoria__in=[
+            "ATS",
+            "Formato Inducción y Reinducción",
+            "Charla de Seguridad y Calestenia",
+        ]
+    )
+
+    archivos_finales_rechazados = 0
+    archivos_finales_faltantes = 0
+
+    for doc_final in docs_finales_requeridos:
+        filtros = {"documento_requerido": doc_final}
+        if tipo == "interna":
+            filtros["asistente_interna__visita"] = visita
+        else:
+            filtros["asistente_externa__visita"] = visita
+
+        ultimo_archivo = (
+            DocumentoSubidoAsistente.objects.filter(**filtros)
+            .order_by("-fecha_subida", "-id")
+            .first()
+        )
+
+        if not ultimo_archivo:
+            archivos_finales_faltantes += 1
+        elif ultimo_archivo.estado == "rechazado":
+            archivos_finales_rechazados += 1
+
+    pendientes_correccion = (
+        asistentes_rechazados + archivos_finales_rechazados + archivos_finales_faltantes
+    )
+
+    return {
+        "asistentes_rechazados": asistentes_rechazados,
+        "archivos_finales_rechazados": archivos_finales_rechazados,
+        "archivos_finales_faltantes": archivos_finales_faltantes,
+        "pendientes_correccion": pendientes_correccion,
+    }
 
 
 def login_responsable(request):
@@ -421,15 +553,13 @@ def registrar_asistentes(request, tipo, visita_id):
                             archivos_subidos.append(doc.titulo)
 
             if archivos_subidos:
-                primer_asistente.estado = "pendiente_documentos"
-                primer_asistente.observaciones_revision = ""
-                primer_asistente.save(
-                    update_fields=["estado", "observaciones_revision"]
-                )
+                _sincronizar_estado_asistente_por_docs(primer_asistente, tipo)
 
                 if visita.estado in ["documentos_enviados", "en_revision_documentos"]:
                     visita.estado = "aprobada_inicial"
                     visita.save(update_fields=["estado"])
+
+                resumen_pendientes = _resumen_pendientes_correccion(visita, tipo)
 
                 if es_ajax:
                     return JsonResponse(
@@ -437,6 +567,11 @@ def registrar_asistentes(request, tipo, visita_id):
                             "success": True,
                             "message": "Archivos finales corregidos y cargados correctamente.",
                             "archivos_subidos": archivos_subidos,
+                            **resumen_pendientes,
+                            "listo_para_confirmar_envio": resumen_pendientes[
+                                "pendientes_correccion"
+                            ]
+                            == 0,
                         }
                     )
 
@@ -1166,6 +1301,34 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
     }
 
     if archivo_salud:
+        extensiones_permitidas_docs = {
+            ".pdf",
+            ".doc",
+            ".docx",
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".xls",
+            ".xlsx",
+            ".ppt",
+            ".pptx",
+            ".txt",
+        }
+        extension = Path(archivo_salud.name).suffix.lower()
+        if extension not in extensiones_permitidas_docs:
+            error_msg = (
+                "Formato no permitido para la corrección. "
+                "Use PDF, Word, imagen, Excel, PowerPoint o TXT."
+            )
+            if es_ajax:
+                return JsonResponse({"success": False, "error": error_msg}, status=400)
+            messages.error(request, error_msg)
+            return redirect(
+                "panel_visitante:registrar_asistentes",
+                tipo=tipo,
+                visita_id=visita.id,
+            )
+
         if documento_subido_id:
             filtros_doc = {"id": documento_subido_id}
             if tipo == "interna":
@@ -1182,52 +1345,21 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
                 if es_ajax:
                     return JsonResponse({"success": False, "error": error_msg}, status=400)
                 messages.error(request, error_msg)
-                return redirect("panel_visitante:registrar_asistentes", tipo=tipo, visita_id=visita.id)
+                return redirect(
+                    "panel_visitante:registrar_asistentes",
+                    tipo=tipo,
+                    visita_id=visita.id,
+                )
 
-            DocumentoSubidoAsistente.objects.create(
-                documento_requerido=doc_objetivo.documento_requerido,
-                asistente_interna=asistente if tipo == "interna" else None,
-                asistente_externa=asistente if tipo == "externa" else None,
-                archivo=archivo_salud,
-                estado="pendiente",
-                observaciones_revision="",
-            )
+            documento_objetivo = doc_objetivo.documento_requerido
         else:
-            doc_salud = DocumentoModel.objects.filter(
+            documento_objetivo = DocumentoModel.objects.filter(
                 categoria="Formato Auto Reporte Condiciones de Salud"
             ).first()
-            if not doc_salud:
+            if not documento_objetivo:
                 error_msg = "No se encontró el documento base de salud para registrar la corrección."
                 if es_ajax:
                     return JsonResponse({"success": False, "error": error_msg}, status=400)
-                messages.error(request, error_msg)
-                return redirect("panel_visitante:registrar_asistentes", tipo=tipo, visita_id=visita.id)
-
-            DocumentoSubidoAsistente.objects.create(
-                documento_requerido=doc_salud,
-                asistente_interna=asistente if tipo == "interna" else None,
-                asistente_externa=asistente if tipo == "externa" else None,
-                archivo=archivo_salud,
-                estado="pendiente",
-                observaciones_revision="",
-            )
-        if not doc_salud:
-            error_msg = "Documento de salud no encontrado en el sistema."
-            if es_ajax:
-                return JsonResponse({"success": False, "error": error_msg}, status=400)
-            messages.error(request, error_msg)
-            return redirect(
-                "panel_visitante:registrar_asistentes", tipo=tipo, visita_id=visita.id
-            )
-
-            extensiones_permitidas_docs = {".pdf", ".doc", ".docx"}
-            extension = Path(archivo_salud.name).suffix.lower()
-            if extension not in extensiones_permitidas_docs:
-                error_msg = "Solo se permiten archivos PDF o Word (.doc, .docx) para este documento."
-                if es_ajax:
-                    return JsonResponse(
-                        {"success": False, "error": error_msg}, status=400
-                    )
                 messages.error(request, error_msg)
                 return redirect(
                     "panel_visitante:registrar_asistentes",
@@ -1235,28 +1367,14 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
                     visita_id=visita.id,
                 )
 
-            if tipo == "interna":
-                DocumentoSubidoAsistente.objects.update_or_create(
-                    documento_requerido=doc_salud,
-                    asistente_interna=asistente,
-                    asistente_externa=None,
-                    defaults={
-                        "archivo": archivo_salud,
-                        "estado": "pendiente",
-                        "observaciones_revision": "",
-                    },
-                )
-            else:
-                DocumentoSubidoAsistente.objects.update_or_create(
-                    documento_requerido=doc_salud,
-                    asistente_interna=None,
-                    asistente_externa=asistente,
-                    defaults={
-                        "archivo": archivo_salud,
-                        "estado": "pendiente",
-                        "observaciones_revision": "",
-                    },
-                )
+        DocumentoSubidoAsistente.objects.create(
+            documento_requerido=documento_objetivo,
+            asistente_interna=asistente if tipo == "interna" else None,
+            asistente_externa=asistente if tipo == "externa" else None,
+            archivo=archivo_salud,
+            estado="pendiente",
+            observaciones_revision="",
+        )
 
     if archivo_autorizacion:
         actualizaciones_asistente.update(
@@ -1275,12 +1393,24 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
         visita.estado = "aprobada_inicial"
         visita.save(update_fields=["estado"])
 
+    resumen_pendientes = _resumen_pendientes_correccion(visita, tipo)
+
     success_msg = (
         f"Se actualizaron los archivos de {asistente.nombre_completo}. "
         "Ya puede reenviar la solicitud final."
     )
     if es_ajax:
-        return JsonResponse({"success": True, "message": success_msg})
+        return JsonResponse(
+            {
+                "success": True,
+                "message": success_msg,
+                **resumen_pendientes,
+                "listo_para_confirmar_envio": resumen_pendientes[
+                    "pendientes_correccion"
+                ]
+                == 0,
+            }
+        )
 
     messages.success(request, success_msg)
     return redirect(

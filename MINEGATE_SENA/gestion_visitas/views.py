@@ -168,6 +168,30 @@ def _marcar_documentos_actuales(asistente, estado, observaciones=""):
         ds.save(update_fields=["estado", "observaciones_revision"])
 
 
+def _formatear_fecha_visita(visita, incluir_hora=False):
+    """Retorna la fecha programada real de la visita (incluye reprogramaciones)."""
+    fecha_programada = getattr(visita, "fecha_visita", None)
+    if fecha_programada:
+        fecha_txt = fecha_programada.strftime("%d/%m/%Y")
+    elif getattr(visita, "fecha_solicitud", None):
+        fecha_txt = visita.fecha_solicitud.strftime("%d/%m/%Y")
+    else:
+        return "N/A"
+
+    if incluir_hora:
+        hora_inicio = getattr(visita, "hora_inicio", None)
+        hora_fin = getattr(visita, "hora_fin", None)
+        if hora_inicio and hora_fin:
+            return (
+                f"{fecha_txt} "
+                f"{hora_inicio.strftime('%H:%M')} - {hora_fin.strftime('%H:%M')}"
+            )
+        if hora_inicio:
+            return f"{fecha_txt} {hora_inicio.strftime('%H:%M')}"
+
+    return fecha_txt
+
+
 def tiene_aprobacion_previa_coordinacion(visita, tipo):
     if tipo == "interna":
         return HistorialAccionVisitaInterna.objects.filter(
