@@ -90,6 +90,22 @@ def construir_reporte_documental_visita(visita, tipo_visita):
         )
     )
 
+    filtros_finales_visita = {
+        "documento_requerido__categoria__in": CATEGORIAS_ARCHIVOS_FINALES
+    }
+    if tipo_visita == "interna":
+        filtros_finales_visita["asistente_interna__visita"] = visita
+    else:
+        filtros_finales_visita["asistente_externa__visita"] = visita
+
+    existe_archivo_final_subido = DocumentoSubidoAsistente.objects.filter(
+        **filtros_finales_visita
+    ).exists()
+    mostrar_faltantes_finales_como_alerta = (
+        visita.estado in ["documentos_enviados", "en_revision_documentos", "confirmada"]
+        or existe_archivo_final_subido
+    )
+
     asistentes_con_alertas = []
     asistentes = visita.asistentes.prefetch_related(
         "documentos_subidos__documento_requerido"
@@ -203,7 +219,10 @@ def construir_reporte_documental_visita(visita, tipo_visita):
         )
 
     archivos_finales_con_alerta = [
-        a for a in archivos_finales_estado if a["estado"] in ["faltante", "rechazado"]
+        a
+        for a in archivos_finales_estado
+        if a["estado"] == "rechazado"
+        or (a["estado"] == "faltante" and mostrar_faltantes_finales_como_alerta)
     ]
     archivos_finales_rechazados = [
         a for a in archivos_finales_estado if a["estado"] == "rechazado"
@@ -402,7 +421,7 @@ def reservar_visita_interna(request):
                         request,
                         "✅ Solicitud enviada. El horario quedó bloqueado y está pendiente de aprobación por coordinación.",
                     )
-                    return redirect("panel_instructor_interno:mis_visitas")
+                    return redirect("panel_instructor_interno:panel")
     else:
         form = VisitaInternaInstructorForm(
             initial={
@@ -421,30 +440,6 @@ def reservar_visita_interna(request):
         "titulo": "Reservar Visita Interna",
     }
     return render(request, "panel_instructor_interno/reservar_visita.html", context)
-
-
-@instructor_interno_required
-def mis_visitas_internas(request):
-    correo, _ = get_sesion_instructor(request)
-    visitas = VisitaInterna.objects.filter(correo_responsable__iexact=correo).order_by(
-        "-fecha_solicitud"
-    )
-    estado = request.GET.get("estado", "")
-    if estado:
-        visitas = visitas.filter(estado=estado)
-    buscar = request.GET.get("buscar", "")
-    if buscar:
-        visitas = visitas.filter(
-            Q(nombre_programa__icontains=buscar) | Q(numero_ficha__icontains=buscar)
-        )
-    context = {
-        "visitas": visitas,
-        "correo": correo,
-        "estado_filtrado": estado,
-        "buscar": buscar,
-        "estados": VisitaInterna.ESTADO_CHOICES,
-    }
-    return render(request, "panel_instructor_interno/mis_visitas.html", context)
 
 
 @instructor_interno_required
@@ -968,40 +963,9 @@ def eliminar_ficha(request, pk):
 @instructor_interno_required
 def listar_fichas_aprendices(request):
     """
-    Lista todas las fichas con sus aprendices registrados.
+    Ruta legacy. Redirige al módulo principal de fichas.
     """
-    correo, _ = get_sesion_instructor(request)
-
-    # Obtener fichas
-    fichas_all = Ficha.objects.select_related("programa").order_by("-numero")
-
-    buscar = request.GET.get("buscar", "")
-    if buscar:
-        fichas_all = fichas_all.filter(
-            Q(numero__icontains=buscar) | Q(programa__nombre__icontains=buscar)
-        )
-
-    # Agregar información de conteo de aprendices
-    fichas_info = []
-    for ficha in fichas_all:
-        fichas_info.append(
-            {
-                "ficha": ficha,
-                "total_aprendices": ficha.aprendices.count(),
-                "aprendices_activos": ficha.aprendices.filter(estado="activo").count(),
-            }
-        )
-
-    context = {
-        "fichas_info": fichas_info,
-        "buscar": buscar,
-        "total": len(fichas_info),
-        "correo": correo,
-    }
-
-    return render(
-        request, "panel_instructor_interno/listar_fichas_aprendices.html", context
-    )
+    return redirect("panel_instructor_interno:gestionar_fichas")
 
 
 from django.views.decorators.clickjacking import xframe_options_exempt

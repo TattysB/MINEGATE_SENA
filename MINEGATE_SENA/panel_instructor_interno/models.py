@@ -72,10 +72,10 @@ class Ficha(models.Model):
         verbose_name='Jornada'
     )
     cantidad_aprendices = models.PositiveIntegerField(
-        default=0,
+        default=1,
         verbose_name='Cantidad de Aprendices',
         validators=[
-            MinValueValidator(0),
+            MinValueValidator(1),
             MaxValueValidator(100),
         ],
     )

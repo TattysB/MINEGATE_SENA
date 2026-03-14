@@ -360,8 +360,8 @@ class FichaForm(forms.ModelForm):
             }),
             'cantidad_aprendices': forms.NumberInput(attrs={
                 'class': 'form-control',
-                'placeholder': '0',
-                'min': '0',
+                'placeholder': '1',
+                'min': '1',
                 'max': '100',
             }),
             'activa': forms.CheckboxInput(attrs={
@@ -379,20 +379,21 @@ class FichaForm(forms.ModelForm):
     def clean_cantidad_aprendices(self):
         """Validación de cantidad."""
         cantidad = self.cleaned_data.get('cantidad_aprendices')
-        if cantidad is not None and cantidad != '':
-            try:
-                cantidad = int(cantidad)
-            except (TypeError, ValueError):
-                raise ValidationError('La cantidad de aprendices debe ser un número entero válido.')
+        if cantidad is None or cantidad == '':
+            return 1
 
-            if cantidad < 0:
-                raise ValidationError('La cantidad de aprendices no puede ser negativa.')
+        try:
+            cantidad = int(cantidad)
+        except (TypeError, ValueError):
+            raise ValidationError('La cantidad de aprendices debe ser un número entero válido.')
 
-            if cantidad > 100:
-                raise ValidationError('La cantidad de aprendices por ficha no puede ser mayor a 100.')
+        if cantidad < 1:
+            raise ValidationError('La cantidad de aprendices por ficha debe ser al menos 1.')
 
-            return cantidad
-        return 0
+        if cantidad > 100:
+            raise ValidationError('La cantidad de aprendices por ficha no puede ser mayor a 100.')
+
+        return cantidad
 
 
 class AprendizForm(forms.ModelForm):

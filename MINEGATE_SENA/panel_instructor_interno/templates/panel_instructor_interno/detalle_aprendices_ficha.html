@@ -114,7 +114,7 @@
     <div class="breadcrumb-nav mb-2">
       <a href="{% url 'panel_instructor_interno:panel' %}"><i class="fas fa-home me-1"></i>Mi Panel</a>
       <span>&rsaquo;</span>
-      <a href="{% url 'panel_instructor_interno:listar_fichas_aprendices' %}">Aprendices</a>
+      <a href="{% url 'panel_instructor_interno:gestionar_fichas' %}">Fichas</a>
       <span>&rsaquo;</span>
       <span style="color:rgba(255,255,255,0.9)">Ficha {{ ficha.numero }}</span>
     </div>
@@ -291,7 +291,7 @@
   {% endif %}
 
   <div class="mt-4 mb-5">
-    <a href="{% url 'panel_instructor_interno:listar_fichas_aprendices' %}" class="btn-volver">
+    <a href="{% url 'panel_instructor_interno:gestionar_fichas' %}" class="btn-volver">
       <i class="fas fa-arrow-left"></i> Volver a la lista
     </a>
   </div>

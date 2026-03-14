@@ -849,7 +849,7 @@ def api_accion_visita(request, tipo, visita_id, accion):
         # Enviar correo al responsable notificando la aprobación inicial y link al panel
         try:
             if tipo == "interna":
-                panel_path = reverse("panel_instructor_interno:mis_visitas")
+                panel_path = reverse("panel_instructor_interno:panel")
             else:
                 panel_path = reverse("panel_instructor_externo:panel")
             panel_url = request.build_absolute_uri(panel_path)
@@ -1001,7 +1001,7 @@ def api_accion_visita(request, tipo, visita_id, accion):
         ReservaHorario.confirmar_reserva(visita, tipo)
 
         if tipo == "interna":
-            panel_path = reverse("panel_instructor_interno:mis_visitas")
+            panel_path = reverse("panel_instructor_interno:panel")
         else:
             panel_path = reverse("panel_instructor_externo:panel")
 

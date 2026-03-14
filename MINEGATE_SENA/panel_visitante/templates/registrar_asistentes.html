@@ -521,9 +521,15 @@
                         </div>
                     </div>
                     <div style="display: flex; gap: 8px;">
+                        {% if puede_actualizar_asistentes %}
                         <button type="button" class="btn-edit" onclick="abrirModalActualizarDoc({{ asistente.id }}, '{{ asistente.nombre_completo }}', '{{ tipo }}')">
                             <i class="fas fa-edit me-1"></i>Actualizar
                         </button>
+                        {% else %}
+                        <button type="button" class="btn-edit" disabled title="La actualización se bloquea cuando la solicitud final ya fue enviada o cuando ya están cargados los archivos finales del flujo completo.">
+                            <i class="fas fa-lock me-1"></i>Actualizar bloqueado
+                        </button>
+                        {% endif %}
                         <a href="javascript:void(0)" class="btn-delete" onclick="confirmarEliminarAsistente(event, '{% url 'panel_visitante:eliminar_asistente' tipo=tipo asistente_id=asistente.id %}', '{{ asistente.nombre_completo|escapejs }}');">
                             <i class="fas fa-trash-alt me-1"></i>Eliminar
                         </a>
@@ -644,6 +650,7 @@
 <script>
 var tipoVisitaGlobal = '{{ tipo }}';
 var visitaIdGlobal = {{ visita.id }};
+var puedeActualizarAsistentes = {{ puede_actualizar_asistentes|yesno:"true,false" }};
 
 function confirmarEliminarAsistente(event, url, nombre) {
     const mensaje = '¿Está seguro de eliminar este asistente?' + (nombre ? ('<br><strong>' + nombre + '</strong>') : '');
@@ -688,6 +695,12 @@ function confirmarEliminarAsistente(event, url, nombre) {
 }
 
 function abrirModalActualizarDoc(asistenteId, nombreAsistente, tipo) {
+    if (!puedeActualizarAsistentes) {
+        if (typeof window.mAlert === 'function') {
+            window.mAlert('No se puede actualizar: la solicitud final ya fue enviada o ya están cargados los archivos finales del flujo completo.', 'warning');
+        }
+        return;
+    }
     document.getElementById('nombreAsistenteModal').textContent = nombreAsistente;
     document.getElementById('inputDocSalud').name = 'documento_salud_' + asistenteId;
     document.getElementById('inputFormatoPadres').name = 'formato_padres_' + asistenteId;
@@ -740,6 +753,19 @@ document.addEventListener('keydown', function(e) {
 
 .btn-edit:active {
     transform: translateY(0);
+}
+
+.btn-edit:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+    opacity: 0.9;
+}
+
+.btn-edit:disabled:hover {
+    transform: none;
+    box-shadow: none;
 }
 </style>
 
