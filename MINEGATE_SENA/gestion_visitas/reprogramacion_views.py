@@ -8,11 +8,64 @@ from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+from django.conf import settings
+from django.urls import reverse
 from datetime import timedelta
 
 from visitaInterna.models import VisitaInterna, HistorialReprogramacion as HistorialReprogramacionInterna
 from visitaExterna.models import VisitaExterna, HistorialReprogramacion as HistorialReprogramacionExterna
 from calendario.models import ReservaHorario
+
+
+def _enviar_correo_visita_reprogramada(request, visita, tipo, historial, fecha_hora_nueva):
+    """Notifica al responsable que la visita fue reprogramada con una nueva fecha."""
+    try:
+        correo_destino = (getattr(visita, "correo_responsable", "") or "").strip()
+        if not correo_destino:
+            return
+
+        es_interna = tipo == "interna"
+        responsable_nombre = (
+            getattr(visita, "responsable", "")
+            if es_interna
+            else getattr(visita, "nombre_responsable", "")
+        )
+        panel_path = reverse(
+            "panel_instructor_interno:detalle_visita" if es_interna else "panel_instructor_externo:detalle_visita",
+            kwargs={"pk": visita.id},
+        )
+
+        fecha_anterior = (
+            historial.fecha_anterior.strftime("%d/%m/%Y %H:%M")
+            if getattr(historial, "fecha_anterior", None)
+            else "No disponible"
+        )
+
+        context = {
+            "responsable_nombre": responsable_nombre or "Responsable",
+            "tipo_visita": "Interna" if es_interna else "Externa",
+            "visita_id": visita.id,
+            "fecha_anterior": fecha_anterior,
+            "nueva_fecha": fecha_hora_nueva.strftime("%d/%m/%Y %H:%M"),
+            "motivo": historial.motivo or "Sin motivo registrado",
+            "panel_url": request.build_absolute_uri(panel_path),
+        }
+
+        html_content = render_to_string("emails/visita_reprogramada.html", context)
+        text_content = strip_tags(html_content)
+        msg = EmailMultiAlternatives(
+            f"Visita reprogramada: nueva fecha asignada ({context['tipo_visita']})",
+            text_content,
+            settings.DEFAULT_FROM_EMAIL,
+            [correo_destino],
+        )
+        msg.attach_alternative(html_content, "text/html")
+        msg.send(fail_silently=True)
+    except Exception:
+        pass
 
 
 def es_coordinador(user):
@@ -39,6 +92,26 @@ def puede_completar_reprogramacion(user, visita):
     correo_visita = (getattr(visita, "correo_responsable", "") or "").strip().lower()
     correo_usuario = (getattr(user, "email", "") or "").strip().lower()
     return bool(correo_visita and correo_usuario and correo_visita == correo_usuario)
+
+
+def sesion_responsable_valida(request, visita, rol_esperado):
+    """Valida el acceso del responsable autenticado por sesión pública."""
+    if not request.session.get("responsable_autenticado"):
+        return False
+    if request.session.get("responsable_rol") != rol_esperado:
+        return False
+
+    correo_sesion = (request.session.get("responsable_correo") or "").strip().lower()
+    correo_visita = (getattr(visita, "correo_responsable", "") or "").strip().lower()
+    return bool(correo_sesion and correo_visita and correo_sesion == correo_visita)
+
+
+def puede_completar_reprogramacion_request(request, visita, rol_esperado):
+    """Permite completar por usuario Django o por sesión válida del responsable."""
+    if request.user.is_authenticated and puede_completar_reprogramacion(request.user, visita):
+        return True
+
+    return sesion_responsable_valida(request, visita, rol_esperado)
 
 
 @login_required(login_url="usuarios:login")
@@ -144,7 +217,6 @@ def solicitar_reprogramacion(request, tipo, visita_id):
         }, status=500)
 
 
-@login_required(login_url="usuarios:login")
 @require_http_methods(["POST"])
 def completar_reprogramacion(request, tipo, visita_id):
     """
@@ -152,6 +224,12 @@ def completar_reprogramacion(request, tipo, visita_id):
     Marca el historial como completado y vuelve el estado a PENDIENTE.
     """
     try:
+        if not request.user.is_authenticated and not request.session.get("responsable_autenticado"):
+            return JsonResponse({
+                "success": False,
+                "message": "Sesión no válida. Inicie sesión nuevamente."
+            }, status=401)
+
         nueva_fecha = request.POST.get("fecha", "").strip()
         nueva_hora = request.POST.get("hora", "").strip()
         nueva_hora_fin = request.POST.get("hora_fin", "").strip()
@@ -211,7 +289,7 @@ def completar_reprogramacion(request, tipo, visita_id):
                     "message": "Esta solicitud de reprogramación ya fue completada"
                 }, status=409)
             
-            if not puede_completar_reprogramacion(request.user, visita):
+            if not puede_completar_reprogramacion_request(request, visita, "interno"):
                 return JsonResponse({
                     "success": False,
                     "message": "No tienes permiso para completar esta reprogramación"
@@ -245,6 +323,8 @@ def completar_reprogramacion(request, tipo, visita_id):
                     "estado": "pendiente",
                 },
             )
+
+            _enviar_correo_visita_reprogramada(request, visita, "interna", historial, fecha_hora_nueva)
             
             return JsonResponse({
                 "success": True,
@@ -261,7 +341,7 @@ def completar_reprogramacion(request, tipo, visita_id):
                     "message": "Esta solicitud de reprogramación ya fue completada"
                 }, status=409)
             
-            if not puede_completar_reprogramacion(request.user, visita):
+            if not puede_completar_reprogramacion_request(request, visita, "externo"):
                 return JsonResponse({
                     "success": False,
                     "message": "No tienes permiso para completar esta reprogramación"
@@ -295,6 +375,8 @@ def completar_reprogramacion(request, tipo, visita_id):
                     "estado": "pendiente",
                 },
             )
+
+            _enviar_correo_visita_reprogramada(request, visita, "externa", historial, fecha_hora_nueva)
             
             return JsonResponse({
                 "success": True,

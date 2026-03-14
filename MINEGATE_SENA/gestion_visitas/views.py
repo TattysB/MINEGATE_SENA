@@ -134,6 +134,54 @@ def _enviar_correo_confirmacion_responsable(visita, tipo, panel_url):
         pass
 
 
+def _enviar_correo_correccion_documentos_asistente(request, asistente, tipo, observaciones):
+    """Notifica al responsable que debe corregir documentos de un asistente."""
+    try:
+        visita = asistente.visita
+        correo_destino = (getattr(visita, "correo_responsable", "") or "").strip()
+        if not correo_destino:
+            return
+
+        if getattr(visita, "token_acceso", None):
+            panel_path = reverse(
+                "documentos:registro_publico_interna" if tipo == "interna" else "documentos:registro_publico_externa",
+                kwargs={"token": visita.token_acceso},
+            )
+        else:
+            panel_path = reverse(
+                "panel_instructor_interno:panel" if tipo == "interna" else "panel_instructor_externo:panel"
+            )
+
+        context = {
+            "responsable_nombre": (
+                getattr(visita, "responsable", "")
+                if tipo == "interna"
+                else getattr(visita, "nombre_responsable", "")
+            )
+            or "Responsable",
+            "tipo_visita": "Interna" if tipo == "interna" else "Externa",
+            "visita_id": visita.id,
+            "asistente_nombre": asistente.nombre_completo,
+            "documento_titulo": "Documentos del asistente",
+            "observaciones": observaciones or "Sin observaciones registradas.",
+            "fecha_revision": timezone.now().strftime("%d/%m/%Y %H:%M"),
+            "panel_url": request.build_absolute_uri(panel_path),
+        }
+
+        html_content = render_to_string("emails/documento_rechazado_correccion.html", context)
+        text_content = strip_tags(html_content)
+        msg = EmailMultiAlternatives(
+            f"Accion requerida: correccion de documentos ({context['tipo_visita']})",
+            text_content,
+            settings.DEFAULT_FROM_EMAIL,
+            [correo_destino],
+        )
+        msg.attach_alternative(html_content, "text/html")
+        msg.send(fail_silently=True)
+    except Exception:
+        pass
+
+
 def _procesar_confirmacion_visita_async(visita_id, tipo, panel_url):
     close_old_connections()
     try:
@@ -1136,6 +1184,12 @@ def api_revisar_autorizacion_padres(request, tipo, asistente_id, accion):
             asistente,
             observacion_rechazo=f"Autorización de padres rechazada: {observaciones}",
         )
+        _enviar_correo_correccion_documentos_asistente(
+            request,
+            asistente,
+            tipo,
+            f"Autorizacion de padres rechazada: {observaciones}",
+        )
         return JsonResponse(
             {
                 "success": True,
@@ -1254,6 +1308,12 @@ def api_revisar_documento_asistente(request, tipo, asistente_id, accion):
         revision = _sincronizar_estado_asistente(
             asistente,
             observacion_rechazo=observaciones,
+        )
+        _enviar_correo_correccion_documentos_asistente(
+            request,
+            asistente,
+            tipo,
+            observaciones,
         )
         return JsonResponse(
             {

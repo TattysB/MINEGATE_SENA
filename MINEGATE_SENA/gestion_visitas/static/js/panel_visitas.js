@@ -97,8 +97,8 @@ function cargarVisitas() {
   const estado = estadoEl.value;
   const buscar = buscarEl.value;
 
-  tbody.innerHTML = `<tr><td colspan="8" style="padding: 40px; text-align: center; color: #6b7280;">
-      <i class="ri-loader-4-line" style="font-size: 30px; animation: spin 1s linear infinite;"></i>
+  tbody.innerHTML = `<tr><td colspan="8" class="docs-cargando">
+      <i class="ri-loader-4-line"></i>
       <p>Cargando visitas...</p>
     </td></tr>`;
 
@@ -151,8 +151,8 @@ function cargarVisitas() {
       }
 
       if (data.visitas.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" style="padding: 40px; text-align: center; color: #6b7280;">
-            <i class="ri-inbox-line" style="font-size: 40px;"></i>
+        tbody.innerHTML = `<tr><td colspan="8" class="docs-vacio">
+            <i class="ri-inbox-line"></i>
             <p>No hay visitas para mostrar</p>
           </td></tr>`;
         return;
@@ -161,18 +161,22 @@ function cargarVisitas() {
       let html = '';
       data.visitas.forEach(v => {
         const estadoBadge = getEstadoBadge(v.estado);
-        html += `<tr style="border-bottom: 1px solid #e5e7eb;">
-            <td style="padding: 12px 15px;">#${v.id}</td>
-            <td style="padding: 12px 15px;">${v.tipo === 'interna' ? '📋 Interna' : '🏢 Externa'}</td>
-            <td style="padding: 12px 15px;">
-              <div style="font-weight: 500;">${v.responsable}</div>
-              <div style="font-size: 12px; color: #6b7280;">${v.correo}</div>
+        html += `<tr class="docs-fila gv-fila">
+            <td class="gv-celda-id">#${v.id}</td>
+            <td>
+              <span class="gv-tipo-badge ${v.tipo === 'interna' ? 'interna' : 'externa'}">
+                ${v.tipo === 'interna' ? '📋 Interna' : '🏢 Externa'}
+              </span>
             </td>
-            <td style="padding: 12px 15px;">${v.institucion}</td>
-            <td style="padding: 12px 15px;">${v.fecha_visita}</td>
-            <td style="padding: 12px 15px; text-align: center;">${v.cantidad}</td>
-            <td style="padding: 12px 15px;">${estadoBadge}</td>
-            <td style="padding: 12px 15px; text-align: center;">
+            <td>
+              <div class="gv-responsable">${v.responsable}</div>
+              <div class="docs-celda-texto">${v.correo}</div>
+            </td>
+            <td class="docs-celda-texto">${v.institucion}</td>
+            <td class="docs-celda-texto">${v.fecha_visita}</td>
+            <td class="gv-celda-cantidad">${v.cantidad}</td>
+            <td>${estadoBadge}</td>
+            <td class="docs-celda-acciones gv-celda-acciones">
               ${getAccionesVisita(v)}
             </td>
           </tr>`;
@@ -180,7 +184,7 @@ function cargarVisitas() {
       tbody.innerHTML = html;
     })
     .catch(() => {
-      tbody.innerHTML = `<tr><td colspan="8" style="padding: 40px; text-align: center; color: #ef4444;">
+      tbody.innerHTML = `<tr><td colspan="8" class="docs-error">
           <i class="ri-error-warning-line" style="font-size: 40px;"></i>
           <p>Error al cargar las visitas</p>
         </td></tr>`;
@@ -189,16 +193,16 @@ function cargarVisitas() {
 
 function getEstadoBadge(estado) {
   const badges = {
-    'enviada_coordinacion': '<span style="background:#dcfce7;color:#166534;padding:4px 10px;border-radius:20px;font-size:11px;">🕒 Pendiente coordinación</span>',
-    'pendiente': '<span style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:20px;font-size:11px;">⏳ Pendiente</span>',
-    'aprobada_inicial': '<span style="background:#bbf7d0;color:#166534;padding:4px 10px;border-radius:20px;font-size:11px;">✅ Aprobada Inicial</span>',
-    'documentos_enviados': '<span style="background:#dbeafe;color:#1e40af;padding:4px 10px;border-radius:20px;font-size:11px;">📄 Docs Enviados</span>',
-    'en_revision_documentos': '<span style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:20px;font-size:11px;">🔍 En Revisión</span>',
-    'reprogramacion_solicitada': '<span style="background:#fee2e2;color:#9f1239;padding:4px 10px;border-radius:20px;font-size:11px;">📆 Reprogramación solicitada</span>',
-    'confirmada': '<span style="background:#d1fae5;color:#065f46;padding:4px 10px;border-radius:20px;font-size:11px;">✅✅ Confirmada</span>',
-    'rechazada': '<span style="background:#fee2e2;color:#991b1b;padding:4px 10px;border-radius:20px;font-size:11px;">❌ Rechazada</span>',
+    'enviada_coordinacion': '<span class="gv-estado-pill gv-estado-enviada"><i class="ri-time-line"></i> Pendiente coordinación</span>',
+    'pendiente': '<span class="gv-estado-pill gv-estado-pendiente"><i class="ri-hourglass-line"></i> Pendiente</span>',
+    'aprobada_inicial': '<span class="gv-estado-pill gv-estado-aprobada"><i class="ri-check-double-line"></i> Aprobada inicial</span>',
+    'documentos_enviados': '<span class="gv-estado-pill gv-estado-docs"><i class="ri-file-upload-line"></i> Docs enviados</span>',
+    'en_revision_documentos': '<span class="gv-estado-pill gv-estado-revision"><i class="ri-search-eye-line"></i> En revisión</span>',
+    'reprogramacion_solicitada': '<span class="gv-estado-pill gv-estado-reprogramacion"><i class="ri-calendar-2-line"></i> Reprogramación solicitada</span>',
+    'confirmada': '<span class="gv-estado-pill gv-estado-confirmada"><i class="ri-verified-badge-line"></i> Confirmada</span>',
+    'rechazada': '<span class="gv-estado-pill gv-estado-rechazada"><i class="ri-close-circle-line"></i> Rechazada</span>',
   };
-  return badges[estado] || estado;
+  return badges[estado] || `<span class="gv-estado-pill">${estado}</span>`;
 }
 
 function puedeSolicitarReprogramacionAdmin(estado) {
@@ -254,40 +258,60 @@ function esCategoriaArchivoFinal(categoria) {
 }
 
 function getAccionesVisita(v) {
-  let acciones = `<button onclick="verDetalleVisita('${v.tipo}', ${v.id})" style="background:#6b7280;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">👁️ Ver</button>`;
+  const acciones = [
+    `<button type="button" onclick="verDetalleVisita('${v.tipo}', ${v.id})" class="docs-btn-accion docs-btn-ver gv-btn-base">
+      <i class="ri-eye-line"></i> Ver
+    </button>`
+  ];
 
   if (v.estado === 'enviada_coordinacion') {
-    acciones += `<span style="display:inline-block;background:#dcfce7;color:#166534;padding:5px 10px;border-radius:5px;margin:2px;font-size:11px;">🕒 Esperando coordinación</span>`;
-    return acciones;
+    acciones.push('<span class="gv-pill-info gv-pill-espera"><i class="ri-time-line"></i> Esperando coordinación</span>');
+    return `<div class="docs-acciones gv-acciones">${acciones.join('')}</div>`;
   }
 
   if (v.estado === 'pendiente') {
-    acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'aprobar')" style="background:#10b981;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">✅ Aprobar</button>`;
-    acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'rechazar')" style="background:#ef4444;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">❌</button>`;
+    acciones.push(`<button type="button" onclick="accionVisita('${v.tipo}', ${v.id}, 'aprobar')" class="docs-btn-accion gv-btn-approve">
+      <i class="ri-check-line"></i> Aprobar
+    </button>`);
+    acciones.push(`<button type="button" onclick="accionVisita('${v.tipo}', ${v.id}, 'rechazar')" class="docs-btn-accion gv-btn-reject" title="Rechazar visita">
+      <i class="ri-close-line"></i>
+    </button>`);
   }
 
   if (puedeSolicitarReprogramacionAdmin(v.estado)) {
-    acciones += `<button onclick="solicitarReprogramacionVisita('${v.tipo}', ${v.id})" style="background:#f59e0b;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">📆 Reprogramar</button>`;
+    acciones.push(`<button type="button" onclick="solicitarReprogramacionVisita('${v.tipo}', ${v.id})" class="docs-btn-accion gv-btn-reschedule">
+      <i class="ri-calendar-schedule-line"></i> Reprogramar
+    </button>`);
   }
 
   if (v.estado === 'documentos_enviados') {
-    acciones += `<button onclick="verDetalleVisita('${v.tipo}', ${v.id})" style="background:#f59e0b;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;font-weight:600;">📄 Revisar Docs</button>`;
-    acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'iniciar_revision')" style="background:#3b82f6;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">🔍 Finalizar Revisión</button>`;
+    acciones.push(`<button type="button" onclick="verDetalleVisita('${v.tipo}', ${v.id})" class="docs-btn-accion gv-btn-docs">
+      <i class="ri-file-search-line"></i> Revisar docs
+    </button>`);
+    acciones.push(`<button type="button" onclick="accionVisita('${v.tipo}', ${v.id}, 'iniciar_revision')" class="docs-btn-accion gv-btn-review">
+      <i class="ri-search-line"></i> Iniciar revisión
+    </button>`);
   }
 
   if (v.estado === 'en_revision_documentos') {
-    acciones += `<button onclick="verDetalleVisita('${v.tipo}', ${v.id})" style="background:#f59e0b;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;font-weight:600;">📄 Revisar Docs</button>`;
+    acciones.push(`<button type="button" onclick="verDetalleVisita('${v.tipo}', ${v.id})" class="docs-btn-accion gv-btn-docs">
+      <i class="ri-file-search-line"></i> Revisar docs
+    </button>`);
 
     if (v.puede_confirmar) {
-      acciones += `<button onclick="accionVisita('${v.tipo}', ${v.id}, 'confirmar_visita')" style="background:#10b981;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;">✅✅ Confirmar</button>`;
+      acciones.push(`<button type="button" onclick="accionVisita('${v.tipo}', ${v.id}, 'confirmar_visita')" class="docs-btn-accion gv-btn-confirm">
+        <i class="ri-verified-badge-line"></i> Confirmar
+      </button>`);
     } else if (v.tiene_rechazos) {
-      acciones += `<span style="display:inline-block;background:#fee2e2;color:#991b1b;padding:5px 10px;border-radius:5px;margin:2px;font-size:11px;">⚠️ Pendiente corrección</span>`;
+      acciones.push('<span class="gv-pill-info gv-pill-warning"><i class="ri-error-warning-line"></i> Pendiente corrección</span>');
     } else {
-      acciones += `<button onclick="mAlert('No se puede confirmar la visita aún. Asegúrese de que todos los asistentes tengan sus documentos aprobados.', 'warning')" style="background:#10b981;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin:2px;font-size:11px;opacity:0.5;" title="Documentos pendientes de aprobación">⚠️ Confirmar</button>`;
+      acciones.push(`<button type="button" onclick="mAlert('No se puede confirmar la visita aún. Asegúrese de que todos los asistentes tengan sus documentos aprobados.', 'warning')" class="docs-btn-accion gv-btn-confirm gv-btn-disabled" title="Documentos pendientes de aprobación">
+        <i class="ri-alert-line"></i> Confirmar
+      </button>`);
     }
   }
 
-  return acciones;
+  return `<div class="docs-acciones gv-acciones">${acciones.join('')}</div>`;
 }
 
 function filtrarVisitas() {
@@ -298,8 +322,8 @@ function filtrarVisitas() {
 function mostrarVisitasAprobadas() {
   const tbody = document.getElementById('cuerpoTablaVisitas');
 
-  tbody.innerHTML = `<tr><td colspan="8" style="padding: 40px; text-align: center; color: #6b7280;">
-      <i class="ri-loader-4-line" style="font-size: 30px; animation: spin 1s linear infinite;"></i>
+  tbody.innerHTML = `<tr><td colspan="8" class="docs-cargando">
+      <i class="ri-loader-4-line"></i>
       <p>Cargando visitas aprobadas...</p>
     </td></tr>`;
 
@@ -309,8 +333,8 @@ function mostrarVisitasAprobadas() {
       const visitas = data.visitas || [];
 
       if (visitas.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" style="padding: 40px; text-align: center; color: #6b7280;">
-            <i class="ri-inbox-line" style="font-size: 40px;"></i>
+        tbody.innerHTML = `<tr><td colspan="8" class="docs-vacio">
+            <i class="ri-inbox-line"></i>
             <p>No hay visitas aprobadas</p>
           </td></tr>`;
         return;
@@ -319,21 +343,22 @@ function mostrarVisitasAprobadas() {
       let html = '';
       visitas.forEach(v => {
         const estadoBadge = getEstadoBadge(v.estado);
-        html += `<tr style="border-bottom: 1px solid #e5e7eb;">
-            <td style="padding: 12px 15px;">#${v.id}</td>
-            <td style="padding: 12px 15px;">${v.tipo_display}</td>
-            <td style="padding: 12px 15px;">
-              <div style="font-weight: 500;">${v.responsable}</div>
-              <div style="font-size: 12px; color: #6b7280;">${v.correo || 'N/A'}</div>
+        html += `<tr class="docs-fila gv-fila">
+            <td class="gv-celda-id">#${v.id}</td>
+            <td>
+              <span class="gv-tipo-badge ${v.tipo === 'interna' ? 'interna' : 'externa'}">${v.tipo_display}</span>
             </td>
-            <td style="padding: 12px 15px;">${v.institucion}</td>
-            <td style="padding: 12px 15px;">${v.fecha_visita || 'N/A'}</td>
-            <td style="padding: 12px 15px; text-align: center;">${v.cantidad || 0}</td>
-            <td style="padding: 12px 15px;">${estadoBadge}</td>
-            <td style="padding: 12px 15px; text-align: center;">
-              <button onclick="verDetalleVisita('${v.tipo}', ${v.id})" 
-                      style="background:#3b82f6;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">
-                Ver detalles
+            <td>
+              <div class="gv-responsable">${v.responsable}</div>
+              <div class="docs-celda-texto">${v.correo || 'N/A'}</div>
+            </td>
+            <td class="docs-celda-texto">${v.institucion}</td>
+            <td class="docs-celda-texto">${v.fecha_visita || 'N/A'}</td>
+            <td class="gv-celda-cantidad">${v.cantidad || 0}</td>
+            <td>${estadoBadge}</td>
+            <td class="docs-celda-acciones gv-celda-acciones">
+              <button type="button" onclick="verDetalleVisita('${v.tipo}', ${v.id})" class="docs-btn-accion docs-btn-ver gv-btn-base">
+                <i class="ri-eye-line"></i> Ver detalles
               </button>
             </td>
           </tr>`;
@@ -341,7 +366,7 @@ function mostrarVisitasAprobadas() {
       tbody.innerHTML = html;
     })
     .catch(() => {
-      tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 20px; color: #ef4444;">
+      tbody.innerHTML = `<tr><td colspan="8" class="docs-error" style="padding:20px;">
           <i class="ri-alert-line" style="font-size: 24px;"></i>
           <p style="font-size: 13px; color: #6b7280;">Error al cargar las visitas aprobadas</p>
         </td></tr>`;
