@@ -4,6 +4,12 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.clickjacking import xframe_options_exempt
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+from django.conf import settings
+from django.urls import reverse
+from django.utils import timezone
 from visitaInterna.models import VisitaInterna, AsistenteVisitaInterna
 from visitaExterna.models import VisitaExterna, AsistenteVisitaExterna
 from .models import Documento, DocumentoSubidoAsistente
@@ -67,6 +73,60 @@ def _sincronizar_estado_asistente(asistente):
         asistente.save(update_fields=update_fields)
 
     return nuevo_estado
+
+
+def _enviar_correo_documento_rechazado(request, doc, asistente, observaciones):
+    """Notifica al responsable que un documento fue rechazado y requiere correccion."""
+    try:
+        if not asistente:
+            return
+
+        es_interna = bool(getattr(doc, "asistente_interna_id", None))
+        visita = asistente.visita
+        correo_destino = (getattr(visita, "correo_responsable", "") or "").strip()
+        if not correo_destino:
+            return
+
+        tipo_visita = "Interna" if es_interna else "Externa"
+        responsable_nombre = (
+            getattr(visita, "responsable", "")
+            if es_interna
+            else getattr(visita, "nombre_responsable", "")
+        )
+
+        if getattr(visita, "token_acceso", None):
+            panel_path = reverse(
+                "documentos:registro_publico_interna" if es_interna else "documentos:registro_publico_externa",
+                kwargs={"token": visita.token_acceso},
+            )
+        else:
+            panel_path = reverse(
+                "panel_instructor_interno:panel" if es_interna else "panel_instructor_externo:panel"
+            )
+
+        context = {
+            "responsable_nombre": responsable_nombre or "Responsable",
+            "tipo_visita": tipo_visita,
+            "visita_id": visita.id,
+            "asistente_nombre": asistente.nombre_completo,
+            "documento_titulo": doc.documento_requerido.titulo,
+            "observaciones": observaciones or "Sin observaciones registradas.",
+            "fecha_revision": timezone.now().strftime("%d/%m/%Y %H:%M"),
+            "panel_url": request.build_absolute_uri(panel_path),
+        }
+
+        html_content = render_to_string("emails/documento_rechazado_correccion.html", context)
+        text_content = strip_tags(html_content)
+        msg = EmailMultiAlternatives(
+            f"Accion requerida: documento rechazado ({tipo_visita})",
+            text_content,
+            settings.DEFAULT_FROM_EMAIL,
+            [correo_destino],
+        )
+        msg.attach_alternative(html_content, "text/html")
+        msg.send(fail_silently=True)
+    except Exception:
+        pass
 
 
 def registro_publico_asistentes(request, token, tipo):
@@ -776,6 +836,7 @@ def revisar_documento_asistente_api(request, documento_subido_id):
                 else f"Documento '{doc.documento_requerido.titulo}' rechazado."
             )
             asistente.save(update_fields=["estado", "observaciones_revision"])
+            _enviar_correo_documento_rechazado(request, doc, asistente, observaciones)
 
     if asistente:
         nuevo_estado_asistente = _sincronizar_estado_asistente(asistente)

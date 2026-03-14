@@ -86,27 +86,25 @@
     {% include 'documentos/panel_documentos_visitas.html' %}
 
     <!-- Tabla de visitas -->
-    <div id="contenedorTablaVisitas"
-      style="background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden;">
-      <div style="overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse;" id="tablaVisitas">
+    <div id="contenedorTablaVisitas" class="docs-tabla-contenedor gv-tabla-contenedor">
+      <div class="docs-tabla-scroll">
+        <table class="docs-tabla gv-tabla" id="tablaVisitas">
           <thead>
-            <tr style="background: #f3f4f6;">
-              <th style="padding: 12px 15px; text-align: left; font-weight: 600; color: #374151;">ID</th>
-              <th style="padding: 12px 15px; text-align: left; font-weight: 600; color: #374151;">Tipo</th>
-              <th style="padding: 12px 15px; text-align: left; font-weight: 600; color: #374151;">Responsable</th>
-              <th style="padding: 12px 15px; text-align: left; font-weight: 600; color: #374151;">Institución/Programa
-              </th>
-              <th style="padding: 12px 15px; text-align: left; font-weight: 600; color: #374151;">Fecha Solicitud</th>
-              <th style="padding: 12px 15px; text-align: left; font-weight: 600; color: #374151;">Cantidad</th>
-              <th style="padding: 12px 15px; text-align: left; font-weight: 600; color: #374151;">Estado</th>
-              <th style="padding: 12px 15px; text-align: center; font-weight: 600; color: #374151;">Acciones</th>
+            <tr>
+              <th>ID</th>
+              <th>Tipo</th>
+              <th>Responsable</th>
+              <th>Institución/Programa</th>
+              <th>Fecha Solicitud</th>
+              <th>Cantidad</th>
+              <th>Estado</th>
+              <th style="text-align: center;">Acciones</th>
             </tr>
           </thead>
           <tbody id="cuerpoTablaVisitas">
             <tr>
-              <td colspan="8" style="padding: 40px; text-align: center; color: #6b7280;">
-                <i class="ri-loader-4-line" style="font-size: 30px; animation: spin 1s linear infinite;"></i>
+              <td colspan="8" class="docs-cargando">
+                <i class="ri-loader-4-line"></i>
                 <p>Cargando visitas...</p>
               </td>
             </tr>

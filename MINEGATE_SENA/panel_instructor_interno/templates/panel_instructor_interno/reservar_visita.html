@@ -168,6 +168,39 @@
     font-weight: 700;
     color: var(--sena-verde);
   }
+
+  /* Confirmacion de envio */
+  .modal-confirmacion-envio {
+    border-radius: 16px;
+    border: 1px solid #bbf7d0;
+    box-shadow: 0 14px 35px rgba(34, 98, 0, 0.2);
+  }
+  .modal-confirmacion-envio .modal-header {
+    background: #f0fdf4;
+    border-bottom: 1px solid #bbf7d0;
+  }
+  .modal-confirmacion-envio .modal-title {
+    color: var(--sena-verde-oscuro);
+    font-weight: 800;
+  }
+  .confirmacion-alerta {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-left: 5px solid var(--sena-verde);
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+  .btn-confirmar-envio {
+    background: var(--sena-verde);
+    border-color: var(--sena-verde);
+    color: #fff;
+    font-weight: 700;
+  }
+  .btn-confirmar-envio:hover {
+    background: var(--sena-verde-oscuro);
+    border-color: var(--sena-verde-oscuro);
+    color: #fff;
+  }
 </style>
 </head>
 <body class="reservar-visita-interna-page">
@@ -233,7 +266,8 @@
         <div class="seleccion-resumen" id="resumenSeleccion">
           <h4><i class="fas fa-check-circle me-2 text-success"></i>Fecha y horario seleccionados</h4>
           <p>Fecha: <span class="fecha-hora" id="resumenFecha">-</span></p>
-          <p>Horario: <span class="fecha-hora" id="resumenHorario">-</span></p>
+          <p>Hora inicio: <span class="fecha-hora" id="resumenHoraInicio">-</span></p>
+          <p>Hora fin: <span class="fecha-hora" id="resumenHoraFin">-</span></p>
         </div>
       </div>
     </div>
@@ -320,6 +354,10 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   const container = document.getElementById('calendarioContainer');
+  const formSolicitud = document.querySelector('form[method="POST"]');
+  const btnEnviar = document.getElementById('btnEnviar');
+  const modalConfirmarEnvioEl = document.getElementById('modalConfirmarEnvio');
+  const btnConfirmarEnvioFinal = document.getElementById('btnConfirmarEnvioFinal');
   let selectedDate = null;
   let selectedHorario = null;
 
@@ -422,9 +460,10 @@ document.addEventListener('DOMContentLoaded', function() {
       if (horarioHint) horarioHint.textContent = 'Selecciona el horario que prefieras:';
       
       if (horariosList) {
-        horariosList.innerHTML = data.ranges.map(r => 
-          '<span class="horario-chip" data-start="' + r.start + '" data-end="' + r.end + '">' + r.label + '</span>'
-        ).join('');
+        horariosList.innerHTML = data.ranges.map(r => {
+          const formattedLabel = formatRangeAmPm(r.start, r.end, r.label);
+          return '<span class="horario-chip" data-start="' + r.start + '" data-end="' + r.end + '">' + formattedLabel + '</span>';
+        }).join('');
         horariosList.style.display = 'block';
         
         // Event listeners para chips
@@ -454,16 +493,41 @@ document.addEventListener('DOMContentLoaded', function() {
                     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     return parseInt(parts[2]) + ' de ' + months[parseInt(parts[1])] + ' de ' + parts[0];
   }
+
+  function formatTimeAmPm(timeStr) {
+    if (!timeStr) return '';
+    const raw = String(timeStr).trim().split(':');
+    if (raw.length < 2) return String(timeStr);
+
+    let hours = parseInt(raw[0], 10);
+    const minutes = raw[1];
+    if (Number.isNaN(hours)) return String(timeStr);
+
+    const period = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    if (hours === 0) hours = 12;
+
+    return String(hours).padStart(2, '0') + ':' + minutes + ' ' + period;
+  }
+
+  function formatRangeAmPm(start, end, fallbackLabel) {
+    if (start && end) {
+      return formatTimeAmPm(start) + ' - ' + formatTimeAmPm(end);
+    }
+    return fallbackLabel || '';
+  }
   
   function updateResumen() {
     const resumen = document.getElementById('resumenSeleccion');
     const resumenFecha = document.getElementById('resumenFecha');
-    const resumenHorario = document.getElementById('resumenHorario');
+    const resumenHoraInicio = document.getElementById('resumenHoraInicio');
+    const resumenHoraFin = document.getElementById('resumenHoraFin');
     
     if (selectedDate && selectedHorario) {
       resumen.classList.add('visible');
       resumenFecha.textContent = formatDate(selectedDate);
-      resumenHorario.textContent = selectedHorario.label;
+      resumenHoraInicio.textContent = formatTimeAmPm(selectedHorario.start);
+      resumenHoraFin.textContent = formatTimeAmPm(selectedHorario.end);
     } else {
       resumen.classList.remove('visible');
     }
@@ -480,12 +544,14 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   // Validación antes de enviar
-  document.getElementById('btnEnviar').addEventListener('click', function(e) {
+  btnEnviar.addEventListener('click', function(e) {
     if (!selectedDate || !selectedHorario) {
       e.preventDefault();
       alert('Por favor selecciona una fecha y un horario para la visita.');
       container.scrollIntoView({ behavior: 'smooth' });
+      return false;
     }
+
     // Validar aceptación de términos
     const checkbox = document.getElementById('acepto_terminos');
     if (checkbox && !checkbox.checked) {
@@ -499,7 +565,24 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       return false;
     }
+
+    e.preventDefault();
+    if (modalConfirmarEnvioEl) {
+      const modalConfirmarEnvio = new bootstrap.Modal(modalConfirmarEnvioEl);
+      modalConfirmarEnvio.show();
+      return false;
+    }
+
+    formSolicitud.submit();
   });
+
+  if (btnConfirmarEnvioFinal) {
+    btnConfirmarEnvioFinal.addEventListener('click', function() {
+      if (formSolicitud) {
+        formSolicitud.submit();
+      }
+    });
+  }
 });
 </script>
 
@@ -644,6 +727,32 @@ document.addEventListener('DOMContentLoaded', function() {
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
         <button type="button" class="btn btn-primary" id="aceptoModalBtn">Entendido y Acepto</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Confirmacion de Envio -->
+<div class="modal fade" id="modalConfirmarEnvio" tabindex="-1" aria-labelledby="modalConfirmarEnvioLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content modal-confirmacion-envio">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalConfirmarEnvioLabel">
+          <i class="fas fa-circle-check me-2 text-success"></i>Confirmar envio de solicitud
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="confirmacion-alerta">
+          <p class="mb-2 fw-semibold text-dark">¿Esta seguro de enviar su solicitud?</p>
+          <p class="mb-0 text-muted">Revise su informacion y verifique que este debidamente diligenciada y completa antes de enviar.</p>
+        </div>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Revisar informacion</button>
+        <button type="button" class="btn btn-confirmar-envio" id="btnConfirmarEnvioFinal">
+          <i class="fas fa-paper-plane me-2"></i>Si, enviar solicitud
+        </button>
       </div>
     </div>
   </div>

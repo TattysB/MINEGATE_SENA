@@ -16,6 +16,8 @@ from .models import PerfilUsuario
 
 # ==================== VISTAS DE AUTENTICACIÓN ====================
 
+AUTH_ADMIN_MESSAGE_TAG = "auth_admin"
+
 
 def resolver_panel_por_rol(user):
     if user.groups.filter(name="instructor_interno").exists():
@@ -50,11 +52,23 @@ def login_view(request):
 
         # Validar campos vacíos
         if not username and not password:
-            messages.error(request, "Ingresa tu número de documento y contraseña.")
+            messages.error(
+                request,
+                "Ingresa tu número de documento y contraseña.",
+                extra_tags=AUTH_ADMIN_MESSAGE_TAG,
+            )
         elif not username:
-            messages.error(request, "Ingresa tu número de documento.")
+            messages.error(
+                request,
+                "Ingresa tu número de documento.",
+                extra_tags=AUTH_ADMIN_MESSAGE_TAG,
+            )
         elif not password:
-            messages.error(request, "Ingresa tu contraseña.")
+            messages.error(
+                request,
+                "Ingresa tu contraseña.",
+                extra_tags=AUTH_ADMIN_MESSAGE_TAG,
+            )
         else:
             # Verificar si el usuario existe
             user_exists = User.objects.filter(username=username).first()
@@ -82,21 +96,30 @@ def login_view(request):
                     request.session["redirect_after_welcome"] = next_url
 
                     messages.success(
-                        request, f"¡Bienvenido {user.get_full_name() or user.username}!"
+                        request,
+                        f"¡Bienvenido {user.get_full_name() or user.username}!",
+                        extra_tags=AUTH_ADMIN_MESSAGE_TAG,
                     )
                     return redirect("usuarios:bienvenida")
                 else:
                     messages.error(
                         request,
                         "Esta cuenta ha sido desactivada. Contacta al administrador.",
+                        extra_tags=AUTH_ADMIN_MESSAGE_TAG,
                     )
             else:
                 # Mensajes específicos según el error
                 if user_exists:
-                    messages.error(request, "Contraseña incorrecta.")
+                    messages.error(
+                        request,
+                        "Contraseña incorrecta.",
+                        extra_tags=AUTH_ADMIN_MESSAGE_TAG,
+                    )
                 else:
                     messages.error(
-                        request, "El número de documento no está registrado."
+                        request,
+                        "El número de documento no está registrado.",
+                        extra_tags=AUTH_ADMIN_MESSAGE_TAG,
                     )
     else:
         form = LoginForm()
@@ -113,7 +136,9 @@ def logout_view(request):
     username = request.user.get_full_name() or request.user.username
     logout(request)
     messages.success(
-        request, f"¡Hasta pronto, {username}! Tu sesión fue cerrada correctamente."
+        request,
+        f"¡Hasta pronto, {username}! Tu sesión fue cerrada correctamente.",
+        extra_tags=AUTH_ADMIN_MESSAGE_TAG,
     )
     return redirect("core:index")
 

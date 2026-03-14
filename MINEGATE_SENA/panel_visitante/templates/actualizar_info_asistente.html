@@ -8,38 +8,278 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { background: #f8fafc; }
-        .card-wrap { max-width: 760px; margin: 34px auto; }
+        :root {
+            --modal-primary: #1d4ed8;
+            --modal-primary-dark: #1e3a8a;
+            --modal-success: #198754;
+            --modal-border: #dbe4f2;
+            --modal-bg: #f6f9ff;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+            {% if embed_mode %}
+            background: transparent;
+            {% else %}
+            background:
+                radial-gradient(circle at 10% 10%, rgba(37, 99, 235, 0.18), transparent 36%),
+                radial-gradient(circle at 90% 20%, rgba(16, 185, 129, 0.14), transparent 40%),
+                #e8edf5;
+            {% endif %}
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .floating-overlay {
+            width: min(980px, 100%);
+            max-height: calc(100vh - 32px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            background: rgba(245, 248, 255, 0.7);
+            backdrop-filter: blur(8px);
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+            overflow: hidden;
+            animation: modalIn 0.24s ease;
+        }
+
+        {% if embed_mode %}
+        body {
+            min-height: 0;
+            display: block;
+            padding: 0;
+        }
+
+        .floating-overlay {
+            width: 100%;
+            max-height: none;
+            border: none;
+            border-radius: 0;
+            background: transparent;
+            backdrop-filter: none;
+            box-shadow: none;
+            animation: none;
+        }
+
+        .floating-window {
+            border: none;
+            border-radius: 0;
+            max-height: none;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .floating-header {
+            display: none;
+        }
+
+        .floating-body {
+            padding: 14px;
+            overflow: visible;
+        }
+        {% endif %}
+
+        .floating-window {
+            background: linear-gradient(180deg, #f9fbff 0%, #f1f6ff 100%);
+            border: 1px solid var(--modal-border);
+            border-radius: 20px;
+            overflow: hidden;
+            max-height: calc(100vh - 36px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .floating-header {
+            background: linear-gradient(135deg, var(--modal-primary) 0%, #2563eb 45%, var(--modal-primary-dark) 100%);
+            color: #fff;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .floating-title {
+            margin: 0;
+            font-size: clamp(1.05rem, 2.1vw, 1.7rem);
+            font-weight: 700;
+            line-height: 1.2;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-close-modal {
+            width: 34px;
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            background: rgba(255, 255, 255, 0.18);
+            color: #fff;
+            text-decoration: none;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+
+        .btn-close-modal:hover {
+            background: rgba(255, 255, 255, 0.28);
+            transform: scale(1.05);
+            color: #fff;
+        }
+
+        .floating-body {
+            padding: 22px 24px 24px;
+            overflow: auto;
+        }
+
+        .intro-text {
+            color: #475569;
+            font-size: 0.96rem;
+            line-height: 1.6;
+            margin-bottom: 18px;
+        }
+
+        .form-label {
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .form-control,
+        .form-select {
+            border-radius: 10px;
+            min-height: 44px;
+            border-color: #cfd8e3;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.18);
+        }
+
+        .btn-save {
+            background: var(--modal-success);
+            border-color: var(--modal-success);
+            font-weight: 700;
+            border-radius: 10px;
+            min-width: 176px;
+        }
+
+        .btn-save:hover {
+            background: #157347;
+            border-color: #157347;
+        }
+
+        .btn-cancel {
+            border-radius: 10px;
+            min-width: 130px;
+            font-weight: 600;
+        }
+
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 0;
+            }
+
+            .floating-overlay,
+            .floating-window {
+                width: 100%;
+                height: 100vh;
+                max-height: 100vh;
+                border-radius: 0;
+                border: none;
+            }
+
+            .floating-header {
+                padding: 14px 16px;
+            }
+
+            .floating-body {
+                padding: 16px;
+            }
+
+            .btn-save,
+            .btn-cancel {
+                min-width: 0;
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
-<div class="container card-wrap">
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{% if 'error' in message.tags %}danger{% elif 'success' in message.tags %}success{% else %}warning{% endif %}">
-                {{ message }}
-            </div>
-        {% endfor %}
-    {% endif %}
+{% if tipo == 'interna' %}
+    {% url 'panel_instructor_interno:detalle_visita' visita.id as volver_url %}
+{% else %}
+    {% url 'panel_instructor_externo:detalle_visita' visita.id as volver_url %}
+{% endif %}
 
-    <div class="card shadow-sm border-0 rounded-4">
-        <div class="card-header bg-primary text-white rounded-top-4">
-            <h5 class="mb-0"><i class="fas fa-user-edit me-2"></i>Actualizar Informacion del Asistente</h5>
+<div class="floating-overlay">
+    <div class="floating-window">
+        <div class="floating-header">
+            <h1 class="floating-title">
+                <i class="fas fa-user-edit"></i>
+                Actualizar Informacion del Asistente
+            </h1>
+            {% if embed_mode %}
+            <button type="button" class="btn-close-modal" aria-label="Cerrar ventana" onclick="cerrarVentanaEmbebida()">
+                <i class="fas fa-times"></i>
+            </button>
+            {% else %}
+            <a href="{{ volver_url }}" class="btn-close-modal" aria-label="Cerrar ventana">
+                <i class="fas fa-times"></i>
+            </a>
+            {% endif %}
         </div>
-        <div class="card-body p-4">
-            <p class="text-muted mb-4">
+
+        <div class="floating-body">
+            {% if actualizacion_exitosa %}
+                <div class="alert alert-success mb-3">{{ mensaje_exito|default:'Informacion actualizada correctamente.' }}</div>
+            {% endif %}
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{% if 'error' in message.tags %}danger{% elif 'success' in message.tags %}success{% else %}warning{% endif %} mb-3">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <p class="intro-text">
                 Modifica solo la informacion personal del asistente. Los documentos no se alteran desde esta pantalla.
             </p>
 
-            <form method="post">
+            <form method="post" novalidate>
                 {% csrf_token %}
+                {% if embed_mode %}
+                    <input type="hidden" name="embed" value="1">
+                {% endif %}
                 <div class="row g-3">
                     <div class="col-12">
-                        <label class="form-label fw-semibold">Nombre Completo *</label>
+                        <label class="form-label">Nombre Completo *</label>
                         <input type="text" class="form-control" name="nombre_completo" value="{{ asistente.nombre_completo }}" required>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">Tipo de Documento *</label>
+                        <label class="form-label">Tipo de Documento *</label>
                         <select name="tipo_documento" class="form-select" required>
                             {% for value, label in tipo_documento_choices %}
                                 <option value="{{ value }}" {% if asistente.tipo_documento == value %}selected{% endif %}>{{ label }}</option>
@@ -47,30 +287,54 @@
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">Numero de Documento *</label>
+                        <label class="form-label">Numero de Documento *</label>
                         <input type="text" class="form-control" name="numero_documento" value="{{ asistente.numero_documento }}" required>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">Correo</label>
+                        <label class="form-label">Correo</label>
                         <input type="email" class="form-control" name="correo" value="{{ asistente.correo|default:'' }}">
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">Telefono</label>
+                        <label class="form-label">Telefono</label>
                         <input type="text" class="form-control" name="telefono" value="{{ asistente.telefono|default:'' }}">
                     </div>
                 </div>
 
-                <div class="d-flex gap-2 mt-4">
-                    <button type="submit" class="btn btn-success px-4">
+                <div class="d-flex flex-column flex-md-row gap-2 mt-4">
+                    <button type="submit" class="btn btn-save text-white">
                         <i class="fas fa-save me-2"></i>Guardar cambios
                     </button>
-                    <a href="{% if tipo == 'interna' %}{% url 'panel_instructor_interno:detalle_visita' visita.id %}{% else %}{% url 'panel_instructor_externo:detalle_visita' visita.id %}{% endif %}" class="btn btn-outline-secondary px-4">
+                    {% if embed_mode %}
+                    <button type="button" class="btn btn-outline-secondary btn-cancel" onclick="cerrarVentanaEmbebida()">
+                        Cancelar
+                    </button>
+                    {% else %}
+                    <a href="{{ volver_url }}" class="btn btn-outline-secondary btn-cancel">
                         Cancelar
                     </a>
+                    {% endif %}
                 </div>
             </form>
         </div>
     </div>
 </div>
+<script>
+    function cerrarVentanaEmbebida() {
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage({ type: 'cerrarModalActualizarAsistente' }, '*');
+            return;
+        }
+        window.location.href = '{{ volver_url }}';
+    }
+
+    {% if embed_mode and actualizacion_exitosa %}
+    if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+            type: 'asistenteActualizado',
+            message: '{{ mensaje_exito|default:"Informacion actualizada correctamente."|escapejs }}'
+        }, '*');
+    }
+    {% endif %}
+</script>
 </body>
 </html>

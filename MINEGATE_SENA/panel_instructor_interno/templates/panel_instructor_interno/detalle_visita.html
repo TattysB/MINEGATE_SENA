@@ -91,6 +91,40 @@
   .final-modal-title { color: #145a32; margin: 0 0 8px; display:flex; align-items:center; gap:10px; font-size: 2.2rem; font-weight: 800; letter-spacing: 0.2px; line-height: 1.1; }
   .final-modal-title-icon { width:48px; height:48px; border-radius:12px; display:inline-flex; align-items:center; justify-content:center; background: linear-gradient(135deg, #39a900, #2d8600); color:#fff; box-shadow: 0 8px 16px rgba(57, 169, 0, 0.28); font-size: 1.25rem; }
   .final-modal-subtitle { color: #4b5563; margin: 0 0 16px; font-size: 0.95rem; font-weight: 500; }
+
+  .mensaje-confirmacion-final {
+    background: linear-gradient(135deg, #eaffd8 0%, #f6ffe9 50%, #ffffff 100%);
+    border: 1px solid #b9e6a2;
+    border-left: 8px solid var(--sena-verde);
+    border-radius: 16px;
+    padding: 1.25rem 1.35rem;
+    box-shadow: 0 8px 20px rgba(45, 134, 0, 0.12);
+    margin-bottom: 1.3rem;
+  }
+  .mensaje-confirmacion-final h4 {
+    margin: 0 0 0.45rem;
+    font-weight: 900;
+    color: #14532d;
+    font-size: 1.35rem;
+    line-height: 1.2;
+  }
+  .mensaje-confirmacion-final p {
+    margin: 0 0 0.6rem;
+    color: #166534;
+    font-size: 0.98rem;
+    line-height: 1.5;
+    font-weight: 600;
+  }
+  .mensaje-confirmacion-final ul {
+    margin: 0.35rem 0 0;
+    padding-left: 1.1rem;
+  }
+  .mensaje-confirmacion-final li {
+    color: #14532d;
+    margin-bottom: 0.25rem;
+    font-size: 0.92rem;
+    font-weight: 600;
+  }
 </style>
 </head>
 <body>
@@ -115,6 +149,22 @@
         {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
       </div>
     {% endfor %}
+  {% endif %}
+
+  {% if visita.estado == 'confirmada' or visita.estado == 'aprobada_final' %}
+  <div class="mensaje-confirmacion-final">
+    <h4><i class="fas fa-medal me-2"></i>Visita confirmada definitivamente</h4>
+    <p>
+      Gracias por visitar el SENA Centro Minero. Esperamos que sea una experiencia de tu agrado.
+      Gracias por elegirnos.
+    </p>
+    <ul>
+      <li>Lleva el EPP necesario para el recorrido (casco, botas y elementos de seguridad requeridos).</li>
+      <li>Presentate con al menos 15 minutos de anticipacion al horario programado.</li>
+      <li>Porta documento de identidad y sigue siempre las indicaciones del personal de seguridad.</li>
+      <li>Mantente con tu grupo durante la actividad y respeta las zonas demarcadas.</li>
+    </ul>
+  </div>
   {% endif %}
 
   <!-- ===== TIMELINE DE ESTADO ===== -->
@@ -410,7 +460,8 @@
           {% if visita.estado == 'aprobada_inicial' %}
           <div class="d-flex gap-2">
             <a href="{% url 'panel_visitante:actualizar_info_asistente' tipo='interna' asistente_id=asistente.id %}"
-               class="btn-actualizar-asi">
+               class="btn-actualizar-asi"
+               onclick="return abrirModalActualizarAsistente(this.href);">
               <i class="fas fa-pen me-1"></i>Actualizar
             </a>
             <a href="{% url 'panel_instructor_interno:eliminar_asistente_visita' visita_id=visita.id asistente_id=asistente.id tipo='interna' %}"
@@ -606,6 +657,12 @@
 
 <div id="popupEmergente" style="display:none;position:fixed;right:20px;bottom:20px;z-index:11000;padding:12px 16px;border-radius:10px;color:#fff;font-weight:700;max-width:360px;box-shadow:0 8px 20px rgba(0,0,0,0.2);"></div>
 
+<div id="modalActualizarAsistente" onclick="if(event.target===this){cerrarModalActualizarAsistente();}" style="display:none;position:fixed;z-index:11020;inset:0;background:rgba(15,23,42,0.55);align-items:center;justify-content:center;padding:12px;">
+  <div onclick="event.stopPropagation();" style="background:#fff;border-radius:14px;width:min(980px,96vw);box-shadow:0 18px 45px rgba(0,0,0,0.28);overflow:hidden;">
+    <iframe id="iframeActualizarAsistente" title="Actualizar asistente" style="width:100%;height:min(84vh,760px);border:none;background:#f8fafc;display:block;"></iframe>
+  </div>
+</div>
+
 <!-- ===== MODAL DE CONFIRMACIÓN ANTES DE ENVIAR ===== -->
 <div id="modalConfirmacionEnvio" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); overflow-y: auto; padding: 24px 0;">
   <div style="background: #fff; padding: 32px 24px; border-radius: 12px; max-width: 500px; margin: 24px auto; box-shadow: 0 8px 32px rgba(0,0,0,0.2); position: relative; text-align: center;">
@@ -656,6 +713,58 @@
 
     return confirm(mensaje);
   }
+
+  function abrirModalActualizarAsistente(url) {
+    const modal = document.getElementById('modalActualizarAsistente');
+    const frame = document.getElementById('iframeActualizarAsistente');
+    if (!modal || !frame) {
+      window.location.href = url;
+      return false;
+    }
+
+    const sep = url.includes('?') ? '&' : '?';
+    frame.src = url + sep + 'embed=1';
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    return false;
+  }
+
+  function cerrarModalActualizarAsistente() {
+    const modal = document.getElementById('modalActualizarAsistente');
+    const frame = document.getElementById('iframeActualizarAsistente');
+    if (frame) {
+      frame.src = 'about:blank';
+    }
+    if (modal) {
+      modal.style.display = 'none';
+    }
+    document.body.style.overflow = '';
+  }
+
+  window.addEventListener('message', function(event) {
+    const data = event.data;
+    if (!data || typeof data !== 'object') return;
+
+    if (data.type === 'cerrarModalActualizarAsistente') {
+      cerrarModalActualizarAsistente();
+      return;
+    }
+
+    if (data.type === 'asistenteActualizado') {
+      cerrarModalActualizarAsistente();
+      mostrarPopupEmergente(data.message || 'Informacion actualizada correctamente.', 'success');
+      setTimeout(function () { window.location.reload(); }, 450);
+    }
+  });
+
+  document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+      const modal = document.getElementById('modalActualizarAsistente');
+      if (modal && modal.style.display === 'flex') {
+        cerrarModalActualizarAsistente();
+      }
+    }
+  });
 
   // Variables globales
   let esModalCorreccion = false;
@@ -1091,6 +1200,11 @@
             },
             body,
           });
+          const contentType = response.headers.get('content-type') || '';
+          if (!contentType.includes('application/json')) {
+            mostrarPopupEmergente('La sesión expiró o la respuesta del servidor no fue válida. Ingresa nuevamente.', 'error');
+            return;
+          }
           const data = await response.json().catch(() => ({}));
           if (!response.ok || data.success === false) {
             mostrarPopupEmergente(data.message || 'No se pudo reprogramar la visita.', 'error');

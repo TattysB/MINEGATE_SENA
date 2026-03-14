@@ -87,6 +87,40 @@
   .final-modal-title { color: #145a32; margin: 0 0 8px; display:flex; align-items:center; gap:10px; font-size: 2.2rem; font-weight: 800; letter-spacing: 0.2px; line-height: 1.1; }
   .final-modal-title-icon { width:48px; height:48px; border-radius:12px; display:inline-flex; align-items:center; justify-content:center; background: linear-gradient(135deg, #39a900, #2d8600); color:#fff; box-shadow: 0 8px 16px rgba(57, 169, 0, 0.28); font-size: 1.25rem; }
   .final-modal-subtitle { color: #4b5563; margin: 0 0 16px; font-size: 0.95rem; font-weight: 500; }
+
+  .mensaje-confirmacion-final {
+    background: linear-gradient(135deg, #e8f7ff 0%, #f3fbff 50%, #ffffff 100%);
+    border: 1px solid #b6e3fa;
+    border-left: 8px solid var(--ext-azul);
+    border-radius: 16px;
+    padding: 1.25rem 1.35rem;
+    box-shadow: 0 8px 20px rgba(14, 165, 233, 0.14);
+    margin-bottom: 1.3rem;
+  }
+  .mensaje-confirmacion-final h4 {
+    margin: 0 0 0.45rem;
+    font-weight: 900;
+    color: #0c4a6e;
+    font-size: 1.35rem;
+    line-height: 1.2;
+  }
+  .mensaje-confirmacion-final p {
+    margin: 0 0 0.6rem;
+    color: #075985;
+    font-size: 0.98rem;
+    line-height: 1.5;
+    font-weight: 600;
+  }
+  .mensaje-confirmacion-final ul {
+    margin: 0.35rem 0 0;
+    padding-left: 1.1rem;
+  }
+  .mensaje-confirmacion-final li {
+    color: #0c4a6e;
+    margin-bottom: 0.25rem;
+    font-size: 0.92rem;
+    font-weight: 600;
+  }
 </style>
 </head>
 <body>
@@ -111,6 +145,22 @@
         {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
       </div>
     {% endfor %}
+  {% endif %}
+
+  {% if visita.estado == 'confirmada' or visita.estado == 'aprobada_final' %}
+  <div class="mensaje-confirmacion-final">
+    <h4><i class="fas fa-medal me-2"></i>Visita confirmada definitivamente</h4>
+    <p>
+      Gracias por visitar el SENA Centro Minero. Esperamos que sea una experiencia de tu agrado.
+      Gracias por elegirnos.
+    </p>
+    <ul>
+      <li>Lleva el EPP necesario para el recorrido (casco, botas y elementos de seguridad requeridos).</li>
+      <li>Presentate con al menos 15 minutos de anticipacion al horario programado.</li>
+      <li>Porta documento de identidad y sigue siempre las indicaciones del personal de seguridad.</li>
+      <li>Mantente con tu grupo durante la actividad y respeta las zonas demarcadas.</li>
+    </ul>
+  </div>
   {% endif %}
 
   <!-- ===== TIMELINE ===== -->
@@ -223,7 +273,7 @@
         <div style="font-weight:700;color:#9a3412;margin-bottom:4px;">Motivo</div>
         <div style="color:#7c2d12;">{{ reprogramacion_pendiente.motivo }}</div>
       </div>
-      <button type="button" class="btn-enviar" onclick="abrirModalReprogramacionInstructor()" style="background:#f59e0b;">
+      <button type="button" id="btnReprogramarAhora" class="btn-enviar" onclick="abrirModalReprogramacionInstructor()" style="background:#f59e0b;">
         <i class="fas fa-calendar-plus"></i> Reprogramar ahora
       </button>
       {% else %}
@@ -233,7 +283,7 @@
   </div>
   {% endif %}
 
-  {% if visita.estado == 'documentos_enviados' or visita.estado == 'en_revision_documentos' or visita.estado == 'confirmada' or (visita.estado == 'aprobada_inicial' and visita.asistentes.count > 0) %}
+  {% if visita.estado == 'documentos_enviados' or visita.estado == 'en_revision_documentos' or visita.estado == 'confirmada' or visita.estado == 'aprobada_inicial' and visita.asistentes.count > 0 %}
   <!-- ===== REPORTE DE DILIGENCIAMIENTO DOCUMENTAL ===== -->
   <div class="detail-card">
     <div class="detail-card-header {% if reporte_documental.hay_alertas %}morado{% else %}verde{% endif %}">
@@ -385,7 +435,8 @@
           {% if visita.estado == 'aprobada_inicial' %}
           <div class="d-flex gap-2">
             <a href="{% url 'panel_visitante:actualizar_info_asistente' tipo='externa' asistente_id=asistente.id %}"
-               class="btn-actualizar-asi">
+               class="btn-actualizar-asi"
+               onclick="return abrirModalActualizarAsistente(this.href);">
               <i class="fas fa-pen me-1"></i>Actualizar
             </a>
             <a href="{% url 'panel_visitante:eliminar_asistente' tipo='externa' asistente_id=asistente.id %}"
@@ -578,6 +629,12 @@
 
 <div id="popupEmergente" style="display:none;position:fixed;right:20px;bottom:20px;z-index:11000;padding:12px 16px;border-radius:10px;color:#fff;font-weight:700;max-width:360px;box-shadow:0 8px 20px rgba(0,0,0,0.2);"></div>
 
+<div id="modalActualizarAsistente" onclick="if(event.target===this){cerrarModalActualizarAsistente();}" style="display:none;position:fixed;z-index:11020;inset:0;background:rgba(15,23,42,0.55);align-items:center;justify-content:center;padding:12px;">
+  <div onclick="event.stopPropagation();" style="background:#fff;border-radius:14px;width:min(980px,96vw);box-shadow:0 18px 45px rgba(0,0,0,0.28);overflow:hidden;">
+    <iframe id="iframeActualizarAsistente" title="Actualizar asistente" style="width:100%;height:min(84vh,760px);border:none;background:#f8fafc;display:block;"></iframe>
+  </div>
+</div>
+
 <!-- ===== MODAL DE CONFIRMACIÓN ANTES DE ENVIAR ===== -->
 <div id="modalConfirmacionEnvio" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); overflow-y: auto; padding: 24px 0;">
   <div style="background: #fff; padding: 32px 24px; border-radius: 12px; max-width: 500px; margin: 24px auto; box-shadow: 0 8px 32px rgba(0,0,0,0.2); position: relative; text-align: center;">
@@ -629,8 +686,58 @@
     return confirm(mensaje);
   }
 
-  // Funciones para abrir y cerrar modal
-  function abrirModalArchivosFinales() {
+  function abrirModalActualizarAsistente(url) {
+    const modal = document.getElementById('modalActualizarAsistente');
+    const frame = document.getElementById('iframeActualizarAsistente');
+    if (!modal || !frame) {
+      window.location.href = url;
+      return false;
+    }
+
+    const sep = url.includes('?') ? '&' : '?';
+    frame.src = url + sep + 'embed=1';
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    return false;
+  }
+
+  function cerrarModalActualizarAsistente() {
+    const modal = document.getElementById('modalActualizarAsistente');
+    const frame = document.getElementById('iframeActualizarAsistente');
+    if (frame) {
+      frame.src = 'about:blank';
+    }
+    if (modal) {
+      modal.style.display = 'none';
+    }
+    document.body.style.overflow = '';
+  }
+
+  window.addEventListener('message', function(event) {
+    const data = event.data;
+    if (!data || typeof data !== 'object') return;
+
+    if (data.type === 'cerrarModalActualizarAsistente') {
+      cerrarModalActualizarAsistente();
+      return;
+    }
+
+    if (data.type === 'asistenteActualizado') {
+      cerrarModalActualizarAsistente();
+      mostrarPopupEmergente(data.message || 'Informacion actualizada correctamente.', 'success');
+      setTimeout(function () { window.location.reload(); }, 450);
+    }
+  });
+
+  document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+      const modal = document.getElementById('modalActualizarAsistente');
+      if (modal && modal.style.display === 'flex') {
+        cerrarModalActualizarAsistente();
+      }
+    }
+  });
+
   // Variables globales
   let esModalCorreccion = false;
   let archivosClaveFinal = '';
@@ -977,6 +1084,13 @@
 
   // Cuando el DOM está listo, agregar evento submit al formulario
   document.addEventListener('DOMContentLoaded', function() {
+    const btnReprogramarAhora = document.getElementById('btnReprogramarAhora');
+    if (btnReprogramarAhora) {
+      btnReprogramarAhora.addEventListener('click', function() {
+        abrirModalReprogramacionInstructor();
+      });
+    }
+
     const formReprogramacion = document.getElementById('formReprogramacionInstructor');
     if (formReprogramacion) {
       formReprogramacion.addEventListener('submit', async function(e) {
@@ -1007,6 +1121,11 @@
             },
             body,
           });
+          const contentType = response.headers.get('content-type') || '';
+          if (!contentType.includes('application/json')) {
+            mostrarPopupEmergente('La sesión expiró o la respuesta del servidor no fue válida. Ingresa nuevamente.', 'error');
+            return;
+          }
           const data = await response.json().catch(() => ({}));
           if (!response.ok || data.success === false) {
             mostrarPopupEmergente(data.message || 'No se pudo reprogramar la visita.', 'error');
@@ -1321,6 +1440,256 @@
       }
     }
   });
+</script>
+
+<script>
+  (function () {
+    const modal = document.getElementById('modalReprogramacionInstructor');
+    const form = document.getElementById('formReprogramacionInstructor');
+    const btn = document.getElementById('btnReprogramarAhora');
+    const calendarioContainer = document.getElementById('reprogramacionCalendarioContainer');
+    const inputFecha = document.getElementById('reprogramarFecha');
+    const inputHora = document.getElementById('reprogramarHora');
+    const inputHoraFin = document.getElementById('reprogramarHoraFin');
+    const inputHistorial = document.getElementById('historialReprogramacionId');
+    const resumenBox = document.getElementById('reprogramacionResumen');
+    const resumenFecha = document.getElementById('reprogramacionResumenFecha');
+    const resumenHorario = document.getElementById('reprogramacionResumenHorario');
+    const urlCompletarReprogramacion = "{% url 'gestion_visitas:completar_reprogramacion_legacy' tipo='externa' visita_id=visita.id %}";
+
+    if (!modal || !form || !btn || !calendarioContainer || !inputFecha || !inputHora || !inputHoraFin || !inputHistorial) {
+      return;
+    }
+
+    function popup(msg, tipo) {
+      if (typeof window.mostrarPopupEmergente === 'function') {
+        window.mostrarPopupEmergente(msg, tipo || 'warning');
+      } else {
+        alert(msg);
+      }
+    }
+
+    function getCsrfToken() {
+      const nombre = 'csrftoken=';
+      const cookies = document.cookie ? document.cookie.split(';') : [];
+      for (let i = 0; i < cookies.length; i += 1) {
+        const c = cookies[i].trim();
+        if (c.startsWith(nombre)) {
+          return decodeURIComponent(c.substring(nombre.length));
+        }
+      }
+      return '';
+    }
+
+    function formatearFechaEs(dateStr) {
+      const parts = String(dateStr || '').split('-');
+      if (parts.length !== 3) return dateStr || '-';
+      const months = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+      return parseInt(parts[2], 10) + ' de ' + months[parseInt(parts[1], 10)] + ' de ' + parts[0];
+    }
+
+    function actualizarResumen() {
+      if (!resumenBox || !resumenFecha || !resumenHorario) return;
+      if (inputFecha.value && inputHora.value && inputHoraFin.value) {
+        resumenBox.style.display = 'block';
+        resumenFecha.textContent = formatearFechaEs(inputFecha.value);
+        resumenHorario.textContent = inputHora.value + ' - ' + inputHoraFin.value;
+      } else {
+        resumenBox.style.display = 'none';
+        resumenFecha.textContent = '-';
+        resumenHorario.textContent = '-';
+      }
+    }
+
+    function cargarHorarios(fecha) {
+      const horarioHint = calendarioContainer.querySelector('#horarioHint');
+      const horariosList = calendarioContainer.querySelector('#horariosList');
+      const horarioTitle = calendarioContainer.querySelector('#horarioTitle');
+
+      if (horarioHint) horarioHint.textContent = 'Cargando horarios...';
+      if (horariosList) {
+        horariosList.innerHTML = '';
+        horariosList.style.display = 'none';
+      }
+
+      fetch('/calendario/horarios/' + fecha + '/', {
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (!data.ok) {
+            if (horarioHint) horarioHint.textContent = 'No se pudieron cargar horarios.';
+            return;
+          }
+
+          if (!data.ranges || !data.ranges.length) {
+            if (horarioHint) horarioHint.textContent = 'No hay horarios para este día.';
+            return;
+          }
+
+          if (horarioTitle) horarioTitle.textContent = 'Horarios disponibles para ' + formatearFechaEs(fecha);
+          if (horarioHint) horarioHint.textContent = 'Selecciona el horario que prefieras:';
+          if (!horariosList) return;
+
+          horariosList.innerHTML = data.ranges.map(function (r) {
+            return '<span class="horario-chip" data-start="' + r.start + '" data-end="' + r.end + '">' + r.label + '</span>';
+          }).join('');
+          horariosList.style.display = 'block';
+
+          horariosList.querySelectorAll('.horario-chip').forEach(function (chip) {
+            chip.addEventListener('click', function () {
+              horariosList.querySelectorAll('.horario-chip').forEach(function (c) { c.classList.remove('selected'); });
+              chip.classList.add('selected');
+              inputHora.value = chip.getAttribute('data-start') || '';
+              inputHoraFin.value = chip.getAttribute('data-end') || '';
+              actualizarResumen();
+            });
+          });
+        })
+        .catch(function () {
+          if (horarioHint) horarioHint.textContent = 'Error al cargar horarios.';
+        });
+    }
+
+    function bindCalendarioEventos() {
+      const page = calendarioContainer.querySelector('#calendarioSeleccionPage');
+      if (!page) return;
+
+      const cardEl = page.querySelector('.calendar-card');
+      const year = cardEl ? parseInt(cardEl.getAttribute('data-year'), 10) : NaN;
+      const month = cardEl ? parseInt(cardEl.getAttribute('data-month'), 10) : NaN;
+
+      const prev = page.querySelector('#prevSel');
+      const next = page.querySelector('#nextSel');
+      if (prev && !Number.isNaN(year) && !Number.isNaN(month)) {
+        prev.addEventListener('click', function () {
+          let y = year;
+          let m = month - 1;
+          if (m < 1) { m = 12; y -= 1; }
+          cargarCalendario(y, m);
+        });
+      }
+
+      if (next && !Number.isNaN(year) && !Number.isNaN(month)) {
+        next.addEventListener('click', function () {
+          let y = year;
+          let m = month + 1;
+          if (m > 12) { m = 1; y += 1; }
+          cargarCalendario(y, m);
+        });
+      }
+
+      const table = page.querySelector('.calendar-table');
+      if (!table) return;
+
+      table.addEventListener('click', function (e) {
+        const td = e.target.closest('td');
+        if (!td || !td.classList.contains('available')) return;
+
+        page.querySelectorAll('td.selected-day').forEach(function (el) { el.classList.remove('selected-day'); });
+        td.classList.add('selected-day');
+        inputFecha.value = td.getAttribute('data-date') || '';
+        inputHora.value = '';
+        inputHoraFin.value = '';
+        actualizarResumen();
+        if (inputFecha.value) {
+          cargarHorarios(inputFecha.value);
+        }
+      });
+    }
+
+    function cargarCalendario(year, month) {
+      let url = '/calendario/seleccion/';
+      if (year && month) {
+        url = '/calendario/seleccion/' + year + '/' + month + '/';
+      }
+
+      calendarioContainer.innerHTML = '<p style="margin:0;text-align:center;color:#6b7280;padding:18px;">Cargando calendario...</p>';
+      fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(r => r.text())
+        .then(html => {
+          calendarioContainer.innerHTML = html;
+          bindCalendarioEventos();
+        })
+        .catch(() => {
+          calendarioContainer.innerHTML = '<p style="margin:0;text-align:center;color:#b91c1c;padding:18px;">Error al cargar el calendario.</p>';
+        });
+    }
+
+    function abrirModal() {
+      inputFecha.value = '';
+      inputHora.value = '';
+      inputHoraFin.value = '';
+      actualizarResumen();
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+      cargarCalendario();
+    }
+
+    function cerrarModal() {
+      modal.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+
+    window.abrirModalReprogramacionInstructor = abrirModal;
+    window.cerrarModalReprogramacionInstructor = cerrarModal;
+
+    if (!btn.dataset.repBound) {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        abrirModal();
+      });
+      btn.dataset.repBound = '1';
+    }
+
+    if (!form.dataset.repBound) {
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        if (!inputFecha.value || !inputHora.value || !inputHoraFin.value || !inputHistorial.value) {
+          popup('Debes seleccionar fecha y horario desde el calendario.', 'warning');
+          return;
+        }
+
+        const body = new URLSearchParams({
+          fecha: inputFecha.value,
+          hora: inputHora.value,
+          hora_fin: inputHoraFin.value,
+          historial_id: inputHistorial.value,
+        });
+
+        try {
+          const response = await fetch(urlCompletarReprogramacion, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'X-CSRFToken': getCsrfToken(),
+            },
+            body,
+          });
+
+          const contentType = response.headers.get('content-type') || '';
+          if (!contentType.includes('application/json')) {
+            popup('La sesión expiró o la respuesta del servidor no fue válida. Ingresa nuevamente.', 'error');
+            return;
+          }
+
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || data.success === false) {
+            popup(data.message || 'No se pudo reprogramar la visita.', 'error');
+            return;
+          }
+
+          cerrarModal();
+          popup(data.message || 'Visita reprogramada correctamente.', 'success');
+          setTimeout(() => location.reload(), 1200);
+        } catch (err) {
+          popup('Error de conexión al reprogramar la visita.', 'error');
+        }
+      });
+      form.dataset.repBound = '1';
+    }
+  })();
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
