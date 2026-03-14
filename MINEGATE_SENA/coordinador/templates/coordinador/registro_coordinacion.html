@@ -1,40 +1,81 @@
 {% extends "coordinador/base_coordinador.html" %}
-{% block content %}
-<div style="padding:20px;">
-  <h2 style="margin:0 0 14px;color:#1f2937;">Registro de Aprobaciones</h2>
-  <p style="margin:0 0 18px;color:#6b7280;">Registro de las visitas que fueron aprobadas por Coordinación.</p>
 
-  <div style="background:#fff;border-radius:10px;padding:16px;box-shadow:0 2px 10px rgba(0,0,0,0.08);">
+{% block extra_css %}
+<style>
+  /* Importar Work Sans y aplicar solo esa fuente en este panel */
+  @import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;600;700;800&display=swap');
+  /* Paleta: #00af00, blanco, negro. Estilos para la tabla de registro */
+  .reg-page{padding:20px;font-family:"Work Sans",system-ui,Arial,Helvetica,sans-serif}
+  .reg-card{background: linear-gradient(180deg,#ffffff 0%, #f7fff7 100%);border-radius:12px;padding:18px;border:1px solid rgba(0,0,0,0.06);box-shadow:0 8px 24px rgba(10,10,10,0.06)}
+  /* Acento superior para reforzar color principal */
+  .reg-card::before{content:'';display:block;height:6px;border-top-left-radius:12px;border-top-right-radius:12px;background:#00af00;margin:-18px -18px 12px;}
+  .reg-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:12px}
+  .reg-title{margin:0;color:#082f08;font-weight:800;font-size:1.05rem}
+  .reg-desc{margin:0;color:#6b7280}
+
+  .reg-table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;border-radius:8px;overflow:hidden;font-family:"Work Sans",system-ui,Arial,Helvetica,sans-serif}
+  /* Forzar encabezado con color principal */
+  .reg-table thead th{background:#00af00 !important;color:#ffffff !important;font-weight:800;text-align:left;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.08) !important;font-size:0.95rem}
+  .reg-table tbody td{padding:12px 16px;color:#0b0b0b;border-bottom:1px solid rgba(0,175,0,0.06);vertical-align:middle;font-size:0.95rem}
+  .reg-table tbody tr:nth-child(even) td{background:#f6fff6}
+
+  /* Resaltado: toda la fila con fondo #00af00 y texto claro */
+  .reg-table tbody tr.row-selected td{background:#00af00 !important;color:#ffffff !important;border-color:#00af00 !important}
+  .reg-table tbody tr.row-selected td button{color:#ffffff !important}
+
+  .reg-empty{padding:28px;text-align:center;color:#6b6b6b;font-weight:700}
+
+  .btn-approve{background:#00af00;color:#fff;border-radius:8px;padding:7px 12px;font-weight:800;border:1px solid rgba(0,0,0,0.06);cursor:pointer;box-shadow:0 2px 6px rgba(0,175,0,0.12)}
+  .btn-reject{background:#fff;color:#111;border-radius:8px;padding:7px 12px;font-weight:800;border:1px solid rgba(0,0,0,0.08);cursor:pointer}
+  .btn-approve:hover{filter:brightness(0.95)}
+  .btn-reject:hover{background:#f6f6f6}
+
+  @media (max-width:900px){.reg-header{flex-direction:column;align-items:flex-start}.reg-table thead th,.reg-table tbody td{padding:10px}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="reg-page">
+  <h2 class="reg-title">Registro de Aprobaciones</h2>
+  <p class="reg-desc">Registro de las visitas que fueron aprobadas por Coordinación.</p>
+
+  <div class="reg-card">
+    <div class="reg-header">
+      <div>
+        <!-- espacio para título / filtros si se desea -->
+      </div>
+    </div>
+
     <div style="overflow:auto;">
-      <table style="width:100%;border-collapse:collapse;">
+      <table class="reg-table">
         <thead>
-          <tr style="background:#f3f4f6;">
-            <th style="padding:10px;text-align:left;">#</th>
-            <th style="padding:10px;text-align:left;">Tipo</th>
-            <th style="padding:10px;text-align:left;">Responsable</th>
-            <th style="padding:10px;text-align:left;">Institución</th>
-            <th style="padding:10px;text-align:left;">Correo</th>
-            <th style="padding:10px;text-align:left;">Cantidad</th>
-            <th style="padding:10px;text-align:left;">Aprobado por</th>
-            <th style="padding:10px;text-align:left;">Fecha</th>
+          <tr>
+            <th>#</th>
+            <th>Tipo</th>
+            <th>Responsable</th>
+            <th>Institución</th>
+            <th>Correo</th>
+            <th>Cantidad</th>
+            <th>Aprobado por</th>
+            <th>Fecha</th>
           </tr>
         </thead>
         <tbody>
           {% if registros %}
             {% for r in registros %}
               <tr>
-                <td style="padding:10px;">#{{ r.id }}</td>
-                <td style="padding:10px;">{{ r.get_visita_tipo_display }}</td>
-                <td style="padding:10px;">{{ r.responsable }}</td>
-                <td style="padding:10px;">{{ r.institucion|default:'-' }}</td>
-                <td style="padding:10px;">{{ r.correo|default:'-' }}</td>
-                <td style="padding:10px;">{{ r.cantidad|default:'-' }}</td>
-                <td style="padding:10px;">{% if r.aprobado_por %}{{ r.aprobado_por.get_full_name|default:r.aprobado_por.username }}{% else %}-{% endif %}</td>
-                <td style="padding:10px;">{{ r.fecha_aprobacion }}</td>
+                <td>#{{ r.id }}</td>
+                <td>{{ r.get_visita_tipo_display }}</td>
+                <td>{{ r.responsable }}</td>
+                <td>{{ r.institucion|default:'-' }}</td>
+                <td>{{ r.correo|default:'-' }}</td>
+                <td>{{ r.cantidad|default:'-' }}</td>
+                <td>{% if r.aprobado_por %}{{ r.aprobado_por.get_full_name|default:r.aprobado_por.username }}{% else %}-{% endif %}</td>
+                <td>{{ r.fecha_aprobacion }}</td>
               </tr>
             {% endfor %}
           {% else %}
-            <tr><td colspan="8" style="padding:20px;text-align:center;color:#6b7280;">No hay registros de aprobaciones.</td></tr>
+            <tr><td colspan="8" class="reg-empty">No hay registros de aprobaciones.</td></tr>
           {% endif %}
         </tbody>
       </table>

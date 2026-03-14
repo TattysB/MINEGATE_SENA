@@ -6,9 +6,9 @@
 <div class="calendar-page" id="coordinadorCalendarPage">
   <main class="calendar-card" data-year="{{ year }}" data-month="{{ month }}" id="coordinadorCalendarCard">
     <div class="card-top">
-      <button id="prevReadonly" class="nav">‹</button>
+      <button id="prev" class="nav" aria-label="Mes anterior">‹</button>
       <h2 id="month-title">{{ month_name }} {{ year }}</h2>
-      <button id="nextReadonly" class="nav">›</button>
+      <button id="next" class="nav" aria-label="Mes siguiente">›</button>
     </div>
 
     <table class="calendar-table">
