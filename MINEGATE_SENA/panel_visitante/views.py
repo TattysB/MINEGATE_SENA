@@ -41,6 +41,7 @@ CATEGORIAS_ARCHIVOS_FINALES = {
     "charla de seguridad y calestenia",
     "charla de seguridad y calistenia",
 }
+AUTH_VISITANTE_MESSAGE_TAG = "auth_visitante"
 
 
 def _redirect_segun_rol(request, tipo=None, visita_id=None):
@@ -228,6 +229,7 @@ def login_responsable(request):
             messages.success(
                 request,
                 f"Bienvenido {visitante.nombre} {visitante.apellido}. Accediendo a tu panel...",
+                extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
             )
             # Redirigir al panel de instructor según el rol
             if visitante.rol == "interno":
@@ -238,6 +240,7 @@ def login_responsable(request):
         messages.error(
             request,
             "Credenciales invalidas. Verifica tu documento y contrasena.",
+            extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
         )
 
     return render(request, "login_responsable.html")
@@ -265,6 +268,7 @@ def registro_visita(request):
             messages.success(
                 request,
                 f"Cuenta creada exitosamente para {visitante.nombre} {visitante.apellido}. Ya puedes iniciar sesion con tus credenciales.",
+                extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
             )
             return redirect("panel_visitante:login_responsable")
     else:
@@ -284,7 +288,11 @@ def logout_responsable(request):
     request.session.pop("responsable_correo", None)
     request.session.pop("responsable_documento", None)
     request.session.pop("responsable_autenticado", None)
-    messages.success(request, "Sesión cerrada correctamente.")
+    messages.success(
+        request,
+        "Sesión cerrada correctamente.",
+        extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+    )
     return redirect("panel_visitante:login_responsable")
 
 
@@ -300,7 +308,11 @@ def panel_responsable(request):
 
     # Verificar si está autenticado
     if not autenticado or not correo or not documento:
-        messages.warning(request, "Debe iniciar sesión para acceder al panel.")
+        messages.warning(
+            request,
+            "Debe iniciar sesión para acceder al panel.",
+            extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+        )
         return redirect("panel_visitante:login_responsable")
 
     try:
@@ -323,7 +335,11 @@ def panel_responsable(request):
         return render(request, "panel_responsable.html", context)
 
     except Exception as e:
-        messages.error(request, f"Error al cargar el panel: {str(e)}")
+        messages.error(
+            request,
+            f"Error al cargar el panel: {str(e)}",
+            extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+        )
         return redirect("panel_visitante:login_responsable")
 
 
@@ -335,7 +351,11 @@ def registrar_asistentes(request, tipo, visita_id):
 
     # Verificar autenticación
     if not request.session.get("responsable_autenticado"):
-        messages.warning(request, "Debe iniciar sesión para acceder.")
+        messages.warning(
+            request,
+            "Debe iniciar sesión para acceder.",
+            extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+        )
         return redirect("panel_visitante:login_responsable")
 
     correo = request.session.get("responsable_correo")
@@ -1140,9 +1160,15 @@ def actualizar_perfil(request):
     """
     Vista para que el usuario actualice sus datos personales y contraseña
     """
+    embed_mode = request.GET.get("embed") == "1" or request.POST.get("embed") == "1"
+
     # Verificar que el usuario esté autenticado
     if not request.session.get("responsable_autenticado"):
-        messages.warning(request, "Debe iniciar sesión para acceder a esta página.")
+        messages.warning(
+            request,
+            "Debe iniciar sesión para acceder a esta página.",
+            extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+        )
         return redirect("panel_visitante:login_responsable")
 
     documento = request.session.get("responsable_documento")
@@ -1150,7 +1176,11 @@ def actualizar_perfil(request):
     visitante = RegistroVisitante.objects.filter(documento=documento).first()
 
     if not visitante:
-        messages.error(request, "No se encontró el usuario.")
+        messages.error(
+            request,
+            "No se encontró el usuario.",
+            extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+        )
         return redirect("panel_visitante:login_responsable")
 
     if request.method == "POST":
@@ -1234,6 +1264,7 @@ def actualizar_perfil(request):
         "form_contrasena": form_contrasena,
         "visitante": visitante,
         "titulo": "Actualizar Perfil",
+        "embed_mode": embed_mode,
         "volver_url": (
             reverse("panel_instructor_interno:panel")
             if rol == "interno"
@@ -1463,6 +1494,10 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
 
 def actualizar_info_asistente(request, tipo, asistente_id):
     """Actualiza solo la informacion basica del asistente (sin documentos)."""
+    embed_mode = (
+        request.GET.get("embed") == "1" or request.POST.get("embed") == "1"
+    )
+
     if not request.session.get("responsable_autenticado"):
         return redirect("panel_visitante:login_responsable")
 
@@ -1483,6 +1518,18 @@ def actualizar_info_asistente(request, tipo, asistente_id):
         messages.error(request, "Tipo de visita no valido.")
         return _redirect_segun_rol(request)
 
+    def _contexto(extra=None):
+        ctx = {
+            "asistente": asistente,
+            "tipo": tipo,
+            "visita": visita,
+            "tipo_documento_choices": asistente.TIPO_DOCUMENTO_CHOICES,
+            "embed_mode": embed_mode,
+        }
+        if extra:
+            ctx.update(extra)
+        return ctx
+
     if request.method == "POST":
         nombre = request.POST.get("nombre_completo", "").strip()
         tipo_doc = request.POST.get("tipo_documento", "").strip()
@@ -1498,12 +1545,7 @@ def actualizar_info_asistente(request, tipo, asistente_id):
             return render(
                 request,
                 "actualizar_info_asistente.html",
-                {
-                    "asistente": asistente,
-                    "tipo": tipo,
-                    "visita": visita,
-                    "tipo_documento_choices": asistente.TIPO_DOCUMENTO_CHOICES,
-                },
+                _contexto(),
             )
 
         duplicado_qs = asistente.__class__.objects.filter(
@@ -1519,12 +1561,7 @@ def actualizar_info_asistente(request, tipo, asistente_id):
             return render(
                 request,
                 "actualizar_info_asistente.html",
-                {
-                    "asistente": asistente,
-                    "tipo": tipo,
-                    "visita": visita,
-                    "tipo_documento_choices": asistente.TIPO_DOCUMENTO_CHOICES,
-                },
+                _contexto(),
             )
 
         asistente.nombre_completo = nombre
@@ -1563,12 +1600,7 @@ def actualizar_info_asistente(request, tipo, asistente_id):
                             return render(
                                 request,
                                 "actualizar_info_asistente.html",
-                                {
-                                    "asistente": asistente,
-                                    "tipo": tipo,
-                                    "visita": visita,
-                                    "tipo_documento_choices": asistente.TIPO_DOCUMENTO_CHOICES,
-                                },
+                                _contexto(),
                             )
 
                         partes_nombre = [p for p in nombre.split() if p]
@@ -1620,15 +1652,25 @@ def actualizar_info_asistente(request, tipo, asistente_id):
                 if aprendiz_a_actualizar and campos_aprendiz_update:
                     aprendiz_a_actualizar.save(update_fields=campos_aprendiz_update)
 
-            messages.success(
-                request,
-                "Informacion del asistente actualizada correctamente."
-                + (
-                    " También se sincronizó en la ficha del aprendiz."
-                    if tipo == "interna" and aprendiz_a_actualizar
-                    else ""
-                ),
+            mensaje_exito = "Informacion del asistente actualizada correctamente." + (
+                " También se sincronizó en la ficha del aprendiz."
+                if tipo == "interna" and aprendiz_a_actualizar
+                else ""
             )
+
+            if embed_mode:
+                return render(
+                    request,
+                    "actualizar_info_asistente.html",
+                    _contexto(
+                        {
+                            "actualizacion_exitosa": True,
+                            "mensaje_exito": mensaje_exito,
+                        }
+                    ),
+                )
+
+            messages.success(request, mensaje_exito)
             return _redirect_segun_rol(request, tipo=tipo, visita_id=visita.id)
         except IntegrityError:
             messages.error(request, "No se pudo actualizar por conflicto de datos.")
@@ -1636,12 +1678,7 @@ def actualizar_info_asistente(request, tipo, asistente_id):
     return render(
         request,
         "actualizar_info_asistente.html",
-        {
-            "asistente": asistente,
-            "tipo": tipo,
-            "visita": visita,
-            "tipo_documento_choices": asistente.TIPO_DOCUMENTO_CHOICES,
-        },
+        _contexto(),
     )
 
 

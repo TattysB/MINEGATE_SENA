@@ -60,17 +60,17 @@
         <div class="login-body">
             {% if messages %}
                 {% for message in messages %}
-                    {% if 'success' in message.tags %}
+                    {% if 'auth_admin' not in message.tags and 'success' in message.tags %}
                         <div class="alert alert-success">
                             <i class="fas fa-check-circle"></i>
                             <p>{{ message }}</p>
                         </div>
-                    {% elif 'error' in message.tags %}
+                    {% elif 'auth_admin' not in message.tags and 'error' in message.tags %}
                         <div class="alert alert-danger">
                             <i class="fas fa-exclamation-circle"></i>
                             <p>{{ message }}</p>
                         </div>
-                    {% else %}
+                    {% elif 'auth_admin' not in message.tags %}
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle"></i>
                             <p>{{ message }}</p>
