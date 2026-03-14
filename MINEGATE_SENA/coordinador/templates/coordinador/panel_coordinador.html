@@ -1,4 +1,26 @@
 {% extends "coordinador/base_coordinador.html" %}
+{% block extra_css %}
+<style>
+  /* Resaltar fila objetivo: amarillo suave para mostrar selección desde notificaciones */
+  .row-selected{background:#fff7cd !important;color:#4b3710 !important}
+  .row-selected td{color:#4b3710 !important}
+  .row-selected button{color:#4b3710 !important}
+  @import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;600;700;800&display=swap');
+  #gestionVisitasPanel{font-family:"Work Sans",system-ui,Arial,Helvetica,sans-serif}
+  #gestionVisitasPanel.reg-card{background: linear-gradient(180deg,#ffffff 0%, #f7fff7 100%);border-radius:12px;padding:18px;border:1px solid rgba(0,0,0,0.06);box-shadow:0 8px 24px rgba(10,10,10,0.06)}
+  #gestionVisitasPanel .reg-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:12px}
+  #gestionVisitasPanel .reg-table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;border-radius:8px;overflow:hidden}
+  #gestionVisitasPanel .reg-table thead th{background:#00af00 !important;color:#ffffff !important;font-weight:800;text-align:left;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.08) !important;font-size:0.95rem}
+  #gestionVisitasPanel .reg-table tbody td{padding:12px 16px;color:#0b0b0b;border-bottom:1px solid rgba(0,175,0,0.06);vertical-align:middle;font-size:0.95rem}
+  #gestionVisitasPanel .reg-table tbody tr:nth-child(even) td{background:#f6fff6}
+  #gestionVisitasPanel .reg-empty{padding:28px;text-align:center;color:#6b6b6b;font-weight:700}
+  #gestionVisitasPanel .btn-approve{background:#00af00;color:#fff;border-radius:8px;padding:7px 12px;font-weight:800;border:1px solid rgba(0,0,0,0.06);cursor:pointer;box-shadow:0 2px 6px rgba(0,175,0,0.12)}
+  #gestionVisitasPanel .btn-reject{background:#fff;color:#111;border-radius:8px;padding:7px 12px;font-weight:800;border:1px solid rgba(0,0,0,0.08);cursor:pointer}
+  #gestionVisitasPanel .btn-approve:hover{filter:brightness(0.95)}
+  #gestionVisitasPanel .btn-reject:hover{background:#f6f6f6}
+  @media (max-width:900px){#gestionVisitasPanel .reg-table thead th,#gestionVisitasPanel .reg-table tbody td{padding:10px}}
+</style>
+{% endblock %}
 {% block content %}
 <div style="padding: 20px;">
   <h2 style="margin:0 0 14px;color:#1f2937;">Gestión de Visitas</h2>
@@ -20,7 +42,7 @@
     </div>
   </div>
 
-  <div id="gestionVisitasPanel" style="margin-top:18px;background:#fff;border-radius:10px;padding:16px;box-shadow:0 2px 10px rgba(0,0,0,0.08);">
+  <div id="gestionVisitasPanel" class="reg-card" style="margin-top:18px;">
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
       <h3 style="margin:0;">Solicitudes pendientes de coordinación</h3>
       <select id="tipoVisita" onchange="recargarSolicitudes()" style="padding:8px;border:1px solid #d1d5db;border-radius:8px;">
@@ -33,15 +55,15 @@
     </div>
 
     <div style="overflow:auto;">
-      <table style="width:100%;border-collapse:collapse;">
+      <table class="reg-table">
         <thead>
           <tr style="background:#f3f4f6;">
-            <th style="padding:10px;text-align:left;">ID</th>
-            <th style="padding:10px;text-align:left;">Tipo</th>
-            <th style="padding:10px;text-align:left;">Responsable</th>
-            <th style="padding:10px;text-align:left;">Institución/Programa</th>
-            <th style="padding:10px;text-align:left;">Fecha solicitud</th>
-            <th style="padding:10px;text-align:center;">Acciones</th>
+            <th>ID</th>
+            <th>Tipo</th>
+            <th>Responsable</th>
+            <th>Institución/Programa</th>
+            <th>Fecha solicitud</th>
+            <th style="text-align:center;">Acciones</th>
           </tr>
         </thead>
         <tbody id="cuerpoSolicitudes">
@@ -91,8 +113,9 @@
     const year = parseInt(card.getAttribute('data-year'), 10);
     const month = parseInt(card.getAttribute('data-month'), 10);
 
-    const prev = document.getElementById('prevReadonly');
-    const next = document.getElementById('nextReadonly');
+    // Support both ID variants: older `prevReadonly/nextReadonly` and `prev/next` used in template
+    const prev = document.getElementById('prevReadonly') || document.getElementById('prev');
+    const next = document.getElementById('nextReadonly') || document.getElementById('next');
 
     if (prev) {
       prev.onclick = () => {
@@ -265,14 +288,16 @@
 
     cuerpo.innerHTML = visitas.map(v => `
       <tr id="visita-${v.tipo}-${v.id}" data-tipo="${v.tipo}" data-id="${v.id}">
-        <td style="padding:10px;">#${v.id}</td>
-        <td style="padding:10px;">${v.tipo_display}</td>
-        <td style="padding:10px;">${v.responsable}</td>
-        <td style="padding:10px;">${v.institucion}</td>
-        <td style="padding:10px;">${v.fecha_solicitud}</td>
-        <td style="padding:10px;text-align:center;display:flex;justify-content:center;gap:8px;">
-          <button onclick="accionSolicitud('${v.tipo}', ${v.id}, 'aprobar')" style="padding:6px 10px;border:none;background:#10b981;color:white;border-radius:6px;cursor:pointer;">Aprobar</button>
-          <button onclick="accionSolicitud('${v.tipo}', ${v.id}, 'rechazar')" style="padding:6px 10px;border:none;background:#ef4444;color:white;border-radius:6px;cursor:pointer;">Rechazar</button>
+        <td>#${v.id}</td>
+        <td>${v.tipo_display}</td>
+        <td>${v.responsable}</td>
+        <td>${v.institucion}</td>
+        <td>${v.fecha_solicitud}</td>
+        <td style="text-align:center;">
+          <div style="display:inline-flex;gap:8px;align-items:center;justify-content:center;">
+            <button class="btn-approve" onclick="accionSolicitud('${v.tipo}', ${v.id}, 'aprobar')">Aprobar</button>
+            <button class="btn-reject" onclick="accionSolicitud('${v.tipo}', ${v.id}, 'rechazar')">Rechazar</button>
+          </div>
         </td>
       </tr>
     `).join('');
@@ -321,11 +346,11 @@
     const tryFind = () => {
       const row = document.getElementById(`visita-${tipoParam.slice(0,-1)}-${idParam}`) || document.getElementById(`visita-${tipoParam}-${idParam}`);
       if (row) {
-        row.style.transition = 'background-color 0.4s ease';
-        const original = row.style.backgroundColor;
-        row.style.backgroundColor = '#fff7cc';
+        // Añadir clase que resalta con el color principal
+        row.classList.add('row-selected');
         row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        setTimeout(() => { row.style.backgroundColor = original; }, 2500);
+        // Remover la clase después de unos segundos
+        setTimeout(() => { row.classList.remove('row-selected'); }, 4500);
         return true;
       }
       return false;
