@@ -9,6 +9,12 @@ from visitaExterna.models import VisitaExterna, AsistenteVisitaExterna
 from .models import Documento, DocumentoSubidoAsistente
 
 
+def _get_docsubido_aprendiz_model():
+    from .models import DocumentoSubidoAprendiz
+
+    return DocumentoSubidoAprendiz
+
+
 def devolver_visita_a_agendador(visita):
     """Retorna la visita a estado editable para permitir correcciones y reenvío."""
     if visita and visita.estado in ["documentos_enviados", "en_revision_documentos"]:
@@ -261,7 +267,11 @@ def actualizar_asistente_publico(request, tipo, token, asistente_id):
         messages.error(request, "Tipo de visita no válido.")
         return redirect("core:index")
 
-    if visita.estado not in ["aprobada_inicial", "documentos_enviados", "en_revision_documentos"]:
+    if visita.estado not in [
+        "aprobada_inicial",
+        "documentos_enviados",
+        "en_revision_documentos",
+    ]:
         messages.error(
             request,
             "La visita no está disponible para correcciones en este momento.",
@@ -289,7 +299,9 @@ def actualizar_asistente_publico(request, tipo, token, asistente_id):
     asistente.observaciones_revision = ""
     asistente.save()
 
-    docs_qs.filter(estado="rechazado").update(estado="pendiente", observaciones_revision="")
+    docs_qs.filter(estado="rechazado").update(
+        estado="pendiente", observaciones_revision=""
+    )
     devolver_visita_a_agendador(visita)
 
     messages.success(
@@ -608,6 +620,67 @@ def descargar_documento_publico(request, documento_id):
 
     response = FileResponse(archivo, content_type=tipo_mime)
     response["Content-Disposition"] = f'attachment; filename="{doc.nombre_archivo}"'
+    response["X-Frame-Options"] = "SAMEORIGIN"
+    return response
+
+
+@xframe_options_exempt
+def ver_documento_aprendiz_doc_inline(request, documento_subido_id):
+    """Sirve un DocumentoSubidoAprendiz para visualización inline en iframe."""
+    import mimetypes
+    from django.http import FileResponse, HttpResponseNotFound
+
+    DocumentoSubidoAprendiz = _get_docsubido_aprendiz_model()
+    doc = get_object_or_404(DocumentoSubidoAprendiz, id=documento_subido_id)
+    if not doc.archivo or not doc.archivo.storage.exists(doc.archivo.name):
+        return HttpResponseNotFound("El archivo no existe")
+    f = doc.archivo.open("rb")
+    tipo_mime, _ = mimetypes.guess_type(doc.archivo.name)
+    if not tipo_mime:
+        tipo_mime = "application/octet-stream"
+    response = FileResponse(f, content_type=tipo_mime)
+    response["Content-Disposition"] = f'inline; filename="{doc.nombre_archivo}"'
+    response["X-Frame-Options"] = "SAMEORIGIN"
+    return response
+
+
+@xframe_options_exempt
+def ver_campo_asistente_inline(request, tipo, asistente_id, campo):
+    """Sirve un campo de archivo (documento_identidad, documento_adicional,
+    formato_autorizacion_padres) de un AsistenteVisitaInterna/Externa inline."""
+    import mimetypes
+    import os
+    from django.http import FileResponse, HttpResponseNotFound, HttpResponseBadRequest
+    from visitaInterna.models import AsistenteVisitaInterna
+    from visitaExterna.models import AsistenteVisitaExterna
+
+    campos_permitidos = [
+        "documento_identidad",
+        "documento_adicional",
+        "formato_autorizacion_padres",
+    ]
+    if campo not in campos_permitidos:
+        return HttpResponseBadRequest("Campo no válido")
+
+    if tipo == "interna":
+        asistente = get_object_or_404(AsistenteVisitaInterna, id=asistente_id)
+    elif tipo == "externa":
+        asistente = get_object_or_404(AsistenteVisitaExterna, id=asistente_id)
+    else:
+        return HttpResponseBadRequest("Tipo no válido")
+
+    archivo = getattr(asistente, campo)
+    if not archivo or not archivo.storage.exists(archivo.name):
+        return HttpResponseNotFound("El archivo no existe")
+
+    f = archivo.open("rb")
+    tipo_mime, _ = mimetypes.guess_type(archivo.name)
+    if not tipo_mime:
+        tipo_mime = "application/octet-stream"
+
+    nombre = os.path.basename(archivo.name)
+    response = FileResponse(f, content_type=tipo_mime)
+    response["Content-Disposition"] = f'inline; filename="{nombre}"'
     response["X-Frame-Options"] = "SAMEORIGIN"
     return response
 

@@ -590,6 +590,57 @@ function verDocumentoSafe(button) {
     verDocumento(archivoUrl, nombreArchivo);
 }
 
+var _docxPreviewLoaderPromise = null;
+
+function _loadScriptOnce(src) {
+    return new Promise(function (resolve, reject) {
+        var existing = document.querySelector('script[src="' + src + '"]');
+        if (existing) {
+            if (existing.getAttribute('data-loaded') === 'true') {
+                resolve();
+                return;
+            }
+            existing.addEventListener('load', function () { resolve(); }, { once: true });
+            existing.addEventListener('error', function () { reject(new Error('No se pudo cargar ' + src)); }, { once: true });
+            return;
+        }
+
+        var script = document.createElement('script');
+        script.src = src;
+        script.async = true;
+        script.onload = function () {
+            script.setAttribute('data-loaded', 'true');
+            resolve();
+        };
+        script.onerror = function () {
+            reject(new Error('No se pudo cargar ' + src));
+        };
+        document.head.appendChild(script);
+    });
+}
+
+function _ensureDocxPreviewReady() {
+    if (window.docx && window.JSZip) {
+        return Promise.resolve();
+    }
+
+    if (_docxPreviewLoaderPromise) {
+        return _docxPreviewLoaderPromise;
+    }
+
+    _docxPreviewLoaderPromise = _loadScriptOnce('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js')
+        .then(function () {
+            return _loadScriptOnce('https://cdn.jsdelivr.net/npm/docx-preview@0.3.3/dist/docx-preview.min.js');
+        })
+        .finally(function () {
+            if (!(window.docx && window.JSZip)) {
+                _docxPreviewLoaderPromise = null;
+            }
+        });
+
+    return _docxPreviewLoaderPromise;
+}
+
 // Función original verDocumento
 function verDocumento(archivoUrl, nombreArchivo) {
     console.log("=== verDocumento INICIANDO ===");
@@ -615,9 +666,10 @@ function verDocumento(archivoUrl, nombreArchivo) {
 
     // Detectar el tipo de archivo
     var isPDF = extension === 'pdf';
+    var isDocx = extension === 'docx';
     var isImagen = ['jpg', 'jpeg', 'png', 'gif', 'webp'].indexOf(extension) !== -1;
 
-    console.log("Tipo de archivo detectado:", { isPDF, isImagen, extension });
+    console.log("Tipo de archivo detectado:", { isPDF, isDocx, isImagen, extension });
 
     if (isPDF) {
         var headerHtml = '<div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #e5e7eb; background: #f9fafb;">' +
@@ -636,6 +688,58 @@ function verDocumento(archivoUrl, nombreArchivo) {
             headerHtml + contentHtml + '</div>';
 
         card.innerHTML = fullHtml;
+    } else if (isDocx) {
+        var headerHtml = '<div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #e5e7eb; background: #f9fafb;">' +
+            '<h3 style="margin: 0; color: #1f2937; font-size: 16px;"><i class="fas fa-file-word" style="margin-right: 8px; color: #2563eb;"></i>' + nombreArchivo + '</h3>' +
+            '<div style="display:flex;gap:8px;align-items:center;">' +
+            '<a href="' + archivoUrl + '" target="_blank" rel="noopener noreferrer" style="background:#6b7280;color:white;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:500;"><i class="fas fa-external-link-alt"></i> Nueva pestaña</a>' +
+            '<button onclick="_cerrarModalButton()" style="background:#ef4444;color:white;border:none;font-size:20px;cursor:pointer;width:34px;height:34px;border-radius:6px;line-height:1;">&times;</button>' +
+            '</div></div>';
+
+        var contentHtml = '<div id="docxPreviewContainer" style="flex:1;overflow:auto;background:#fff;padding:24px;">' +
+            '<div id="docxPreviewLoading" style="text-align:center;color:#6b7280;padding:40px 20px;">' +
+            '<i class="fas fa-spinner fa-spin" style="font-size:26px;display:block;margin-bottom:12px;"></i>' +
+            'Cargando documento Word...' +
+            '</div>' +
+            '</div>';
+
+        card.innerHTML = '<div style="display:flex;flex-direction:column;height:100%;background:white;border-radius:8px;overflow:hidden;">' +
+            headerHtml + contentHtml + '</div>';
+
+        _ensureDocxPreviewReady()
+            .then(function () {
+                return fetch(archivoUrl, { credentials: 'same-origin' });
+            })
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error('No se pudo obtener el archivo DOCX (HTTP ' + response.status + ')');
+                }
+                return response.arrayBuffer();
+            })
+            .then(function (arrayBuffer) {
+                var container = document.getElementById('docxPreviewContainer');
+                if (!container) return;
+                container.innerHTML = '';
+                return window.docx.renderAsync(arrayBuffer, container, null, {
+                    inWrapper: true,
+                    breakPages: true,
+                    ignoreWidth: false,
+                    ignoreHeight: false
+                });
+            })
+            .catch(function (err) {
+                console.error('Error previsualizando DOCX:', err);
+                var container = document.getElementById('docxPreviewContainer');
+                if (!container) return;
+                container.innerHTML = '<div style="text-align:center;padding:50px;color:#6b7280;">' +
+                    '<i class="fas fa-file-word" style="font-size:64px;color:#9ca3af;display:block;margin-bottom:20px;"></i>' +
+                    '<p style="font-size:16px;margin-bottom:8px;color:#1f2937;">No se pudo mostrar el archivo Word</p>' +
+                    '<p style="font-size:13px;margin-bottom:24px;">Intente descargar el archivo para abrirlo en Microsoft Word.</p>' +
+                    '<a href="' + archivoUrl + '" target="_blank" rel="noopener noreferrer" class="docs-modal-btn docs-modal-btn-confirm" style="text-decoration:none;display:inline-block;background:#6b7280;color:#fff;">' +
+                    '<i class="fas fa-external-link-alt"></i> Nueva pestaña' +
+                    '</a>' +
+                    '</div>';
+            });
     } else if (isImagen) {
         var headerHtml = '<div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #e5e7eb; background: #f9fafb;">' +
             '<h3 style="margin: 0; color: #1f2937; font-size: 16px;"><i class="fas fa-image" style="margin-right: 8px; color: #8b5cf6;"></i>' + nombreArchivo + '</h3>' +
