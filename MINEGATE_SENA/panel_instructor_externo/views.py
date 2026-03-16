@@ -329,6 +329,19 @@ def detalle_visita_externa(request, pk):
         documentos_por_categoria[cat_display].append(doc)
 
     reporte_documental = construir_reporte_documental_visita(visita, "externa")
+    hay_alertas_documentales = bool(reporte_documental.get("hay_alertas"))
+    estados_finales = reporte_documental.get("archivos_finales_estado", [])
+    archivos_finales_faltantes = sum(
+        1 for item in estados_finales if item.get("estado") == "faltante"
+    )
+    archivos_finales_completos = archivos_finales_faltantes == 0
+
+    enviar_final_habilitado = (
+        visita.estado == "aprobada_inicial"
+        and visita.asistentes.exists()
+        and archivos_finales_completos
+        and not hay_alertas_documentales
+    )
 
     return render(
         request,
@@ -339,5 +352,6 @@ def detalle_visita_externa(request, pk):
             "documentos_por_categoria": documentos_por_categoria,
             "reporte_documental": reporte_documental,
             "reprogramacion_pendiente": reprogramacion_pendiente,
+            "enviar_final_habilitado": enviar_final_habilitado,
         },
     )

@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.db import IntegrityError
@@ -279,12 +280,50 @@ def instructor_interno_required(view_func):
     return wrapper
 
 
+def _obtener_propietario_instructor(request):
+    """Resuelve el usuario propietario para aislar datos por instructor interno."""
+    correo = (request.session.get("responsable_correo") or "").strip().lower()
+    documento = (request.session.get("responsable_documento") or "").strip()
+    nombre = (request.session.get("responsable_nombre") or "").strip()
+    apellido = (request.session.get("responsable_apellido") or "").strip()
+
+    if not documento:
+        return None
+
+    UserModel = get_user_model()
+    username = f"interno_{documento}"
+    user, _ = UserModel.objects.get_or_create(
+        username=username,
+        defaults={
+            "email": correo,
+            "first_name": nombre,
+            "last_name": apellido,
+        },
+    )
+
+    update_fields = []
+    if correo and user.email != correo:
+        user.email = correo
+        update_fields.append("email")
+    if nombre and user.first_name != nombre:
+        user.first_name = nombre
+        update_fields.append("first_name")
+    if apellido and user.last_name != apellido:
+        user.last_name = apellido
+        update_fields.append("last_name")
+    if update_fields:
+        user.save(update_fields=update_fields)
+
+    return user
+
+
 # ==================== PANEL PRINCIPAL ====================
 
 
 @instructor_interno_required
 def panel_instructor_interno(request):
     correo, documento = get_sesion_instructor(request)
+    owner_user = _obtener_propietario_instructor(request)
     visitas = VisitaInterna.objects.filter(correo_responsable__iexact=correo).order_by(
         "-fecha_solicitud"
     )
@@ -294,8 +333,10 @@ def panel_instructor_interno(request):
         "nombre": request.session.get("responsable_nombre", ""),
         "apellido": request.session.get("responsable_apellido", ""),
         "visitas": visitas[:5],
-        "total_programas": Programa.objects.filter(activo=True).count(),
-        "total_fichas": Ficha.objects.filter(activa=True).count(),
+        "total_programas": Programa.objects.filter(
+            activo=True, creado_por=owner_user
+        ).count(),
+        "total_fichas": Ficha.objects.filter(activa=True, creado_por=owner_user).count(),
         "total_visitas": visitas.count(),
     }
     return render(request, "panel_instructor_interno/panel.html", context)
@@ -307,6 +348,7 @@ def panel_instructor_interno(request):
 @instructor_interno_required
 def reservar_visita_interna(request):
     correo, documento = get_sesion_instructor(request)
+    owner_user = _obtener_propietario_instructor(request)
 
     # Obtener datos adicionales de la sesión
     nombre = request.session.get("responsable_nombre", "")
@@ -316,12 +358,17 @@ def reservar_visita_interna(request):
     nombre_completo = f"{nombre} {apellido}".strip()
 
     if request.method == "POST":
-        form = VisitaInternaInstructorForm(request.POST)
+        form = VisitaInternaInstructorForm(request.POST, owner_user=owner_user)
         if form.is_valid():
             numero_ficha = form.cleaned_data.get("numero_ficha")
             ficha = (
                 Ficha.objects.select_related("programa")
-                .filter(numero=numero_ficha, activa=True, programa__activo=True)
+                .filter(
+                    numero=numero_ficha,
+                    activa=True,
+                    programa__activo=True,
+                    creado_por=owner_user,
+                )
                 .first()
             )
 
@@ -332,9 +379,9 @@ def reservar_visita_interna(request):
                 )
                 context = {
                     "form": form,
-                    "fichas": Ficha.objects.filter(activa=True).select_related(
-                        "programa"
-                    ),
+                    "fichas": Ficha.objects.filter(
+                        activa=True, creado_por=owner_user
+                    ).select_related("programa"),
                     "correo": correo,
                     "titulo": "Reservar Visita Interna",
                 }
@@ -430,9 +477,12 @@ def reservar_visita_interna(request):
                 "documento_responsable": documento,
                 "correo_responsable": correo,
                 "telefono_responsable": telefono,
-            }
+            },
+            owner_user=owner_user,
         )
-    fichas = Ficha.objects.filter(activa=True).select_related("programa")
+    fichas = Ficha.objects.filter(activa=True, creado_por=owner_user).select_related(
+        "programa"
+    )
     context = {
         "form": form,
         "fichas": fichas,
@@ -467,17 +517,23 @@ def detalle_visita_interna(request, pk):
 
     reporte_documental = construir_reporte_documental_visita(visita, "interna")
     hay_alertas_documentales = bool(reporte_documental.get("hay_alertas"))
+    estados_finales = reporte_documental.get("archivos_finales_estado", [])
+    archivos_finales_faltantes = sum(
+        1 for item in estados_finales if item.get("estado") == "faltante"
+    )
+    archivos_finales_completos = archivos_finales_faltantes == 0
 
     enviar_final_habilitado = (
         visita.estado == "aprobada_inicial"
         and visita.asistentes.exists()
+        and archivos_finales_completos
         and not hay_alertas_documentales
     )
 
     mostrar_boton_subir_archivos_finales = (
         visita.estado == "aprobada_inicial"
         and visita.asistentes.exists()
-        and hay_alertas_documentales
+        and not archivos_finales_completos
     )
 
     return render(
@@ -501,7 +557,8 @@ def detalle_visita_interna(request, pk):
 @instructor_interno_required
 def gestionar_programas(request):
     correo, _ = get_sesion_instructor(request)
-    programas = Programa.objects.all().order_by("nombre")
+    owner_user = _obtener_propietario_instructor(request)
+    programas = Programa.objects.filter(creado_por=owner_user).order_by("nombre")
     buscar = request.GET.get("buscar", "")
     if buscar:
         programas = programas.filter(nombre__icontains=buscar)
@@ -520,6 +577,7 @@ def gestionar_programas(request):
 @instructor_interno_required
 def crear_programa(request):
     correo, _ = get_sesion_instructor(request)
+    owner_user = _obtener_propietario_instructor(request)
     is_ajax = (
         request.GET.get("ajax") == "true"
         or request.headers.get("X-Requested-With") == "XMLHttpRequest"
@@ -528,7 +586,9 @@ def crear_programa(request):
     if request.method == "POST":
         form = ProgramaForm(request.POST)
         if form.is_valid():
-            programa = form.save()
+            programa = form.save(commit=False)
+            programa.creado_por = owner_user
+            programa.save()
             if is_ajax:
                 return JsonResponse(
                     {
@@ -599,7 +659,8 @@ def crear_programa(request):
 @instructor_interno_required
 def editar_programa(request, pk):
     correo, _ = get_sesion_instructor(request)
-    programa = get_object_or_404(Programa, pk=pk)
+    owner_user = _obtener_propietario_instructor(request)
+    programa = get_object_or_404(Programa, pk=pk, creado_por=owner_user)
     is_ajax = (
         request.GET.get("ajax") == "true"
         or request.headers.get("X-Requested-With") == "XMLHttpRequest"
@@ -681,7 +742,8 @@ def editar_programa(request, pk):
 @instructor_interno_required
 def eliminar_programa(request, pk):
     correo, _ = get_sesion_instructor(request)
-    programa = get_object_or_404(Programa, pk=pk)
+    owner_user = _obtener_propietario_instructor(request)
+    programa = get_object_or_404(Programa, pk=pk, creado_por=owner_user)
     is_ajax = (
         request.GET.get("ajax") == "true"
         or request.headers.get("X-Requested-With") == "XMLHttpRequest"
@@ -736,7 +798,8 @@ def eliminar_programa(request, pk):
 @instructor_interno_required
 def gestionar_fichas(request):
     correo, _ = get_sesion_instructor(request)
-    fichas = Ficha.objects.select_related("programa").all()
+    owner_user = _obtener_propietario_instructor(request)
+    fichas = Ficha.objects.select_related("programa").filter(creado_por=owner_user)
     buscar = request.GET.get("buscar", "")
     if buscar:
         fichas = fichas.filter(
@@ -757,15 +820,18 @@ def gestionar_fichas(request):
 @instructor_interno_required
 def crear_ficha(request):
     correo, _ = get_sesion_instructor(request)
+    owner_user = _obtener_propietario_instructor(request)
     is_ajax = (
         request.GET.get("ajax") == "true"
         or request.headers.get("X-Requested-With") == "XMLHttpRequest"
     )
 
     if request.method == "POST":
-        form = FichaForm(request.POST)
+        form = FichaForm(request.POST, owner_user=owner_user)
         if form.is_valid():
-            ficha = form.save()
+            ficha = form.save(commit=False)
+            ficha.creado_por = owner_user
+            ficha.save()
             if is_ajax:
                 return JsonResponse(
                     {
@@ -804,7 +870,7 @@ def crear_ficha(request):
                 },
             )
     else:
-        form = FichaForm()
+        form = FichaForm(owner_user=owner_user)
 
     if is_ajax:
         # Para AJAX GET, retornar solo el formulario sin headers/footers
@@ -836,14 +902,15 @@ def crear_ficha(request):
 @instructor_interno_required
 def editar_ficha(request, pk):
     correo, _ = get_sesion_instructor(request)
-    ficha = get_object_or_404(Ficha, pk=pk)
+    owner_user = _obtener_propietario_instructor(request)
+    ficha = get_object_or_404(Ficha, pk=pk, creado_por=owner_user)
     is_ajax = (
         request.GET.get("ajax") == "true"
         or request.headers.get("X-Requested-With") == "XMLHttpRequest"
     )
 
     if request.method == "POST":
-        form = FichaForm(request.POST, instance=ficha)
+        form = FichaForm(request.POST, instance=ficha, owner_user=owner_user)
         if form.is_valid():
             form.save()
             if is_ajax:
@@ -883,7 +950,7 @@ def editar_ficha(request, pk):
                 },
             )
     else:
-        form = FichaForm(instance=ficha)
+        form = FichaForm(instance=ficha, owner_user=owner_user)
 
     if is_ajax:
         # Para AJAX GET, retornar solo el formulario
@@ -916,7 +983,8 @@ def editar_ficha(request, pk):
 @instructor_interno_required
 def eliminar_ficha(request, pk):
     correo, _ = get_sesion_instructor(request)
-    ficha = get_object_or_404(Ficha, pk=pk)
+    owner_user = _obtener_propietario_instructor(request)
+    ficha = get_object_or_404(Ficha, pk=pk, creado_por=owner_user)
     is_ajax = (
         request.GET.get("ajax") == "true"
         or request.headers.get("X-Requested-With") == "XMLHttpRequest"
@@ -982,7 +1050,8 @@ def ver_documento_aprendiz_inline(request, aprendiz_id, campo):
     if campo not in campos_permitidos:
         return HttpResponseBadRequest("Campo no válido")
 
-    aprendiz = get_object_or_404(Aprendiz, id=aprendiz_id)
+    owner_user = _obtener_propietario_instructor(request)
+    aprendiz = get_object_or_404(Aprendiz, id=aprendiz_id, ficha__creado_por=owner_user)
     archivo = getattr(aprendiz, campo)
     if not archivo or not archivo.storage.exists(archivo.name):
         return HttpResponseNotFound("El archivo no existe")
@@ -1006,7 +1075,8 @@ def detalle_aprendices_ficha(request, pk):
     Permite crear, editar y eliminar aprendices.
     """
     correo, _ = get_sesion_instructor(request)
-    ficha = get_object_or_404(Ficha, pk=pk)
+    owner_user = _obtener_propietario_instructor(request)
+    ficha = get_object_or_404(Ficha, pk=pk, creado_por=owner_user)
 
     aprendices = ficha.aprendices.all().order_by("apellido", "nombre")
     estado_filtro = request.GET.get("estado", "")
@@ -1041,7 +1111,8 @@ def crear_aprendiz(request, ficha_id):
     Crea un nuevo aprendiz para una ficha.
     """
     correo, _ = get_sesion_instructor(request)
-    ficha = get_object_or_404(Ficha, pk=ficha_id)
+    owner_user = _obtener_propietario_instructor(request)
+    ficha = get_object_or_404(Ficha, pk=ficha_id, creado_por=owner_user)
 
     # Obtener documentos por categoría
     documentos_por_categoria = obtener_documentos_por_categoria()
@@ -1112,7 +1183,8 @@ def editar_aprendiz(request, pk):
     Edita un aprendiz existente y sus documentos.
     """
     correo, _ = get_sesion_instructor(request)
-    aprendiz = get_object_or_404(Aprendiz, pk=pk)
+    owner_user = _obtener_propietario_instructor(request)
+    aprendiz = get_object_or_404(Aprendiz, pk=pk, ficha__creado_por=owner_user)
     ficha = aprendiz.ficha
 
     # Obtener documentos por categoría
@@ -1186,7 +1258,8 @@ def eliminar_aprendiz(request, pk):
     Elimina un aprendiz.
     """
     correo, _ = get_sesion_instructor(request)
-    aprendiz = get_object_or_404(Aprendiz, pk=pk)
+    owner_user = _obtener_propietario_instructor(request)
+    aprendiz = get_object_or_404(Aprendiz, pk=pk, ficha__creado_por=owner_user)
     ficha = aprendiz.ficha
 
     if request.method == "POST":
@@ -1218,7 +1291,8 @@ def obtener_aprendices_ficha_json(request, ficha_id):
     Usado para prellenar datos en formulario de visitas.
     """
     try:
-        ficha = get_object_or_404(Ficha, pk=ficha_id)
+        owner_user = _obtener_propietario_instructor(request)
+        ficha = get_object_or_404(Ficha, pk=ficha_id, creado_por=owner_user)
         aprendices = ficha.aprendices.filter(estado="activo").values(
             "id",
             "nombre",
@@ -1252,13 +1326,14 @@ def registrar_aprendices_visita(request, visita_id):
     Automáticamente trae sus datos y documentos.
     """
     correo, _ = get_sesion_instructor(request)
+    owner_user = _obtener_propietario_instructor(request)
     visita = get_object_or_404(
         VisitaInterna, pk=visita_id, correo_responsable__iexact=correo
     )
 
     # Obtener la ficha de la visita
     try:
-        ficha = Ficha.objects.get(numero=visita.numero_ficha)
+        ficha = Ficha.objects.get(numero=visita.numero_ficha, creado_por=owner_user)
     except Ficha.DoesNotExist:
         messages.error(request, "❌ No se encontró la ficha asociada a esta visita.")
         return redirect("panel_instructor_interno:detalle_visita", pk=visita_id)
@@ -1408,7 +1483,8 @@ def guardar_documentos_aprendiz(aprendiz, archivos_subidos, documentos_por_categ
 @instructor_interno_required
 def crear_aprendiz(request, ficha_id):
     correo, _ = get_sesion_instructor(request)
-    ficha = get_object_or_404(Ficha, pk=ficha_id)
+    owner_user = _obtener_propietario_instructor(request)
+    ficha = get_object_or_404(Ficha, pk=ficha_id, creado_por=owner_user)
 
     # --- INTEGRACIÓN DE DOCUMENTOS ---
     docs_cat = obtener_documentos_por_categoria()
@@ -1454,7 +1530,8 @@ def crear_aprendiz(request, ficha_id):
 @instructor_interno_required
 def editar_aprendiz(request, pk):
     correo, _ = get_sesion_instructor(request)
-    aprendiz = get_object_or_404(Aprendiz, pk=pk)
+    owner_user = _obtener_propietario_instructor(request)
+    aprendiz = get_object_or_404(Aprendiz, pk=pk, ficha__creado_por=owner_user)
     ficha = aprendiz.ficha
 
     # --- INTEGRACIÓN DE DOCUMENTOS ---

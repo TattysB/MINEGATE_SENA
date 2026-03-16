@@ -176,9 +176,13 @@ class VisitaInternaInstructorForm(forms.ModelForm):
     )
 
     def __init__(self, *args, **kwargs):
+        self.owner_user = kwargs.pop('owner_user', None)
         super().__init__(*args, **kwargs)
 
-        fichas = Ficha.objects.filter(activa=True).select_related('programa').order_by('numero')
+        fichas = Ficha.objects.filter(activa=True).select_related('programa')
+        if self.owner_user is not None:
+            fichas = fichas.filter(creado_por=self.owner_user)
+        fichas = fichas.order_by('numero')
 
         self.fields['numero_ficha'].choices = [('', 'Seleccione programa y ficha')] + [
             (f.numero, f'{f.programa.nombre} - Ficha {f.numero}') for f in fichas
@@ -254,7 +258,11 @@ class VisitaInternaInstructorForm(forms.ModelForm):
         if numero is None or numero == '':
             raise ValidationError('Debe seleccionar una ficha.')
 
-        if not Ficha.objects.filter(numero=numero, activa=True).exists():
+        filtros = {'numero': numero, 'activa': True}
+        if self.owner_user is not None:
+            filtros['creado_por'] = self.owner_user
+
+        if not Ficha.objects.filter(**filtros).exists():
             raise ValidationError('La ficha seleccionada no es válida o está inactiva.')
 
         return int(numero)
@@ -342,6 +350,16 @@ class ProgramaForm(forms.ModelForm):
 
 
 class FichaForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        self.owner_user = kwargs.pop('owner_user', None)
+        super().__init__(*args, **kwargs)
+
+        programas_qs = Programa.objects.filter(activo=True)
+        if self.owner_user is not None:
+            programas_qs = programas_qs.filter(creado_por=self.owner_user)
+
+        self.fields['programa'].queryset = programas_qs.order_by('nombre')
+
     class Meta:
         model = Ficha
         fields = ['numero', 'programa', 'jornada', 'cantidad_aprendices', 'activa']

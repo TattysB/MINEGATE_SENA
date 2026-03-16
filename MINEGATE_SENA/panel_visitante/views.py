@@ -1318,21 +1318,18 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
         visita.cantidad_aprendices if tipo == "interna" else visita.cantidad_visitantes
     )
     asistentes_actuales = visita.asistentes.count()
-    solicitud_final_enviada = visita.estado in [
-        "documentos_enviados",
-        "en_revision_documentos",
-        "confirmada",
-    ]
     resumen_pendientes = _resumen_pendientes_correccion(visita, tipo)
+    sin_pendientes_correccion = resumen_pendientes["pendientes_correccion"] == 0
     flujo_completo_con_finales = (
         asistentes_actuales >= max_asistentes
         and resumen_pendientes["archivos_finales_faltantes"] == 0
     )
+    visita_confirmada = visita.estado == "confirmada"
 
-    if solicitud_final_enviada or flujo_completo_con_finales:
+    if visita_confirmada or (flujo_completo_con_finales and sin_pendientes_correccion):
         error_msg = (
-            "Ya no se puede actualizar este asistente porque la solicitud final "
-            "ya fue enviada o la visita ya tiene los archivos finales cargados."
+            "Ya no se puede actualizar este asistente porque la visita está "
+            "confirmada o no tiene correcciones pendientes."
         )
         if es_ajax:
             return JsonResponse({"success": False, "error": error_msg}, status=400)
