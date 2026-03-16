@@ -398,7 +398,7 @@
           </button>
           <form method="post" action="{% url 'panel_visitante:enviar_solicitud_final' tipo='externa' visita_id=visita.id %}" style="display:inline;">
             {% csrf_token %}
-            <button type="submit" id="btnEnviarSolicitudFinal" class="btn-enviar" disabled style="opacity: 0.5; cursor: not-allowed;" onclick="return confirmarEnvioSolicitudFinal(event, this, 'visitantes');">
+            <button type="submit" id="btnEnviarSolicitudFinal" class="btn-enviar" {% if not enviar_final_habilitado %}disabled{% endif %} style="{% if not enviar_final_habilitado %}opacity: 0.5; cursor: not-allowed;{% endif %}" onclick="return confirmarEnvioSolicitudFinal(event, this, 'visitantes');">
               <i class="fas fa-paper-plane"></i> Enviar solicitud final
             </button>
           </form>
@@ -740,7 +740,6 @@
 
   // Variables globales
   let esModalCorreccion = false;
-  let archivosClaveFinal = '';
   let urlEnviarSolicitudFinal = "{% url 'panel_visitante:enviar_solicitud_final' tipo='externa' visita_id=visita.id %}";
   const urlCompletarReprogramacion = "{% url 'gestion_visitas:completar_reprogramacion_legacy' tipo='externa' visita_id=visita.id %}";
   let csrfTokenGlobal = '';
@@ -1143,17 +1142,6 @@
     const form = document.getElementById('formArchivosFinales');
     const btnSolicitudFinal = document.getElementById('btnEnviarSolicitudFinal');
     
-    // Verificar si ya se subieron archivos previamente
-    const visitaId = '{{ visita.id }}';
-    archivosClaveFinal = 'archivos_subidos_' + visitaId;
-    if (localStorage.getItem(archivosClaveFinal) === 'true') {
-      if (btnSolicitudFinal) {
-        btnSolicitudFinal.disabled = false;
-        btnSolicitudFinal.style.opacity = '1';
-        btnSolicitudFinal.style.cursor = 'pointer';
-      }
-    }
-    
     if (form) {
       // Limpiar mensajes de error cuando se seleccione un archivo
       const fileInputs = form.querySelectorAll('input[type="file"]');
@@ -1234,6 +1222,7 @@
           `;
           return;
         }
+        }
         
         const btn = document.getElementById('btnEnviarCompleto');
         btn.disabled = true;
@@ -1255,22 +1244,37 @@
           const statusDiv = document.getElementById('statusMensaje');
           const statusContenido = document.getElementById('statusContenido');
           const dataCarga = await response.json().catch(() => ({}));
+          const pendientesCorreccion = Number(dataCarga.pendientes_correccion || 0);
+          const listoParaConfirmar = dataCarga.listo_para_confirmar_envio === true || pendientesCorreccion === 0;
 
           if (response.ok && dataCarga.success !== false) {
-            // Si NO es corrección (es primer envío), solo mostrar éxito
+            // Primer envío de finales: solo habilitar envío final si ya no quedan pendientes.
             if (!esModalCorreccion) {
-              localStorage.setItem(archivosClaveFinal, 'true');
-              if (btnSolicitudFinal) {
-                btnSolicitudFinal.disabled = false;
-                btnSolicitudFinal.style.opacity = '1';
-                btnSolicitudFinal.style.cursor = 'pointer';
+              if (listoParaConfirmar) {
+                if (btnSolicitudFinal) {
+                  btnSolicitudFinal.disabled = false;
+                  btnSolicitudFinal.style.opacity = '1';
+                  btnSolicitudFinal.style.cursor = 'pointer';
+                }
+                statusDiv.style.display = 'block';
+                statusContenido.innerHTML = `
+                  <div style="background: #d1fae5; border: 1px solid #6ee7b7; border-radius: 8px; padding: 12px; color: #065f46;">
+                    <i class="fas fa-check-circle me-2"></i><strong>¡Archivos finales completos!</strong> Ahora puedes hacer clic en "Enviar solicitud final".
+                  </div>
+                `;
+              } else {
+                if (btnSolicitudFinal) {
+                  btnSolicitudFinal.disabled = true;
+                  btnSolicitudFinal.style.opacity = '0.5';
+                  btnSolicitudFinal.style.cursor = 'not-allowed';
+                }
+                statusDiv.style.display = 'block';
+                statusContenido.innerHTML = `
+                  <div style="background: #e0f2fe; border: 1px solid #93c5fd; border-radius: 8px; padding: 12px; color: #075985;">
+                    <i class="fas fa-info-circle me-2"></i><strong>Archivo(s) guardado(s).</strong> Aún faltan ${pendientesCorreccion} archivo(s)/corrección(es) para completar el envío final.
+                  </div>
+                `;
               }
-              statusDiv.style.display = 'block';
-              statusContenido.innerHTML = `
-                <div style="background: #d1fae5; border: 1px solid #6ee7b7; border-radius: 8px; padding: 12px; color: #065f46;">
-                  <i class="fas fa-check-circle me-2"></i><strong>¡Archivos cargados!</strong> Ahora puedes hacer clic en "Enviar solicitud final".
-                </div>
-              `;
               btn.style.background = 'linear-gradient(90deg, #10b981, #059669)';
               btn.style.color = '#fff';
               btn.innerHTML = '<i class="fas fa-check me-2"></i>Enviado correctamente';
@@ -1282,7 +1286,22 @@
               return;
             }
 
-            // SI es corrección, mostrar modal de confirmación
+            // SI es corrección y aún faltan pendientes, mantener flujo abierto.
+            if (!listoParaConfirmar) {
+              statusDiv.style.display = 'block';
+              statusContenido.innerHTML = `<div style="background: #e0f2fe; border: 1px solid #93c5fd; border-radius: 8px; padding: 12px; color: #075985;"><i class="fas fa-info-circle me-2"></i>Corrección cargada. Aún faltan ${pendientesCorreccion} corrección(es).</div>`;
+              btn.style.background = 'linear-gradient(90deg, #10b981, #059669)';
+              btn.style.color = '#fff';
+              btn.innerHTML = '<i class="fas fa-check me-2"></i>Guardado';
+              btn.disabled = true;
+              setTimeout(function() {
+                cerrarModalArchivosFinales();
+                location.reload();
+              }, 1400);
+              return;
+            }
+
+            // SI es corrección y ya está completo, mostrar confirmación
             statusDiv.style.display = 'block';
             statusContenido.innerHTML = '<div style="background: #d1fae5; border: 1px solid #6ee7b7; border-radius: 8px; padding: 12px; color: #065f46;"><i class="fas fa-check-circle me-2"></i>Documentos corregidos cargados exitosamente.</div>';
             btn.style.background = 'linear-gradient(90deg, #10b981, #059669)';

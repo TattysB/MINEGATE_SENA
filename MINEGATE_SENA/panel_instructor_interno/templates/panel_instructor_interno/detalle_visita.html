@@ -768,7 +768,6 @@
 
   // Variables globales
   let esModalCorreccion = false;
-  let archivosClaveFinal = '';
   let urlEnviarSolicitudFinal = "{% url 'panel_visitante:enviar_solicitud_final' tipo='interna' visita_id=visita.id %}";
   const urlCompletarReprogramacion = "{% url 'gestion_visitas:completar_reprogramacion_legacy' tipo='interna' visita_id=visita.id %}";
   let csrfTokenGlobal = '';
@@ -1146,7 +1145,6 @@
         statusContenido.innerHTML = '<div style="background: #d1fae5; border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; color: #065f46;"><i class="fas fa-check-circle me-2"></i>¡Listo! Documentos corregidos enviados para revisión final.</div>';
       }
       mostrarPopupEmergente('Solicitud final enviada correctamente.', 'success');
-      localStorage.removeItem(archivosClaveFinal);
 
       setTimeout(function() {
         location.reload();
@@ -1223,17 +1221,6 @@
     const btnEnviar = document.getElementById('btnEnviarCompleto');
     const btnCancelar = document.getElementById('btnCancelarModal');
     const btnSolicitudFinal = document.getElementById('btnEnviarSolicitudFinal');
-    
-    // Verificar si ya se subieron archivos previamente
-    const visitaId = '{{ visita.id }}';
-    archivosClaveFinal = 'archivos_subidos_' + visitaId;
-    if (localStorage.getItem(archivosClaveFinal) === 'true') {
-      if (btnSolicitudFinal) {
-        btnSolicitudFinal.disabled = false;
-        btnSolicitudFinal.style.opacity = '1';
-        btnSolicitudFinal.style.cursor = 'pointer';
-      }
-    }
     
     if (form) {
       // Limpiar mensajes de error cuando se seleccione un archivo
@@ -1348,11 +1335,19 @@
           const pendientesCorreccion = Number(dataSubida.pendientes_correccion || 0);
           const listoParaConfirmar = dataSubida.listo_para_confirmar_envio === true || pendientesCorreccion === 0;
 
-          // Si NO es corrección (es primer envío), solo mostrar éxito
+          // Primer envío de finales: solo habilitar envío final si ya no quedan pendientes.
           if (!esModalCorreccion) {
-            localStorage.setItem(archivosClaveFinal, 'true');
-            habilitarEnvioFinal();
-            statusContenido.innerHTML = '<div style="background: #d1fae5; border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; color: #065f46;"><i class="fas fa-check-circle me-2"></i>¡Archivos finales cargados exitosamente! Ahora puedes hacer clic en "Enviar solicitud final".</div>';
+            if (listoParaConfirmar) {
+              habilitarEnvioFinal();
+              statusContenido.innerHTML = '<div style="background: #d1fae5; border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; color: #065f46;"><i class="fas fa-check-circle me-2"></i>¡Archivos finales completos! Ahora puedes hacer clic en "Enviar solicitud final".</div>';
+            } else {
+              if (btnSolicitudFinal) {
+                btnSolicitudFinal.disabled = true;
+                btnSolicitudFinal.style.opacity = '0.5';
+                btnSolicitudFinal.style.cursor = 'not-allowed';
+              }
+              statusContenido.innerHTML = `<div style="background: #e0f2fe; border-left: 4px solid #0284c7; padding: 12px; border-radius: 6px; color: #075985;"><i class="fas fa-info-circle me-2"></i>Archivo(s) guardado(s). Aún faltan ${pendientesCorreccion} archivo(s)/corrección(es) para completar el envío final.</div>`;
+            }
             btnEnviar.style.background = 'linear-gradient(90deg, #10b981, #059669)';
             btnEnviar.innerHTML = '<i class="fas fa-check me-2"></i>Enviado correctamente';
             btnEnviar.disabled = true;
@@ -1377,7 +1372,6 @@
           }
 
           // Si ya todo está corregido, habilitar envío y mostrar confirmación final.
-          localStorage.setItem(archivosClaveFinal, 'true');
           habilitarEnvioFinal();
           statusContenido.innerHTML = '<div style="background: #d1fae5; border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; color: #065f46;"><i class="fas fa-check-circle me-2"></i>Todos los archivos corregidos fueron cargados. Ya puedes reenviar la solicitud final.</div>';
           btnEnviar.style.background = 'linear-gradient(90deg, #10b981, #059669)';
@@ -1461,7 +1455,6 @@
           const listoParaConfirmar = data.listo_para_confirmar_envio === true || pendientesCorreccion === 0;
 
           if (listoParaConfirmar) {
-            localStorage.setItem(archivosClaveFinal, 'true');
             habilitarEnvioFinal();
             statusContenido.innerHTML = '<div style="background: #d1fae5; border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; color: #065f46;"><i class="fas fa-check-circle me-2"></i>Archivo subido. Todas las correcciones están completas.</div>';
           } else {
