@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import reprogramacion_views
 
 app_name = "gestion_visitas"
 
@@ -63,5 +64,47 @@ urlpatterns = [
         "api/documentos-revision/",
         views.api_documentos_revision,
         name="api_documentos_revision_legacy",
+    ),
+    # Endpoints de reprogramación
+    path(
+        "reprogramacion/solicitar/<str:tipo>/<int:visita_id>/",
+        reprogramacion_views.solicitar_reprogramacion,
+        name="solicitar_reprogramacion",
+    ),
+    path(
+        "reprogramacion/completar/<str:tipo>/<int:visita_id>/",
+        reprogramacion_views.completar_reprogramacion,
+        name="completar_reprogramacion",
+    ),
+    path(
+        "reprogramacion/historial/<str:tipo>/<int:visita_id>/",
+        reprogramacion_views.obtener_historial_reprogramaciones,
+        name="historial_reprogramacion",
+    ),
+    path(
+        "reprogramacion/pendientes-instructor/",
+        reprogramacion_views.obtener_reprogramaciones_pendientes_instructor,
+        name="reprogramaciones_pendientes_instructor",
+    ),
+    # Compatibilidad con prefijo /api/
+    path(
+        "api/reprogramacion/solicitar/<str:tipo>/<int:visita_id>/",
+        reprogramacion_views.solicitar_reprogramacion,
+        name="solicitar_reprogramacion_legacy",
+    ),
+    path(
+        "api/reprogramacion/completar/<str:tipo>/<int:visita_id>/",
+        reprogramacion_views.completar_reprogramacion,
+        name="completar_reprogramacion_legacy",
+    ),
+    path(
+        "api/reprogramacion/historial/<str:tipo>/<int:visita_id>/",
+        reprogramacion_views.obtener_historial_reprogramaciones,
+        name="historial_reprogramacion_legacy",
+    ),
+    path(
+        "api/reprogramacion/pendientes-instructor/",
+        reprogramacion_views.obtener_reprogramaciones_pendientes_instructor,
+        name="reprogramaciones_pendientes_instructor_legacy",
     ),
 ]

@@ -3,6 +3,40 @@
 from django.db import migrations
 
 
+def _rename_if_needed(schema_editor, old_name, new_name):
+    tablas = set(schema_editor.connection.introspection.table_names())
+    if new_name in tablas:
+        return
+    if old_name not in tablas:
+        return
+
+    qn = schema_editor.quote_name
+    schema_editor.execute(f"ALTER TABLE {qn(old_name)} RENAME TO {qn(new_name)}")
+
+
+def forwards(apps, schema_editor):
+    _rename_if_needed(
+        schema_editor,
+        "core_contenidopaginainformativa",
+        "contenido_pagina_informativa",
+    )
+    _rename_if_needed(
+        schema_editor,
+        "core_elementoencabezadoinformativo",
+        "elemento_encabezado_informativo",
+    )
+    _rename_if_needed(
+        schema_editor,
+        "core_elementogaleriainformativa",
+        "elemento_galeria_informativa",
+    )
+
+
+def backwards(apps, schema_editor):
+    # No revertimos automáticamente para evitar renombres inesperados en entornos mixtos.
+    pass
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -10,16 +44,23 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterModelTable(
-            name='contenidopaginainformativa',
-            table='contenido_pagina_informativa',
-        ),
-        migrations.AlterModelTable(
-            name='elementoencabezadoinformativo',
-            table='elemento_encabezado_informativo',
-        ),
-        migrations.AlterModelTable(
-            name='elementogaleriainformativa',
-            table='elemento_galeria_informativa',
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunPython(forwards, backwards),
+            ],
+            state_operations=[
+                migrations.AlterModelTable(
+                    name='contenidopaginainformativa',
+                    table='contenido_pagina_informativa',
+                ),
+                migrations.AlterModelTable(
+                    name='elementoencabezadoinformativo',
+                    table='elemento_encabezado_informativo',
+                ),
+                migrations.AlterModelTable(
+                    name='elementogaleriainformativa',
+                    table='elemento_galeria_informativa',
+                ),
+            ],
         ),
     ]

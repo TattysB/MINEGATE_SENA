@@ -21,6 +21,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="{% static 'documentos/css/gestion_documentos.css' %}" />
+  <link rel="stylesheet" href="{% static 'gestion_visitas/css/panel_visitas_admin.css' %}?v=20260314" />
   <link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}?v=20260309f" />
   <link rel="stylesheet" href="{% static 'calendario/css/calendario_seleccion.css' %}?v=20260309e" />
   <link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}" />
@@ -732,7 +733,7 @@
   {% if not solo_coordinador %}
   <script defer src="{% static 'calendario/js/panel_calendario_nueva_visita.js' %}"></script>
   <script defer src="{% static 'documentos/js/panel_documentos_visitas.js' %}?v=20260311-correccion"></script>
-  <script defer src="{% static 'js/panel_visitas.js' %}?v=20260311-correccion"></script>
+  <script defer src="{% static 'js/panel_visitas.js' %}?v=20260313-quitar-devolver"></script>
   {% endif %}
 
   <!-- Modal Personalizado de Alertas/Confirmaciones -->

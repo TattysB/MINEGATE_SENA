@@ -14,6 +14,53 @@ if (typeof window.addCsrfToFormData !== 'function') {
   };
 }
 
+let docxPreviewLoaderPromise = null;
+
+function loadScriptOnce(src) {
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[src="${src}"]`);
+    if (existing) {
+      if (existing.getAttribute('data-loaded') === 'true') {
+        resolve();
+        return;
+      }
+      existing.addEventListener('load', () => resolve(), { once: true });
+      existing.addEventListener('error', () => reject(new Error(`No se pudo cargar ${src}`)), { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    script.onload = () => {
+      script.setAttribute('data-loaded', 'true');
+      resolve();
+    };
+    script.onerror = () => reject(new Error(`No se pudo cargar ${src}`));
+    document.head.appendChild(script);
+  });
+}
+
+function ensureDocxPreviewReady() {
+  if (window.docx && window.JSZip) {
+    return Promise.resolve();
+  }
+
+  if (docxPreviewLoaderPromise) {
+    return docxPreviewLoaderPromise;
+  }
+
+  docxPreviewLoaderPromise = loadScriptOnce('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js')
+    .then(() => loadScriptOnce('https://cdn.jsdelivr.net/npm/docx-preview@0.3.3/dist/docx-preview.min.js'))
+    .finally(() => {
+      if (!(window.docx && window.JSZip)) {
+        docxPreviewLoaderPromise = null;
+      }
+    });
+
+  return docxPreviewLoaderPromise;
+}
+
 function getBadgeRevisionDocumentoInline(ds) {
   const badges = [];
   if (ds.estado === 'aprobado') {
@@ -152,12 +199,7 @@ function mostrarDocumentosPorEstado(filtro) {
             botonesDoc += `
                   <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
                     <div style="display:flex;gap:4px;align-items:center;">
-                      <button onclick="visualizarDocumento('${a.documento_adicional}', 'Doc. Adicional - ${a.nombre_completo}', {estado: '${a.estado === 'documentos_aprobados' ? 'aprobado' : 'pendiente'}'})" 
-                              style="background:#8b5cf6;color:white;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;font-size:11px;display:inline-flex;align-items:center;gap:4px;font-weight:500;">
-                        <i class="ri-eye-line"></i> 📎 Doc. Adicional
-                      </button>
-                      <a href="${a.documento_adicional}" download style="background:#6b7280;color:white;padding:5px 8px;border-radius:6px;text-decoration:none;font-size:11px;display:inline-flex;align-items:center;" title="Descargar">
-                        <i class="ri-download-line"></i>
+                      <button onclick="visualizarDocumento('${a.documento_adicional}', 'Doc. Adicional - ${a.nombre_completo}', {estado: '${a.estado === 'documentos_aprobados' ? 'aprobado' : 'pendiente'}', nombre_archivo: '${(a.documento_adicional_nombre || '').replace(/'/g, '')}'})" 
                       </a>
                     </div>
                   </div>`;
@@ -177,7 +219,7 @@ function mostrarDocumentosPorEstado(filtro) {
               botonesDoc += `
                   <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
                     <div style="display:flex;gap:4px;align-items:center;">
-                      <button onclick="visualizarDocumento('${ds.url}', '${ds.titulo} - ${a.nombre_completo}', {id: ${ds.id}, estado: '${ds.estado}'})" 
+                      <button onclick="visualizarDocumento('${ds.url}', '${ds.titulo} - ${a.nombre_completo}', {id: ${ds.id}, estado: '${ds.estado}', nombre_archivo: '${(ds.nombre_archivo || '').replace(/'/g, '')}'})" 
                               style="background:#059669;color:white;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;font-size:11px;display:inline-flex;align-items:center;gap:4px;font-weight:500;">
                         <i class="ri-eye-line"></i> 📋 ${ds.titulo}
                       </button>
@@ -374,6 +416,71 @@ function visualizarDocumento(url, titulo, extraOptions = null) {
 
   let absoluteUrl = url;
   if (url.startsWith('/')) absoluteUrl = window.location.origin + url;
+
+  // Detectar tipo de archivo para saber si el navegador puede mostrarlo
+  const nombreArchivo = (extraOptions && extraOptions.nombre_archivo)
+    ? extraOptions.nombre_archivo
+    : url.split('/').pop().split('?')[0];
+  const extension = nombreArchivo.includes('.') ? nombreArchivo.split('.').pop().toLowerCase() : '';
+  const tiposVisualizables = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
+  const esVisualizable = tiposVisualizables.includes(extension);
+  const esDocx = extension === 'docx';
+
+  if (esDocx) {
+    const docxContainer = document.createElement('div');
+    docxContainer.id = 'docxPreviewContainerInline';
+    docxContainer.style.cssText = 'width:100%;height:100%;overflow:auto;background:#fff;padding:20px;';
+    contenedor.appendChild(docxContainer);
+
+    ensureDocxPreviewReady()
+      .then(() => fetch(absoluteUrl, { credentials: 'same-origin' }))
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`No se pudo obtener el DOCX (HTTP ${response.status})`);
+        }
+        return response.arrayBuffer();
+      })
+      .then(arrayBuffer => {
+        loading.style.display = 'none';
+        return window.docx.renderAsync(arrayBuffer, docxContainer, null, {
+          inWrapper: true,
+          breakPages: true,
+          ignoreWidth: false,
+          ignoreHeight: false,
+        });
+      })
+      .catch(err => {
+        console.error('Error previsualizando DOCX:', err);
+        loading.style.display = 'none';
+        docxContainer.innerHTML = `
+          <div style="text-align:center;padding:50px;color:#6b7280;">
+            <i class="ri-file-word-line" style="font-size:64px;color:#9ca3af;display:block;margin-bottom:20px;"></i>
+            <p style="font-size:16px;color:#374151;margin-bottom:6px;font-weight:500;">No se pudo mostrar el archivo Word</p>
+            <p style="font-size:13px;margin-bottom:24px;">Intente descargarlo para abrirlo en Microsoft Word.</p>
+            <a href="${url}" download
+              style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:white;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:8px;">
+              <i class="ri-download-line"></i> Descargar archivo
+            </a>
+          </div>`;
+      });
+    return;
+  }
+
+  if (!esVisualizable && extension) {
+    loading.style.display = 'none';
+    const div = document.createElement('div');
+    div.style.cssText = 'text-align:center;padding:50px;color:#6b7280;';
+    div.innerHTML = `
+      <i class="ri-file-text-line" style="font-size:64px;color:#9ca3af;display:block;margin-bottom:20px;"></i>
+      <p style="font-size:16px;color:#374151;margin-bottom:6px;font-weight:500;">Vista previa no disponible</p>
+      <p style="font-size:13px;margin-bottom:24px;">Los archivos <strong>.${extension.toUpperCase()}</strong> no se pueden mostrar directamente en el navegador.</p>
+      <a href="${url}" download
+         style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:white;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:8px;">
+        <i class="ri-download-line"></i> Descargar archivo
+      </a>`;
+    contenedor.appendChild(div);
+    return;
+  }
 
   const iframe = document.createElement('iframe');
   iframe.src = absoluteUrl;

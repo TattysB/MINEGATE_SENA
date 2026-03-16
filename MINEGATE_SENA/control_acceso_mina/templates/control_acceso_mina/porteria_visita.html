@@ -1,65 +1,113 @@
+{% extends "core/panel_administrativo.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="es">
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Control de Acceso por Visita</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
-  <link rel="stylesheet" href="{% static 'control_acceso_mina/css/porteria.css' %}">
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-</head>
+{% block extra_css %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'control_acceso_mina/css/porteria.css' %}?v=20260312a">
+{% endblock %}
 
-<body>
-  <div class="porteria-module" style="padding: 20px; max-width: 1200px; margin: 0 auto;">
+{% block content %}
+<div class="porteria-page-shell">
+  <div class="porteria-module">
     {% if error_visita %}
-    <div class="porteria-feedback feedback-error" style="display:block; margin-top: 20px;">
-      <div class="feedback-content">
-        <div class="feedback-icon"><i class="ri-close-circle-line"></i></div>
-        <div class="feedback-details">
-          <span class="feedback-name">{{ error_visita }}</span>
-          <span class="feedback-category">Verifique el estado y fecha de la visita.</span>
+    <section class="porteria-error-state">
+      <div class="porteria-feedback feedback-error" style="display:block; margin: 0;">
+        <div class="feedback-content">
+          <div class="feedback-icon"><i class="ri-close-circle-line"></i></div>
+          <div class="feedback-details">
+            <span class="feedback-name">{{ error_visita }}</span>
+            <span class="feedback-category">Verifique el estado y la fecha programada de la visita.</span>
+          </div>
         </div>
       </div>
-    </div>
-    <div style="margin-top: 14px;">
-      <a href="{% url 'core:panel_administrativo_seccion' 'control_acceso' %}" class="btn-open-visita">Volver a selección de visitas</a>
-    </div>
+      <div class="porteria-error-actions">
+        <a href="{% url 'core:panel_administrativo_seccion' 'control_acceso' %}" class="btn-open-visita">
+          <i class="ri-arrow-left-line"></i> Volver a selección de visitas
+        </a>
+      </div>
+    </section>
     {% else %}
-    <div id="porteriaVisitaApp" data-tipo-visita="{{ visita.tipo }}" data-visita-id="{{ visita.visita_id }}"
+    <div id="porteriaVisitaApp"
+      data-tipo-visita="{{ visita.tipo }}"
+      data-visita-id="{{ visita.visita_id }}"
       data-registrar-url="{% url 'control_acceso_mina:registrar_acceso' %}"
       data-datos-url="{% url 'control_acceso_mina:datos_visita' visita.tipo visita.visita_id %}">
 
-      <div class="porteria-header">
+      <section class="porteria-header">
         <div class="porteria-header-left">
-          <i class="ri-qr-scan-2-line porteria-icon"></i>
+          <div class="porteria-hero-icon-wrap">
+            <i class="ri-qr-scan-2-line porteria-icon"></i>
+          </div>
           <div>
+            <div class="porteria-kicker">Control operativo de acceso</div>
             <h2 class="porteria-title">Control por visita {{ visita.tipo_label }} #{{ visita.visita_id }}</h2>
             <p class="porteria-subtitle">{{ visita.nombre }} · Responsable: {{ visita.responsable }} · Horario: {{ visita.horario }}</p>
+            <div class="porteria-meta-row">
+              <span class="porteria-meta-pill pill-visit-type"><i class="ri-shield-user-line"></i>{{ visita.tipo_label }}</span>
+              <span class="porteria-meta-pill"><i class="ri-user-follow-line"></i>{{ visita.asistentes_aprobados }} aprobados</span>
+              <span class="porteria-meta-pill"><i class="ri-calendar-check-line"></i>{% now "d/m/Y" %}</span>
+            </div>
           </div>
         </div>
-        <div class="porteria-header-right" style="display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
-          <a href="{% url 'core:panel_administrativo_seccion' 'control_acceso' %}" class="btn-open-visita">Cambiar visita</a>
+        <div class="porteria-header-right">
+          <div class="porteria-live-box">
+            <span class="porteria-live-label">Monitoreo en vivo</span>
+            <strong id="porteriaClock" class="porteria-clock">--:--:--</strong>
+            <span class="porteria-date">Actualización automática cada 30 segundos</span>
+          </div>
+          <a href="{% url 'core:panel_administrativo_seccion' 'control_acceso' %}" class="btn-open-visita">
+            <i class="ri-repeat-line"></i> Cambiar visita
+          </a>
         </div>
-      </div>
+      </section>
 
-      <div class="porteria-scanner-section">
-        <div class="scanner-input-wrapper">
-          <i class="ri-qr-scan-2-line scanner-icon"></i>
-          <input type="text" id="porteriaDocInput" class="scanner-input"
-            placeholder="Escanee o escriba el número de documento..." autocomplete="off" autofocus>
-          <button type="button" id="btnCamara" class="scanner-btn scanner-btn-camera" title="Escanear QR con cámara">
-            <i class="ri-camera-line"></i>
-          </button>
-          <button type="button" id="btnRegistrar" class="scanner-btn">
-            <i class="ri-send-plane-fill"></i>
-          </button>
+      <section class="porteria-stats">
+        <article class="stat-card stat-card-inside">
+          <div class="stat-icon"><i class="ri-user-location-line"></i></div>
+          <div class="stat-info">
+            <span class="stat-number" id="personasEnMina">0</span>
+            <span class="stat-label">Personas dentro de la mina</span>
+          </div>
+        </article>
+        <article class="stat-card stat-card-entries">
+          <div class="stat-icon"><i class="ri-login-box-line"></i></div>
+          <div class="stat-info">
+            <span class="stat-number" id="entradasHoy">0</span>
+            <span class="stat-label">Ingresos registrados hoy</span>
+          </div>
+        </article>
+        <article class="stat-card stat-card-exits">
+          <div class="stat-icon"><i class="ri-logout-box-r-line"></i></div>
+          <div class="stat-info">
+            <span class="stat-number" id="salidasHoy">0</span>
+            <span class="stat-label">Salidas registradas hoy</span>
+          </div>
+        </article>
+      </section>
+
+      <section class="porteria-scanner-card">
+        <div class="scanner-headline">
+          <div>
+            <h3><i class="ri-scan-2-line"></i>Registro rápido de acceso</h3>
+            <p>Escanea el QR o ingresa manualmente el documento autorizado para esta visita.</p>
+          </div>
         </div>
-      </div>
+        <div class="porteria-scanner-section">
+          <div class="scanner-input-wrapper">
+            <i class="ri-qr-scan-2-line scanner-icon"></i>
+            <input type="text" id="porteriaDocInput" class="scanner-input"
+              placeholder="Escanee o escriba el número de documento..." autocomplete="off" autofocus>
+            <button type="button" id="btnCamara" class="scanner-btn scanner-btn-camera" title="Escanear QR con cámara">
+              <i class="ri-camera-line"></i>
+            </button>
+            <button type="button" id="btnRegistrar" class="scanner-btn" title="Registrar acceso">
+              <i class="ri-send-plane-fill"></i>
+            </button>
+          </div>
+        </div>
+      </section>
 
       <div class="porteria-feedback" id="porteriaFeedback" style="display:none;">
         <div class="feedback-content">
@@ -72,10 +120,13 @@
         </div>
       </div>
 
-      <div class="porteria-table-section" style="margin-bottom: 20px;">
-        <h3 class="table-title">
-          <i class="ri-id-card-line"></i> Asistentes habilitados (QR aprobados)
-        </h3>
+      <section class="porteria-table-section section-approved" style="margin-bottom: 20px;">
+        <div class="section-heading-row">
+          <h3 class="table-title">
+            <i class="ri-id-card-line"></i> Asistentes habilitados (QR aprobados)
+          </h3>
+          <span class="section-count-pill">{{ visita.asistentes_aprobados }} habilitados</span>
+        </div>
         <div class="porteria-table-wrapper">
           <table class="porteria-table" id="tablaAsistentes">
             <thead>
@@ -91,13 +142,16 @@
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
 
       <div class="porteria-double-table">
-        <div class="porteria-table-section">
-          <h3 class="table-title">
-            <i class="ri-login-box-line"></i> Ingresos (actualmente dentro)
-          </h3>
+        <section class="porteria-table-section section-inside">
+          <div class="section-heading-row">
+            <h3 class="table-title">
+              <i class="ri-login-box-line"></i> Ingresos (actualmente dentro)
+            </h3>
+            <span class="section-count-pill section-count-pill-inside">Control de permanencia</span>
+          </div>
           <div class="porteria-table-wrapper">
             <table class="porteria-table" id="tablaIngresos">
               <thead>
@@ -116,12 +170,15 @@
               </tbody>
             </table>
           </div>
-        </div>
+        </section>
 
-        <div class="porteria-table-section">
-          <h3 class="table-title">
-            <i class="ri-logout-box-line"></i> Salidas (actualmente fuera)
-          </h3>
+        <section class="porteria-table-section section-outside">
+          <div class="section-heading-row">
+            <h3 class="table-title">
+              <i class="ri-logout-box-line"></i> Salidas (actualmente fuera)
+            </h3>
+            <span class="section-count-pill section-count-pill-outside">Control de salida</span>
+          </div>
           <div class="porteria-table-wrapper">
             <table class="porteria-table" id="tablaSalidas">
               <thead>
@@ -140,7 +197,7 @@
               </tbody>
             </table>
           </div>
-        </div>
+        </section>
       </div>
     </div>
 
@@ -156,10 +213,10 @@
         </div>
       </div>
     </div>
-
-    <script src="{% static 'control_acceso_mina/js/porteria.js' %}"></script>
     {% endif %}
   </div>
-</body>
+</div>
 
-</html>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="{% static 'control_acceso_mina/js/porteria.js' %}"></script>
+{% endblock %}

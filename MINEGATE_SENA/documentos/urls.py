@@ -71,6 +71,18 @@ urlpatterns = [
         views.descargar_documento_publico,
         name="descargar_documento_publico",
     ),
+    # Campo de archivo de asistente (documento_identidad, documento_adicional, etc.)
+    path(
+        "ver-campo-asistente/<str:tipo>/<int:asistente_id>/<str:campo>/",
+        views.ver_campo_asistente_inline,
+        name="ver_campo_asistente_inline",
+    ),
+    # DocumentoSubidoAprendiz
+    path(
+        "ver-aprendiz/<int:documento_subido_id>/",
+        views.ver_documento_aprendiz_doc_inline,
+        name="ver_documento_aprendiz_doc_inline",
+    ),
     # Documentos subidos por asistentes
     path(
         "ver-asistente/<int:documento_subido_id>/",

@@ -10,20 +10,27 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}">
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 <style>
-  :root { --ext-azul: #0ea5e9; --ext-azul-oscuro: #0284c7; }
-  .page-header { background: linear-gradient(135deg, #0c4a6e, var(--ext-azul)); color: white; padding: 2rem 0; }
+  :root {
+    --sena-verde: #39a900;
+    --sena-verde-oscuro: #2d8600;
+  }
+  body.reservar-visita-externa-page {
+    padding-top: 0;
+  }
+  .page-header { background: linear-gradient(135deg, #1a5c00, var(--sena-verde)); color: white; padding: 2rem 0; }
   .page-header h2 { font-weight: 800; }
   .breadcrumb-nav a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.85rem; }
   .breadcrumb-nav span { color: rgba(255,255,255,0.5); margin: 0 6px; }
   .form-card { background: white; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden; margin-bottom: 2rem; }
-  .form-card-header { background: #f0f9ff; border-bottom: 2px solid #bae6fd; padding: 1.2rem 1.8rem; display: flex; align-items: center; gap: 10px; font-weight: 700; color: #0c4a6e; font-size: 1rem; }
+  .form-card-header { background: #f8fffe; border-bottom: 2px solid #e8f8e0; padding: 1.2rem 1.8rem; display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--sena-verde-oscuro); font-size: 1rem; }
   .form-card-body { padding: 1.8rem; }
   label { font-weight: 600; font-size: 0.9rem; color: #374151; margin-bottom: 4px; }
   .form-control, .form-select { border-radius: 8px; border: 1.5px solid #d1d5db; font-size: 0.9rem; padding: 0.55rem 0.85rem; }
-  .form-control:focus, .form-select:focus { border-color: var(--ext-azul); box-shadow: 0 0 0 3px rgba(14,165,233,0.12); }
-  .btn-submit { background: var(--ext-azul); border: none; color: white; padding: 0.75rem 2.5rem; border-radius: 50px; font-weight: 700; font-size: 1rem; transition: all 0.2s; }
-  .btn-submit:hover { background: var(--ext-azul-oscuro); transform: translateY(-1px); color: white; }
+  .form-control:focus, .form-select:focus { border-color: var(--sena-verde); box-shadow: 0 0 0 3px rgba(57,169,0,0.12); }
+  .btn-submit { background: var(--sena-verde); border: none; color: white; padding: 0.75rem 2.5rem; border-radius: 50px; font-weight: 700; font-size: 1rem; transition: all 0.2s; }
+  .btn-submit:hover { background: var(--sena-verde-oscuro); transform: translateY(-1px); color: white; }
   
   /* Estilos del calendario embebido */
   #calendarioContainer {
@@ -69,9 +76,9 @@
     z-index: 10;
   }
   #calendarioContainer .card-top .nav:hover {
-    background: var(--ext-azul);
+    background: var(--sena-verde);
     color: white;
-    border-color: var(--ext-azul);
+    border-color: var(--sena-verde);
   }
   #calendarioContainer .card-top #prevSel { left: 0; }
   #calendarioContainer .card-top #nextSel { right: 0; }
@@ -84,7 +91,7 @@
   #calendarioContainer .availability-config h3 {
     margin: 0 0 10px 0;
     font-size: 1rem;
-    color: var(--ext-azul);
+    color: var(--sena-verde);
   }
   #calendarioContainer .calendar-table td.available { cursor: pointer; }
   #calendarioContainer .calendar-table td.disabled { cursor: not-allowed; }
@@ -103,19 +110,19 @@
     color: #374151;
   }
   #calendarioContainer #horariosList .horario-chip:hover {
-    border-color: var(--ext-azul);
-    background: #f0f9ff;
+    border-color: var(--sena-verde);
+    background: #f0fdf4;
   }
   #calendarioContainer #horariosList .horario-chip.selected {
-    background: var(--ext-azul);
+    background: var(--sena-verde);
     color: white;
-    border-color: var(--ext-azul);
+    border-color: var(--sena-verde);
   }
   
   /* Resumen de selección */
   .seleccion-resumen {
-    background: #f0f9ff;
-    border: 2px solid #bae6fd;
+    background: #f0fdf4;
+    border: 2px solid #bbf7d0;
     border-radius: 12px;
     padding: 15px 20px;
     margin-top: 15px;
@@ -125,7 +132,7 @@
   .seleccion-resumen h4 {
     margin: 0 0 8px 0;
     font-size: 1rem;
-    color: #0c4a6e;
+    color: var(--sena-verde-oscuro);
   }
   .seleccion-resumen p {
     margin: 0;
@@ -134,11 +141,44 @@
   }
   .seleccion-resumen .fecha-hora {
     font-weight: 700;
-    color: var(--ext-azul);
+    color: var(--sena-verde);
+  }
+
+  /* Confirmacion de envio */
+  .modal-confirmacion-envio {
+    border-radius: 16px;
+    border: 1px solid #bbf7d0;
+    box-shadow: 0 14px 35px rgba(34, 98, 0, 0.2);
+  }
+  .modal-confirmacion-envio .modal-header {
+    background: #f0fdf4;
+    border-bottom: 1px solid #bbf7d0;
+  }
+  .modal-confirmacion-envio .modal-title {
+    color: var(--sena-verde-oscuro);
+    font-weight: 800;
+  }
+  .confirmacion-alerta {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-left: 5px solid var(--sena-verde);
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+  .btn-confirmar-envio {
+    background: var(--sena-verde);
+    border-color: var(--sena-verde);
+    color: #fff;
+    font-weight: 700;
+  }
+  .btn-confirmar-envio:hover {
+    background: var(--sena-verde-oscuro);
+    border-color: var(--sena-verde-oscuro);
+    color: #fff;
   }
 </style>
 </head>
-<body>
+<body class="reservar-visita-externa-page">
 
 <div class="page-header">
   <div class="container">
@@ -190,7 +230,8 @@
         <div class="seleccion-resumen" id="resumenSeleccion">
           <h4><i class="fas fa-check-circle me-2 text-success"></i>Fecha y horario seleccionados</h4>
           <p>Fecha: <span class="fecha-hora" id="resumenFecha">-</span></p>
-          <p>Horario: <span class="fecha-hora" id="resumenHorario">-</span></p>
+          <p>Hora inicio: <span class="fecha-hora" id="resumenHoraInicio">-</span></p>
+          <p>Hora fin: <span class="fecha-hora" id="resumenHoraFin">-</span></p>
         </div>
       </div>
     </div>
@@ -276,6 +317,10 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   const container = document.getElementById('calendarioContainer');
+  const formSolicitud = document.querySelector('form[method="POST"]');
+  const btnEnviar = document.getElementById('btnEnviar');
+  const modalConfirmarEnvioEl = document.getElementById('modalConfirmarEnvio');
+  const btnConfirmarEnvioFinal = document.getElementById('btnConfirmarEnvioFinal');
   let selectedDate = null;
   let selectedHorario = null;
   
@@ -378,9 +423,10 @@ document.addEventListener('DOMContentLoaded', function() {
       if (horarioHint) horarioHint.textContent = 'Selecciona el horario que prefieras:';
       
       if (horariosList) {
-        horariosList.innerHTML = data.ranges.map(r => 
-          '<span class="horario-chip" data-start="' + r.start + '" data-end="' + r.end + '">' + r.label + '</span>'
-        ).join('');
+        horariosList.innerHTML = data.ranges.map(r => {
+          const formattedLabel = formatRangeAmPm(r.start, r.end, r.label);
+          return '<span class="horario-chip" data-start="' + r.start + '" data-end="' + r.end + '">' + formattedLabel + '</span>';
+        }).join('');
         horariosList.style.display = 'block';
         
         // Event listeners para chips
@@ -410,16 +456,41 @@ document.addEventListener('DOMContentLoaded', function() {
                     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     return parseInt(parts[2]) + ' de ' + months[parseInt(parts[1])] + ' de ' + parts[0];
   }
+
+  function formatTimeAmPm(timeStr) {
+    if (!timeStr) return '';
+    const raw = String(timeStr).trim().split(':');
+    if (raw.length < 2) return String(timeStr);
+
+    let hours = parseInt(raw[0], 10);
+    const minutes = raw[1];
+    if (Number.isNaN(hours)) return String(timeStr);
+
+    const period = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    if (hours === 0) hours = 12;
+
+    return String(hours).padStart(2, '0') + ':' + minutes + ' ' + period;
+  }
+
+  function formatRangeAmPm(start, end, fallbackLabel) {
+    if (start && end) {
+      return formatTimeAmPm(start) + ' - ' + formatTimeAmPm(end);
+    }
+    return fallbackLabel || '';
+  }
   
   function updateResumen() {
     const resumen = document.getElementById('resumenSeleccion');
     const resumenFecha = document.getElementById('resumenFecha');
-    const resumenHorario = document.getElementById('resumenHorario');
+    const resumenHoraInicio = document.getElementById('resumenHoraInicio');
+    const resumenHoraFin = document.getElementById('resumenHoraFin');
     
     if (selectedDate && selectedHorario) {
       resumen.classList.add('visible');
       resumenFecha.textContent = formatDate(selectedDate);
-      resumenHorario.textContent = selectedHorario.label;
+      resumenHoraInicio.textContent = formatTimeAmPm(selectedHorario.start);
+      resumenHoraFin.textContent = formatTimeAmPm(selectedHorario.end);
     } else {
       resumen.classList.remove('visible');
     }
@@ -436,12 +507,14 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   // Validación antes de enviar
-  document.getElementById('btnEnviar').addEventListener('click', function(e) {
+  btnEnviar.addEventListener('click', function(e) {
     if (!selectedDate || !selectedHorario) {
       e.preventDefault();
       alert('Por favor selecciona una fecha y un horario para la visita.');
       container.scrollIntoView({ behavior: 'smooth' });
+      return false;
     }
+
     // Validar aceptación de términos
     const checkbox = document.getElementById('acepto_terminos');
     if (checkbox && !checkbox.checked) {
@@ -456,7 +529,24 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       return false;
     }
+
+    e.preventDefault();
+    if (modalConfirmarEnvioEl) {
+      const modalConfirmarEnvio = new bootstrap.Modal(modalConfirmarEnvioEl);
+      modalConfirmarEnvio.show();
+      return false;
+    }
+
+    formSolicitud.submit();
   });
+
+  if (btnConfirmarEnvioFinal) {
+    btnConfirmarEnvioFinal.addEventListener('click', function() {
+      if (formSolicitud) {
+        formSolicitud.submit();
+      }
+    });
+  }
 });
 </script>
 
@@ -599,6 +689,32 @@ document.addEventListener('DOMContentLoaded', function() {
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
         <button type="button" class="btn btn-primary" id="aceptoModalBtn">Entendido y Acepto</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Confirmacion de Envio -->
+<div class="modal fade" id="modalConfirmarEnvio" tabindex="-1" aria-labelledby="modalConfirmarEnvioLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content modal-confirmacion-envio">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalConfirmarEnvioLabel">
+          <i class="fas fa-circle-check me-2 text-success"></i>Confirmar envio de solicitud
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="confirmacion-alerta">
+          <p class="mb-2 fw-semibold text-dark">¿Esta seguro de enviar su solicitud?</p>
+          <p class="mb-0 text-muted">Revise su informacion y verifique que este debidamente diligenciada y completa antes de enviar.</p>
+        </div>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Revisar informacion</button>
+        <button type="button" class="btn btn-confirmar-envio" id="btnConfirmarEnvioFinal">
+          <i class="fas fa-paper-plane me-2"></i>Si, enviar solicitud
+        </button>
       </div>
     </div>
   </div>

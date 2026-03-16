@@ -22,6 +22,11 @@
             font-family: 'Work Sans', sans-serif;
         }
 
+        body {
+            margin: 0;
+            padding-top: 0 !important;
+        }
+
         .categoria-titulo {
             display: flex;
             align-items: center;
@@ -516,9 +521,15 @@
                         </div>
                     </div>
                     <div style="display: flex; gap: 8px;">
+                        {% if puede_actualizar_asistentes %}
                         <button type="button" class="btn-edit" onclick="abrirModalActualizarDoc({{ asistente.id }}, '{{ asistente.nombre_completo }}', '{{ tipo }}')">
                             <i class="fas fa-edit me-1"></i>Actualizar
                         </button>
+                        {% else %}
+                        <button type="button" class="btn-edit" disabled title="La actualización se bloquea cuando la solicitud final ya fue enviada o cuando ya están cargados los archivos finales del flujo completo.">
+                            <i class="fas fa-lock me-1"></i>Actualizar bloqueado
+                        </button>
+                        {% endif %}
                         <a href="javascript:void(0)" class="btn-delete" onclick="confirmarEliminarAsistente(event, '{% url 'panel_visitante:eliminar_asistente' tipo=tipo asistente_id=asistente.id %}', '{{ asistente.nombre_completo|escapejs }}');">
                             <i class="fas fa-trash-alt me-1"></i>Eliminar
                         </a>
@@ -639,6 +650,7 @@
 <script>
 var tipoVisitaGlobal = '{{ tipo }}';
 var visitaIdGlobal = {{ visita.id }};
+var puedeActualizarAsistentes = {{ puede_actualizar_asistentes|yesno:"true,false" }};
 
 function confirmarEliminarAsistente(event, url, nombre) {
     const mensaje = '¿Está seguro de eliminar este asistente?' + (nombre ? ('<br><strong>' + nombre + '</strong>') : '');
@@ -683,6 +695,12 @@ function confirmarEliminarAsistente(event, url, nombre) {
 }
 
 function abrirModalActualizarDoc(asistenteId, nombreAsistente, tipo) {
+    if (!puedeActualizarAsistentes) {
+        if (typeof window.mAlert === 'function') {
+            window.mAlert('No se puede actualizar: la solicitud final ya fue enviada o ya están cargados los archivos finales del flujo completo.', 'warning');
+        }
+        return;
+    }
     document.getElementById('nombreAsistenteModal').textContent = nombreAsistente;
     document.getElementById('inputDocSalud').name = 'documento_salud_' + asistenteId;
     document.getElementById('inputFormatoPadres').name = 'formato_padres_' + asistenteId;
@@ -736,12 +754,72 @@ document.addEventListener('keydown', function(e) {
 .btn-edit:active {
     transform: translateY(0);
 }
+
+.btn-edit:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+    opacity: 0.9;
+}
+
+.btn-edit:disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
 </style>
 
 <script>
+let docxPreviewLoaderPromiseVisitante = null;
+
+function loadScriptOnceVisitante(src) {
+    return new Promise((resolve, reject) => {
+        const existing = document.querySelector(`script[src="${src}"]`);
+        if (existing) {
+            if (existing.getAttribute('data-loaded') === 'true') {
+                resolve();
+                return;
+            }
+            existing.addEventListener('load', () => resolve(), { once: true });
+            existing.addEventListener('error', () => reject(new Error(`No se pudo cargar ${src}`)), { once: true });
+            return;
+        }
+
+        const script = document.createElement('script');
+        script.src = src;
+        script.async = true;
+        script.onload = () => {
+            script.setAttribute('data-loaded', 'true');
+            resolve();
+        };
+        script.onerror = () => reject(new Error(`No se pudo cargar ${src}`));
+        document.head.appendChild(script);
+    });
+}
+
+function ensureDocxPreviewReadyVisitante() {
+    if (window.docx && window.JSZip) {
+        return Promise.resolve();
+    }
+
+    if (docxPreviewLoaderPromiseVisitante) {
+        return docxPreviewLoaderPromiseVisitante;
+    }
+
+    docxPreviewLoaderPromiseVisitante = loadScriptOnceVisitante('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js')
+        .then(() => loadScriptOnceVisitante('https://cdn.jsdelivr.net/npm/docx-preview@0.3.3/dist/docx-preview.min.js'))
+        .finally(() => {
+            if (!(window.docx && window.JSZip)) {
+                docxPreviewLoaderPromiseVisitante = null;
+            }
+        });
+
+    return docxPreviewLoaderPromiseVisitante;
+}
+
 function verDocumento(urlViewer, titulo, extension, urlDescarga) {
-    const cuerpo = document.getElementById('cuerpoModalDoc');
     const imgExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    const extNormalizada = (extension || '').toLowerCase();
     
     // Modal para ver documento
     const modalVerDoc = document.createElement('div');
@@ -766,8 +844,44 @@ function verDocumento(urlViewer, titulo, extension, urlDescarga) {
     const cuerpoNuevo = document.createElement('div');
     cuerpoNuevo.style.cssText = 'flex:1; overflow:auto; border:1px solid #e5e7eb; border-radius:8px; background:#f0f0f0; display:flex; align-items:center; justify-content:center;';
     
-    if (extension === '.pdf' || imgExts.includes(extension)) {
+    if (extNormalizada === '.pdf' || imgExts.includes(extNormalizada)) {
         cuerpoNuevo.innerHTML = '<iframe src="' + urlViewer + '" style="width:100%; height:100%; min-height:600px; border:none;"></iframe>';
+    } else if (extNormalizada === '.docx') {
+        cuerpoNuevo.innerHTML = '<div id="docxPreviewContainerVisitante" style="width:100%; height:100%; overflow:auto; background:#fff; padding:24px;">'
+            + '<div style="text-align:center; color:#6b7280; padding:40px 20px;">'
+            + '<i class="fas fa-spinner fa-spin" style="font-size:26px; display:block; margin-bottom:12px;"></i>'
+            + 'Cargando documento Word...'
+            + '</div></div>';
+
+        ensureDocxPreviewReadyVisitante()
+            .then(() => fetch(urlViewer, { credentials: 'same-origin' }))
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`No se pudo obtener el DOCX (HTTP ${response.status})`);
+                }
+                return response.arrayBuffer();
+            })
+            .then(arrayBuffer => {
+                const container = document.getElementById('docxPreviewContainerVisitante');
+                if (!container) return;
+                container.innerHTML = '';
+                return window.docx.renderAsync(arrayBuffer, container, null, {
+                    inWrapper: true,
+                    breakPages: true,
+                    ignoreWidth: false,
+                    ignoreHeight: false
+                });
+            })
+            .catch(err => {
+                console.error('Error previsualizando DOCX en visitante:', err);
+                const container = document.getElementById('docxPreviewContainerVisitante');
+                if (!container) return;
+                container.innerHTML = '<div style="text-align:center; padding:50px; color:#6b7280;">'
+                    + '<i class="fas fa-file-word" style="font-size:64px; color:#9ca3af; display:block; margin-bottom:20px;"></i>'
+                    + '<p style="font-size:16px; margin-bottom:20px;">No se pudo mostrar el archivo Word.</p>'
+                    + '<a href="' + urlDescarga + '" download style="background:#667eea; color:white; padding:12px 28px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:8px;">'
+                    + '<i class="fas fa-download"></i> Descargar</a></div>';
+            });
     } else {
         cuerpoNuevo.innerHTML = '<div style="text-align:center; padding:50px; color:#6b7280;">'
             + '<i class="fas fa-file-alt" style="font-size:64px; color:#9ca3af; display:block; margin-bottom:20px;"></i>'

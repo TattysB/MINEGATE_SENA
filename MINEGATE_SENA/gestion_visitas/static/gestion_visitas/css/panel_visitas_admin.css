@@ -1,0 +1,219 @@
+/* Ajustes visuales para alinear Gestion de Visitas con la tabla de Gestion de Documentos */
+
+.gv-tabla-contenedor {
+  margin-top: 4px;
+}
+
+.gv-tabla td {
+  vertical-align: middle;
+  font-size: 13px;
+}
+
+.gv-fila td {
+  border-bottom: 1px solid #d8f0be;
+}
+
+.gv-celda-id {
+  font-weight: 700;
+  color: #1f2937;
+  white-space: nowrap;
+}
+
+.gv-responsable {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.gv-celda-cantidad {
+  text-align: center;
+  font-weight: 600;
+  color: #334155;
+}
+
+.gv-celda-acciones {
+  min-width: 280px;
+}
+
+.gv-tipo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.gv-tipo-badge.interna {
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  color: #1e3a8a;
+  border-color: #93c5fd;
+}
+
+.gv-tipo-badge.externa {
+  background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+  color: #5b21b6;
+  border-color: #c4b5fd;
+}
+
+.gv-estado-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.gv-estado-enviada {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #86efac;
+}
+
+.gv-estado-pendiente {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #fcd34d;
+}
+
+.gv-estado-aprobada {
+  background: #bbf7d0;
+  color: #166534;
+  border-color: #86efac;
+}
+
+.gv-estado-docs {
+  background: #dbeafe;
+  color: #1e40af;
+  border-color: #93c5fd;
+}
+
+.gv-estado-revision {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #fcd34d;
+}
+
+.gv-estado-reprogramacion {
+  background: #fee2e2;
+  color: #9f1239;
+  border-color: #fca5a5;
+}
+
+.gv-estado-confirmada {
+  background: #d1fae5;
+  color: #065f46;
+  border-color: #6ee7b7;
+}
+
+.gv-estado-rechazada {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fca5a5;
+}
+
+.gv-acciones {
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.gv-btn-base,
+.gv-btn-approve,
+.gv-btn-reject,
+.gv-btn-reschedule,
+.gv-btn-docs,
+.gv-btn-review,
+.gv-btn-confirm {
+  min-height: 31px;
+  padding: 7px 11px;
+}
+
+.gv-btn-base {
+  min-width: 74px;
+}
+
+.gv-btn-approve {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.gv-btn-reject {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+  min-width: 34px;
+  justify-content: center;
+  padding-left: 9px;
+  padding-right: 9px;
+}
+
+.gv-btn-reschedule {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.gv-btn-docs {
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.gv-btn-review {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.gv-btn-confirm {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+}
+
+.gv-btn-disabled {
+  opacity: 0.55;
+}
+
+.gv-btn-disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.gv-pill-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.gv-pill-espera {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.gv-pill-warning {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+@media (max-width: 900px) {
+  .gv-celda-acciones {
+    min-width: 240px;
+  }
+
+  .gv-acciones {
+    justify-content: flex-start;
+  }
+
+  .gv-acciones .docs-btn-accion {
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+}

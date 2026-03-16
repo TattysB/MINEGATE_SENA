@@ -4,13 +4,37 @@ from datetime import date
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
+from django.utils import timezone
 
 from calendario.models import ReservaHorario
-from visitaExterna.models import HistorialAccionVisitaExterna, VisitaExterna
-from visitaInterna.models import HistorialAccionVisitaInterna, VisitaInterna
+from visitaExterna.models import (
+	HistorialAccionVisitaExterna,
+	HistorialReprogramacion as HistorialReprogramacionExterna,
+	VisitaExterna,
+)
+from visitaInterna.models import (
+	HistorialAccionVisitaInterna,
+	HistorialReprogramacion as HistorialReprogramacionInterna,
+	VisitaInterna,
+)
 from .models import AprobacionRegistro
-from django.utils import timezone
 from django.contrib.auth.decorators import permission_required
+
+
+def _formatear_fecha_local(fecha_dt):
+	if not fecha_dt:
+		return "N/A"
+	if timezone.is_aware(fecha_dt):
+		fecha_dt = timezone.localtime(fecha_dt)
+	return fecha_dt.strftime("%d/%m/%Y %H:%M")
+
+
+def _formatear_fecha_local_am_pm(fecha_dt):
+	if not fecha_dt:
+		return "N/A"
+	if timezone.is_aware(fecha_dt):
+		fecha_dt = timezone.localtime(fecha_dt)
+	return fecha_dt.strftime("%d/%m/%Y %I:%M %p")
 
 
 def es_coordinador(user):
@@ -154,11 +178,8 @@ def api_solicitudes_coordinacion(request):
 					"institucion": visita.nombre_programa or "N/A",
 					"correo": visita.correo_responsable,
 					"cantidad": visita.cantidad_aprendices,
-					"fecha_solicitud": (
-						visita.fecha_solicitud.strftime("%d/%m/%Y %H:%M")
-						if visita.fecha_solicitud
-						else "N/A"
-					),
+					"fecha_solicitud": _formatear_fecha_local(visita.fecha_solicitud),
+					"fecha_solicitud_orden": visita.fecha_solicitud.isoformat() if visita.fecha_solicitud else "",
 				}
 			)
 	elif tipo == "externas":
@@ -178,11 +199,8 @@ def api_solicitudes_coordinacion(request):
 					"institucion": visita.nombre or "N/A",
 					"correo": visita.correo_responsable,
 					"cantidad": visita.cantidad_visitantes,
-					"fecha_solicitud": (
-						visita.fecha_solicitud.strftime("%d/%m/%Y %H:%M")
-						if visita.fecha_solicitud
-						else "N/A"
-					),
+					"fecha_solicitud": _formatear_fecha_local(visita.fecha_solicitud),
+					"fecha_solicitud_orden": visita.fecha_solicitud.isoformat() if visita.fecha_solicitud else "",
 				}
 			)
 	else:
@@ -203,11 +221,8 @@ def api_solicitudes_coordinacion(request):
 					"institucion": visita.nombre_programa or "N/A",
 					"correo": visita.correo_responsable,
 					"cantidad": visita.cantidad_aprendices,
-					"fecha_solicitud": (
-						visita.fecha_solicitud.strftime("%d/%m/%Y %H:%M")
-						if visita.fecha_solicitud
-						else "N/A"
-					),
+					"fecha_solicitud": _formatear_fecha_local(visita.fecha_solicitud),
+					"fecha_solicitud_orden": visita.fecha_solicitud.isoformat() if visita.fecha_solicitud else "",
 				}
 			)
 		for visita in visitas_ext:
@@ -220,13 +235,16 @@ def api_solicitudes_coordinacion(request):
 					"institucion": visita.nombre or "N/A",
 					"correo": visita.correo_responsable,
 					"cantidad": visita.cantidad_visitantes,
-					"fecha_solicitud": (
-						visita.fecha_solicitud.strftime("%d/%m/%Y %H:%M")
-						if visita.fecha_solicitud
-						else "N/A"
-					),
+					"fecha_solicitud": _formatear_fecha_local(visita.fecha_solicitud),
+					"fecha_solicitud_orden": visita.fecha_solicitud.isoformat() if visita.fecha_solicitud else "",
 				}
 			)
+
+		# Mantener el orden correcto por fecha en la vista combinada.
+		visitas_data.sort(
+			key=lambda item: item.get("fecha_solicitud_orden", ""),
+			reverse=True,
+		)
 
 	return JsonResponse({"visitas": visitas_data})
 
@@ -234,6 +252,50 @@ def api_solicitudes_coordinacion(request):
 @login_required(login_url="usuarios:login")
 @user_passes_test(es_coordinador, login_url="core:panel_administrativo")
 def api_accion_coordinacion(request, tipo, visita_id, accion):
+	if accion == "detalle" and request.method == "GET":
+		if tipo == "interna":
+			visita = get_object_or_404(VisitaInterna, pk=visita_id)
+			detalle = {
+				"id": visita.id,
+				"tipo": "Interna (SENA)",
+				"estado": visita.get_estado_display(),
+				"responsable": visita.responsable,
+				"tipo_documento": visita.get_tipo_documento_responsable_display() if visita.tipo_documento_responsable else "N/A",
+				"documento": visita.documento_responsable or "N/A",
+				"correo": visita.correo_responsable or "N/A",
+				"telefono": visita.telefono_responsable or "N/A",
+				"institucion_programa": visita.nombre_programa or "N/A",
+				"ficha": str(visita.numero_ficha) if visita.numero_ficha else "N/A",
+				"cantidad": visita.cantidad_aprendices,
+				"fecha_solicitud": _formatear_fecha_local_am_pm(visita.fecha_solicitud),
+				"fecha_visita": visita.fecha_visita.strftime("%d/%m/%Y") if visita.fecha_visita else "N/A",
+				"hora_inicio": visita.hora_inicio.strftime("%I:%M %p") if visita.hora_inicio else "N/A",
+				"hora_fin": visita.hora_fin.strftime("%I:%M %p") if visita.hora_fin else "N/A",
+				"observaciones": visita.observaciones or "Sin observaciones",
+			}
+		else:
+			visita = get_object_or_404(VisitaExterna, pk=visita_id)
+			detalle = {
+				"id": visita.id,
+				"tipo": "Externa (Institución)",
+				"estado": visita.get_estado_display(),
+				"responsable": visita.nombre_responsable,
+				"tipo_documento": visita.get_tipo_documento_responsable_display() if visita.tipo_documento_responsable else "N/A",
+				"documento": visita.documento_responsable or "N/A",
+				"correo": visita.correo_responsable or "N/A",
+				"telefono": visita.telefono_responsable or "N/A",
+				"institucion_programa": visita.nombre or "N/A",
+				"ficha": "N/A",
+				"cantidad": visita.cantidad_visitantes,
+				"fecha_solicitud": _formatear_fecha_local_am_pm(visita.fecha_solicitud),
+				"fecha_visita": visita.fecha_visita.strftime("%d/%m/%Y") if visita.fecha_visita else "N/A",
+				"hora_inicio": visita.hora_inicio.strftime("%I:%M %p") if visita.hora_inicio else "N/A",
+				"hora_fin": visita.hora_fin.strftime("%I:%M %p") if visita.hora_fin else "N/A",
+				"observaciones": visita.observacion or "Sin observaciones",
+			}
+
+		return JsonResponse({"ok": True, "detalle": detalle})
+
 	if request.method != "POST":
 		return JsonResponse({"success": False, "error": "Método no permitido"}, status=405)
 
@@ -309,15 +371,38 @@ def api_accion_coordinacion(request, tipo, visita_id, accion):
 
 	if accion == "rechazar":
 		observaciones = request.POST.get("observaciones", "").strip()
-		visita.estado = "rechazada"
+		fecha_anterior = timezone.now()
+		if getattr(visita, "fecha_visita", None) and getattr(visita, "hora_inicio", None):
+			fecha_anterior = timezone.datetime.combine(visita.fecha_visita, visita.hora_inicio)
+
+		if tipo == "interna":
+			HistorialReprogramacionInterna.objects.create(
+				visita_interna=visita,
+				fecha_anterior=fecha_anterior,
+				motivo=observaciones or "Reprogramación solicitada por coordinación.",
+				solicitado_por=request.user,
+				tipo="coordinador",
+				completada=False,
+			)
+		else:
+			HistorialReprogramacionExterna.objects.create(
+				visita_externa=visita,
+				fecha_anterior=fecha_anterior,
+				motivo=observaciones or "Reprogramación solicitada por coordinación.",
+				solicitado_por=request.user,
+				tipo="coordinador",
+				completada=False,
+			)
+
+		visita.estado = "reprogramacion_solicitada"
 		visita.save(update_fields=["estado"])
 		ReservaHorario.liberar_reserva(visita, tipo)
 		registrar(
-			f"Solicitud rechazada por coordinación ({request.user.username}). Motivo: {observaciones}"
+			f"Solicitud enviada a reprogramación por coordinación ({request.user.username}). Motivo: {observaciones}"
 			if observaciones
-			else f"Solicitud rechazada por coordinación ({request.user.username})."
+			else f"Solicitud enviada a reprogramación por coordinación ({request.user.username})."
 		)
-		return JsonResponse({"success": True, "message": "❌ Solicitud rechazada por coordinación."})
+		return JsonResponse({"success": True, "message": "🔄 Solicitud enviada a reprogramación. El instructor deberá elegir una nueva fecha."})
 
 
 @login_required(login_url="usuarios:login")

@@ -3,10 +3,13 @@ App: gestion_visitas
 Gestión administrativa de visitas - APIs para el panel administrativo
 """
 
+import threading
+
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
+from django.db import close_old_connections
 
 from visitaInterna.models import (
     VisitaInterna,
@@ -34,6 +37,162 @@ ESTADOS_APROBADAS = [
     "en_revision_documentos",
     "confirmada",
 ]
+
+
+def _enviar_qr_asistentes_confirmados(visita, tipo):
+    for asistente in visita.asistentes.filter(estado="documentos_aprobados"):
+        if asistente.qr_generado or asistente.email_qr_enviado:
+            continue
+
+        if not asistente.correo:
+            continue
+
+        try:
+            generador_qr = GeneradorQRPDF(
+                asistente=asistente,
+                visita=visita,
+                tipo_visita=tipo,
+            )
+            if generador_qr.enviar_por_email():
+                asistente.qr_generado = True
+                asistente.email_qr_enviado = True
+                asistente.fecha_envio_qr = timezone.now()
+                asistente.save(
+                    update_fields=[
+                        "qr_generado",
+                        "email_qr_enviado",
+                        "fecha_envio_qr",
+                    ]
+                )
+        except Exception:
+            continue
+
+
+def _enviar_correo_confirmacion_responsable(visita, tipo, panel_url):
+    try:
+        if tipo == "interna":
+            template_name = "emails/visita_confirmada_interna.html"
+        else:
+            template_name = "emails/visita_confirmada_externa.html"
+
+        context = {
+            "responsable_nombre": getattr(
+                visita, "responsable", getattr(visita, "nombre_responsable", "")
+            ),
+            "fecha_visita": (
+                visita.fecha_visita.strftime("%d/%m/%Y")
+                if getattr(visita, "fecha_visita", None)
+                else (
+                    visita.fecha_solicitud.strftime("%d/%m/%Y")
+                    if visita.fecha_solicitud
+                    else "Por definir"
+                )
+            ),
+            "hora_programada": (
+                (
+                    visita.hora_inicio.strftime("%I:%M %p")
+                    + " - "
+                    + visita.hora_fin.strftime("%I:%M %p")
+                )
+                if getattr(visita, "hora_inicio", None)
+                and getattr(visita, "hora_fin", None)
+                else "Por definir"
+            ),
+            "recomendaciones": "Por favor llegar 10 minutos antes; traer documento de identidad; seguir instrucciones de coordinación.",
+            "panel_url": panel_url,
+        }
+
+        if tipo == "interna":
+            context.update(
+                {
+                    "nombre_programa": visita.nombre_programa,
+                    "numero_ficha": visita.numero_ficha,
+                    "responsable": visita.responsable,
+                }
+            )
+        else:
+            context.update(
+                {
+                    "nombre": visita.nombre,
+                    "nombre_responsable": visita.nombre_responsable,
+                    "sede": getattr(visita, "sede", "No especificada"),
+                }
+            )
+
+        html_content = render_to_string(template_name, context)
+        text_content = strip_tags(html_content)
+        subject = "Visita confirmada exitosamente"
+        msg = EmailMultiAlternatives(
+            subject,
+            text_content,
+            settings.DEFAULT_FROM_EMAIL,
+            [visita.correo_responsable],
+        )
+        msg.attach_alternative(html_content, "text/html")
+        msg.send(fail_silently=True)
+    except Exception:
+        pass
+
+
+def _enviar_correo_correccion_documentos_asistente(request, asistente, tipo, observaciones):
+    """Notifica al responsable que debe corregir documentos de un asistente."""
+    try:
+        visita = asistente.visita
+        correo_destino = (getattr(visita, "correo_responsable", "") or "").strip()
+        if not correo_destino:
+            return
+
+        if getattr(visita, "token_acceso", None):
+            panel_path = reverse(
+                "documentos:registro_publico_interna" if tipo == "interna" else "documentos:registro_publico_externa",
+                kwargs={"token": visita.token_acceso},
+            )
+        else:
+            panel_path = reverse(
+                "panel_instructor_interno:panel" if tipo == "interna" else "panel_instructor_externo:panel"
+            )
+
+        context = {
+            "responsable_nombre": (
+                getattr(visita, "responsable", "")
+                if tipo == "interna"
+                else getattr(visita, "nombre_responsable", "")
+            )
+            or "Responsable",
+            "tipo_visita": "Interna" if tipo == "interna" else "Externa",
+            "visita_id": visita.id,
+            "asistente_nombre": asistente.nombre_completo,
+            "documento_titulo": "Documentos del asistente",
+            "observaciones": observaciones or "Sin observaciones registradas.",
+            "fecha_revision": timezone.now().strftime("%d/%m/%Y %H:%M"),
+            "panel_url": request.build_absolute_uri(panel_path),
+        }
+
+        html_content = render_to_string("emails/documento_rechazado_correccion.html", context)
+        text_content = strip_tags(html_content)
+        msg = EmailMultiAlternatives(
+            f"Accion requerida: correccion de documentos ({context['tipo_visita']})",
+            text_content,
+            settings.DEFAULT_FROM_EMAIL,
+            [correo_destino],
+        )
+        msg.attach_alternative(html_content, "text/html")
+        msg.send(fail_silently=True)
+    except Exception:
+        pass
+
+
+def _procesar_confirmacion_visita_async(visita_id, tipo, panel_url):
+    close_old_connections()
+    try:
+        visita_model = VisitaInterna if tipo == "interna" else VisitaExterna
+        visita = visita_model.objects.prefetch_related("asistentes").get(id=visita_id)
+        _enviar_qr_asistentes_confirmados(visita, tipo)
+        _enviar_correo_confirmacion_responsable(visita, tipo, panel_url)
+    except Exception:
+        pass
+    finally:
+        close_old_connections()
 
 
 def es_coordinador(user):
@@ -96,6 +255,102 @@ def _serializar_documento_subido(ds, versiones_envio=1, es_reenvio=False):
     }
 
 
+def _calcular_estado_revision_asistente(asistente):
+    """Calcula estado agregado del asistente en función de sus últimos documentos."""
+    documentos_actuales = _documentos_subidos_actuales(asistente)
+    tiene_docs = bool(documentos_actuales)
+    tiene_rechazos = any(
+        doc_actual["ds"].estado == "rechazado" for doc_actual in documentos_actuales
+    )
+    todos_aprobados = tiene_docs and all(
+        doc_actual["ds"].estado == "aprobado" for doc_actual in documentos_actuales
+    )
+
+    tiene_autorizacion_padres = bool(
+        getattr(asistente, "formato_autorizacion_padres", None)
+    )
+    if tiene_autorizacion_padres:
+        estado_autorizacion = getattr(
+            asistente, "estado_autorizacion_padres", "pendiente"
+        )
+        if estado_autorizacion == "rechazado":
+            tiene_rechazos = True
+        elif estado_autorizacion != "aprobado":
+            todos_aprobados = False
+
+    if tiene_rechazos:
+        estado = "documentos_rechazados"
+    elif todos_aprobados and (tiene_docs or tiene_autorizacion_padres):
+        estado = "documentos_aprobados"
+    else:
+        estado = "pendiente_documentos"
+
+    return {
+        "estado": estado,
+        "tiene_rechazos": tiene_rechazos,
+        "todos_aprobados": todos_aprobados,
+    }
+
+
+def _sincronizar_estado_asistente(asistente, observacion_rechazo=""):
+    """Sincroniza el estado agregado del asistente con el estado real de sus documentos."""
+    revision = _calcular_estado_revision_asistente(asistente)
+    update_fields = []
+
+    if asistente.estado != revision["estado"]:
+        asistente.estado = revision["estado"]
+        update_fields.append("estado")
+
+    if revision["estado"] == "documentos_rechazados":
+        nueva_observacion = (observacion_rechazo or "").strip() or (
+            asistente.observaciones_revision or ""
+        )
+        if nueva_observacion and asistente.observaciones_revision != nueva_observacion:
+            asistente.observaciones_revision = nueva_observacion
+            update_fields.append("observaciones_revision")
+    elif asistente.observaciones_revision:
+        asistente.observaciones_revision = ""
+        update_fields.append("observaciones_revision")
+
+    if update_fields:
+        asistente.save(update_fields=update_fields)
+
+    return revision
+
+
+def _marcar_documentos_actuales(asistente, estado, observaciones=""):
+    """Marca la última versión de cada documento subido por el asistente."""
+    for doc_actual in _documentos_subidos_actuales(asistente):
+        ds = doc_actual["ds"]
+        ds.estado = estado
+        ds.observaciones_revision = observaciones if estado == "rechazado" else ""
+        ds.save(update_fields=["estado", "observaciones_revision"])
+
+
+def _formatear_fecha_visita(visita, incluir_hora=False):
+    """Retorna la fecha programada real de la visita (incluye reprogramaciones)."""
+    fecha_programada = getattr(visita, "fecha_visita", None)
+    if fecha_programada:
+        fecha_txt = fecha_programada.strftime("%d/%m/%Y")
+    elif getattr(visita, "fecha_solicitud", None):
+        fecha_txt = visita.fecha_solicitud.strftime("%d/%m/%Y")
+    else:
+        return "N/A"
+
+    if incluir_hora:
+        hora_inicio = getattr(visita, "hora_inicio", None)
+        hora_fin = getattr(visita, "hora_fin", None)
+        if hora_inicio and hora_fin:
+            return (
+                f"{fecha_txt} "
+                f"{hora_inicio.strftime('%H:%M')} - {hora_fin.strftime('%H:%M')}"
+            )
+        if hora_inicio:
+            return f"{fecha_txt} {hora_inicio.strftime('%H:%M')}"
+
+    return fecha_txt
+
+
 def tiene_aprobacion_previa_coordinacion(visita, tipo):
     if tipo == "interna":
         return HistorialAccionVisitaInterna.objects.filter(
@@ -149,9 +404,13 @@ def api_listar_visitas(request):
                     "correo": v.correo_responsable,
                     "telefono": v.telefono_responsable,
                     "fecha_visita": (
-                        v.fecha_solicitud.strftime("%d/%m/%Y")
-                        if v.fecha_solicitud
-                        else "N/A"
+                        v.fecha_visita.strftime("%d/%m/%Y")
+                        if v.fecha_visita
+                        else (
+                            v.fecha_solicitud.strftime("%d/%m/%Y")
+                            if v.fecha_solicitud
+                            else "N/A"
+                        )
                     ),
                     "cantidad": v.cantidad_aprendices,
                     "estado": v.estado,
@@ -224,9 +483,13 @@ def api_listar_visitas(request):
                     "correo": v.correo_responsable,
                     "telefono": v.telefono_responsable,
                     "fecha_visita": (
-                        v.fecha_solicitud.strftime("%d/%m/%Y")
-                        if v.fecha_solicitud
-                        else "N/A"
+                        v.fecha_visita.strftime("%d/%m/%Y")
+                        if v.fecha_visita
+                        else (
+                            v.fecha_solicitud.strftime("%d/%m/%Y")
+                            if v.fecha_solicitud
+                            else "N/A"
+                        )
                     ),
                     "cantidad": v.cantidad_visitantes,
                     "estado": v.estado,
@@ -297,6 +560,8 @@ def api_detalle_visita(request, tipo, visita_id):
             "enviada_coordinacion",
         ]:
             for a in visita.asistentes.all():
+                documentos_actuales = _documentos_subidos_actuales(a)
+                revision = _calcular_estado_revision_asistente(a)
                 asistentes.append(
                     {
                         "id": a.id,
@@ -307,13 +572,53 @@ def api_detalle_visita(request, tipo, visita_id):
                         "telefono": a.telefono,
                         "estado": a.estado,
                         "documento_identidad": (
-                            a.documento_identidad.url if a.documento_identidad else None
+                            reverse(
+                                "documentos:ver_campo_asistente_inline",
+                                kwargs={
+                                    "tipo": "interna",
+                                    "asistente_id": a.id,
+                                    "campo": "documento_identidad",
+                                },
+                            )
+                            if a.documento_identidad
+                            else None
+                        ),
+                        "documento_identidad_nombre": (
+                            a.documento_identidad.name.split("/")[-1]
+                            if a.documento_identidad
+                            else None
                         ),
                         "documento_adicional": (
-                            a.documento_adicional.url if a.documento_adicional else None
+                            reverse(
+                                "documentos:ver_campo_asistente_inline",
+                                kwargs={
+                                    "tipo": "interna",
+                                    "asistente_id": a.id,
+                                    "campo": "documento_adicional",
+                                },
+                            )
+                            if a.documento_adicional
+                            else None
+                        ),
+                        "documento_adicional_nombre": (
+                            a.documento_adicional.name.split("/")[-1]
+                            if a.documento_adicional
+                            else None
                         ),
                         "formato_autorizacion_padres": (
-                            a.formato_autorizacion_padres.url
+                            reverse(
+                                "documentos:ver_campo_asistente_inline",
+                                kwargs={
+                                    "tipo": "interna",
+                                    "asistente_id": a.id,
+                                    "campo": "formato_autorizacion_padres",
+                                },
+                            )
+                            if a.formato_autorizacion_padres
+                            else None
+                        ),
+                        "formato_autorizacion_padres_nombre": (
+                            a.formato_autorizacion_padres.name.split("/")[-1]
                             if a.formato_autorizacion_padres
                             else None
                         ),
@@ -328,13 +633,15 @@ def api_detalle_visita(request, tipo, visita_id):
                             else None
                         ),
                         "observaciones_revision": a.observaciones_revision,
+                        "tiene_rechazos": revision["tiene_rechazos"],
+                        "todos_aprobados": revision["todos_aprobados"],
                         "documentos_subidos": [
                             _serializar_documento_subido(
                                 doc_actual["ds"],
                                 versiones_envio=doc_actual["versiones_envio"],
                                 es_reenvio=doc_actual["es_reenvio"],
                             )
-                            for doc_actual in _documentos_subidos_actuales(a)
+                            for doc_actual in documentos_actuales
                         ],
                     }
                 )
@@ -357,13 +664,22 @@ def api_detalle_visita(request, tipo, visita_id):
             "ficha": visita.numero_ficha,
             "cantidad": visita.cantidad_aprendices,
             "fecha_visita": (
-                visita.fecha_solicitud.strftime("%d/%m/%Y")
-                if visita.fecha_solicitud
-                else "N/A"
+                visita.fecha_visita.strftime("%d/%m/%Y")
+                if visita.fecha_visita
+                else (
+                    visita.fecha_solicitud.strftime("%d/%m/%Y")
+                    if visita.fecha_solicitud
+                    else "N/A"
+                )
             ),
             "estado": visita.estado,
             "observaciones": visita.observaciones or "",
             "fecha_solicitud": (
+                visita.fecha_solicitud.strftime("%d/%m/%Y %H:%M")
+                if visita.fecha_solicitud
+                else "N/A"
+            ),
+            "fecha_registro": (
                 visita.fecha_solicitud.strftime("%d/%m/%Y %H:%M")
                 if visita.fecha_solicitud
                 else "N/A"
@@ -381,6 +697,8 @@ def api_detalle_visita(request, tipo, visita_id):
             "enviada_coordinacion",
         ]:
             for a in visita.asistentes.all():
+                documentos_actuales = _documentos_subidos_actuales(a)
+                revision = _calcular_estado_revision_asistente(a)
                 asistentes.append(
                     {
                         "id": a.id,
@@ -391,24 +709,66 @@ def api_detalle_visita(request, tipo, visita_id):
                         "telefono": a.telefono,
                         "estado": a.estado,
                         "documento_identidad": (
-                            a.documento_identidad.url if a.documento_identidad else None
+                            reverse(
+                                "documentos:ver_campo_asistente_inline",
+                                kwargs={
+                                    "tipo": "externa",
+                                    "asistente_id": a.id,
+                                    "campo": "documento_identidad",
+                                },
+                            )
+                            if a.documento_identidad
+                            else None
+                        ),
+                        "documento_identidad_nombre": (
+                            a.documento_identidad.name.split("/")[-1]
+                            if a.documento_identidad
+                            else None
                         ),
                         "documento_adicional": (
-                            a.documento_adicional.url if a.documento_adicional else None
+                            reverse(
+                                "documentos:ver_campo_asistente_inline",
+                                kwargs={
+                                    "tipo": "externa",
+                                    "asistente_id": a.id,
+                                    "campo": "documento_adicional",
+                                },
+                            )
+                            if a.documento_adicional
+                            else None
+                        ),
+                        "documento_adicional_nombre": (
+                            a.documento_adicional.name.split("/")[-1]
+                            if a.documento_adicional
+                            else None
                         ),
                         "formato_autorizacion_padres": (
-                            a.formato_autorizacion_padres.url
+                            reverse(
+                                "documentos:ver_campo_asistente_inline",
+                                kwargs={
+                                    "tipo": "externa",
+                                    "asistente_id": a.id,
+                                    "campo": "formato_autorizacion_padres",
+                                },
+                            )
+                            if a.formato_autorizacion_padres
+                            else None
+                        ),
+                        "formato_autorizacion_padres_nombre": (
+                            a.formato_autorizacion_padres.name.split("/")[-1]
                             if a.formato_autorizacion_padres
                             else None
                         ),
                         "observaciones_revision": a.observaciones_revision,
+                        "tiene_rechazos": revision["tiene_rechazos"],
+                        "todos_aprobados": revision["todos_aprobados"],
                         "documentos_subidos": [
                             _serializar_documento_subido(
                                 doc_actual["ds"],
                                 versiones_envio=doc_actual["versiones_envio"],
                                 es_reenvio=doc_actual["es_reenvio"],
                             )
-                            for doc_actual in _documentos_subidos_actuales(a)
+                            for doc_actual in documentos_actuales
                         ],
                     }
                 )
@@ -430,13 +790,22 @@ def api_detalle_visita(request, tipo, visita_id):
             "institucion": visita.nombre,
             "cantidad": visita.cantidad_visitantes,
             "fecha_visita": (
-                visita.fecha_solicitud.strftime("%d/%m/%Y")
-                if visita.fecha_solicitud
-                else "N/A"
+                visita.fecha_visita.strftime("%d/%m/%Y")
+                if visita.fecha_visita
+                else (
+                    visita.fecha_solicitud.strftime("%d/%m/%Y")
+                    if visita.fecha_solicitud
+                    else "N/A"
+                )
             ),
             "estado": visita.estado,
             "observaciones": visita.observacion or "",
             "fecha_solicitud": (
+                visita.fecha_solicitud.strftime("%d/%m/%Y %H:%M")
+                if visita.fecha_solicitud
+                else "N/A"
+            ),
+            "fecha_registro": (
                 visita.fecha_solicitud.strftime("%d/%m/%Y %H:%M")
                 if visita.fecha_solicitud
                 else "N/A"
@@ -528,7 +897,7 @@ def api_accion_visita(request, tipo, visita_id, accion):
         # Enviar correo al responsable notificando la aprobación inicial y link al panel
         try:
             if tipo == "interna":
-                panel_path = reverse("panel_instructor_interno:mis_visitas")
+                panel_path = reverse("panel_instructor_interno:panel")
             else:
                 panel_path = reverse("panel_instructor_externo:panel")
             panel_url = request.build_absolute_uri(panel_path)
@@ -676,116 +1045,21 @@ def api_accion_visita(request, tipo, visita_id, accion):
         visita.estado = "confirmada"
         visita.save()
 
-        # Enviar QR solo al quedar confirmada la visita (aprobacion total).
-        qr_enviados = 0
-        qr_fallidos = 0
-        qr_omitidos = 0
-
-        for asistente in visita.asistentes.filter(estado="documentos_aprobados"):
-            if asistente.qr_generado or asistente.email_qr_enviado:
-                qr_omitidos += 1
-                continue
-
-            if not asistente.correo:
-                qr_omitidos += 1
-                continue
-
-            try:
-                generador_qr = GeneradorQRPDF(
-                    asistente=asistente,
-                    visita=visita,
-                    tipo_visita=tipo,
-                )
-                if generador_qr.enviar_por_email():
-                    asistente.qr_generado = True
-                    asistente.email_qr_enviado = True
-                    asistente.fecha_envio_qr = timezone.now()
-                    asistente.save(
-                        update_fields=[
-                            "qr_generado",
-                            "email_qr_enviado",
-                            "fecha_envio_qr",
-                        ]
-                    )
-                    qr_enviados += 1
-                else:
-                    qr_fallidos += 1
-            except Exception:
-                qr_fallidos += 1
-
         # Confirmar la reserva de horario (cambiar a estado 'confirmada')
         ReservaHorario.confirmar_reserva(visita, tipo)
 
-        # Enviar correo al responsable notificando confirmación y detalles
-        try:
-            if tipo == "interna":
-                template_name = "emails/visita_confirmada_interna.html"
-                panel_path = reverse("panel_instructor_interno:mis_visitas")
-            else:
-                template_name = "emails/visita_confirmada_externa.html"
-                panel_path = reverse("panel_instructor_externo:panel")
+        if tipo == "interna":
+            panel_path = reverse("panel_instructor_interno:panel")
+        else:
+            panel_path = reverse("panel_instructor_externo:panel")
 
-            panel_url = request.build_absolute_uri(panel_path)
+        panel_url = request.build_absolute_uri(panel_path)
 
-            # Construir contexto con detalles de la visita
-            context = {
-                "responsable_nombre": getattr(
-                    visita, "responsable", getattr(visita, "nombre_responsable", "")
-                ),
-                "fecha_visita": (
-                    visita.fecha_visita.strftime("%d/%m/%Y")
-                    if getattr(visita, "fecha_visita", None)
-                    else (
-                        visita.fecha_solicitud.strftime("%d/%m/%Y")
-                        if visita.fecha_solicitud
-                        else "Por definir"
-                    )
-                ),
-                "hora_programada": (
-                    (
-                        visita.hora_inicio.strftime("%I:%M %p")
-                        + " - "
-                        + visita.hora_fin.strftime("%I:%M %p")
-                    )
-                    if getattr(visita, "hora_inicio", None)
-                    and getattr(visita, "hora_fin", None)
-                    else "Por definir"
-                ),
-                "recomendaciones": "Por favor llegar 10 minutos antes; traer documento de identidad; seguir instrucciones de coordinación.",
-                "panel_url": panel_url,
-            }
-
-            # Campos específicos
-            if tipo == "interna":
-                context.update(
-                    {
-                        "nombre_programa": visita.nombre_programa,
-                        "numero_ficha": visita.numero_ficha,
-                        "responsable": visita.responsable,
-                    }
-                )
-            else:
-                context.update(
-                    {
-                        "nombre": visita.nombre,
-                        "nombre_responsable": visita.nombre_responsable,
-                        "sede": getattr(visita, "sede", "No especificada"),
-                    }
-                )
-
-            html_content = render_to_string(template_name, context)
-            text_content = strip_tags(html_content)
-            subject = "Visita confirmada exitosamente"
-            msg = EmailMultiAlternatives(
-                subject,
-                text_content,
-                settings.DEFAULT_FROM_EMAIL,
-                [visita.correo_responsable],
-            )
-            msg.attach_alternative(html_content, "text/html")
-            msg.send(fail_silently=True)
-        except Exception:
-            pass
+        threading.Thread(
+            target=_procesar_confirmacion_visita_async,
+            args=(visita.id, tipo, panel_url),
+            daemon=True,
+        ).start()
 
         registrar_accion(
             "confirmacion",
@@ -794,7 +1068,45 @@ def api_accion_visita(request, tipo, visita_id, accion):
         return JsonResponse(
             {
                 "success": True,
-                "message": f"✅ Visita confirmada definitivamente. QR enviados: {qr_enviados}, fallidos: {qr_fallidos}, omitidos: {qr_omitidos}.",
+                "message": "✅ Visita confirmada exitosamente.",
+            }
+        )
+
+    elif accion == "devolver_correccion":
+        if not es_administrador_panel(request.user):
+            return JsonResponse(
+                {"success": False, "error": "No autorizado para esta acción"},
+                status=403,
+            )
+
+        if visita.estado not in ["documentos_enviados", "en_revision_documentos"]:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "La visita debe estar en revisión de documentos para devolverla a corrección",
+                }
+            )
+
+        asistentes_rechazados = visita.asistentes.filter(
+            estado="documentos_rechazados"
+        ).count()
+        if asistentes_rechazados == 0:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "No hay aprendices con documentos rechazados para devolver a corrección.",
+                }
+            )
+
+        devolver_visita_a_agendador(visita)
+        registrar_accion(
+            "devolucion_correccion",
+            f"Visita devuelta a corrección por {request.user.username}. Aprendices con rechazo: {asistentes_rechazados}.",
+        )
+        return JsonResponse(
+            {
+                "success": True,
+                "message": f"⚠️ Se devolvió la visita al instructor para corregir y volver a subir documentos ({asistentes_rechazados} aprendiz(es) con rechazo).",
             }
         )
 
@@ -826,14 +1138,30 @@ def api_revisar_autorizacion_padres(request, tipo, asistente_id, accion):
 
     observaciones = request.POST.get("observaciones", "")
 
+    if asistente.estado_autorizacion_padres != "pendiente":
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "La autorización de padres ya fue revisada. Solo puede gestionar documentos en revisión.",
+            },
+            status=409,
+        )
+
     if accion == "aprobar":
         asistente.estado_autorizacion_padres = "aprobado"
         asistente.observaciones_autorizacion_padres = observaciones
-        asistente.save()
+        asistente.save(
+            update_fields=[
+                "estado_autorizacion_padres",
+                "observaciones_autorizacion_padres",
+            ]
+        )
+        revision = _sincronizar_estado_asistente(asistente)
         return JsonResponse(
             {
                 "success": True,
                 "message": f"✅ Autorización de padres aprobada para {asistente.nombre_completo}",
+                "nuevo_estado": revision["estado"],
             }
         )
     elif accion == "rechazar":
@@ -846,15 +1174,27 @@ def api_revisar_autorizacion_padres(request, tipo, asistente_id, accion):
             )
         asistente.estado_autorizacion_padres = "rechazado"
         asistente.observaciones_autorizacion_padres = observaciones
-        asistente.estado = "documentos_rechazados"
-        asistente.observaciones_revision = (
-            f"Autorización de padres rechazada: {observaciones}"
+        asistente.save(
+            update_fields=[
+                "estado_autorizacion_padres",
+                "observaciones_autorizacion_padres",
+            ]
         )
-        asistente.save()
+        revision = _sincronizar_estado_asistente(
+            asistente,
+            observacion_rechazo=f"Autorización de padres rechazada: {observaciones}",
+        )
+        _enviar_correo_correccion_documentos_asistente(
+            request,
+            asistente,
+            tipo,
+            f"Autorizacion de padres rechazada: {observaciones}",
+        )
         return JsonResponse(
             {
                 "success": True,
                 "message": f"❌ Autorización de padres rechazada para {asistente.nombre_completo}. Queda pendiente de corrección.",
+                "nuevo_estado": revision["estado"],
             }
         )
 
@@ -880,8 +1220,18 @@ def api_revisar_documento_asistente(request, tipo, asistente_id, accion):
     if accion == "aprobar":
         documentos_actuales = _documentos_subidos_actuales(asistente)
 
+        if not documentos_actuales and not asistente.formato_autorizacion_padres:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "El asistente no tiene documentos cargados para aprobar.",
+                }
+            )
+
         # Restricción: No se puede aprobar masivamente si la última versión tiene rechazos
-        if any(doc_actual["ds"].estado == "rechazado" for doc_actual in documentos_actuales):
+        if any(
+            doc_actual["ds"].estado == "rechazado" for doc_actual in documentos_actuales
+        ):
             return JsonResponse(
                 {
                     "success": False,
@@ -889,23 +1239,36 @@ def api_revisar_documento_asistente(request, tipo, asistente_id, accion):
                 }
             )
 
-        # Restricción: Debe haber al menos un documento aprobado individualmente
-        if not any(doc_actual["ds"].estado == "aprobado" for doc_actual in documentos_actuales):
+        if any(
+            doc_actual["ds"].estado != "aprobado" for doc_actual in documentos_actuales
+        ):
             return JsonResponse(
                 {
                     "success": False,
-                    "error": "Debe revisar y aprobar al menos un documento individualmente antes de aprobar el resto.",
+                    "error": "Debe aprobar individualmente todos los documentos antes de la aprobación final del asistente.",
+                }
+            )
+
+        if (
+            asistente.formato_autorizacion_padres
+            and asistente.estado_autorizacion_padres != "aprobado"
+        ):
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Debe revisar y aprobar la autorización de padres antes de aprobar al asistente.",
                 }
             )
 
         asistente.estado = "documentos_aprobados"
-        asistente.observaciones_revision = observaciones
-        asistente.save()
+        asistente.observaciones_revision = ""
+        asistente.save(update_fields=["estado", "observaciones_revision"])
+        revision = _sincronizar_estado_asistente(asistente)
         return JsonResponse(
             {
                 "success": True,
                 "message": f"✅ Documentos de {asistente.nombre_completo} aprobados",
-                "nuevo_estado": "documentos_aprobados",
+                "nuevo_estado": revision["estado"],
             }
         )
 
@@ -917,14 +1280,46 @@ def api_revisar_documento_asistente(request, tipo, asistente_id, accion):
                     "error": "Debe proporcionar observaciones al rechazar",
                 }
             )
-        asistente.estado = "documentos_rechazados"
-        asistente.observaciones_revision = observaciones
-        asistente.save()
+
+        documentos_actuales = _documentos_subidos_actuales(asistente)
+        if not documentos_actuales and not asistente.formato_autorizacion_padres:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "El asistente no tiene documentos cargados para rechazar.",
+                }
+            )
+
+        _marcar_documentos_actuales(asistente, "rechazado", observaciones)
+
+        if (
+            asistente.formato_autorizacion_padres
+            and asistente.estado_autorizacion_padres != "aprobado"
+        ):
+            asistente.estado_autorizacion_padres = "rechazado"
+            asistente.observaciones_autorizacion_padres = observaciones
+            asistente.save(
+                update_fields=[
+                    "estado_autorizacion_padres",
+                    "observaciones_autorizacion_padres",
+                ]
+            )
+
+        revision = _sincronizar_estado_asistente(
+            asistente,
+            observacion_rechazo=observaciones,
+        )
+        _enviar_correo_correccion_documentos_asistente(
+            request,
+            asistente,
+            tipo,
+            observaciones,
+        )
         return JsonResponse(
             {
                 "success": True,
                 "message": f"❌ Documentos de {asistente.nombre_completo} rechazados. Queda pendiente de corrección.",
-                "nuevo_estado": "documentos_rechazados",
+                "nuevo_estado": revision["estado"],
             }
         )
 
@@ -1009,6 +1404,8 @@ def api_documentos_revision(request):
             else:
                 qs = qs.filter(estado=estado_asistente)
         for a in qs:
+            documentos_actuales = _documentos_subidos_actuales(a)
+            revision = _calcular_estado_revision_asistente(a)
             documentos_data.append(
                 {
                     "asistente_id": a.id,
@@ -1028,10 +1425,38 @@ def api_documentos_revision(request):
                     "numero_documento": a.numero_documento,
                     "estado": a.estado,
                     "documento_identidad": (
-                        a.documento_identidad.url if a.documento_identidad else None
+                        reverse(
+                            "documentos:ver_campo_asistente_inline",
+                            kwargs={
+                                "tipo": "interna",
+                                "asistente_id": a.id,
+                                "campo": "documento_identidad",
+                            },
+                        )
+                        if a.documento_identidad
+                        else None
+                    ),
+                    "documento_identidad_nombre": (
+                        a.documento_identidad.name.split("/")[-1]
+                        if a.documento_identidad
+                        else None
                     ),
                     "documento_adicional": (
-                        a.documento_adicional.url if a.documento_adicional else None
+                        reverse(
+                            "documentos:ver_campo_asistente_inline",
+                            kwargs={
+                                "tipo": "interna",
+                                "asistente_id": a.id,
+                                "campo": "documento_adicional",
+                            },
+                        )
+                        if a.documento_adicional
+                        else None
+                    ),
+                    "documento_adicional_nombre": (
+                        a.documento_adicional.name.split("/")[-1]
+                        if a.documento_adicional
+                        else None
                     ),
                     "estado_autorizacion_padres": (
                         a.estado_autorizacion_padres
@@ -1044,13 +1469,15 @@ def api_documentos_revision(request):
                         else None
                     ),
                     "observaciones_revision": a.observaciones_revision,
+                    "tiene_rechazos": revision["tiene_rechazos"],
+                    "todos_aprobados": revision["todos_aprobados"],
                     "documentos_subidos": [
                         _serializar_documento_subido(
                             doc_actual["ds"],
                             versiones_envio=doc_actual["versiones_envio"],
                             es_reenvio=doc_actual["es_reenvio"],
                         )
-                        for doc_actual in _documentos_subidos_actuales(a)
+                        for doc_actual in documentos_actuales
                     ],
                 }
             )
@@ -1064,6 +1491,8 @@ def api_documentos_revision(request):
             else:
                 qs = qs.filter(estado=estado_asistente)
         for a in qs:
+            documentos_actuales = _documentos_subidos_actuales(a)
+            revision = _calcular_estado_revision_asistente(a)
             documentos_data.append(
                 {
                     "asistente_id": a.id,
@@ -1083,19 +1512,49 @@ def api_documentos_revision(request):
                     "numero_documento": a.numero_documento,
                     "estado": a.estado,
                     "documento_identidad": (
-                        a.documento_identidad.url if a.documento_identidad else None
+                        reverse(
+                            "documentos:ver_campo_asistente_inline",
+                            kwargs={
+                                "tipo": "externa",
+                                "asistente_id": a.id,
+                                "campo": "documento_identidad",
+                            },
+                        )
+                        if a.documento_identidad
+                        else None
+                    ),
+                    "documento_identidad_nombre": (
+                        a.documento_identidad.name.split("/")[-1]
+                        if a.documento_identidad
+                        else None
                     ),
                     "documento_adicional": (
-                        a.documento_adicional.url if a.documento_adicional else None
+                        reverse(
+                            "documentos:ver_campo_asistente_inline",
+                            kwargs={
+                                "tipo": "externa",
+                                "asistente_id": a.id,
+                                "campo": "documento_adicional",
+                            },
+                        )
+                        if a.documento_adicional
+                        else None
+                    ),
+                    "documento_adicional_nombre": (
+                        a.documento_adicional.name.split("/")[-1]
+                        if a.documento_adicional
+                        else None
                     ),
                     "observaciones_revision": a.observaciones_revision,
+                    "tiene_rechazos": revision["tiene_rechazos"],
+                    "todos_aprobados": revision["todos_aprobados"],
                     "documentos_subidos": [
                         _serializar_documento_subido(
                             doc_actual["ds"],
                             versiones_envio=doc_actual["versiones_envio"],
                             es_reenvio=doc_actual["es_reenvio"],
                         )
-                        for doc_actual in _documentos_subidos_actuales(a)
+                        for doc_actual in documentos_actuales
                     ],
                 }
             )
