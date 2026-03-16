@@ -254,6 +254,47 @@ document.addEventListener('DOMContentLoaded', function() {
 			this.classList.toggle('fa-eye-slash');
 		});
 	}
+
+	// Validacion de dominios para usuario interno
+	const emailInput = document.querySelector('input[name="correo"]');
+	const roleInputs = document.querySelectorAll('input[name="rol"]');
+	const allowedInternalDomains = ['@sena.edu.co'];
+
+	function getSelectedRole() {
+		const selectedRole = document.querySelector('input[name="rol"]:checked');
+		return selectedRole ? selectedRole.value : '';
+	}
+
+	function validateEmailByRole() {
+		if (!emailInput) {
+			return;
+		}
+
+		const role = getSelectedRole();
+		const email = (emailInput.value || '').trim().toLowerCase();
+
+		if (role === 'interno' && email) {
+			const isValidDomain = allowedInternalDomains.some(function(domain) {
+				return email.endsWith(domain);
+			});
+
+			if (!isValidDomain) {
+				emailInput.setCustomValidity('Para usuario interno, use un correo @sena.edu.co.');
+				return;
+			}
+		}
+
+		emailInput.setCustomValidity('');
+	}
+
+	if (emailInput) {
+		emailInput.addEventListener('input', validateEmailByRole);
+		emailInput.addEventListener('blur', validateEmailByRole);
+	}
+
+	roleInputs.forEach(function(roleInput) {
+		roleInput.addEventListener('change', validateEmailByRole);
+	});
 });
 </script>
 {% endblock %}

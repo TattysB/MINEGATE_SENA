@@ -1,0 +1,63 @@
+{% extends "master.html" %}
+{% load static %}
+
+{% block title %}Verificar Codigo - MINEGATE{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link rel="stylesheet" href="{% static 'registro_visita.css' %}">
+
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <i class="fas fa-envelope-open-text"></i>
+            <h2>Verificacion de Correo</h2>
+            <p>Ingrese el codigo enviado a {{ correo }}</p>
+        </div>
+
+        <div class="login-body">
+            <div class="info-box">
+                <p><i class="fas fa-info-circle"></i> El codigo vence en {{ minutos }} minutos.</p>
+            </div>
+
+            <form method="POST">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger" style="margin-bottom: 12px;">
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label for="{{ form.codigo.id_for_label }}">
+                        <i class="fas fa-key"></i> Codigo de verificacion
+                    </label>
+                    {{ form.codigo }}
+                    {% if form.codigo.errors %}
+                        <span class="field-error">{{ form.codigo.errors|striptags }}</span>
+                    {% endif %}
+                </div>
+
+                <button type="submit" class="btn-login" style="margin-bottom: 10px;">
+                    <i class="fas fa-check-circle"></i> Verificar y crear cuenta
+                </button>
+            </form>
+
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="reenviar">
+                <button type="submit" class="btn-login" style="background: #6c757d;">
+                    <i class="fas fa-paper-plane"></i> Reenviar codigo
+                </button>
+            </form>
+        </div>
+
+        <div class="login-footer">
+            <a href="{% url 'panel_visitante:registro_visita' %}">
+                <i class="fas fa-arrow-left"></i> Volver al registro
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
