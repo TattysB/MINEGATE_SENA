@@ -10,7 +10,7 @@
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 	<link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
-<body style="background-color: #f8f9fa;">
+<body>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <style>
 	:root {
@@ -18,21 +18,74 @@
 		--sena-verde-oscuro: #008c00;
 		--card-shadow: 0 4px 20px rgba(0,0,0,0.08);
 	}
+
+	body {
+		margin: 0;
+		min-height: 100vh;
+		background:
+			radial-gradient(circle at 8% 12%, rgba(57, 169, 0, 0.18), transparent 34%),
+			radial-gradient(circle at 92% 20%, rgba(6, 95, 70, 0.12), transparent 36%),
+			#edf2f7;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 20px;
+	}
+
+	{% if embed_mode %}
+	body {
+		min-height: 0;
+		background: transparent;
+		display: block;
+		padding: 0;
+	}
+	{% endif %}
 	
 	.perfil-container {
-		max-width: 900px;
-		margin: 2rem auto;
-		padding: 0 1rem;
+		width: min(980px, 100%);
 	}
+
+	{% if embed_mode %}
+	.perfil-container {
+		width: 100%;
+	}
+	{% endif %}
+
+	.perfil-shell {
+		border-radius: 20px;
+		border: 1px solid rgba(255, 255, 255, 0.45);
+		background: rgba(249, 252, 255, 0.72);
+		backdrop-filter: blur(8px);
+		box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+		overflow: hidden;
+		animation: emergerPerfil 0.28s ease;
+	}
+
+	{% if embed_mode %}
+	.perfil-shell {
+		border: none;
+		border-radius: 0;
+		background: transparent;
+		backdrop-filter: none;
+		box-shadow: none;
+		animation: none;
+	}
+	{% endif %}
 	
 	.perfil-header {
 		background: linear-gradient(135deg, var(--sena-verde) 0%, var(--sena-verde-oscuro) 100%);
 		color: white;
 		padding: 2rem;
-		border-radius: 16px 16px 0 0;
-		box-shadow: var(--card-shadow);
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 1rem;
 	}
 	
+	.perfil-header-main {
+		max-width: calc(100% - 60px);
+	}
+
 	.perfil-header h1 {
 		font-size: 1.8rem;
 		font-weight: 800;
@@ -46,10 +99,37 @@
 	
 	.perfil-card {
 		background: white;
-		border-radius: 0 0 16px 16px;
-		box-shadow: var(--card-shadow);
+		border-radius: 0;
+		box-shadow: none;
 		padding: 2rem;
-		margin-bottom: 2rem;
+		max-height: calc(100vh - 170px);
+		overflow: auto;
+	}
+
+	{% if embed_mode %}
+	.perfil-card {
+		max-height: none;
+	}
+	{% endif %}
+
+	.btn-close-float {
+		width: 38px;
+		height: 38px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 999px;
+		border: 1px solid rgba(255, 255, 255, 0.45);
+		background: rgba(255, 255, 255, 0.16);
+		color: #fff;
+		text-decoration: none;
+		transition: transform 0.2s ease, background-color 0.2s ease;
+	}
+
+	.btn-close-float:hover {
+		color: #fff;
+		background: rgba(255, 255, 255, 0.28);
+		transform: scale(1.06);
 	}
 	
 	.section-divider {
@@ -161,6 +241,13 @@
 		display: flex;
 		align-items: center;
 		gap: 0.75rem;
+		font-weight: 600;
+		box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+	}
+
+	.alert i {
+		font-size: 1rem;
+		min-width: 18px;
 	}
 	
 	.alert-success {
@@ -173,6 +260,18 @@
 		background: #fee2e2;
 		color: #991b1b;
 		border-left: 4px solid #ef4444;
+	}
+
+	.alert-warning {
+		background: #fef3c7;
+		color: #92400e;
+		border-left: 4px solid #f59e0b;
+	}
+
+	.alert-info {
+		background: #e0f2fe;
+		color: #075985;
+		border-left: 4px solid #0ea5e9;
 	}
 	
 	.form-row {
@@ -233,8 +332,43 @@
 	.toggle-password:hover {
 		color: var(--sena-verde);
 	}
+
+	@keyframes emergerPerfil {
+		from {
+			opacity: 0;
+			transform: translateY(12px) scale(0.98);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0) scale(1);
+		}
+	}
 	
 	@media (max-width: 768px) {
+		body {
+			padding: 0;
+		}
+
+		.perfil-shell {
+			width: 100%;
+			height: 100vh;
+			border-radius: 0;
+			border: none;
+		}
+
+		.perfil-header {
+			padding: 1.3rem 1rem;
+		}
+
+		.perfil-header h1 {
+			font-size: 1.35rem;
+		}
+
+		.perfil-card {
+			padding: 1rem;
+			max-height: calc(100vh - 135px);
+		}
+
 		.form-row {
 			grid-template-columns: 1fr;
 		}
@@ -254,18 +388,32 @@
 {% accessibility_widget %}
 
 <div class="perfil-container">
-	<div class="perfil-header">
-		<h1><i class="fas fa-user-edit"></i> Actualizar Mi Perfil</h1>
-		<p>{{ visitante.nombre }} {{ visitante.apellido }} - {{ visitante.get_tipo_documento_display }} {{ visitante.documento }}</p>
-	</div>
-	
-	<div class="perfil-card">
+	<div class="perfil-shell">
+		<div class="perfil-header">
+			<div class="perfil-header-main">
+				<h1><i class="fas fa-user-edit"></i> Actualizar Mi Perfil</h1>
+				<p>{{ visitante.nombre }} {{ visitante.apellido }} - {{ visitante.get_tipo_documento_display }} {{ visitante.documento }}</p>
+			</div>
+			{% if embed_mode %}
+			<button type="button" class="btn-close-float" aria-label="Cerrar y volver" onclick="cerrarPerfilEmbebido()">
+				<i class="fas fa-times"></i>
+			</button>
+			{% else %}
+			<a href="{{ volver_url }}" class="btn-close-float" aria-label="Cerrar y volver">
+				<i class="fas fa-times"></i>
+			</a>
+			{% endif %}
+		</div>
+		
+		<div class="perfil-card">
 		{% if messages %}
 			{% for message in messages %}
-				<div class="alert alert-{{ message.tags }}">
-					<i class="fas fa-{% if message.tags == 'success' %}check-circle{% else %}exclamation-circle{% endif %}"></i>
-					{{ message }}
-				</div>
+				{% with tags=message.tags %}
+					<div class="alert {% if 'error' in tags %}alert-danger{% elif 'success' in tags %}alert-success{% elif 'warning' in tags %}alert-warning{% else %}alert-info{% endif %}">
+						<i class="fas {% if 'success' in tags %}fa-check-circle{% elif 'error' in tags %}fa-triangle-exclamation{% elif 'warning' in tags %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}"></i>
+						<span>{{ message }}</span>
+					</div>
+				{% endwith %}
 			{% endfor %}
 		{% endif %}
 		
@@ -273,6 +421,8 @@
 		<form method="POST">
 			{% csrf_token %}
 			<input type="hidden" name="action" value="actualizar_datos">
+			<input type="hidden" name="tipo_documento" value="{{ visitante.tipo_documento }}">
+			{% if embed_mode %}<input type="hidden" name="embed" value="1">{% endif %}
 			
 			<div class="section-divider">
 				<h2><i class="fas fa-id-card"></i> Datos Personales</h2>
@@ -330,7 +480,7 @@
 			<div class="form-row">
 				<div class="form-group">
 					<label for="id_telefono">Teléfono</label>
-					<input type="tel" name="telefono" id="id_telefono" class="form-control" maxlength="10" pattern="\d{1,10}" placeholder="Ingrese el número" value="{{ form_perfil.telefono.value|default:'' }}" required>
+					<input type="tel" name="telefono" id="id_telefono" class="form-control" maxlength="10" minlength="10" pattern="\d{10}" title="Ingrese exactamente 10 números" placeholder="Ingrese 10 números" value="{{ form_perfil.telefono.value|default:'' }}" required>
 					{% if form_perfil.telefono.errors %}
 						<ul class="errorlist">
 							{% for error in form_perfil.telefono.errors %}
@@ -364,6 +514,7 @@
 		<form method="POST">
 			{% csrf_token %}
 			<input type="hidden" name="action" value="cambiar_contrasena">
+			{% if embed_mode %}<input type="hidden" name="embed" value="1">{% endif %}
 			
 			<div class="section-divider">
 				<h2><i class="fas fa-lock"></i> Cambiar Contraseña</h2>
@@ -372,6 +523,9 @@
 			
 			<div class="info-box">
 				<i class="fas fa-shield-alt"></i> La contraseña debe tener al menos 8 caracteres, incluyendo mayúsculas, minúsculas y números.
+			</div>
+			<div id="alerta-contrasena-igual" class="alert alert-danger" style="display: none;">
+				<i class="fas fa-exclamation-triangle"></i> La nueva contraseña no puede ser igual a la contraseña actual.
 			</div>
 			
 			<div class="form-group">
@@ -450,15 +604,30 @@
 				<button type="submit" class="btn-primary">
 					<i class="fas fa-key"></i> Cambiar Contraseña
 				</button>
-				<a href="javascript:history.back()" class="btn-secondary">
+				{% if embed_mode %}
+				<button type="button" class="btn-secondary" onclick="cerrarPerfilEmbebido()">
+					<i class="fas fa-arrow-left"></i> Cerrar
+				</button>
+				{% else %}
+				<a href="{{ volver_url }}" class="btn-secondary">
 					<i class="fas fa-arrow-left"></i> Volver
 				</a>
+				{% endif %}
 			</div>
 		</form>
+		</div>
 	</div>
 </div>
 
 <script>
+function cerrarPerfilEmbebido() {
+	if (window.parent && window.parent !== window) {
+		window.parent.postMessage({ type: 'cerrarModalActualizarPerfil' }, '*');
+		return;
+	}
+	window.location.href = '{{ volver_url }}';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
 	const passwordInput = document.querySelector('input[name="nueva_contrasena"]');
 	const requirementsDiv = document.getElementById('password-requirements-perfil');
@@ -493,6 +662,8 @@ document.addEventListener('DOMContentLoaded', function() {
 	// Toggle mostrar/ocultar contraseña - Contraseña Actual
 	const togglePasswordActual = document.getElementById('togglePasswordActual');
 	const passwordActualInput = document.querySelector('input[name="contrasena_actual"]');
+	const passwordForm = document.querySelector('form input[name="action"][value="cambiar_contrasena"]')?.closest('form');
+	const alertaContrasenaIgual = document.getElementById('alerta-contrasena-igual');
 	
 	if (togglePasswordActual && passwordActualInput) {
 		togglePasswordActual.addEventListener('click', function() {
@@ -532,6 +703,35 @@ document.addEventListener('DOMContentLoaded', function() {
 			// Cambiar icono
 			this.classList.toggle('fa-eye');
 			this.classList.toggle('fa-eye-slash');
+		});
+	}
+
+	function validarContrasenaDistinta() {
+		if (!passwordActualInput || !passwordNuevaInput || !alertaContrasenaIgual) {
+			return true;
+		}
+
+		const esIgual =
+			passwordActualInput.value.length > 0 &&
+			passwordNuevaInput.value.length > 0 &&
+			passwordActualInput.value === passwordNuevaInput.value;
+
+		alertaContrasenaIgual.style.display = esIgual ? 'block' : 'none';
+		return !esIgual;
+	}
+
+	if (passwordActualInput && passwordNuevaInput) {
+		passwordActualInput.addEventListener('input', validarContrasenaDistinta);
+		passwordNuevaInput.addEventListener('input', validarContrasenaDistinta);
+	}
+
+	if (passwordForm) {
+		passwordForm.addEventListener('submit', function(e) {
+			if (!validarContrasenaDistinta()) {
+				e.preventDefault();
+				alert('La nueva contraseña no puede ser igual a la contraseña actual.');
+				passwordNuevaInput.focus();
+			}
 		});
 	}
 	

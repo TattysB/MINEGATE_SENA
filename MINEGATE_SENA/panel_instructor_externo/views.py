@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Q
 from django.db import transaction
-from visitaExterna.models import VisitaExterna
+from visitaExterna.models import HistorialReprogramacion, VisitaExterna
 from .forms import VisitaExternaInstructorForm
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
@@ -31,13 +31,37 @@ def construir_reporte_documental_visita(visita, tipo_visita):
         )
     )
 
+    filtros_finales_visita = {
+        "documento_requerido__categoria__in": CATEGORIAS_ARCHIVOS_FINALES
+    }
+    if tipo_visita == "interna":
+        filtros_finales_visita["asistente_interna__visita"] = visita
+    else:
+        filtros_finales_visita["asistente_externa__visita"] = visita
+
+    existe_archivo_final_subido = DocumentoSubidoAsistente.objects.filter(
+        **filtros_finales_visita
+    ).exists()
+    mostrar_faltantes_finales_como_alerta = (
+        visita.estado in ["documentos_enviados", "en_revision_documentos", "confirmada"]
+        or existe_archivo_final_subido
+    )
+
     asistentes_con_alertas = []
     asistentes = visita.asistentes.prefetch_related("documentos_subidos__documento_requerido")
     for asistente in asistentes:
         incidencias = []
+        # Tomar solo la version vigente (ultima subida) por documento requerido.
+        latest_por_documento = {}
+        for ds in asistente.documentos_subidos.all():
+            doc_id = ds.documento_requerido_id
+            actual = latest_por_documento.get(doc_id)
+            if not actual or (ds.fecha_subida, ds.id) > (actual.fecha_subida, actual.id):
+                latest_por_documento[doc_id] = ds
+
         documentos_personales = [
             ds
-            for ds in asistente.documentos_subidos.all()
+            for ds in latest_por_documento.values()
             if ds.documento_requerido.categoria not in CATEGORIAS_ARCHIVOS_FINALES
         ]
 
@@ -57,6 +81,7 @@ def construir_reporte_documental_visita(visita, tipo_visita):
                 incidencias.append(
                     {
                         "tipo": "rechazado",
+                        "documento_subido_id": doc_subido.id,
                         "detalle": (
                             f"{doc_subido.documento_requerido.titulo}: "
                             f"{doc_subido.observaciones_revision or 'Documento mal diligenciado.'}"
@@ -81,6 +106,7 @@ def construir_reporte_documental_visita(visita, tipo_visita):
         if incidencias:
             asistentes_con_alertas.append(
                 {
+                    "id": asistente.id,
                     "nombre": asistente.nombre_completo,
                     "documento": f"{asistente.get_tipo_documento_display()} {asistente.numero_documento}",
                     "incidencias": incidencias,
@@ -124,7 +150,10 @@ def construir_reporte_documental_visita(visita, tipo_visita):
         )
 
     archivos_finales_con_alerta = [
-        a for a in archivos_finales_estado if a["estado"] in ["faltante", "rechazado"]
+        a
+        for a in archivos_finales_estado
+        if a["estado"] == "rechazado"
+        or (a["estado"] == "faltante" and mostrar_faltantes_finales_como_alerta)
     ]
     total_incidencias_asistentes = sum(
         len(item["incidencias"]) for item in asistentes_con_alertas
@@ -280,6 +309,11 @@ def reservar_visita_externa(request):
 def detalle_visita_externa(request, pk):
     correo, _ = get_sesion_instructor(request)
     visita = get_object_or_404(VisitaExterna, pk=pk, correo_responsable__iexact=correo)
+    reprogramacion_pendiente = (
+        HistorialReprogramacion.objects.filter(visita_externa=visita, completada=False)
+        .order_by("-fecha_solicitud")
+        .first()
+    )
 
     # Obtener documentos disponibles para descargar, agrupados por categoría
     from documentos.models import Documento
@@ -295,6 +329,19 @@ def detalle_visita_externa(request, pk):
         documentos_por_categoria[cat_display].append(doc)
 
     reporte_documental = construir_reporte_documental_visita(visita, "externa")
+    hay_alertas_documentales = bool(reporte_documental.get("hay_alertas"))
+    estados_finales = reporte_documental.get("archivos_finales_estado", [])
+    archivos_finales_faltantes = sum(
+        1 for item in estados_finales if item.get("estado") == "faltante"
+    )
+    archivos_finales_completos = archivos_finales_faltantes == 0
+
+    enviar_final_habilitado = (
+        visita.estado == "aprobada_inicial"
+        and visita.asistentes.exists()
+        and archivos_finales_completos
+        and not hay_alertas_documentales
+    )
 
     return render(
         request,
@@ -304,5 +351,7 @@ def detalle_visita_externa(request, pk):
             "correo": correo,
             "documentos_por_categoria": documentos_por_categoria,
             "reporte_documental": reporte_documental,
+            "reprogramacion_pendiente": reprogramacion_pendiente,
+            "enviar_final_habilitado": enviar_final_habilitado,
         },
     )

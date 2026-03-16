@@ -92,6 +92,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             {% if messages %}
                 {% for message in messages %}
+                    {% if 'auth_visitante' not in message.tags %}
                     if (typeof showAlert === 'function') {
                         var msgType = 'info';
                         {% if message.tags %}
@@ -105,6 +106,7 @@
                         {% endif %}
                         showAlert('{{ message|escapejs }}', msgType);
                     }
+                    {% endif %}
                 {% endfor %}
             {% endif %}
         });

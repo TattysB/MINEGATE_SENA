@@ -30,9 +30,18 @@ from .forms import (
 )
 from .models import RegistroVisitante
 from django.conf import settings
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from pathlib import Path
 from django.http import JsonResponse
+
+
+CATEGORIAS_ARCHIVOS_FINALES = {
+    "ats",
+    "formato induccion y reinduccion",
+    "charla de seguridad y calestenia",
+    "charla de seguridad y calistenia",
+}
+AUTH_VISITANTE_MESSAGE_TAG = "auth_visitante"
 
 
 def _redirect_segun_rol(request, tipo=None, visita_id=None):
@@ -71,6 +80,130 @@ def _tiene_acceso_por_correo(visita, correo):
     return (visita.correo_responsable or "").strip().lower() == correo.strip().lower()
 
 
+def _normalizar_categoria_texto(valor):
+    return (
+        str(valor or "")
+        .strip()
+        .lower()
+        .replace("á", "a")
+        .replace("é", "e")
+        .replace("í", "i")
+        .replace("ó", "o")
+        .replace("ú", "u")
+    )
+
+
+def _es_categoria_archivo_final(categoria):
+    return _normalizar_categoria_texto(categoria) in CATEGORIAS_ARCHIVOS_FINALES
+
+
+def _documentos_actuales_asistente(asistente, tipo):
+    filtros = {
+        "asistente_interna": asistente
+    } if tipo == "interna" else {"asistente_externa": asistente}
+
+    docs = (
+        DocumentoSubidoAsistente.objects.filter(**filtros)
+        .select_related("documento_requerido")
+        .order_by("documento_requerido_id", "-fecha_subida", "-id")
+    )
+
+    latest_por_documento = {}
+    for ds in docs:
+        if ds.documento_requerido_id not in latest_por_documento:
+            latest_por_documento[ds.documento_requerido_id] = ds
+
+    return list(latest_por_documento.values())
+
+
+def _sincronizar_estado_asistente_por_docs(asistente, tipo):
+    docs_actuales = _documentos_actuales_asistente(asistente, tipo)
+    docs_personales = [
+        ds
+        for ds in docs_actuales
+        if not _es_categoria_archivo_final(ds.documento_requerido.categoria)
+    ]
+
+    tiene_rechazos = any(ds.estado == "rechazado" for ds in docs_personales)
+    todos_aprobados = bool(docs_personales) and all(
+        ds.estado == "aprobado" for ds in docs_personales
+    )
+
+    if getattr(asistente, "formato_autorizacion_padres", None):
+        estado_autorizacion = getattr(
+            asistente, "estado_autorizacion_padres", "pendiente"
+        )
+        if estado_autorizacion == "rechazado":
+            tiene_rechazos = True
+        elif estado_autorizacion != "aprobado":
+            todos_aprobados = False
+
+    if tiene_rechazos:
+        nuevo_estado = "documentos_rechazados"
+    elif todos_aprobados:
+        nuevo_estado = "documentos_aprobados"
+    else:
+        nuevo_estado = "pendiente_documentos"
+
+    update_fields = []
+    if asistente.estado != nuevo_estado:
+        asistente.estado = nuevo_estado
+        update_fields.append("estado")
+
+    if nuevo_estado != "documentos_rechazados" and asistente.observaciones_revision:
+        asistente.observaciones_revision = ""
+        update_fields.append("observaciones_revision")
+
+    if update_fields:
+        asistente.save(update_fields=update_fields)
+
+    return nuevo_estado
+
+
+def _resumen_pendientes_correccion(visita, tipo):
+    asistentes_rechazados = visita.asistentes.filter(estado="documentos_rechazados").count()
+
+    docs_finales_requeridos = Documento.objects.filter(
+        categoria__in=[
+            "ATS",
+            "Formato Inducción y Reinducción",
+            "Charla de Seguridad y Calestenia",
+        ]
+    )
+
+    archivos_finales_rechazados = 0
+    archivos_finales_faltantes = 0
+
+    for doc_final in docs_finales_requeridos:
+        filtros = {"documento_requerido": doc_final}
+        if tipo == "interna":
+            filtros["asistente_interna__visita"] = visita
+        else:
+            filtros["asistente_externa__visita"] = visita
+
+        ultimo_archivo = (
+            DocumentoSubidoAsistente.objects.filter(**filtros)
+            .order_by("-fecha_subida", "-id")
+            .first()
+        )
+
+        if not ultimo_archivo:
+            archivos_finales_faltantes += 1
+        elif ultimo_archivo.estado == "rechazado":
+            archivos_finales_rechazados += 1
+
+    pendientes_correccion = (
+        asistentes_rechazados + archivos_finales_rechazados + archivos_finales_faltantes
+    )
+
+    return {
+        "asistentes_rechazados": asistentes_rechazados,
+        "archivos_finales_rechazados": archivos_finales_rechazados,
+        "archivos_finales_faltantes": archivos_finales_faltantes,
+        "pendientes_correccion": pendientes_correccion,
+    }
+
+
 def login_responsable(request):
     """
     Login para responsables de visitas usando solo documento y contraseña.
@@ -96,6 +229,7 @@ def login_responsable(request):
             messages.success(
                 request,
                 f"Bienvenido {visitante.nombre} {visitante.apellido}. Accediendo a tu panel...",
+                extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
             )
             # Redirigir al panel de instructor según el rol
             if visitante.rol == "interno":
@@ -106,6 +240,7 @@ def login_responsable(request):
         messages.error(
             request,
             "Credenciales invalidas. Verifica tu documento y contrasena.",
+            extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
         )
 
     return render(request, "login_responsable.html")
@@ -133,6 +268,7 @@ def registro_visita(request):
             messages.success(
                 request,
                 f"Cuenta creada exitosamente para {visitante.nombre} {visitante.apellido}. Ya puedes iniciar sesion con tus credenciales.",
+                extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
             )
             return redirect("panel_visitante:login_responsable")
     else:
@@ -152,7 +288,11 @@ def logout_responsable(request):
     request.session.pop("responsable_correo", None)
     request.session.pop("responsable_documento", None)
     request.session.pop("responsable_autenticado", None)
-    messages.success(request, "Sesión cerrada correctamente.")
+    messages.success(
+        request,
+        "Sesión cerrada correctamente.",
+        extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+    )
     return redirect("panel_visitante:login_responsable")
 
 
@@ -168,7 +308,11 @@ def panel_responsable(request):
 
     # Verificar si está autenticado
     if not autenticado or not correo or not documento:
-        messages.warning(request, "Debe iniciar sesión para acceder al panel.")
+        messages.warning(
+            request,
+            "Debe iniciar sesión para acceder al panel.",
+            extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+        )
         return redirect("panel_visitante:login_responsable")
 
     try:
@@ -191,7 +335,11 @@ def panel_responsable(request):
         return render(request, "panel_responsable.html", context)
 
     except Exception as e:
-        messages.error(request, f"Error al cargar el panel: {str(e)}")
+        messages.error(
+            request,
+            f"Error al cargar el panel: {str(e)}",
+            extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+        )
         return redirect("panel_visitante:login_responsable")
 
 
@@ -199,9 +347,15 @@ def registrar_asistentes(request, tipo, visita_id):
     """
     Formulario para registrar asistentes a una visita aprobada.
     """
+    es_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
+
     # Verificar autenticación
     if not request.session.get("responsable_autenticado"):
-        messages.warning(request, "Debe iniciar sesión para acceder.")
+        messages.warning(
+            request,
+            "Debe iniciar sesión para acceder.",
+            extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+        )
         return redirect("panel_visitante:login_responsable")
 
     correo = request.session.get("responsable_correo")
@@ -365,6 +519,20 @@ def registrar_asistentes(request, tipo, visita_id):
     # Permitir archivos finales si hay al menos 1 asistente registrado
     mostrar_archivos_finales = asistentes_actuales > 0
 
+    solicitud_final_enviada = visita.estado in [
+        "documentos_enviados",
+        "en_revision_documentos",
+        "confirmada",
+    ]
+    resumen_pendientes = _resumen_pendientes_correccion(visita, tipo)
+    flujo_completo_con_finales = (
+        asistentes_actuales >= max_asistentes
+        and resumen_pendientes["archivos_finales_faltantes"] == 0
+    )
+    puede_actualizar_asistentes = not (
+        solicitud_final_enviada or flujo_completo_con_finales
+    )
+
     context = {
         "visita": visita,
         "tipo": tipo,
@@ -376,6 +544,7 @@ def registrar_asistentes(request, tipo, visita_id):
         "asistentes_previos": asistentes_previos,
         "tiene_asistentes_previos": len(asistentes_previos) > 0,
         "mostrar_archivos_finales": mostrar_archivos_finales,
+        "puede_actualizar_asistentes": puede_actualizar_asistentes,
     }
 
     # Procesar archivos finales si se envía el formulario del modal
@@ -419,15 +588,13 @@ def registrar_asistentes(request, tipo, visita_id):
                             archivos_subidos.append(doc.titulo)
 
             if archivos_subidos:
-                primer_asistente.estado = "pendiente_documentos"
-                primer_asistente.observaciones_revision = ""
-                primer_asistente.save(
-                    update_fields=["estado", "observaciones_revision"]
-                )
+                _sincronizar_estado_asistente_por_docs(primer_asistente, tipo)
 
                 if visita.estado in ["documentos_enviados", "en_revision_documentos"]:
                     visita.estado = "aprobada_inicial"
                     visita.save(update_fields=["estado"])
+
+                resumen_pendientes = _resumen_pendientes_correccion(visita, tipo)
 
                 if es_ajax:
                     return JsonResponse(
@@ -435,6 +602,11 @@ def registrar_asistentes(request, tipo, visita_id):
                             "success": True,
                             "message": "Archivos finales corregidos y cargados correctamente.",
                             "archivos_subidos": archivos_subidos,
+                            **resumen_pendientes,
+                            "listo_para_confirmar_envio": resumen_pendientes[
+                                "pendientes_correccion"
+                            ]
+                            == 0,
                         }
                     )
 
@@ -671,6 +843,7 @@ def registrar_asistentes(request, tipo, visita_id):
         "max_asistentes": max_asistentes,
         "puede_agregar": puede_agregar,
         "documentos_por_categoria": documentos_por_categoria,
+        "puede_actualizar_asistentes": puede_actualizar_asistentes,
     }
 
     return render(request, "registrar_asistentes.html", context)
@@ -827,7 +1000,7 @@ def enviar_solicitud_final(request, tipo, visita_id):
     # Enviar correo al responsable informando que la solicitud final fue enviada
     try:
         if tipo == "interna":
-            panel_path = reverse("panel_instructor_interno:mis_visitas")
+            panel_path = reverse("panel_instructor_interno:panel")
             template_name = "emails/solicitud_final_enviada_interna.html"
         else:
             panel_path = reverse("panel_instructor_externo:panel")
@@ -987,16 +1160,27 @@ def actualizar_perfil(request):
     """
     Vista para que el usuario actualice sus datos personales y contraseña
     """
+    embed_mode = request.GET.get("embed") == "1" or request.POST.get("embed") == "1"
+
     # Verificar que el usuario esté autenticado
     if not request.session.get("responsable_autenticado"):
-        messages.warning(request, "Debe iniciar sesión para acceder a esta página.")
+        messages.warning(
+            request,
+            "Debe iniciar sesión para acceder a esta página.",
+            extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+        )
         return redirect("panel_visitante:login_responsable")
 
     documento = request.session.get("responsable_documento")
+    rol = request.session.get("responsable_rol")
     visitante = RegistroVisitante.objects.filter(documento=documento).first()
 
     if not visitante:
-        messages.error(request, "No se encontró el usuario.")
+        messages.error(
+            request,
+            "No se encontró el usuario.",
+            extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+        )
         return redirect("panel_visitante:login_responsable")
 
     if request.method == "POST":
@@ -1045,6 +1229,14 @@ def actualizar_perfil(request):
 
                 if visitante.check_password(contrasena_actual):
                     nueva_contrasena = form_contrasena.cleaned_data["nueva_contrasena"]
+
+                    if visitante.check_password(nueva_contrasena):
+                        messages.error(
+                            request,
+                            "La nueva contraseña no puede ser igual a la actual.",
+                        )
+                        return redirect("panel_visitante:actualizar_perfil")
+
                     visitante.set_password(nueva_contrasena)
                     visitante.save()
 
@@ -1072,6 +1264,16 @@ def actualizar_perfil(request):
         "form_contrasena": form_contrasena,
         "visitante": visitante,
         "titulo": "Actualizar Perfil",
+        "embed_mode": embed_mode,
+        "volver_url": (
+            reverse("panel_instructor_interno:panel")
+            if rol == "interno"
+            else (
+                reverse("panel_instructor_externo:panel")
+                if rol == "externo"
+                else reverse("panel_visitante:panel_responsable")
+            )
+        ),
     }
     return render(request, "actualizar_perfil.html", context)
 
@@ -1112,6 +1314,30 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
         messages.error(request, error_msg)
         return _redirect_segun_rol(request)
 
+    max_asistentes = (
+        visita.cantidad_aprendices if tipo == "interna" else visita.cantidad_visitantes
+    )
+    asistentes_actuales = visita.asistentes.count()
+    resumen_pendientes = _resumen_pendientes_correccion(visita, tipo)
+    sin_pendientes_correccion = resumen_pendientes["pendientes_correccion"] == 0
+    flujo_completo_con_finales = (
+        asistentes_actuales >= max_asistentes
+        and resumen_pendientes["archivos_finales_faltantes"] == 0
+    )
+    visita_confirmada = visita.estado == "confirmada"
+
+    if visita_confirmada or (flujo_completo_con_finales and sin_pendientes_correccion):
+        error_msg = (
+            "Ya no se puede actualizar este asistente porque la visita está "
+            "confirmada o no tiene correcciones pendientes."
+        )
+        if es_ajax:
+            return JsonResponse({"success": False, "error": error_msg}, status=400)
+        messages.warning(request, error_msg)
+        return redirect(
+            "panel_visitante:registrar_asistentes", tipo=tipo, visita_id=visita.id
+        )
+
     if request.method != "POST":
         if es_ajax:
             return JsonResponse(
@@ -1123,12 +1349,9 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
 
     from documentos.models import Documento as DocumentoModel
 
-    doc_salud = DocumentoModel.objects.filter(
-        categoria="Formato Auto Reporte Condiciones de Salud"
-    ).first()
-
     # Para AJAX llega "archivo_correccion". Para formulario tradicional,
     # se mantiene la compatibilidad con los nombres por asistente.
+    documento_subido_id = (request.POST.get("documento_subido_id") or "").strip()
     archivo_salud = request.FILES.get("archivo_correccion") or request.FILES.get(
         f"documento_salud_{asistente_id}"
     )
@@ -1149,23 +1372,49 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
     }
 
     if archivo_salud:
-        if not doc_salud:
-            error_msg = "Documento de salud no encontrado en el sistema."
+        extensiones_permitidas_docs = {
+            ".pdf",
+            ".doc",
+            ".docx",
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".xls",
+            ".xlsx",
+            ".ppt",
+            ".pptx",
+            ".txt",
+        }
+        extension = Path(archivo_salud.name).suffix.lower()
+        if extension not in extensiones_permitidas_docs:
+            error_msg = (
+                "Formato no permitido para la corrección. "
+                "Use PDF, Word, imagen, Excel, PowerPoint o TXT."
+            )
             if es_ajax:
                 return JsonResponse({"success": False, "error": error_msg}, status=400)
             messages.error(request, error_msg)
             return redirect(
-                "panel_visitante:registrar_asistentes", tipo=tipo, visita_id=visita.id
+                "panel_visitante:registrar_asistentes",
+                tipo=tipo,
+                visita_id=visita.id,
             )
 
-            extensiones_permitidas_docs = {".pdf", ".doc", ".docx"}
-            extension = Path(archivo_salud.name).suffix.lower()
-            if extension not in extensiones_permitidas_docs:
-                error_msg = "Solo se permiten archivos PDF o Word (.doc, .docx) para este documento."
+        if documento_subido_id:
+            filtros_doc = {"id": documento_subido_id}
+            if tipo == "interna":
+                filtros_doc["asistente_interna"] = asistente
+            else:
+                filtros_doc["asistente_externa"] = asistente
+
+            doc_objetivo = DocumentoSubidoAsistente.objects.select_related(
+                "documento_requerido"
+            ).filter(**filtros_doc).first()
+
+            if not doc_objetivo:
+                error_msg = "No se encontró el documento rechazado para este asistente."
                 if es_ajax:
-                    return JsonResponse(
-                        {"success": False, "error": error_msg}, status=400
-                    )
+                    return JsonResponse({"success": False, "error": error_msg}, status=400)
                 messages.error(request, error_msg)
                 return redirect(
                     "panel_visitante:registrar_asistentes",
@@ -1173,28 +1422,30 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
                     visita_id=visita.id,
                 )
 
-            if tipo == "interna":
-                DocumentoSubidoAsistente.objects.update_or_create(
-                    documento_requerido=doc_salud,
-                    asistente_interna=asistente,
-                    asistente_externa=None,
-                    defaults={
-                        "archivo": archivo_salud,
-                        "estado": "pendiente",
-                        "observaciones_revision": "",
-                    },
+            documento_objetivo = doc_objetivo.documento_requerido
+        else:
+            documento_objetivo = DocumentoModel.objects.filter(
+                categoria="Formato Auto Reporte Condiciones de Salud"
+            ).first()
+            if not documento_objetivo:
+                error_msg = "No se encontró el documento base de salud para registrar la corrección."
+                if es_ajax:
+                    return JsonResponse({"success": False, "error": error_msg}, status=400)
+                messages.error(request, error_msg)
+                return redirect(
+                    "panel_visitante:registrar_asistentes",
+                    tipo=tipo,
+                    visita_id=visita.id,
                 )
-            else:
-                DocumentoSubidoAsistente.objects.update_or_create(
-                    documento_requerido=doc_salud,
-                    asistente_interna=None,
-                    asistente_externa=asistente,
-                    defaults={
-                        "archivo": archivo_salud,
-                        "estado": "pendiente",
-                        "observaciones_revision": "",
-                    },
-                )
+
+        DocumentoSubidoAsistente.objects.create(
+            documento_requerido=documento_objetivo,
+            asistente_interna=asistente if tipo == "interna" else None,
+            asistente_externa=asistente if tipo == "externa" else None,
+            archivo=archivo_salud,
+            estado="pendiente",
+            observaciones_revision="",
+        )
 
     if archivo_autorizacion:
         actualizaciones_asistente.update(
@@ -1213,12 +1464,24 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
         visita.estado = "aprobada_inicial"
         visita.save(update_fields=["estado"])
 
+    resumen_pendientes = _resumen_pendientes_correccion(visita, tipo)
+
     success_msg = (
         f"Se actualizaron los archivos de {asistente.nombre_completo}. "
         "Ya puede reenviar la solicitud final."
     )
     if es_ajax:
-        return JsonResponse({"success": True, "message": success_msg})
+        return JsonResponse(
+            {
+                "success": True,
+                "message": success_msg,
+                **resumen_pendientes,
+                "listo_para_confirmar_envio": resumen_pendientes[
+                    "pendientes_correccion"
+                ]
+                == 0,
+            }
+        )
 
     messages.success(request, success_msg)
     return redirect(
@@ -1228,6 +1491,10 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
 
 def actualizar_info_asistente(request, tipo, asistente_id):
     """Actualiza solo la informacion basica del asistente (sin documentos)."""
+    embed_mode = (
+        request.GET.get("embed") == "1" or request.POST.get("embed") == "1"
+    )
+
     if not request.session.get("responsable_autenticado"):
         return redirect("panel_visitante:login_responsable")
 
@@ -1248,12 +1515,25 @@ def actualizar_info_asistente(request, tipo, asistente_id):
         messages.error(request, "Tipo de visita no valido.")
         return _redirect_segun_rol(request)
 
+    def _contexto(extra=None):
+        ctx = {
+            "asistente": asistente,
+            "tipo": tipo,
+            "visita": visita,
+            "tipo_documento_choices": asistente.TIPO_DOCUMENTO_CHOICES,
+            "embed_mode": embed_mode,
+        }
+        if extra:
+            ctx.update(extra)
+        return ctx
+
     if request.method == "POST":
         nombre = request.POST.get("nombre_completo", "").strip()
         tipo_doc = request.POST.get("tipo_documento", "").strip()
         numero_doc = request.POST.get("numero_documento", "").strip()
         correo_asistente = request.POST.get("correo", "").strip()
         telefono = request.POST.get("telefono", "").strip()
+        numero_doc_anterior = asistente.numero_documento
 
         if not nombre or not tipo_doc or not numero_doc:
             messages.error(
@@ -1262,12 +1542,7 @@ def actualizar_info_asistente(request, tipo, asistente_id):
             return render(
                 request,
                 "actualizar_info_asistente.html",
-                {
-                    "asistente": asistente,
-                    "tipo": tipo,
-                    "visita": visita,
-                    "tipo_documento_choices": asistente.TIPO_DOCUMENTO_CHOICES,
-                },
+                _contexto(),
             )
 
         duplicado_qs = asistente.__class__.objects.filter(
@@ -1283,12 +1558,7 @@ def actualizar_info_asistente(request, tipo, asistente_id):
             return render(
                 request,
                 "actualizar_info_asistente.html",
-                {
-                    "asistente": asistente,
-                    "tipo": tipo,
-                    "visita": visita,
-                    "tipo_documento_choices": asistente.TIPO_DOCUMENTO_CHOICES,
-                },
+                _contexto(),
             )
 
         asistente.nombre_completo = nombre
@@ -1298,10 +1568,106 @@ def actualizar_info_asistente(request, tipo, asistente_id):
         asistente.telefono = telefono
 
         try:
-            asistente.save()
-            messages.success(
-                request, "Informacion del asistente actualizada correctamente."
+            aprendiz_a_actualizar = None
+            campos_aprendiz_update = []
+
+            if tipo == "interna":
+                from panel_instructor_interno.models import Aprendiz, Ficha
+
+                ficha = Ficha.objects.filter(numero=visita.numero_ficha).first()
+                if ficha:
+                    # Buscar el aprendiz vinculado por documento anterior para mantener el mismo registro.
+                    aprendiz_a_actualizar = Aprendiz.objects.filter(
+                        ficha=ficha, numero_documento=numero_doc_anterior
+                    ).first()
+                    if not aprendiz_a_actualizar:
+                        aprendiz_a_actualizar = Aprendiz.objects.filter(
+                            ficha=ficha, numero_documento=numero_doc
+                        ).first()
+
+                    if aprendiz_a_actualizar:
+                        duplicado_aprendiz = Aprendiz.objects.filter(
+                            ficha=ficha, numero_documento=numero_doc
+                        ).exclude(id=aprendiz_a_actualizar.id)
+                        if duplicado_aprendiz.exists():
+                            messages.error(
+                                request,
+                                "No se puede actualizar porque ya existe otro aprendiz en la ficha con ese numero de documento.",
+                            )
+                            return render(
+                                request,
+                                "actualizar_info_asistente.html",
+                                _contexto(),
+                            )
+
+                        partes_nombre = [p for p in nombre.split() if p]
+                        apellido_actual_partes = [
+                            p
+                            for p in (aprendiz_a_actualizar.apellido or "").split()
+                            if p
+                        ]
+
+                        # Intenta conservar apellidos compuestos usando la cantidad de palabras
+                        # del apellido actual; si no hay referencia, asume 1 apellido.
+                        if len(partes_nombre) <= 1:
+                            nuevo_nombre = partes_nombre[0] if partes_nombre else nombre
+                            nuevo_apellido = aprendiz_a_actualizar.apellido or "-"
+                        else:
+                            apellido_len = (
+                                len(apellido_actual_partes)
+                                if apellido_actual_partes
+                                else 1
+                            )
+                            apellido_len = max(1, min(apellido_len, len(partes_nombre) - 1))
+                            nuevo_apellido = " ".join(partes_nombre[-apellido_len:])
+                            nuevo_nombre = " ".join(partes_nombre[:-apellido_len])
+
+                        aprendiz_a_actualizar.nombre = nuevo_nombre
+                        aprendiz_a_actualizar.apellido = nuevo_apellido
+                        aprendiz_a_actualizar.tipo_documento = tipo_doc
+                        aprendiz_a_actualizar.numero_documento = numero_doc
+                        aprendiz_a_actualizar.correo = correo_asistente
+                        aprendiz_a_actualizar.telefono = telefono
+                        campos_aprendiz_update = [
+                            "nombre",
+                            "apellido",
+                            "tipo_documento",
+                            "numero_documento",
+                            "correo",
+                            "telefono",
+                            "fecha_actualizacion",
+                        ]
+
+                if not aprendiz_a_actualizar:
+                    messages.warning(
+                        request,
+                        "Se actualizó el asistente, pero no se encontró un aprendiz asociado en la ficha para sincronizar.",
+                    )
+
+            with transaction.atomic():
+                asistente.save()
+                if aprendiz_a_actualizar and campos_aprendiz_update:
+                    aprendiz_a_actualizar.save(update_fields=campos_aprendiz_update)
+
+            mensaje_exito = "Informacion del asistente actualizada correctamente." + (
+                " También se sincronizó en la ficha del aprendiz."
+                if tipo == "interna" and aprendiz_a_actualizar
+                else ""
             )
+
+            if embed_mode:
+                return render(
+                    request,
+                    "actualizar_info_asistente.html",
+                    _contexto(
+                        {
+                            "actualizacion_exitosa": True,
+                            "mensaje_exito": mensaje_exito,
+                        }
+                    ),
+                )
+
+            messages.success(request, mensaje_exito)
             return _redirect_segun_rol(request, tipo=tipo, visita_id=visita.id)
         except IntegrityError:
             messages.error(request, "No se pudo actualizar por conflicto de datos.")
@@ -1309,12 +1675,7 @@ def actualizar_info_asistente(request, tipo, asistente_id):
     return render(
         request,
         "actualizar_info_asistente.html",
-        {
-            "asistente": asistente,
-            "tipo": tipo,
-            "visita": visita,
-            "tipo_documento_choices": asistente.TIPO_DOCUMENTO_CHOICES,
-        },
+        _contexto(),
     )
 
 
