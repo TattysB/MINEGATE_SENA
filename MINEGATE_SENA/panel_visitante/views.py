@@ -41,6 +41,10 @@ CATEGORIAS_ARCHIVOS_FINALES = {
     "charla de seguridad y calestenia",
     "charla de seguridad y calistenia",
 }
+CATEGORIAS_DOCUMENTOS_REGISTRO = {
+    "formato auto reporte condiciones de salud",
+    "formato autorizacion padres de familia",
+}
 AUTH_VISITANTE_MESSAGE_TAG = "auth_visitante"
 
 
@@ -97,10 +101,26 @@ def _es_categoria_archivo_final(categoria):
     return _normalizar_categoria_texto(categoria) in CATEGORIAS_ARCHIVOS_FINALES
 
 
+def _es_categoria_documento_registro(categoria):
+    return _normalizar_categoria_texto(categoria) in CATEGORIAS_DOCUMENTOS_REGISTRO
+
+
+def _agrupar_documentos_por_categoria(documentos):
+    documentos_por_categoria = {}
+    for doc in documentos:
+        categoria = doc.categoria
+        if categoria not in documentos_por_categoria:
+            documentos_por_categoria[categoria] = []
+        documentos_por_categoria[categoria].append(doc)
+    return documentos_por_categoria
+
+
 def _documentos_actuales_asistente(asistente, tipo):
-    filtros = {
-        "asistente_interna": asistente
-    } if tipo == "interna" else {"asistente_externa": asistente}
+    filtros = (
+        {"asistente_interna": asistente}
+        if tipo == "interna"
+        else {"asistente_externa": asistente}
+    )
 
     docs = (
         DocumentoSubidoAsistente.objects.filter(**filtros)
@@ -161,7 +181,9 @@ def _sincronizar_estado_asistente_por_docs(asistente, tipo):
 
 
 def _resumen_pendientes_correccion(visita, tipo):
-    asistentes_rechazados = visita.asistentes.filter(estado="documentos_rechazados").count()
+    asistentes_rechazados = visita.asistentes.filter(
+        estado="documentos_rechazados"
+    ).count()
 
     docs_finales_requeridos = Documento.objects.filter(
         categoria__in=[
@@ -507,12 +529,17 @@ def registrar_asistentes(request, tipo, visita_id):
     documentos_disponibles = Documento.objects.all().order_by(
         "categoria", "-fecha_subida"
     )
-    documentos_por_categoria = {}
-    for doc in documentos_disponibles:
-        categoria = doc.categoria
-        if categoria not in documentos_por_categoria:
-            documentos_por_categoria[categoria] = []
-        documentos_por_categoria[categoria].append(doc)
+    documentos_por_categoria = _agrupar_documentos_por_categoria(documentos_disponibles)
+    documentos_registro_por_categoria = {
+        categoria: docs
+        for categoria, docs in documentos_por_categoria.items()
+        if _es_categoria_documento_registro(categoria)
+    }
+    documentos_finales_por_categoria = {
+        categoria: docs
+        for categoria, docs in documentos_por_categoria.items()
+        if _es_categoria_archivo_final(categoria)
+    }
 
     asistentes_actuales = asistentes.count()
     puede_agregar = asistentes_actuales < max_asistentes
@@ -540,7 +567,8 @@ def registrar_asistentes(request, tipo, visita_id):
         "asistentes_actuales": asistentes_actuales,
         "max_asistentes": max_asistentes,
         "puede_agregar": puede_agregar,
-        "documentos_por_categoria": documentos_por_categoria,
+        "documentos_registro_por_categoria": documentos_registro_por_categoria,
+        "documentos_finales_por_categoria": documentos_finales_por_categoria,
         "asistentes_previos": asistentes_previos,
         "tiene_asistentes_previos": len(asistentes_previos) > 0,
         "mostrar_archivos_finales": mostrar_archivos_finales,
@@ -561,31 +589,26 @@ def registrar_asistentes(request, tipo, visita_id):
         primer_asistente = asistentes.first() if asistentes.exists() else None
 
         if primer_asistente:
-            for categoria, docs in context["documentos_por_categoria"].items():
-                if categoria in [
-                    "ATS",
-                    "Formato Inducción y Reinducción",
-                    "Charla de Seguridad y Calestenia",
-                ]:
-                    for doc in docs:
-                        archivo = request.FILES.get(f"archivo_final_{doc.id}")
-                        if archivo:
-                            # Reemplazar la versión anterior para permitir nueva revisión
-                            DocumentoSubidoAsistente.objects.update_or_create(
-                                documento_requerido=doc,
-                                asistente_interna=(
-                                    primer_asistente if tipo == "interna" else None
-                                ),
-                                asistente_externa=(
-                                    primer_asistente if tipo == "externa" else None
-                                ),
-                                defaults={
-                                    "archivo": archivo,
-                                    "estado": "pendiente",
-                                    "observaciones_revision": "",
-                                },
-                            )
-                            archivos_subidos.append(doc.titulo)
+            for docs in context["documentos_finales_por_categoria"].values():
+                for doc in docs:
+                    archivo = request.FILES.get(f"archivo_final_{doc.id}")
+                    if archivo:
+                        # Reemplazar la versión anterior para permitir nueva revisión
+                        DocumentoSubidoAsistente.objects.update_or_create(
+                            documento_requerido=doc,
+                            asistente_interna=(
+                                primer_asistente if tipo == "interna" else None
+                            ),
+                            asistente_externa=(
+                                primer_asistente if tipo == "externa" else None
+                            ),
+                            defaults={
+                                "archivo": archivo,
+                                "estado": "pendiente",
+                                "observaciones_revision": "",
+                            },
+                        )
+                        archivos_subidos.append(doc.titulo)
 
             if archivos_subidos:
                 _sincronizar_estado_asistente_por_docs(primer_asistente, tipo)
@@ -656,19 +679,21 @@ def registrar_asistentes(request, tipo, visita_id):
             documentos_disponibles = Documento.objects.all().order_by(
                 "categoria", "-fecha_subida"
             )
-            documentos_por_categoria = {}
-            for doc in documentos_disponibles:
-                categoria = doc.categoria
-                if categoria not in documentos_por_categoria:
-                    documentos_por_categoria[categoria] = []
-                documentos_por_categoria[categoria].append(doc)
+            documentos_por_categoria = _agrupar_documentos_por_categoria(
+                documentos_disponibles
+            )
+            documentos_registro_por_categoria = {
+                categoria: docs
+                for categoria, docs in documentos_por_categoria.items()
+                if _es_categoria_documento_registro(categoria)
+            }
 
             # Validar que solo el documento de 'Formato Auto Reporte Condiciones de Salud' fue subido
             archivos_ok = False
             archivos_dict = {}
             extensiones_permitidas_docs = {".pdf", ".doc", ".docx"}
             archivos_invalidos = []
-            for categoria, docs in documentos_por_categoria.items():
+            for categoria, docs in documentos_registro_por_categoria.items():
                 if categoria == "Formato Auto Reporte Condiciones de Salud":
                     for doc in docs:
                         file_field = f"documento_{doc.id}"
@@ -828,12 +853,17 @@ def registrar_asistentes(request, tipo, visita_id):
     documentos_disponibles = Documento.objects.all().order_by(
         "categoria", "-fecha_subida"
     )
-    documentos_por_categoria = {}
-    for doc in documentos_disponibles:
-        categoria = doc.categoria
-        if categoria not in documentos_por_categoria:
-            documentos_por_categoria[categoria] = []
-        documentos_por_categoria[categoria].append(doc)
+    documentos_por_categoria = _agrupar_documentos_por_categoria(documentos_disponibles)
+    documentos_registro_por_categoria = {
+        categoria: docs
+        for categoria, docs in documentos_por_categoria.items()
+        if _es_categoria_documento_registro(categoria)
+    }
+    documentos_finales_por_categoria = {
+        categoria: docs
+        for categoria, docs in documentos_por_categoria.items()
+        if _es_categoria_archivo_final(categoria)
+    }
 
     context = {
         "visita": visita,
@@ -842,7 +872,11 @@ def registrar_asistentes(request, tipo, visita_id):
         "asistentes_actuales": asistentes_actuales,
         "max_asistentes": max_asistentes,
         "puede_agregar": puede_agregar,
-        "documentos_por_categoria": documentos_por_categoria,
+        "documentos_registro_por_categoria": documentos_registro_por_categoria,
+        "documentos_finales_por_categoria": documentos_finales_por_categoria,
+        "asistentes_previos": asistentes_previos,
+        "tiene_asistentes_previos": len(asistentes_previos) > 0,
+        "mostrar_archivos_finales": mostrar_archivos_finales,
         "puede_actualizar_asistentes": puede_actualizar_asistentes,
     }
 
@@ -1407,14 +1441,18 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
             else:
                 filtros_doc["asistente_externa"] = asistente
 
-            doc_objetivo = DocumentoSubidoAsistente.objects.select_related(
-                "documento_requerido"
-            ).filter(**filtros_doc).first()
+            doc_objetivo = (
+                DocumentoSubidoAsistente.objects.select_related("documento_requerido")
+                .filter(**filtros_doc)
+                .first()
+            )
 
             if not doc_objetivo:
                 error_msg = "No se encontró el documento rechazado para este asistente."
                 if es_ajax:
-                    return JsonResponse({"success": False, "error": error_msg}, status=400)
+                    return JsonResponse(
+                        {"success": False, "error": error_msg}, status=400
+                    )
                 messages.error(request, error_msg)
                 return redirect(
                     "panel_visitante:registrar_asistentes",
@@ -1430,7 +1468,9 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
             if not documento_objetivo:
                 error_msg = "No se encontró el documento base de salud para registrar la corrección."
                 if es_ajax:
-                    return JsonResponse({"success": False, "error": error_msg}, status=400)
+                    return JsonResponse(
+                        {"success": False, "error": error_msg}, status=400
+                    )
                 messages.error(request, error_msg)
                 return redirect(
                     "panel_visitante:registrar_asistentes",
@@ -1491,9 +1531,7 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
 
 def actualizar_info_asistente(request, tipo, asistente_id):
     """Actualiza solo la informacion basica del asistente (sin documentos)."""
-    embed_mode = (
-        request.GET.get("embed") == "1" or request.POST.get("embed") == "1"
-    )
+    embed_mode = request.GET.get("embed") == "1" or request.POST.get("embed") == "1"
 
     if not request.session.get("responsable_autenticado"):
         return redirect("panel_visitante:login_responsable")
@@ -1618,7 +1656,9 @@ def actualizar_info_asistente(request, tipo, asistente_id):
                                 if apellido_actual_partes
                                 else 1
                             )
-                            apellido_len = max(1, min(apellido_len, len(partes_nombre) - 1))
+                            apellido_len = max(
+                                1, min(apellido_len, len(partes_nombre) - 1)
+                            )
                             nuevo_apellido = " ".join(partes_nombre[-apellido_len:])
                             nuevo_nombre = " ".join(partes_nombre[:-apellido_len])
 

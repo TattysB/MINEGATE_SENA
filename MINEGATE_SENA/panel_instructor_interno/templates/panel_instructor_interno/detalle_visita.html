@@ -398,6 +398,47 @@
         <small class="text-muted">{{ visita.asistentes.count }} de {{ visita.cantidad_aprendices }} aprendices registrados</small>
       </div>
 
+      {% if documentos_finales_requeridos %}
+      <div class="mb-3" style="border-left: 4px solid #667eea; background: #fff; border-radius: 16px; padding: 16px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);">
+        <h4 style="margin: 0 0 8px; font-weight: 800; color: #0f172a; font-size: 1.45rem; line-height: 1.25;">
+          <i class="fas fa-download" style="color: #22c55e; margin-right: 10px;"></i>Documentos Requeridos para realizar la visita
+        </h4>
+        <p style="color: #666; margin-bottom: 14px; font-size: 0.92rem;">Descargue, diligencie y tenga listos los siguientes documentos para completar el proceso.</p>
+
+        {% for doc in documentos_finales_requeridos %}
+        <div style="border: 1px solid #d1d5db; border-radius: 16px; overflow: hidden; margin-bottom: 14px; background: #fff;">
+          <div style="display:flex; align-items:center; gap:12px; padding: 12px 14px; background: #e9f4df;">
+            <div style="width:40px; height:40px; border-radius:12px; background:#38b000; display:flex; align-items:center; justify-content:center; box-shadow: 0 8px 20px rgba(56,176,0,.28);">
+              <i class="fas fa-{% if 'ATS' in doc.etiqueta_requerida %}clipboard-list{% elif 'Inducción' in doc.etiqueta_requerida %}graduation-cap{% elif 'Charla' in doc.etiqueta_requerida %}users{% else %}file-lines{% endif %}" style="color:#fff; font-size:1.1rem;"></i>
+            </div>
+            <div>
+              <h5 style="margin:0; font-weight:800; color:#0f172a; font-size:1.12rem; line-height:1.25;">{{ doc.etiqueta_requerida }}</h5>
+              <p style="margin:2px 0 0; color:#475569; font-size:0.84rem;">Documento requerido para completar el proceso</p>
+            </div>
+          </div>
+
+          <div style="padding: 12px 14px; background: #f8f9fa; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 230px;">
+              <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% elif doc.extension == '.jpg' or doc.extension == '.jpeg' or doc.extension == '.png' %}file-image{% else %}file-alt{% endif %}" style="font-size: 1.5rem; color: {% if doc.extension == '.pdf' %}#dc2626{% elif doc.extension == '.doc' or doc.extension == '.docx' %}#2563eb{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}#059669{% else %}#667eea{% endif %};"></i>
+              <div>
+                <strong style="color: #333; font-size: 0.95rem;">{{ doc.etiqueta_requerida }}</strong><br>
+                <small style="color: #888; font-size: 0.83rem;">{{ doc.nombre_archivo }} &middot; {{ doc.tamaño_legible }}</small>
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button type="button" onclick="verDocumentoFinal('{% url 'documentos:ver_documento_inline' doc.id %}', '{{ doc.etiqueta_requerida|escapejs }}', '{{ doc.extension|default:'' }}', '{% url 'documentos:descargar_documento' doc.id %}')" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 8px 18px; border-radius: 8px; border: none; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; cursor: pointer;">
+                <i class="fas fa-eye"></i> Ver
+              </button>
+              <a href="{% url 'documentos:descargar_documento' doc.id %}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 8px 18px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
+                <i class="fas fa-download"></i> Descargar
+              </a>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
       {% if visita.estado == 'aprobada_inicial' %}
         <div class="info-box-aprobada mb-3">
           <i class="fas fa-check-circle me-2"></i>
@@ -1069,6 +1110,148 @@
       const statusMensaje = document.getElementById('statusMensajeAsistente');
       if (statusMensaje) statusMensaje.style.display = 'none';
     }
+  }
+
+  let docxPreviewLoaderPromiseDetalle = null;
+
+  function loadScriptOnceDetalle(src) {
+    return new Promise((resolve, reject) => {
+      const existing = document.querySelector(`script[src="${src}"]`);
+      if (existing) {
+        if (existing.getAttribute('data-loaded') === 'true') {
+          resolve();
+          return;
+        }
+        existing.addEventListener('load', () => resolve(), { once: true });
+        existing.addEventListener('error', () => reject(new Error(`No se pudo cargar ${src}`)), { once: true });
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = src;
+      script.async = true;
+      script.onload = () => {
+        script.setAttribute('data-loaded', 'true');
+        resolve();
+      };
+      script.onerror = () => reject(new Error(`No se pudo cargar ${src}`));
+      document.head.appendChild(script);
+    });
+  }
+
+  function ensureDocxPreviewReadyDetalle() {
+    if (window.docx && window.JSZip) {
+      return Promise.resolve();
+    }
+
+    if (docxPreviewLoaderPromiseDetalle) {
+      return docxPreviewLoaderPromiseDetalle;
+    }
+
+    docxPreviewLoaderPromiseDetalle = loadScriptOnceDetalle('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js')
+      .then(() => loadScriptOnceDetalle('https://cdn.jsdelivr.net/npm/docx-preview@0.3.3/dist/docx-preview.min.js'))
+      .finally(() => {
+        if (!(window.docx && window.JSZip)) {
+          docxPreviewLoaderPromiseDetalle = null;
+        }
+      });
+
+    return docxPreviewLoaderPromiseDetalle;
+  }
+
+  function verDocumentoFinal(urlViewer, titulo, extension, urlDescarga) {
+    const imgExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    let extNormalizada = (extension || '').toLowerCase();
+    if (extNormalizada && !extNormalizada.startsWith('.')) {
+      extNormalizada = '.' + extNormalizada;
+    }
+
+    const modalVerDoc = document.createElement('div');
+    modalVerDoc.id = 'modalVerDocFinal';
+    modalVerDoc.style.cssText = 'display:block; position:fixed; z-index:12000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.75); overflow-y:auto;';
+
+    const contenido = document.createElement('div');
+    contenido.style.cssText = 'background:#fff; margin:2% auto; padding:20px; border-radius:12px; width:92%; max-width:960px; height:90vh; display:flex; flex-direction:column; box-shadow:0 8px 40px rgba(0,0,0,0.4);';
+
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid #e5e7eb;';
+    header.innerHTML = `
+      <h5 style="margin:0; color:#1f2937; font-size:16px;"><i class="fas fa-file me-2" style="color:#667eea;"></i>${titulo}</h5>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <a href="${urlDescarga}" download style="background:#667eea; color:white; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:13px; display:inline-flex; align-items:center; gap:4px; font-weight:600;">
+          <i class="fas fa-download"></i> Descargar
+        </a>
+        <button type="button" style="background:#ef4444; color:white; border:none; font-size:18px; cursor:pointer; width:36px; height:36px; border-radius:6px; display:flex; align-items:center; justify-content:center;">&times;</button>
+      </div>
+    `;
+
+    const cuerpoNuevo = document.createElement('div');
+    cuerpoNuevo.style.cssText = 'flex:1; overflow:auto; border:1px solid #e5e7eb; border-radius:8px; background:#f0f0f0; display:flex; align-items:center; justify-content:center;';
+
+    if (extNormalizada === '.pdf' || imgExts.includes(extNormalizada)) {
+      cuerpoNuevo.innerHTML = '<iframe src="' + urlViewer + '" style="width:100%; height:100%; min-height:600px; border:none;"></iframe>';
+    } else if (extNormalizada === '.docx') {
+      cuerpoNuevo.innerHTML = '<div id="docxPreviewContainerDetalle" style="width:100%; height:100%; overflow:auto; background:#fff; padding:24px;">'
+        + '<div style="text-align:center; color:#6b7280; padding:40px 20px;">'
+        + '<i class="fas fa-spinner fa-spin" style="font-size:26px; display:block; margin-bottom:12px;"></i>'
+        + 'Cargando documento Word...'
+        + '</div></div>';
+
+      ensureDocxPreviewReadyDetalle()
+        .then(() => fetch(urlViewer, { credentials: 'same-origin' }))
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`No se pudo obtener el DOCX (HTTP ${response.status})`);
+          }
+          return response.arrayBuffer();
+        })
+        .then(arrayBuffer => {
+          const container = document.getElementById('docxPreviewContainerDetalle');
+          if (!container) return;
+          container.innerHTML = '';
+          return window.docx.renderAsync(arrayBuffer, container, null, {
+            inWrapper: true,
+            breakPages: true,
+            ignoreWidth: false,
+            ignoreHeight: false,
+          });
+        })
+        .catch(err => {
+          console.error('Error previsualizando DOCX en detalle visita interna:', err);
+          const container = document.getElementById('docxPreviewContainerDetalle');
+          if (!container) return;
+          container.innerHTML = '<div style="text-align:center; padding:50px; color:#6b7280;">'
+            + '<i class="fas fa-file-word" style="font-size:64px; color:#9ca3af; display:block; margin-bottom:20px;"></i>'
+            + '<p style="font-size:16px; margin-bottom:20px;">No se pudo mostrar el archivo Word.</p>'
+            + '<a href="' + urlDescarga + '" download style="background:#667eea; color:white; padding:12px 28px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:8px;">'
+            + '<i class="fas fa-download"></i> Descargar</a></div>';
+        });
+    } else {
+      cuerpoNuevo.innerHTML = '<div style="text-align:center; padding:50px; color:#6b7280;">'
+        + '<i class="fas fa-file-alt" style="font-size:64px; color:#9ca3af; display:block; margin-bottom:20px;"></i>'
+        + '<p style="font-size:16px; margin-bottom:20px;">Vista previa no disponible para este tipo de archivo.</p>'
+        + '<a href="' + urlDescarga + '" download style="background:#667eea; color:white; padding:12px 28px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:8px;">'
+        + '<i class="fas fa-download"></i> Descargar</a></div>';
+    }
+
+    contenido.appendChild(header);
+    contenido.appendChild(cuerpoNuevo);
+    modalVerDoc.appendChild(contenido);
+    document.body.appendChild(modalVerDoc);
+
+    header.querySelector('button').onclick = function() {
+      modalVerDoc.remove();
+      document.body.style.overflow = '';
+    };
+
+    modalVerDoc.onclick = function(e) {
+      if (e.target === modalVerDoc) {
+        modalVerDoc.remove();
+        document.body.style.overflow = '';
+      }
+    };
+
+    document.body.style.overflow = 'hidden';
   }
 
   function abrirModalConfirmacion() {

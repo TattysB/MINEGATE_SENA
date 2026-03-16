@@ -94,6 +94,42 @@
             background: #fbfcfd;
         }
 
+        .docs-registro-section h4 {
+            font-size: 1.45rem;
+            margin-bottom: 0.7rem;
+        }
+
+        .docs-registro-intro {
+            font-size: 0.92rem;
+            margin-bottom: 16px !important;
+        }
+
+        .docs-registro-section .docs-categoria-header {
+            padding: 12px 14px;
+        }
+
+        .docs-registro-section .docs-categoria-icono {
+            width: 38px;
+            height: 38px;
+            font-size: 0.95rem;
+        }
+
+        .docs-registro-section .docs-categoria-titulo {
+            font-size: 1rem;
+        }
+
+        .docs-registro-section .docs-categoria-subtitulo {
+            font-size: 0.8rem;
+        }
+
+        .docs-registro-item-title {
+            font-size: 0.95rem;
+        }
+
+        .docs-registro-item-meta {
+            font-size: 0.8rem;
+        }
+
         .docs-warning-box {
             background: #fff7d6;
             border: 1px solid #f4dd95;
@@ -122,11 +158,11 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            font-size: 2rem;
+            font-size: 1.45rem;
             font-weight: 800;
             letter-spacing: 0.2px;
             color: #111827;
-            margin-bottom: 1.2rem;
+            margin-bottom: 0.9rem;
         }
 
         .form-card h4 i {
@@ -271,11 +307,6 @@
     <div class="progress-section">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
             <h4 style="margin: 0;"><i class="fas fa-chart-pie me-2" style="color: #00af00;"></i>Progreso de Registro</h4>
-            {% if mostrar_archivos_finales %}
-            <a href="#seccion-archivos-finales" style="background: linear-gradient(135deg, #228B22 0%, #2ecc40 100%); color: white; padding: 8px 18px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
-                <i class="fas fa-folder-open"></i> Ver Archivos Finales
-            </a>
-            {% endif %}
         </div>
         <div class="progress-bar-custom">
             {% widthratio asistentes_actuales max_asistentes 100 as progress_percent %}
@@ -297,11 +328,11 @@
     {% endif %}
 
     <!-- Documentos para descargar -->
-    {% if documentos_por_categoria %}
-    <div class="form-card" style="border-left: 4px solid #667eea;">
+    {% if documentos_registro_por_categoria %}
+    <div class="form-card docs-registro-section" style="border-left: 4px solid #667eea;">
         <h4><i class="fas fa-download" style="color: #667eea;"></i> Documentos Requeridos para el registro de asistentes</h4>
-        <p style="color: #666; margin-bottom: 25px;">Descargue, diligencie y tenga listos los siguientes documentos antes de registrar a los asistentes.</p>
-        {% for categoria, docs in documentos_por_categoria.items %}
+        <p class="docs-registro-intro" style="color: #666; margin-bottom: 25px;">Descargue, diligencie y tenga listos los siguientes documentos antes de registrar a los asistentes.</p>
+        {% for categoria, docs in documentos_registro_por_categoria.items %}
         <div class="docs-categoria-card">
             <div class="docs-categoria-header">
                 <div class="docs-categoria-icono">
@@ -319,9 +350,9 @@
                         <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% elif doc.extension == '.jpg' or doc.extension == '.jpeg' or doc.extension == '.png' %}file-image{% else %}file-alt{% endif %}"
                            style="font-size: 1.5rem; color: {% if doc.extension == '.pdf' %}#dc2626{% elif doc.extension == '.doc' or doc.extension == '.docx' %}#2563eb{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}#059669{% else %}#667eea{% endif %};"></i>
                         <div>
-                            <strong style="color: #333;">{{ doc.categoria }}</strong><br>
-                            <small style="color: #888;">{{ doc.nombre_archivo }} &middot; {{ doc.tamaño_legible }}</small>
-                            {% if doc.descripcion %}<br><small style="color: #666;">{{ doc.descripcion }}</small>{% endif %}
+                            <strong class="docs-registro-item-title" style="color: #333;">{{ doc.categoria }}</strong><br>
+                            <small class="docs-registro-item-meta" style="color: #888;">{{ doc.nombre_archivo }} &middot; {{ doc.tamaño_legible }}</small>
+                            {% if doc.descripcion %}<br><small class="docs-registro-item-meta" style="color: #666;">{{ doc.descripcion }}</small>{% endif %}
                         </div>
                     </div>
                     <div style="display: flex; gap: 8px; align-items: center;">
@@ -386,7 +417,7 @@
                 <h5 class="titulo-archivos">Subir Archivos Requeridos <span class="required">*</span></h5>
                 
                 <!-- Formato Auto Reporte Condiciones de Salud -->
-                {% for categoria, docs in documentos_por_categoria.items %}
+                {% for categoria, docs in documentos_registro_por_categoria.items %}
                     {% if categoria == 'Formato Auto Reporte Condiciones de Salud' %}
                         <div class="docs-categoria-card" style="margin-bottom: 16px;">
                             <div class="docs-categoria-header">
@@ -413,7 +444,7 @@
                 {% endfor %}
 
                 <!-- Formato Autorización Padres de Familia con advertencia -->
-                {% for categoria, docs in documentos_por_categoria.items %}
+                {% for categoria, docs in documentos_registro_por_categoria.items %}
                     {% if categoria == 'Formato Autorización Padres de Familia' %}
                         <div class="docs-categoria-card" style="margin-bottom: 18px;">
                             <div class="docs-categoria-header">
@@ -459,40 +490,6 @@
             </div>
         </form>
     </div>
-
-    <!-- Asistentes previos disponibles -->
-    {% if tiene_asistentes_previos %}
-    <div class="form-card" style="border-left: 4px solid #10b981; background: #f0fdf4;">
-        <h4><i class="fas fa-history" style="color: #10b981;"></i> Asistentes de Visitas Anteriores</h4>
-        <p style="color: #666; margin-bottom: 15px;">Puede reutilizar asistentes de visitas anteriores del mismo programa o institución. Haga clic en "Reutilizar" para agregar.</p>
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px;">
-            {% for asistente_prev in asistentes_previos %}
-                <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb; display: flex; flex-direction: column; justify-content: space-between;">
-                    <div>
-                        <h6 style="margin: 0 0 8px 0; color: #1f2937; font-weight: 600;">{{ asistente_prev.1 }}</h6>
-                        <p style="margin: 4px 0; font-size: 0.85rem; color: #6b7280;">
-                            <i class="fas fa-id-card me-1"></i>{{ asistente_prev.2 }}: {{ asistente_prev.3 }}
-                        </p>
-                        {% if asistente_prev.4 %}
-                            <p style="margin: 4px 0; font-size: 0.85rem; color: #6b7280;">
-                                <i class="fas fa-envelope me-1"></i>{{ asistente_prev.4 }}
-                            </p>
-                        {% endif %}
-                        {% if asistente_prev.5 %}
-                            <p style="margin: 4px 0; font-size: 0.85rem; color: #6b7280;">
-                                <i class="fas fa-phone me-1"></i>{{ asistente_prev.5 }}
-                            </p>
-                        {% endif %}
-                    </div>
-                    <a href="{% url 'panel_visitante:copiar_asistente_previo' tipo=tipo visita_id=visita.id asistente_previo_id=asistente_prev.0 %}" 
-                       style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; margin-top: 10px; border: none; cursor: pointer; text-align: center; justify-content: center;">
-                        <i class="fas fa-check-circle"></i> Reutilizar
-                    </a>
-                </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
 
     <!-- Lista de asistentes registrados -->
     <div class="asistentes-list">
@@ -543,39 +540,6 @@
             </div>
         {% endif %}
     </div>
-
-    <!-- Sección de Archivos Finales -->
-    {% if mostrar_archivos_finales %}
-    <div id="seccion-archivos-finales" class="form-card" style="border-left: 4px solid #228B22; background: #f0fdf4;">
-        <h4 style="color: #145A32; margin-bottom: 18px;"><i class="fas fa-folder-open me-2"></i> Archivos Finales</h4>
-        <p style="color: #333; margin-bottom: 18px; font-size: 0.95rem;">Suba los archivos requeridos para finalizar el proceso:</p>
-        <form method="post" enctype="multipart/form-data" id="formArchivosFinales">
-            {% csrf_token %}
-            {% for categoria, docs in documentos_por_categoria.items %}
-                {% if categoria == 'ATS' or categoria == 'Formato Inducción y Reinducción' or categoria == 'Charla de Seguridad y Calestenia' %}
-                    <div style="margin-bottom: 20px;">
-                        <h5 style="color: #228B22; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #bbf7d0;"><i class="fas fa-{% if 'ATS' in categoria %}file-alt{% elif 'Inducción' in categoria %}file-pdf{% else %}users{% endif %} me-2"></i>{{ categoria }}</h5>
-                        {% for doc in docs %}
-                            <div style="margin-bottom: 16px; padding: 12px; background: white; border-radius: 8px; border: 1px solid #d1fae5;">
-                                <label style="font-weight: 600; color: #333; display: block; margin-bottom: 8px;">
-                                    <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% else %}file-alt{% endif %}" style="font-size: 1.2rem; color: {% if doc.extension == '.pdf' %}#dc2626{% elif doc.extension == '.doc' or doc.extension == '.docx' %}#2563eb{% else %}#059669{% endif %}; margin-right: 6px;"></i>
-                                    {{ doc.categoria }}
-                                </label>
-                                <input type="file" name="archivo_final_{{ doc.id }}" accept=".pdf,.doc,.docx" class="form-control" style="padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px;">
-                                {% if doc.descripcion %}<small style="color: #666; display: block; margin-top: 4px;">{{ doc.descripcion }}</small>{% endif %}
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            {% endfor %}
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button type="submit" style="background: linear-gradient(135deg, #228B22 0%, #2ecc40 100%); color: #fff; font-weight: bold; padding: 12px 28px; border: none; border-radius: 8px; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(34,139,34,0.4)'," onmouseout="this.style.transform='none'; this.style.boxShadow='none'">
-                    <i class="fas fa-upload"></i> Subir Archivos Finales
-                </button>
-            </div>
-        </form>
-    </div>
-    {% endif %}
 
     <!-- Botón volver -->
     <div class="text-center mt-4">
