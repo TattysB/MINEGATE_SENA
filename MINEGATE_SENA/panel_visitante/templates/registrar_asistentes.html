@@ -1,0 +1,553 @@
+{% load static %}
+{% load bootstrap5 %}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Registrar Asistentes - MINEGATE</title>
+    {% bootstrap_css %}
+    {% bootstrap_javascript %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'registrar_asistentes.css' %}">
+    <style>
+        html, body {
+            height: 100%;
+            font-family: 'Work Sans', sans-serif;
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-header">
+    <div class="container">
+        <nav class="breadcrumb-custom mb-2">
+            {% if request.session.responsable_rol == 'interno' %}
+                <a href="{% url 'panel_instructor_interno:detalle_visita' visita.id %}"><i class="fas fa-arrow-left me-2"></i>Volver al detalle de la visita</a>
+            {% elif request.session.responsable_rol == 'externo' %}
+                <a href="{% url 'panel_instructor_externo:detalle_visita' visita.id %}"><i class="fas fa-arrow-left me-2"></i>Volver al detalle de la visita</a>
+            {% else %}
+                <a href="{% url 'panel_visitante:panel_responsable' %}"><i class="fas fa-arrow-left me-2"></i>Volver al Panel</a>
+            {% endif %}
+        </nav>
+        <h1><i class="fas fa-user-plus me-3"></i>Registrar Asistentes</h1>
+        <p>{% if tipo == 'interna' %}Visita Interna{% else %}Visita Externa{% endif %} #{{ visita.id }}</p>
+    </div>
+</div>
+
+<div class="container pb-5">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{% if 'error' in message.tags %}danger{% elif 'success' in message.tags %}success{% else %}warning{% endif %}">
+                <i class="fas fa-{% if 'error' in message.tags %}exclamation-circle{% elif 'success' in message.tags %}check-circle{% else %}info-circle{% endif %} me-2"></i>
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Resumen de la visita -->
+    <div class="visita-summary">
+        <h4><i class="fas fa-info-circle"></i> Información de la Visita</h4>
+        <div class="summary-grid">
+            {% if tipo == 'interna' %}
+                <div class="summary-item">
+                    <label>Programa</label>
+                    <span>{{ visita.nombre_programa }}</span>
+                </div>
+                <div class="summary-item">
+                    <label>Ficha</label>
+                    <span>{{ visita.numero_ficha }}</span>
+                </div>
+                <div class="summary-item">
+                    <label>Responsable</label>
+                    <span>{{ visita.responsable }}</span>
+                </div>
+            {% else %}
+                <div class="summary-item">
+                    <label>Institución</label>
+                    <span>{{ visita.nombre }}</span>
+                </div>
+                <div class="summary-item">
+                    <label>Responsable</label>
+                    <span>{{ visita.nombre_responsable }}</span>
+                </div>
+            {% endif %}
+            <div class="summary-item">
+                <label>Estado</label>
+                <span style="color: #10b981;"><i class="fas fa-check-circle"></i> Aprobada</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progreso de registro -->
+    <div class="progress-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h4 style="margin: 0;"><i class="fas fa-chart-pie me-2" style="color: #00af00;"></i>Progreso de Registro</h4>
+            {% if mostrar_archivos_finales %}
+            <a href="#seccion-archivos-finales" style="background: linear-gradient(135deg, #228B22 0%, #2ecc40 100%); color: white; padding: 8px 18px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
+                <i class="fas fa-folder-open"></i> Ver Archivos Finales
+            </a>
+            {% endif %}
+        </div>
+        <div class="progress-bar-custom">
+            {% widthratio asistentes_actuales max_asistentes 100 as progress_percent %}
+            <div class="progress-fill {% if asistentes_actuales >= max_asistentes %}full{% endif %}" style="width: {{ progress_percent }}%;">
+                {% if progress_percent > 15 %}{{ asistentes_actuales }} / {{ max_asistentes }}{% endif %}
+            </div>
+        </div>
+        <p class="text-center text-muted mb-0">
+            <strong>{{ asistentes_actuales }}</strong> de <strong>{{ max_asistentes }}</strong> asistentes registrados
+        </p>
+    </div>
+
+    {% if not puede_agregar %}
+        <div class="limit-warning">
+            <i class="fas fa-exclamation-triangle d-block"></i>
+            <h5>Límite de asistentes alcanzado</h5>
+            <p class="mb-0">Ya ha registrado el número máximo de asistentes permitidos para esta visita.</p>
+        </div>
+    {% endif %}
+
+    <!-- Documentos para descargar -->
+    {% if documentos_por_categoria %}
+    <div class="form-card" style="border-left: 4px solid #667eea;">
+        <h4><i class="fas fa-download" style="color: #667eea;"></i> Documentos Requeridos para el registro de asistentes</h4>
+        <p style="color: #666; margin-bottom: 25px;">Descargue, diligencie y tenga listos los siguientes documentos antes de registrar a los asistentes.</p>
+        {% for categoria, docs in documentos_por_categoria.items %}
+        <div style="margin-bottom: 20px;">
+            <h5 style="color: #333; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #e5e7eb;">{{ categoria }}</h5>
+            {% for doc in docs %}
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: #f8f9fa; border-radius: 10px; margin-bottom: 8px; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 200px;">
+                    <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% elif doc.extension == '.jpg' or doc.extension == '.jpeg' or doc.extension == '.png' %}file-image{% else %}file-alt{% endif %}"
+                       style="font-size: 1.5rem; color: {% if doc.extension == '.pdf' %}#dc2626{% elif doc.extension == '.doc' or doc.extension == '.docx' %}#2563eb{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}#059669{% else %}#667eea{% endif %};"></i>
+                    <div>
+                        <strong style="color: #333;">{{ doc.titulo }}</strong><br>
+                        <small style="color: #888;">{{ doc.nombre_archivo }} &middot; {{ doc.tamaño_legible }}</small>
+                        {% if doc.descripcion %}<br><small style="color: #666;">{{ doc.descripcion }}</small>{% endif %}
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button type="button" onclick="verDocumento('{% url 'documentos:ver_documento_inline' doc.id %}', '{{ doc.titulo }}', '{{ doc.extension }}', '{% url 'documentos:descargar_documento_publico' doc.id %}')"
+                       style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 8px 18px; border-radius: 8px; border: none; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; cursor: pointer;">
+                        <i class="fas fa-eye"></i> Ver
+                    </button>
+                    <a href="{% url 'documentos:descargar_documento_publico' doc.id %}"
+                       style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 8px 18px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
+                        <i class="fas fa-download"></i> Descargar
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Formulario para agregar asistente -->
+    <div class="form-card">
+        <h4><i class="fas fa-plus-circle"></i> Agregar Nuevo Asistente</h4>
+        
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Nombre Completo <span class="required">*</span></label>
+                    <input type="text" name="nombre_completo" class="form-control" placeholder="Nombre completo del asistente" required {% if not puede_agregar %}disabled{% endif %}>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Documento <span class="required">*</span></label>
+                    <select name="tipo_documento" class="form-control" required {% if not puede_agregar %}disabled{% endif %}>
+                        <option value="">Seleccione...</option>
+                        <option value="CC">Cédula de Ciudadanía</option>
+                        <option value="CE">Cédula de Extranjería</option>
+                        <option value="TI">Tarjeta de Identidad</option>
+                        <option value="PPT">Permiso Especial de Permanencia</option>
+                        <option value="PP">Pasaporte</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Número de Documento <span class="required">*</span></label>
+                    <input type="text" name="numero_documento" class="form-control" placeholder="Número de documento" required {% if not puede_agregar %}disabled{% endif %}>
+                </div>
+                <div class="form-group">
+                    <label>Correo Electrónico</label>
+                    <input type="email" name="correo" class="form-control" placeholder="correo@ejemplo.com" {% if not puede_agregar %}disabled{% endif %}>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Teléfono</label>
+                    <input type="text" name="telefono" class="form-control" placeholder="Número de teléfono" {% if not puede_agregar %}disabled{% endif %}>
+                </div>
+            </div>
+            <hr>
+            <div class="form-group">
+                <h5 style="margin-bottom:10px;">Subir Archivos Requeridos <span class="required">*</span></h5>
+                
+                <!-- Formato Auto Reporte Condiciones de Salud -->
+                {% for categoria, docs in documentos_por_categoria.items %}
+                    {% if categoria == '👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud' %}
+                        <div style="margin-bottom: 18px;">
+                            <strong>{{ categoria }}</strong>
+                            {% for doc in docs %}
+                                <div class="form-group" style="margin-bottom:16px;">
+                                    <label style="font-weight:500; margin-bottom:6px;">
+                                        <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% elif doc.extension == '.jpg' or doc.extension == '.jpeg' or doc.extension == '.png' %}file-image{% else %}file-alt{% endif %}"
+                                           style="font-size: 1.2rem; color: {% if doc.extension == '.pdf' %}#dc2626{% elif doc.extension == '.doc' or doc.extension == '.docx' %}#2563eb{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}#059669{% else %}#667eea{% endif %}; margin-right:8px;"></i>
+                                        {{ doc.titulo }} <span class="required">*</span>
+                                    </label>
+                                    <input type="file" name="documento_{{ doc.id }}" class="form-control" required {% if not puede_agregar %}disabled{% endif %} style="max-width:100%;">
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+
+                <!-- Formato Autorización Padres de Familia con advertencia -->
+                {% for categoria, docs in documentos_por_categoria.items %}
+                    {% if categoria == '📋 Formato Autorización Padres de Familia' %}
+                        <div style="margin-bottom: 18px; padding: 15px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px;">
+                            <div style="display: flex; align-items: start; gap: 12px; margin-bottom: 12px;">
+                                <i class="fas fa-exclamation-triangle" style="color: #f59e0b; font-size: 1.5rem; margin-top: 2px;"></i>
+                                <div>
+                                    <strong style="color: #92400e; font-size: 1.05rem; display: block; margin-bottom: 6px;">
+                                        ⚠️ IMPORTANTE - Menores de Edad
+                                    </strong>
+                                    <p style="color: #78350f; margin: 0; line-height: 1.5;">
+                                        Si eres <strong>menor de 18 años</strong>, es <strong>OBLIGATORIO</strong> subir el formato de autorización de padres de familia firmado. 
+                                        <strong style="display: block; margin-top: 4px;">Sin este documento NO podrás realizar la visita.</strong>
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <strong>{{ categoria }}</strong>
+                            {% for doc in docs %}
+                                <div class="form-group" style="margin-bottom:16px; margin-top: 12px;">
+                                    <label style="font-weight:500; margin-bottom:6px;">
+                                        <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% elif doc.extension == '.jpg' or doc.extension == '.jpeg' or doc.extension == '.png' %}file-image{% else %}file-alt{% endif %}"
+                                           style="font-size: 1.2rem; color: {% if doc.extension == '.pdf' %}#dc2626{% elif doc.extension == '.doc' or doc.extension == '.docx' %}#2563eb{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}#059669{% else %}#667eea{% endif %}; margin-right:8px;"></i>
+                                        {{ doc.titulo }} <span style="color: #92400e;">(Requerido para menores de edad)</span>
+                                    </label>
+                                    <input type="file" name="documento_{{ doc.id }}" class="form-control" {% if not puede_agregar %}disabled{% endif %} style="max-width:100%;">
+                                    <small style="color: #78350f; font-style: italic; display: block; margin-top: 4px;">
+                                        Deja este campo vacío solo si eres mayor de edad
+                                    </small>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <div class="text-end mt-4">
+                <button type="submit" class="btn-submit" {% if not puede_agregar %}disabled{% endif %}>
+                    <i class="fas fa-user-plus"></i> Agregar Asistente
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Asistentes previos disponibles -->
+    {% if tiene_asistentes_previos %}
+    <div class="form-card" style="border-left: 4px solid #10b981; background: #f0fdf4;">
+        <h4><i class="fas fa-history" style="color: #10b981;"></i> Asistentes de Visitas Anteriores</h4>
+        <p style="color: #666; margin-bottom: 15px;">Puede reutilizar asistentes de visitas anteriores del mismo programa o institución. Haga clic en "Reutilizar" para agregar.</p>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px;">
+            {% for asistente_prev in asistentes_previos %}
+                <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb; display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                        <h6 style="margin: 0 0 8px 0; color: #1f2937; font-weight: 600;">{{ asistente_prev.1 }}</h6>
+                        <p style="margin: 4px 0; font-size: 0.85rem; color: #6b7280;">
+                            <i class="fas fa-id-card me-1"></i>{{ asistente_prev.2 }}: {{ asistente_prev.3 }}
+                        </p>
+                        {% if asistente_prev.4 %}
+                            <p style="margin: 4px 0; font-size: 0.85rem; color: #6b7280;">
+                                <i class="fas fa-envelope me-1"></i>{{ asistente_prev.4 }}
+                            </p>
+                        {% endif %}
+                        {% if asistente_prev.5 %}
+                            <p style="margin: 4px 0; font-size: 0.85rem; color: #6b7280;">
+                                <i class="fas fa-phone me-1"></i>{{ asistente_prev.5 }}
+                            </p>
+                        {% endif %}
+                    </div>
+                    <a href="{% url 'panel_visitante:copiar_asistente_previo' tipo=tipo visita_id=visita.id asistente_previo_id=asistente_prev.0 %}" 
+                       style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; margin-top: 10px; border: none; cursor: pointer; text-align: center; justify-content: center;">
+                        <i class="fas fa-check-circle"></i> Reutilizar
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Lista de asistentes registrados -->
+    <div class="asistentes-list">
+        <h4><i class="fas fa-users"></i> Asistentes Registrados ({{ asistentes_actuales }})</h4>
+        
+        {% if asistentes %}
+            {% for asistente in asistentes %}
+                <div class="asistente-item">
+                    <div class="asistente-info">
+                        <h5><i class="fas fa-user me-2" style="color: #00af00;"></i>{{ asistente.nombre_completo }}</h5>
+                        <p>
+                            <i class="fas fa-id-card me-1"></i>{{ asistente.get_tipo_documento_display }}: {{ asistente.numero_documento }}
+                            {% if asistente.correo %} | <i class="fas fa-envelope me-1"></i>{{ asistente.correo }}{% endif %}
+                            {% if asistente.telefono %} | <i class="fas fa-phone me-1"></i>{{ asistente.telefono }}{% endif %}
+                        </p>
+                        <div style="margin-top: 8px;">
+                            {% if asistente.tiene_doc_salud %}
+                                <span style="display: inline-block; background: #d1fae5; color: #065f46; padding: 4px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600;">
+                                    <i class="fas fa-check-circle me-1"></i>Documento de salud cargado
+                                </span>
+                            {% else %}
+                                <span style="display: inline-block; background: #fee2e2; color: #991b1b; padding: 4px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600;">
+                                    <i class="fas fa-exclamation-circle me-1"></i>Pendiente documento de salud
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" class="btn-edit" onclick="abrirModalActualizarDoc({{ asistente.id }}, '{{ asistente.nombre_completo }}', '{{ tipo }}')">
+                            <i class="fas fa-edit me-1"></i>Actualizar
+                        </button>
+                        <a href="{% url 'panel_visitante:eliminar_asistente' tipo=tipo asistente_id=asistente.id %}" class="btn-delete" onclick="return confirm('¿Está seguro de eliminar este asistente?')">
+                            <i class="fas fa-trash-alt me-1"></i>Eliminar
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-list">
+                <i class="fas fa-users-slash d-block"></i>
+                <p>No hay asistentes registrados aún</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Sección de Archivos Finales -->
+    {% if mostrar_archivos_finales %}
+    <div id="seccion-archivos-finales" class="form-card" style="border-left: 4px solid #228B22; background: #f0fdf4;">
+        <h4 style="color: #145A32; margin-bottom: 18px;"><i class="fas fa-folder-open me-2"></i> Archivos Finales</h4>
+        <p style="color: #333; margin-bottom: 18px; font-size: 0.95rem;">Suba los archivos requeridos para finalizar el proceso:</p>
+        <form method="post" enctype="multipart/form-data" id="formArchivosFinales">
+            {% csrf_token %}
+            {% for categoria, docs in documentos_por_categoria.items %}
+                {% if categoria == '📝 ATS' or categoria == '📜 Formato Inducción y Reinducción' or categoria == '🤸🏻‍♂️ Charla de Seguridad y Calestenia' %}
+                    <div style="margin-bottom: 20px;">
+                        <h5 style="color: #228B22; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #bbf7d0;"><i class="fas fa-{% if 'ATS' in categoria %}file-alt{% elif 'Inducción' in categoria %}file-pdf{% else %}users{% endif %} me-2"></i>{{ categoria }}</h5>
+                        {% for doc in docs %}
+                            <div style="margin-bottom: 16px; padding: 12px; background: white; border-radius: 8px; border: 1px solid #d1fae5;">
+                                <label style="font-weight: 600; color: #333; display: block; margin-bottom: 8px;">
+                                    <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% else %}file-alt{% endif %}" style="font-size: 1.2rem; color: {% if doc.extension == '.pdf' %}#dc2626{% elif doc.extension == '.doc' or doc.extension == '.docx' %}#2563eb{% else %}#059669{% endif %}; margin-right: 6px;"></i>
+                                    {{ doc.titulo }}
+                                </label>
+                                <input type="file" name="archivo_final_{{ doc.id }}" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" class="form-control" style="padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px;">
+                                {% if doc.descripcion %}<small style="color: #666; display: block; margin-top: 4px;">{{ doc.descripcion }}</small>{% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="submit" style="background: linear-gradient(135deg, #228B22 0%, #2ecc40 100%); color: #fff; font-weight: bold; padding: 12px 28px; border: none; border-radius: 8px; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(34,139,34,0.4)'," onmouseout="this.style.transform='none'; this.style.boxShadow='none'">
+                    <i class="fas fa-upload"></i> Subir Archivos Finales
+                </button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- Botón volver -->
+    <div class="text-center mt-4">
+        {% if request.session.responsable_rol == 'interno' %}
+            <a href="{% url 'panel_instructor_interno:detalle_visita' visita.id %}" class="btn-back">
+                <i class="fas fa-arrow-left"></i> Volver al detalle de la visita
+            </a>
+        {% elif request.session.responsable_rol == 'externo' %}
+            <a href="{% url 'panel_instructor_externo:detalle_visita' visita.id %}" class="btn-back">
+                <i class="fas fa-arrow-left"></i> Volver al detalle de la visita
+            </a>
+        {% else %}
+            <a href="{% url 'panel_visitante:panel_responsable' %}" class="btn-back">
+                <i class="fas fa-arrow-left"></i> Volver al Panel
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal Actualizar Documento Asistente -->
+<div id="modalActualizarDoc" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.75); overflow-y:auto;">
+    <div style="background:#fff; margin:5% auto; padding:32px 24px; border-radius:12px; width:92%; max-width:500px; box-shadow:0 8px 40px rgba(0,0,0,0.4);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:12px; border-bottom:1px solid #e5e7eb;">
+            <h5 style="margin:0; color:#1f2937; font-size:18px;" id="tituloModalDoc">
+                <i class="fas fa-file-upload me-2" style="color:#667eea;"></i>Actualizar Documento de Salud
+            </h5>
+            <button onclick="cerrarModalActualizarDoc()" style="background:none; border:none; font-size:24px; color:#999; cursor:pointer; padding:0; width:32px; height:32px; display:flex; align-items:center; justify-content:center;">&times;</button>
+        </div>
+        <div style="margin-bottom:16px; padding:12px; background:#f0f9ff; border-left:4px solid #3b82f6; border-radius:6px;">
+            <p style="margin:0; color:#333; font-size:14px;">
+                <i class="fas fa-info-circle me-2" style="color:#3b82f6;"></i>
+                <strong>Asistente:</strong> <span id="nombreAsistenteModal" style="color:#1f2937; font-weight:600;"></span>
+            </p>
+        </div>
+        <form method="POST" enctype="multipart/form-data" id="formActualizarDoc">
+            {% csrf_token %}
+            <div style="margin-bottom:18px;">
+                <label style="font-weight:600; color:#333; display:block; margin-bottom:8px;">
+                    <i class="fas fa-file-pdf me-1" style="color:#dc2626;"></i>
+                    Formato Auto Reporte de Condiciones de Salud <span style="color:#dc2626;">*</span>
+                </label>
+                <input type="file" id="inputDocSalud" name="documento_salud_" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required style="padding:10px; border:2px solid #e5e7eb; border-radius:8px; font-size:14px;">
+                <small style="color:#6b7280; display:block; margin-top:6px;">
+                    Formatos aceptados: PDF, JPG, PNG, DOC, DOCX (Máx. 10MB)
+                </small>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:24px; justify-content:flex-end;">
+                <button type="button" onclick="cerrarModalActualizarDoc()" style="background:#e5e7eb; color:#374151; font-weight:600; padding:10px 24px; border:none; border-radius:8px; cursor:pointer;">
+                    Cancelar
+                </button>
+                <button type="submit" style="background:linear-gradient(90deg,#667eea,#764ba2); color:#fff; font-weight:600; padding:10px 24px; border:none; border-radius:8px; cursor:pointer;">
+                    <i class="fas fa-check me-1"></i>Guardar Documento
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+var tipoVisitaGlobal = '{{ tipo }}';
+var visitaIdGlobal = {{ visita.id }};
+
+function abrirModalActualizarDoc(asistenteId, nombreAsistente, tipo) {
+    document.getElementById('nombreAsistenteModal').textContent = nombreAsistente;
+    document.getElementById('inputDocSalud').name = 'documento_salud_' + asistenteId;
+    const baseUrl = '/visitante/actualizar-documento/';
+    const actionUrl = baseUrl + tipo + '/' + asistenteId + '/';
+    document.getElementById('formActualizarDoc').action = actionUrl;
+    document.getElementById('modalActualizarDoc').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+function cerrarModalActualizarDoc() {
+    document.getElementById('modalActualizarDoc').style.display = 'none';
+    document.getElementById('inputDocSalud').value = '';
+    document.body.style.overflow = '';
+}
+
+document.getElementById('modalActualizarDoc').addEventListener('click', function(e) {
+    if (e.target === this) cerrarModalActualizarDoc();
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && document.getElementById('modalActualizarDoc').style.display === 'block') {
+        cerrarModalActualizarDoc();
+    }
+});
+</script>
+
+<style>
+.btn-edit {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-edit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-edit:active {
+    transform: translateY(0);
+}
+</style>
+
+<script>
+function verDocumento(urlViewer, titulo, extension, urlDescarga) {
+    const cuerpo = document.getElementById('cuerpoModalDoc');
+    const imgExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    
+    // Modal para ver documento
+    const modalVerDoc = document.createElement('div');
+    modalVerDoc.id = 'modalVerDoc';
+    modalVerDoc.style.cssText = 'display:block; position:fixed; z-index:9998; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.75); overflow-y:auto;';
+    
+    const contenido = document.createElement('div');
+    contenido.style.cssText = 'background:#fff; margin:2% auto; padding:20px; border-radius:12px; width:92%; max-width:960px; height:90vh; display:flex; flex-direction:column; box-shadow:0 8px 40px rgba(0,0,0,0.4);';
+    
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid #e5e7eb;';
+    header.innerHTML = `
+        <h5 style="margin:0; color:#1f2937; font-size:16px;"><i class="fas fa-file me-2" style="color:#667eea;"></i>${titulo}</h5>
+        <div style="display:flex; gap:8px; align-items:center;">
+            <a href="${urlDescarga}" download style="background:#667eea; color:white; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:13px; display:inline-flex; align-items:center; gap:4px; font-weight:600;">
+                <i class="fas fa-download"></i> Descargar
+            </a>
+            <button style="background:#ef4444; color:white; border:none; font-size:18px; cursor:pointer; width:36px; height:36px; border-radius:6px; display:flex; align-items:center; justify-content:center;">&times;</button>
+        </div>
+    `;
+    
+    const cuerpoNuevo = document.createElement('div');
+    cuerpoNuevo.style.cssText = 'flex:1; overflow:auto; border:1px solid #e5e7eb; border-radius:8px; background:#f0f0f0; display:flex; align-items:center; justify-content:center;';
+    
+    if (extension === '.pdf' || imgExts.includes(extension)) {
+        cuerpoNuevo.innerHTML = '<iframe src="' + urlViewer + '" style="width:100%; height:100%; min-height:600px; border:none;"></iframe>';
+    } else {
+        cuerpoNuevo.innerHTML = '<div style="text-align:center; padding:50px; color:#6b7280;">'
+            + '<i class="fas fa-file-alt" style="font-size:64px; color:#9ca3af; display:block; margin-bottom:20px;"></i>'
+            + '<p style="font-size:16px; margin-bottom:20px;">Vista previa no disponible para este tipo de archivo.</p>'
+            + '<a href="' + urlDescarga + '" download style="background:#667eea; color:white; padding:12px 28px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:8px;">'
+            + '<i class="fas fa-download"></i> Descargar</a></div>';
+    }
+    
+    contenido.appendChild(header);
+    contenido.appendChild(cuerpoNuevo);
+    modalVerDoc.appendChild(contenido);
+    document.body.appendChild(modalVerDoc);
+    
+    // Cerrar modal
+    header.querySelector('button').onclick = function() {
+        modalVerDoc.remove();
+        document.body.style.overflow = '';
+    };
+    
+    modalVerDoc.onclick = function(e) {
+        if (e.target === this) {
+            modalVerDoc.remove();
+            document.body.style.overflow = '';
+        }
+    };
+    
+    document.addEventListener('keydown', function handler(e) {
+        if (e.key === 'Escape') {
+            modalVerDoc.remove();
+            document.body.style.overflow = '';
+            document.removeEventListener('keydown', handler);
+        }
+    });
+    
+    document.body.style.overflow = 'hidden';
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

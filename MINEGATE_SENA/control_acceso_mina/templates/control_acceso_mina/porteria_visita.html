@@ -1,0 +1,165 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control de Acceso por Visita</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'control_acceso_mina/css/porteria.css' %}">
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+
+<body>
+  <div class="porteria-module" style="padding: 20px; max-width: 1200px; margin: 0 auto;">
+    {% if error_visita %}
+    <div class="porteria-feedback feedback-error" style="display:block; margin-top: 20px;">
+      <div class="feedback-content">
+        <div class="feedback-icon"><i class="ri-close-circle-line"></i></div>
+        <div class="feedback-details">
+          <span class="feedback-name">{{ error_visita }}</span>
+          <span class="feedback-category">Verifique el estado y fecha de la visita.</span>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top: 14px;">
+      <a href="{% url 'core:panel_administrativo_seccion' 'control_acceso' %}" class="btn-open-visita">Volver a selección de visitas</a>
+    </div>
+    {% else %}
+    <div id="porteriaVisitaApp" data-tipo-visita="{{ visita.tipo }}" data-visita-id="{{ visita.visita_id }}"
+      data-registrar-url="{% url 'control_acceso_mina:registrar_acceso' %}"
+      data-datos-url="{% url 'control_acceso_mina:datos_visita' visita.tipo visita.visita_id %}">
+
+      <div class="porteria-header">
+        <div class="porteria-header-left">
+          <i class="ri-qr-scan-2-line porteria-icon"></i>
+          <div>
+            <h2 class="porteria-title">Control por visita {{ visita.tipo_label }} #{{ visita.visita_id }}</h2>
+            <p class="porteria-subtitle">{{ visita.nombre }} · Responsable: {{ visita.responsable }} · Horario: {{ visita.horario }}</p>
+          </div>
+        </div>
+        <div class="porteria-header-right" style="display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
+          <a href="{% url 'core:panel_administrativo_seccion' 'control_acceso' %}" class="btn-open-visita">Cambiar visita</a>
+        </div>
+      </div>
+
+      <div class="porteria-scanner-section">
+        <div class="scanner-input-wrapper">
+          <i class="ri-qr-scan-2-line scanner-icon"></i>
+          <input type="text" id="porteriaDocInput" class="scanner-input"
+            placeholder="Escanee o escriba el número de documento..." autocomplete="off" autofocus>
+          <button type="button" id="btnCamara" class="scanner-btn scanner-btn-camera" title="Escanear QR con cámara">
+            <i class="ri-camera-line"></i>
+          </button>
+          <button type="button" id="btnRegistrar" class="scanner-btn">
+            <i class="ri-send-plane-fill"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="porteria-feedback" id="porteriaFeedback" style="display:none;">
+        <div class="feedback-content">
+          <div class="feedback-icon" id="feedbackIcon"></div>
+          <div class="feedback-details">
+            <span class="feedback-name" id="feedbackName"></span>
+            <span class="feedback-category" id="feedbackCategory"></span>
+          </div>
+          <div class="feedback-type" id="feedbackType"></div>
+        </div>
+      </div>
+
+      <div class="porteria-table-section" style="margin-bottom: 20px;">
+        <h3 class="table-title">
+          <i class="ri-id-card-line"></i> Asistentes habilitados (QR aprobados)
+        </h3>
+        <div class="porteria-table-wrapper">
+          <table class="porteria-table" id="tablaAsistentes">
+            <thead>
+              <tr>
+                <th>Documento</th>
+                <th>Nombre</th>
+              </tr>
+            </thead>
+            <tbody id="tablaAsistentesBody">
+              <tr class="empty-row">
+                <td colspan="2"><i class="ri-inbox-line"></i> Sin asistentes aprobados</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="porteria-double-table">
+        <div class="porteria-table-section">
+          <h3 class="table-title">
+            <i class="ri-login-box-line"></i> Ingresos (actualmente dentro)
+          </h3>
+          <div class="porteria-table-wrapper">
+            <table class="porteria-table" id="tablaIngresos">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Hora</th>
+                  <th>Documento</th>
+                  <th>Nombre</th>
+                  <th>Categoría</th>
+                </tr>
+              </thead>
+              <tbody id="tablaIngresosBody">
+                <tr class="empty-row">
+                  <td colspan="5"><i class="ri-inbox-line"></i> Sin personas dentro en esta visita</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="porteria-table-section">
+          <h3 class="table-title">
+            <i class="ri-logout-box-line"></i> Salidas (actualmente fuera)
+          </h3>
+          <div class="porteria-table-wrapper">
+            <table class="porteria-table" id="tablaSalidas">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Hora</th>
+                  <th>Documento</th>
+                  <th>Nombre</th>
+                  <th>Categoría</th>
+                </tr>
+              </thead>
+              <tbody id="tablaSalidasBody">
+                <tr class="empty-row">
+                  <td colspan="5"><i class="ri-inbox-line"></i> Sin personas fuera en esta visita</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qr-modal-overlay" id="qrModalOverlay" style="display:none;">
+      <div class="qr-modal">
+        <div class="qr-modal-header">
+          <h3><i class="ri-camera-line"></i> Escáner QR con Cámara</h3>
+          <button type="button" id="btnCerrarQR" class="qr-modal-close">&times;</button>
+        </div>
+        <div class="qr-modal-body">
+          <div id="qrReaderContainer"></div>
+          <p class="qr-modal-hint">Apunte la cámara al código QR del asistente de esta visita</p>
+        </div>
+      </div>
+    </div>
+
+    <script src="{% static 'control_acceso_mina/js/porteria.js' %}"></script>
+    {% endif %}
+  </div>
+</body>
+
+</html>

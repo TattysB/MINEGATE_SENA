@@ -1,0 +1,50 @@
+{% load static %}
+{% if include_assets %}
+<link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}">
+{% endif %}
+
+<div class="calendar-page" id="coordinadorCalendarPage">
+  <main class="calendar-card" data-year="{{ year }}" data-month="{{ month }}" id="coordinadorCalendarCard">
+    <div class="card-top">
+      <button id="prevReadonly" class="nav">‹</button>
+      <h2 id="month-title">{{ month_name }} {{ year }}</h2>
+      <button id="nextReadonly" class="nav">›</button>
+    </div>
+
+    <table class="calendar-table">
+      <thead>
+        <tr>
+          <th>Dom</th><th>Lun</th><th>Mar</th><th>Mié</th><th>Jue</th><th>Vie</th><th>Sáb</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for week in weeks %}
+          <tr>
+            {% for day in week %}
+              {% with daystr=day.date|date:"Y-m-d" %}
+                {% if day.is_other_month %}
+                  <td class="other-month" data-date="{{ daystr }}">{{ day.date.day }}</td>
+                {% elif day.is_sunday %}
+                  <td class="disabled" data-date="{{ daystr }}">{{ day.date.day }}</td>
+                {% elif daystr in fechas_confirmadas %}
+                  <td class="occupied{% if day.is_today %} today{% endif %}" data-date="{{ daystr }}" title="Día ocupado - Visita confirmada">{{ day.date.day }}</td>
+                {% elif daystr in fechas_pendientes %}
+                  <td class="pending{% if day.is_today %} today{% endif %}" data-date="{{ daystr }}" title="Día pendiente">{{ day.date.day }}</td>
+                {% else %}
+                  <td class="no-available{% if day.is_today %} today{% endif %}" data-date="{{ daystr }}">{{ day.date.day }}</td>
+                {% endif %}
+              {% endwith %}
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="legend">
+      <span><span class="dot pending"></span>Pendiente</span>
+      <span><span class="dot occupied"></span>Ocupado</span>
+      <span><span class="dot today-marker"></span>Hoy</span>
+      <span><span class="dot selected"></span>Seleccionado</span>
+    </div>
+  </main>
+</div>

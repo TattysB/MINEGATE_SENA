@@ -1,0 +1,342 @@
+{% extends "coordinador/base_coordinador.html" %}
+{% block content %}
+<div style="padding: 20px;">
+  <h2 style="margin:0 0 14px;color:#1f2937;">Gestión de Visitas</h2>
+  <p style="margin:0 0 18px;color:#6b7280;">Calendario de solo lectura, resumen diario y aprobación de solicitudes en un solo apartado.</p>
+
+  <div style="display:grid;grid-template-columns:2.8fr 1.2fr;gap:18px;align-items:flex-start;">
+    <div style="background:#fff;border-radius:10px;padding:14px;box-shadow:0 2px 10px rgba(0,0,0,0.08);align-self:flex-start;height:auto;">
+      <div id="calendarReadonlyContainer">
+        <p style="padding:20px;text-align:center;color:#6b7280;">Cargando calendario...</p>
+      </div>
+    </div>
+
+    <div style="background:#fff;border-radius:10px;padding:16px;box-shadow:0 2px 10px rgba(0,0,0,0.08);" id="resumenDiaPanel">
+      <h3 style="margin-top:0;">Resumen del día</h3>
+      <p id="resumenDiaTitulo" style="margin:0 0 8px;color:#6b7280;">Selecciona una fecha pendiente u ocupada.</p>
+      <div id="resumenDiaContenido" style="display:flex;flex-direction:column;gap:8px;">
+        <div style="padding:10px;border:1px dashed #d1d5db;border-radius:8px;color:#6b7280;">Sin información.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="gestionVisitasPanel" style="margin-top:18px;background:#fff;border-radius:10px;padding:16px;box-shadow:0 2px 10px rgba(0,0,0,0.08);">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+      <h3 style="margin:0;">Solicitudes pendientes de coordinación</h3>
+      <select id="tipoVisita" onchange="recargarSolicitudes()" style="padding:8px;border:1px solid #d1d5db;border-radius:8px;">
+        <option value="todas">Todas</option>
+        <option value="internas">Internas</option>
+        <option value="externas">Externas</option>
+      </select>
+      <input id="buscarSolicitud" type="text" placeholder="Buscar responsable" onkeyup="recargarSolicitudes()" style="padding:8px;border:1px solid #d1d5db;border-radius:8px;min-width:220px;">
+      <button onclick="recargarSolicitudes()" style="padding:8px 12px;border:none;background:#3b82f6;color:#fff;border-radius:8px;cursor:pointer;">Actualizar</button>
+    </div>
+
+    <div style="overflow:auto;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="background:#f3f4f6;">
+            <th style="padding:10px;text-align:left;">ID</th>
+            <th style="padding:10px;text-align:left;">Tipo</th>
+            <th style="padding:10px;text-align:left;">Responsable</th>
+            <th style="padding:10px;text-align:left;">Institución/Programa</th>
+            <th style="padding:10px;text-align:left;">Fecha solicitud</th>
+            <th style="padding:10px;text-align:center;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="cuerpoSolicitudes">
+          <tr><td colspan="6" style="padding:20px;text-align:center;color:#6b7280;">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  function getCookie(name) {
+    const cookies = document.cookie ? document.cookie.split(';') : [];
+    for (let i = 0; i < cookies.length; i += 1) {
+      const cookie = cookies[i].trim();
+      if (cookie.startsWith(name + '=')) {
+        return decodeURIComponent(cookie.substring(name.length + 1));
+      }
+    }
+    return null;
+  }
+
+  async function loadCalendar(year, month) {
+    const container = document.getElementById('calendarReadonlyContainer');
+    const url = year && month
+      ? `/coordinador/calendario_coordinador/${year}/${month}/`
+      : '/coordinador/calendario_coordinador/';
+
+    const fetchOptions = year && month
+      ? { headers: { 'X-Requested-With': 'XMLHttpRequest' } }
+      : {};
+
+    try {
+      const res = await fetch(url, fetchOptions);
+      if (!res.ok) throw new Error('No se pudo cargar el calendario');
+      container.innerHTML = await res.text();
+      initCalendarEvents();
+    } catch (error) {
+      container.innerHTML = '<div style="padding:12px;border:1px solid #fecaca;border-radius:8px;color:#b91c1c;background:#fff1f2;">No se pudo cargar el calendario.</div>';
+    }
+  }
+
+  function initCalendarEvents() {
+    const card = document.getElementById('coordinadorCalendarCard');
+    if (!card) return;
+
+    const year = parseInt(card.getAttribute('data-year'), 10);
+    const month = parseInt(card.getAttribute('data-month'), 10);
+
+    const prev = document.getElementById('prevReadonly');
+    const next = document.getElementById('nextReadonly');
+
+    if (prev) {
+      prev.onclick = () => {
+        let y = year;
+        let m = month - 1;
+        if (m < 1) { m = 12; y -= 1; }
+        loadCalendar(y, m);
+      };
+    }
+
+    if (next) {
+      next.onclick = () => {
+        let y = year;
+        let m = month + 1;
+        if (m > 12) { m = 1; y += 1; }
+        loadCalendar(y, m);
+      };
+    }
+
+    const table = card.querySelector('.calendar-table');
+    if (table) {
+      table.addEventListener('click', (event) => {
+        const td = event.target.closest('td[data-date]');
+        if (!td) return;
+        if (!(td.classList.contains('pending') || td.classList.contains('occupied'))) return;
+
+        card.querySelectorAll('td.selected-day').forEach(el => el.classList.remove('selected-day'));
+        td.classList.add('selected-day');
+
+        const day = td.getAttribute('data-date');
+        if (day) cargarResumenDia(day);
+      });
+    }
+  }
+
+  async function cargarResumenDia(day) {
+    const titulo = document.getElementById('resumenDiaTitulo');
+    const contenido = document.getElementById('resumenDiaContenido');
+    titulo.textContent = `Fecha seleccionada: ${day}`;
+    contenido.innerHTML = '<div style="padding:10px;border:1px dashed #d1d5db;border-radius:8px;color:#6b7280;">Cargando resumen...</div>';
+
+    let data;
+    try {
+      const res = await fetch(`/coordinador/api/resumen-dia/${day}/`);
+      data = await res.json();
+    } catch (error) {
+      contenido.innerHTML = '<div style="padding:10px;border:1px solid #fecaca;border-radius:8px;color:#b91c1c;background:#fff1f2;">Error de conexión al cargar el resumen.</div>';
+      return;
+    }
+
+    if (!data.ok) {
+      contenido.innerHTML = '<div style="padding:10px;border:1px solid #fecaca;border-radius:8px;color:#b91c1c;background:#fff1f2;">No se pudo cargar el resumen.</div>';
+      return;
+    }
+
+    const visitas = data.visitas || [];
+    if (!visitas.length) {
+      contenido.innerHTML = '<div style="padding:10px;border:1px dashed #d1d5db;border-radius:8px;color:#6b7280;">No hay visitas registradas para esta fecha.</div>';
+      return;
+    }
+
+    contenido.innerHTML = visitas.map(v => {
+      const estadoEsConfirmada = v.estado_codigo === 'confirmada';
+      const colorBorde = estadoEsConfirmada ? '#ef4444' : '#f59e0b';
+      const colorBg = estadoEsConfirmada ? '#fef2f2' : '#fffbeb';
+      const textoBtn = estadoEsConfirmada ? 'Ver información' : 'Ir a Gestión de Visitas';
+      const claseBtn = estadoEsConfirmada ? 'btn-resumen-info' : 'btn-resumen-gestion';
+      const badge = estadoEsConfirmada
+        ? '<span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;">Rojo • Confirmada</span>'
+        : '<span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;">Amarillo • Pendiente</span>';
+
+      return `
+      <div style="border:1px solid ${colorBorde};background:${colorBg};border-radius:10px;padding:12px;">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;">
+          <div style="font-weight:700;color:#1f2937;">${v.tipo} • ${v.estado}</div>
+          ${badge}
+        </div>
+        <div style="font-size:13px;color:#374151;margin-top:6px;"><strong>Responsable:</strong> ${v.responsable}</div>
+        <div style="font-size:13px;color:#374151;"><strong>Institución/Programa:</strong> ${v.institucion_programa || 'N/A'}</div>
+        <div style="font-size:13px;color:#374151;"><strong>Horario:</strong> ${v.hora}</div>
+        <div style="margin-top:10px;display:flex;justify-content:flex-end;">
+          <button
+            class="${claseBtn}"
+            data-tipo="${v.tipo_slug}"
+            data-visita-id="${v.visita_id}"
+            data-visita='${encodeURIComponent(JSON.stringify(v))}'
+            style="padding:8px 12px;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px;${estadoEsConfirmada ? 'background:#ef4444;color:#fff;' : 'background:#f59e0b;color:#fff;'}"
+          >${textoBtn}</button>
+        </div>
+      </div>`;
+    }).join('');
+
+    contenido.querySelectorAll('.btn-resumen-info').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const raw = btn.getAttribute('data-visita');
+        verInfoVisitaDesdeResumen(raw);
+      });
+    });
+
+    contenido.querySelectorAll('.btn-resumen-gestion').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tipo = btn.getAttribute('data-tipo');
+        const visitaId = btn.getAttribute('data-visita-id');
+        irGestionVisitasDesdeResumen(tipo, visitaId);
+      });
+    });
+  }
+
+  function verInfoVisitaDesdeResumen(rawVisita) {
+    try {
+      const visita = JSON.parse(decodeURIComponent(rawVisita));
+      const texto = [
+        `Tipo: ${visita.tipo}`,
+        `Estado: ${visita.estado}`,
+        `Responsable: ${visita.responsable}`,
+        `Institución/Programa: ${visita.institucion_programa || 'N/A'}`,
+        `Horario: ${visita.hora}`,
+      ].join('\n');
+
+      if (typeof mAlert === 'function') {
+        mAlert(texto, 'info');
+      } else {
+        alert(texto);
+      }
+    } catch (error) {
+      alert('No se pudo mostrar la información de la visita.');
+    }
+  }
+
+  function irGestionVisitasDesdeResumen(tipo, visitaId) {
+    const tipoVisita = document.getElementById('tipoVisita');
+    if (tipoVisita) {
+      tipoVisita.value = tipo === 'interna' ? 'internas' : 'externas';
+      recargarSolicitudes();
+    }
+
+    const panel = document.getElementById('gestionVisitasPanel');
+    if (panel && typeof panel.scrollIntoView === 'function') {
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    const buscador = document.getElementById('buscarSolicitud');
+    if (buscador) {
+      buscador.focus();
+      buscador.value = '';
+    }
+  }
+
+  async function recargarSolicitudes() {
+    const tipo = document.getElementById('tipoVisita').value;
+    const buscar = document.getElementById('buscarSolicitud').value || '';
+    const cuerpo = document.getElementById('cuerpoSolicitudes');
+
+    cuerpo.innerHTML = '<tr><td colspan="6" style="padding:20px;text-align:center;color:#6b7280;">Cargando...</td></tr>';
+
+    let data;
+    try {
+      const res = await fetch(`/coordinador/api/solicitudes/?tipo=${tipo}&buscar=${encodeURIComponent(buscar)}`);
+      data = await res.json();
+    } catch (error) {
+      cuerpo.innerHTML = '<tr><td colspan="6" style="padding:20px;text-align:center;color:#b91c1c;">No se pudo cargar la tabla de solicitudes.</td></tr>';
+      return;
+    }
+    const visitas = data.visitas || [];
+
+    if (!visitas.length) {
+      cuerpo.innerHTML = '<tr><td colspan="6" style="padding:20px;text-align:center;color:#6b7280;">No hay solicitudes pendientes de coordinación.</td></tr>';
+      return;
+    }
+
+    cuerpo.innerHTML = visitas.map(v => `
+      <tr id="visita-${v.tipo}-${v.id}" data-tipo="${v.tipo}" data-id="${v.id}">
+        <td style="padding:10px;">#${v.id}</td>
+        <td style="padding:10px;">${v.tipo_display}</td>
+        <td style="padding:10px;">${v.responsable}</td>
+        <td style="padding:10px;">${v.institucion}</td>
+        <td style="padding:10px;">${v.fecha_solicitud}</td>
+        <td style="padding:10px;text-align:center;display:flex;justify-content:center;gap:8px;">
+          <button onclick="accionSolicitud('${v.tipo}', ${v.id}, 'aprobar')" style="padding:6px 10px;border:none;background:#10b981;color:white;border-radius:6px;cursor:pointer;">Aprobar</button>
+          <button onclick="accionSolicitud('${v.tipo}', ${v.id}, 'rechazar')" style="padding:6px 10px;border:none;background:#ef4444;color:white;border-radius:6px;cursor:pointer;">Rechazar</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  async function accionSolicitud(tipo, id, accion) {
+    let observaciones = '';
+    if (accion === 'rechazar') {
+      observaciones = prompt('Motivo de rechazo (opcional):') || '';
+    }
+
+    const csrf = getCookie('csrftoken');
+    const formData = new FormData();
+    formData.append('observaciones', observaciones);
+
+    const res = await fetch(`/coordinador/api/solicitudes/${tipo}/${id}/${accion}/`, {
+      method: 'POST',
+      headers: csrf ? { 'X-CSRFToken': csrf } : {},
+      body: formData
+    });
+
+    const data = await res.json();
+    alert(data.message || data.error || 'Operación realizada');
+    if (data.success) {
+      recargarSolicitudes();
+      loadCalendar();
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadCalendar();
+    recargarSolicitudes();
+  });
+
+  // Si la URL trae ?tipo=...&id=..., intentar localizar la fila después de recargar
+  (function handleOpenFromNotif() {
+    function getParam(name) {
+      const url = new URL(window.location.href);
+      return url.searchParams.get(name);
+    }
+    const tipoParam = getParam('tipo');
+    const idParam = getParam('id');
+    if (!tipoParam || !idParam) return;
+
+    // Llamamos a recargar y luego buscamos la fila hasta encontrarla
+    const tryFind = () => {
+      const row = document.getElementById(`visita-${tipoParam.slice(0,-1)}-${idParam}`) || document.getElementById(`visita-${tipoParam}-${idParam}`);
+      if (row) {
+        row.style.transition = 'background-color 0.4s ease';
+        const original = row.style.backgroundColor;
+        row.style.backgroundColor = '#fff7cc';
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => { row.style.backgroundColor = original; }, 2500);
+        return true;
+      }
+      return false;
+    };
+
+    // Try after some intervals (up to ~10s)
+    let attempts = 0;
+    const interval = setInterval(() => {
+      attempts += 1;
+      if (tryFind() || attempts > 20) clearInterval(interval);
+    }, 500);
+  })();
+</script>
+{% endblock %}

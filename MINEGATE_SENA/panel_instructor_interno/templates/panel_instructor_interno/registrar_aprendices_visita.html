@@ -1,0 +1,331 @@
+{% load static %}
+{% load accesibility_tags %}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registrar Aprendices en Visita - MINEGATE</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+<div class="container mt-4">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col-md-9">
+            <h2 class="mb-1">
+                <i class="bi bi-person-check"></i> Registrar Aprendices en Visita
+            </h2>
+            <p class="text-muted mb-3">
+                Selecciona los aprendices de la ficha que asistirán a esta visita
+            </p>
+        </div>
+        <div class="col-md-3 text-end">
+            <a href="{% url 'panel_instructor_interno:detalle_visita' pk=visita.id %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Cancelar
+            </a>
+        </div>
+    </div>
+
+    <!-- Información de la Visita -->
+    <div class="alert alert-info mb-4" role="alert">
+        <h5 class="alert-heading"><i class="bi bi-calendar2-event"></i> Información de Visita</h5>
+        <div class="row">
+            <div class="col-md-6">
+                <p class="mb-1"><strong>Programa:</strong> {{ visita.nombre_programa }}</p>
+                <p class="mb-0"><strong>Ficha:</strong> {{ ficha.numero }}</p>
+            </div>
+            <div class="col-md-6 text-end">
+                <p class="mb-1"><strong>Fecha:</strong> {{ visita.fecha_visita|date:"d/m/Y" }}</p>
+                <p class="mb-0"><strong>Jornada:</strong> {{ ficha.get_jornada_display }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estado de Registros -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h4 class="mb-0 text-primary">{{ total_aprendices }}</h4>
+                    <small class="text-muted">Disponibles</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h4 class="mb-0 text-success">{{ aprendices_registrados }}</h4>
+                    <small class="text-muted">Ya Registrados</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h4 class="mb-0 text-warning">{{ total_aprendices|add:aprendices_registrados }}</h4>
+                    <small class="text-muted">Total Esperado</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario de Selección -->
+    <div class="row">
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-list-check"></i> Aprendices Disponibles ({{ total_aprendices }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if aprendices %}
+                        <form method="POST" id="form_aprendices">
+                            {% csrf_token %}
+
+                            <!-- Botón seleccionar todos -->
+                            <div class="mb-3 pb-3 border-bottom">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="selectAll">
+                                    <label class="form-check-label fw-bold" for="selectAll">
+                                        ✅ Seleccionar todos
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Lista de Aprendices -->
+                            <div class="aprendices-list">
+                                {% for aprendiz in aprendices %}
+                                    {% if aprendiz.numero_documento in ya_registrados %}
+                                        <div class="card mb-2 border-success bg-light">
+                                            <div class="card-body py-3">
+                                                <div>
+                                                    <p class="mb-1">
+                                                        <strong>{{ aprendiz.get_nombre_completo }}</strong>
+                                                        <span class="badge bg-success ms-2">✅ YA REGISTRADO</span>
+                                                    </p>
+                                                    <small class="text-muted">
+                                                        📋 {{ aprendiz.get_tipo_documento_display }}: {{ aprendiz.numero_documento }}
+                                                    </small>
+                                                    <small class="text-muted d-block">
+                                                        📧 {{ aprendiz.correo }}
+                                                        {% if aprendiz.telefono %}
+                                                            | 📞 {{ aprendiz.telefono }}
+                                                        {% endif %}
+                                                    </small>
+                                                    {% if aprendiz.documento_identidad or aprendiz.tiene_documentos_subidos %}
+                                                        <small class="text-success d-block mt-1">
+                                                            <i class="bi bi-file-earmark-check"></i> Documentos: 
+                                                            {% if aprendiz.documento_identidad %}<span class="badge bg-info">ID</span>{% endif %}
+                                                            {% if aprendiz.tiene_doc_salud %}<span class="badge bg-success">Salud</span>{% endif %}
+                                                            {% if aprendiz.tiene_documentos_subidos %}<span class="badge bg-secondary">Categorias</span>{% endif %}
+                                                        </small>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        <div class="card mb-2 selectable-aprendiz" data-aprendiz-id="{{ aprendiz.id }}">
+                                            <div class="card-body py-3">
+                                                <div class="d-flex align-items-start gap-3">
+                                                    <input 
+                                                        class="form-check-input aprendiz-check mt-1" 
+                                                        type="checkbox" 
+                                                        name="aprendices[]"
+                                                        value="{{ aprendiz.id }}"
+                                                        id="aprendiz_{{ aprendiz.id }}"
+                                                    >
+                                                    <div class="flex-grow-1">
+                                                        <p class="mb-1">
+                                                            <strong>{{ aprendiz.get_nombre_completo }}</strong>
+                                                        </p>
+                                                        <small class="text-muted">
+                                                            📋 {{ aprendiz.get_tipo_documento_display }}: {{ aprendiz.numero_documento }}
+                                                        </small>
+                                                        <small class="text-muted d-block">
+                                                            📧 {{ aprendiz.correo }}
+                                                            {% if aprendiz.telefono %}
+                                                                | 📞 {{ aprendiz.telefono }}
+                                                            {% endif %}
+                                                        </small>
+                                                        {% if aprendiz.documento_identidad or aprendiz.tiene_documentos_subidos %}
+                                                            <small class="text-success d-block mt-1">
+                                                                <i class="bi bi-file-earmark-check"></i> Documentos: 
+                                                                {% if aprendiz.documento_identidad %}<span class="badge bg-info">ID</span>{% endif %}
+                                                                {% if aprendiz.tiene_doc_salud %}<span class="badge bg-success">Salud</span>{% endif %}
+                                                                {% if aprendiz.tiene_documentos_subidos %}<span class="badge bg-secondary">Categorias</span>{% endif %}
+                                                            </small>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+
+                            <hr>
+
+                            <!-- Botones de Acción -->
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="bi bi-check-circle"></i> Registrar Seleccionados
+                                </button>
+                                <a href="{% url 'panel_instructor_interno:detalle_visita' pk=visita.id %}" class="btn btn-outline-secondary btn-lg">
+                                    <i class="bi bi-x-circle"></i> Cancelar
+                                </a>
+                            </div>
+
+                            <!-- Información de Cantidad -->
+                            <div class="mt-3 alert alert-light">
+                                <small>
+                                    <strong>Seleccionados:</strong>
+                                    <span id="cantidad_seleccionados">0</span> / {{ total_aprendices }} aprendices disponibles
+                                </small>
+                            </div>
+                        </form>
+                    {% else %}
+                        <div class="alert alert-warning" role="alert">
+                            <i class="bi bi-exclamation-triangle"></i> 
+                            No hay aprendices activos sin registrar en esta ficha.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar de Información -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0"><i class="bi bi-info-circle"></i> Información</h6>
+                </div>
+                <div class="card-body small">
+                    <h6 class="mb-2">¿Qué sucede?</h6>
+                    <ul class="mb-3">
+                        <li>Selecciona los aprendices que asistirán</li>
+                        <li>Sus datos se traerán automáticamente</li>
+                        <li>Se crearán como asistentes en la visita</li>
+                    </ul>
+                    
+                    <hr>
+                    
+                    <h6 class="mb-2">Estados</h6>
+                    <ul>
+                        <li>🟢 Pendiente de registro</li>
+                        <li>✅ Ya registrado</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="bi bi-lightbulb"></i> Consejos</h6>
+                </div>
+                <div class="card-body small">
+                    <p class="mb-0">Los aprendices ya deben estar registrados en la ficha con sus documentos antes de agregarlos aquí.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script>
+    // Funcionalidad de "Seleccionar todo"
+    document.getElementById('selectAll').addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.aprendiz-check');
+        checkboxes.forEach(cb => cb.checked = this.checked);
+        actualizarCantidad();
+    });
+
+    // Actualizar cantidad al cambiar selecciones
+    document.querySelectorAll('.aprendiz-check').forEach(checkbox => {
+        checkbox.addEventListener('change', actualizarCantidad);
+    });
+
+    // Click en card selecciona/deselecciona checkbox
+    document.querySelectorAll('.selectable-aprendiz').forEach(card => {
+        card.addEventListener('click', function(e) {
+            // No hacer nada si se clickeó en un link
+            if (e.target.tagName === 'A') return;
+            
+            const checkbox = this.querySelector('.aprendiz-check');
+            checkbox.checked = !checkbox.checked;
+            actualizarCantidad();
+        });
+    });
+
+    function actualizarCantidad() {
+        const seleccionados = document.querySelectorAll('.aprendiz-check:checked').length;
+        document.getElementById('cantidad_seleccionados').textContent = seleccionados;
+        
+        // Actualizar estado del "Seleccionar todo"
+        const totalCheckboxes = document.querySelectorAll('.aprendiz-check').length;
+        const selectAllCheckbox = document.getElementById('selectAll');
+        selectAllCheckbox.checked = totalCheckboxes > 0 && seleccionados === totalCheckboxes;
+        selectAllCheckbox.indeterminate = seleccionados > 0 && seleccionados < totalCheckboxes;
+    }
+
+    // Inicializar cantidad
+    actualizarCantidad();
+</script>
+
+<style>
+    .aprendices-list {
+        max-height: 600px;
+        overflow-y: auto;
+    }
+
+    .card {
+        transition: all 0.2s;
+    }
+
+    .card:hover {
+        background-color: #f8f9fa;
+    }
+
+    .selectable-aprendiz {
+        cursor: pointer;
+    }
+
+    .selectable-aprendiz:hover {
+        border-color: #0d6efd !important;
+        background-color: #f0f7ff;
+    }
+
+    .selectable-aprendiz .aprendiz-check:checked ~ .card-body {
+        background-color: #d1fae5;
+    }
+
+    .form-check-input {
+        cursor: pointer;
+    }
+
+    .aprendices-list::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .aprendices-list::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+
+    .aprendices-list::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 10px;
+    }
+
+    .aprendices-list::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% accessibility_widget %}
+</body>
+</html>

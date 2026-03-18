@@ -1,0 +1,254 @@
+.password-reset-wrapper {
+	min-height: calc(100vh - 200px);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: #ffffff;
+	padding: 40px 20px;
+}
+
+.password-reset-container {
+	max-width: 500px;
+	width: 100%;
+	padding: 40px;
+	background: white;
+	border-radius: 20px;
+	box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.reset-header {
+	text-align: center;
+	margin-bottom: 30px;
+}
+
+.reset-header h1 {
+	color: #2c3e50;
+	font-size: 28px;
+	margin-bottom: 10px;
+}
+
+.reset-header p {
+	color: #7f8c8d;
+	font-size: 14px;
+}
+
+.reset-steps {
+	background: #e8f5e9;
+	border-left: 4px solid #00af00;
+	padding: 15px;
+	margin-bottom: 30px;
+	border-radius: 4px;
+}
+
+.reset-steps h3 {
+	color: #1b5e20;
+	margin-top: 0;
+	font-size: 16px;
+}
+
+.reset-steps ol {
+	margin: 10px 0;
+	padding-left: 20px;
+	color: #34495e;
+	font-size: 14px;
+	line-height: 1.8;
+}
+
+.form-group {
+	margin-bottom: 20px;
+}
+
+.form-group label {
+	display: block;
+	margin-bottom: 8px;
+	color: #2c3e50;
+	font-weight: 500;
+	font-size: 14px;
+}
+
+.form-group input,
+.form-group textarea {
+	width: 100%;
+	padding: 12px;
+	border: 1px solid #bdc3c7;
+	border-radius: 4px;
+	font-size: 14px;
+	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+	transition: border-color 0.3s;
+	box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+	outline: none;
+	border-color: #00af00;
+	box-shadow: 0 0 0 3px rgba(0, 175, 0, 0.1);
+}
+
+.password-strength {
+	margin-top: 8px;
+	font-size: 12px;
+	height: 4px;
+	background: #ecf0f1;
+	border-radius: 2px;
+	overflow: hidden;
+}
+
+.password-strength-bar {
+	height: 100%;
+	transition: width 0.3s, background-color 0.3s;
+	width: 0%;
+	background-color: #e74c3c;
+}
+
+.password-requirements {
+	background: #fff;
+	border: 1px solid #ecf0f1;
+	border-radius: 4px;
+	padding: 12px;
+	margin-top: 10px;
+	font-size: 12px;
+}
+
+.requirement {
+	display: flex;
+	align-items: center;
+	margin-bottom: 8px;
+	color: #7f8c8d;
+}
+
+.requirement:last-child {
+	margin-bottom: 0;
+}
+
+.requirement-check {
+	width: 16px;
+	height: 16px;
+	border-radius: 50%;
+	background: #ecf0f1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-right: 8px;
+	font-size: 10px;
+	color: #fff;
+}
+
+.requirement.valid .requirement-check {
+	background: #00af00;
+}
+
+.requirement.valid {
+	color: #00af00;
+}
+
+.button-group {
+	display: flex;
+	gap: 10px;
+	margin-top: 30px;
+}
+
+.btn {
+	flex: 1;
+	padding: 12px 20px;
+	border: none;
+	border-radius: 4px;
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.3s;
+	text-decoration: none;
+	text-align: center;
+	display: inline-block;
+}
+
+.btn-primary {
+	background: #00af00;
+	color: white;
+}
+
+.btn-primary:hover {
+	background: #008c00;
+	transform: translateY(-2px);
+	box-shadow: 0 4px 8px rgba(0, 175, 0, 0.3);
+}
+
+.btn-secondary {
+	background: #ecf0f1;
+	color: #2c3e50;
+}
+
+.btn-secondary:hover {
+	background: #bdc3c7;
+}
+
+.alert {
+	padding: 15px;
+	border-radius: 4px;
+	margin-bottom: 20px;
+	font-size: 14px;
+}
+
+.alert-success {
+	background: #d4edda;
+	color: #155724;
+	border: 1px solid #c3e6cb;
+}
+
+.alert-error {
+	background: #f8d7da;
+	color: #721c24;
+	border: 1px solid #f5c6cb;
+}
+
+.alert-info {
+	background: #d1ecf1;
+	color: #0c5460;
+	border: 1px solid #bee5eb;
+}
+
+.form-section {
+	display: none;
+}
+
+.form-section.active {
+	display: block;
+}
+
+.section-title {
+	color: #2c3e50;
+	font-size: 18px;
+	font-weight: 600;
+	margin-bottom: 20px;
+	padding-bottom: 10px;
+	border-bottom: 2px solid #ecf0f1;
+}
+
+.back-link {
+	text-align: center;
+	margin-top: 15px;
+}
+
+.back-link a {
+	color: #00af00;
+	text-decoration: none;
+	font-size: 14px;
+}
+
+.back-link a:hover {
+	text-decoration: underline;
+}
+
+.info-icon {
+	display: inline-block;
+	width: 20px;
+	height: 20px;
+	background: #00af00;
+	color: white;
+	border-radius: 50%;
+	text-align: center;
+	line-height: 20px;
+	font-size: 12px;
+	font-weight: bold;
+	margin-right: 5px;
+}

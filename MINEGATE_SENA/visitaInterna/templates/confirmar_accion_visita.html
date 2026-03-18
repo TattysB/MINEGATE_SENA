@@ -1,0 +1,215 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<style>
+    .confirm-container {
+        max-width: 500px;
+        margin: 40px auto;
+        padding: 30px;
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+    .confirm-icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 20px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 40px;
+    }
+    .confirm-icon.aprobar {
+        background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+    }
+    .confirm-icon.rechazar {
+        background: linear-gradient(135deg, #fee2e2, #fecaca);
+    }
+    .confirm-title {
+        font-size: 24px;
+        color: #1f2937;
+        margin: 0 0 10px;
+        font-weight: 600;
+    }
+    .confirm-subtitle {
+        color: #6b7280;
+        font-size: 14px;
+        margin: 0 0 25px;
+    }
+    .visita-card {
+        background: #f9fafb;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 25px;
+        text-align: left;
+    }
+    .visita-card h4 {
+        margin: 0 0 15px;
+        color: #374151;
+        font-size: 14px;
+        font-weight: 600;
+    }
+    .visita-card table {
+        width: 100%;
+    }
+    .visita-card td {
+        padding: 6px 0;
+        color: #4b5563;
+        font-size: 14px;
+    }
+    .visita-card td:first-child {
+        font-weight: 500;
+        color: #374151;
+        width: 40%;
+    }
+    .badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .badge-warning {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    .warning-box {
+        background: #fef3c7;
+        border: 1px solid #fcd34d;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 25px;
+        text-align: left;
+    }
+    .warning-box p {
+        margin: 0;
+        color: #92400e;
+        font-size: 14px;
+    }
+    .success-box {
+        background: #d1fae5;
+        border: 1px solid #6ee7b7;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 25px;
+        text-align: left;
+    }
+    .success-box p {
+        margin: 0;
+        color: #065f46;
+        font-size: 14px;
+    }
+    .btn-group {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+    }
+    .btn {
+        padding: 12px 30px;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn:hover {
+        transform: translateY(-2px);
+    }
+    .btn-aprobar {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+    }
+    .btn-aprobar:hover {
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+    }
+    .btn-rechazar {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: white;
+    }
+    .btn-rechazar:hover {
+        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+    }
+    .btn-cancelar {
+        background: #f3f4f6;
+        color: #4b5563;
+    }
+    .btn-cancelar:hover {
+        background: #e5e7eb;
+    }
+</style>
+
+<div class="confirm-container">
+    <div class="confirm-icon {{ accion }}">
+        {% if accion == 'aprobar' %}✅{% else %}❌{% endif %}
+    </div>
+    
+    <h2 class="confirm-title">
+        {% if accion == 'aprobar' %}
+            ¿Aprobar esta visita?
+        {% else %}
+            ¿Rechazar esta visita?
+        {% endif %}
+    </h2>
+    
+    <p class="confirm-subtitle">{{ tipo_visita }} #{{ visita.id }}</p>
+    
+    <div class="visita-card">
+        <h4>📋 Información de la visita</h4>
+        <table>
+            <tr>
+                <td>{% if tipo_visita == 'Visita Interna' %}Programa:{% else %}Institución:{% endif %}</td>
+                <td>{{ visita.nombre_programa|default:visita.nombre }}</td>
+            </tr>
+            <tr>
+                <td>Responsable:</td>
+                <td>{{ visita.responsable|default:visita.nombre_responsable }}</td>
+            </tr>
+            <tr>
+                <td>Correo:</td>
+                <td>{{ visita.correo_responsable }}</td>
+            </tr>
+            <tr>
+                <td>Estado actual:</td>
+                <td><span class="badge badge-warning">{{ visita.get_estado_display }}</span></td>
+            </tr>
+        </table>
+    </div>
+    
+    {% if accion == 'aprobar' %}
+    <div class="success-box">
+        <p>✅ <strong>Al aprobar:</strong></p>
+        <p style="margin-top: 8px;">• Se enviará automáticamente un correo de confirmación al responsable</p>
+        <p>• Se habilitará la generación del pase de entrada</p>
+        <p>• Se habilitará el reenvío de confirmación</p>
+    </div>
+    {% else %}
+    <div class="warning-box">
+        <p>⚠️ <strong>Al rechazar:</strong></p>
+        <p style="margin-top: 8px;">• La visita no podrá realizarse</p>
+        <p>• Podrá cambiar el estado posteriormente si es necesario</p>
+    </div>
+    {% endif %}
+    
+    <form method="post" style="display: inline;">
+        {% csrf_token %}
+        <div class="btn-group">
+            <a href="{{ back_url }}" class="btn btn-cancelar">← Cancelar</a>
+            {% if accion == 'aprobar' %}
+                <button type="submit" class="btn btn-aprobar">✅ Confirmar Aprobación</button>
+            {% else %}
+                <button type="submit" class="btn btn-rechazar">❌ Confirmar Rechazo</button>
+            {% endif %}
+        </div>
+    </form>
+</div>
+{% endblock %}
