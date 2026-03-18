@@ -336,7 +336,9 @@ def panel_instructor_interno(request):
         "total_programas": Programa.objects.filter(
             activo=True, creado_por=owner_user
         ).count(),
-        "total_fichas": Ficha.objects.filter(activa=True, creado_por=owner_user).count(),
+        "total_fichas": Ficha.objects.filter(
+            activa=True, creado_por=owner_user
+        ).count(),
         "total_visitas": visitas.count(),
     }
     return render(request, "panel_instructor_interno/panel.html", context)
@@ -515,6 +517,33 @@ def detalle_visita_interna(request, pk):
             documentos_por_categoria[cat_display] = []
         documentos_por_categoria[cat_display].append(doc)
 
+    # Tomar un unico documento por cada categoria final requerida para descarga.
+    documentos_finales_requeridos = []
+    categorias_finales_agregadas = set()
+    for doc in documentos_disponibles:
+        categoria_norm = _normalizar_categoria_texto(doc.categoria)
+        clave_categoria = None
+        etiqueta = doc.categoria
+
+        if "ats" in categoria_norm:
+            clave_categoria = "ats"
+            etiqueta = "ATS"
+        elif "induccion y reinduccion" in categoria_norm:
+            clave_categoria = "induccion"
+            etiqueta = "Formato Inducción y Reinducción"
+        elif "charla de seguridad" in categoria_norm and (
+            "calestenia" in categoria_norm or "calistenia" in categoria_norm
+        ):
+            clave_categoria = "charla"
+            etiqueta = "Charla de Seguridad y Calistenia"
+
+        if not clave_categoria or clave_categoria in categorias_finales_agregadas:
+            continue
+
+        doc.etiqueta_requerida = etiqueta
+        documentos_finales_requeridos.append(doc)
+        categorias_finales_agregadas.add(clave_categoria)
+
     reporte_documental = construir_reporte_documental_visita(visita, "interna")
     hay_alertas_documentales = bool(reporte_documental.get("hay_alertas"))
     estados_finales = reporte_documental.get("archivos_finales_estado", [])
@@ -543,6 +572,7 @@ def detalle_visita_interna(request, pk):
             "visita": visita,
             "correo": correo,
             "documentos_por_categoria": documentos_por_categoria,
+            "documentos_finales_requeridos": documentos_finales_requeridos,
             "reporte_documental": reporte_documental,
             "reprogramacion_pendiente": reprogramacion_pendiente,
             "enviar_final_habilitado": enviar_final_habilitado,

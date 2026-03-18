@@ -10,6 +10,63 @@ function addCsrfToFormData(formData) {
   }
 }
 
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function getObservationTheme(observacion) {
+  const texto = String(observacion || '').toLowerCase();
+
+  const tiene = (palabras) => palabras.some((p) => texto.includes(p));
+
+  if (tiene(['urgente', 'riesgo', 'emergencia', 'accidente', 'incumplimiento', 'prohibido'])) {
+    return {
+      label: 'Observaciones del coordinador',
+      icon: 'ri-alarm-warning-line',
+      bg: '#fef2f2',
+      border: '#fca5a5',
+      accent: '#dc2626',
+      text: '#7f1d1d'
+    };
+  }
+
+  if (tiene(['seguridad', 'protocolo', 'importante', 'precaucion', 'precaución', 'requisito', 'obligatorio', 'atencion', 'atención'])) {
+    return {
+      label: 'Observaciones del coordinador',
+      icon: 'ri-error-warning-line',
+      bg: '#fffbeb',
+      border: '#fcd34d',
+      accent: '#d97706',
+      text: '#92400e'
+    };
+  }
+
+  if (tiene(['ok', 'correcto', 'completo', 'aprobado', 'cumple', 'listo', 'autorizado'])) {
+    return {
+      label: 'Observaciones del coordinador',
+      icon: 'ri-checkbox-circle-line',
+      bg: '#ecfdf5',
+      border: '#86efac',
+      accent: '#16a34a',
+      text: '#166534'
+    };
+  }
+
+  return {
+    label: 'Observaciones del coordinador',
+    icon: 'ri-information-line',
+    bg: '#eff6ff',
+    border: '#93c5fd',
+    accent: '#2563eb',
+    text: '#1e3a8a'
+  };
+}
+
 let _docxPreviewLoaderPromiseVisitas = null;
 
 function _loadScriptOnceVisitas(src) {
@@ -1363,6 +1420,9 @@ function verDetalleVisita(tipo, id) {
         }).join('');
       }
 
+      const observacionesTheme = getObservationTheme(data.observaciones);
+      const puedeMostrarObservacionesCoordinador = !['enviada_coordinacion', 'reprogramacion_solicitada'].includes(data.estado);
+
       let html = `
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;background:linear-gradient(135deg,#f8fafc,#f1f5f9);padding:16px;border-radius:12px;border:1px solid #e2e8f0;">
             <div style="display:flex;align-items:center;gap:8px;">
@@ -1386,6 +1446,15 @@ function verDetalleVisita(tipo, id) {
               <div><span style="font-size:11px;color:#6b7280;display:block;">Registrada</span><strong style="font-size:13px;color:#111827;">${data.fecha_registro || data.fecha_solicitud}</strong></div>
             </div>
           </div>
+          ${data.observaciones && puedeMostrarObservacionesCoordinador
+          ? `<div style="margin-bottom:16px;padding:12px 14px;background:${observacionesTheme.bg};border:1px solid ${observacionesTheme.border};border-left:4px solid ${observacionesTheme.accent};border-radius:10px;color:${observacionesTheme.text};">
+              <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.35px;">
+                <i class="${observacionesTheme.icon}"></i>
+                ${observacionesTheme.label}
+              </div>
+              <div style="font-size:13px;line-height:1.5;white-space:normal;">${escapeHtml(data.observaciones).replace(/\n/g, '<br>')}</div>
+            </div>`
+          : ''}
           
           ${archivosFinalesHtml}
           
