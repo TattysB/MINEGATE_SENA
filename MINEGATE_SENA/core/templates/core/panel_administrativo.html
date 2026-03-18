@@ -57,10 +57,44 @@
 
       <div class="topbar-right">
         <div class="topbar-actions">
-          <div class="notification-wrapper">
-            <i class="ri-notification-3-line notification-icon"></i>
-            <span class="notification-badge">3</span>
+          <div class="notification-wrapper" id="adminNotificationWrapper">
+            <button id="adminNotifBtn" class="notification-btn" aria-label="Notificaciones administrativas" style="background:white;border:none;padding:8px;border-radius:10px;display:flex;align-items:center;justify-content:center;min-width:48px;min-height:40px;">
+              <i class="ri-notification-3-line notification-icon" style="color:#10b981;font-size:22px;background:transparent;border-radius:0;display:block;"></i>
+              <span id="adminNotifBadge" class="notification-badge" style="display:none;background:#ef4444;color:white;border-radius:50%;min-width:20px;height:20px;font-size:12px;font-weight:700;line-height:20px;text-align:center;padding:0 5px;margin-left:8px;">0</span>
+            </button>
+            <div id="adminNotifDropdown" class="admin-notif-dropdown" aria-hidden="true" style="display:none;position:absolute;right:10px;top:48px;background:white;border:0;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.12);width:360px;z-index:9999;overflow:hidden;">
+              <div class="admin-notif-head" style="padding:14px 16px;background:#00af00;color:white;display:flex;align-items:center;justify-content:space-between;">
+                <div>
+                  <div style="font-weight:700;font-size:16px;">Notificaciones</div>
+                  <div id="adminNotifCountSmall" style="font-size:12px;opacity:0.9;margin-top:4px;">0 nuevas</div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                </div>
+              </div>
+
+              <div style="padding:10px 12px;background:#fff;display:flex;gap:8px;align-items:center;">
+                <button id="filterAll" class="notif-filter active" data-filter="all" style="background:#eef2ff;color:#4c1d95;border:0;padding:6px 10px;border-radius:10px;font-weight:600;font-size:13px;">Todas</button>
+                <button id="filterInternas" class="notif-filter" data-filter="internas" style="background:#f0fff4;color:#047857;border:0;padding:6px 10px;border-radius:10px;font-weight:600;font-size:13px;display:flex;align-items:center;gap:8px;"><span style="width:10px;height:10px;background:#00af00;border-radius:50%;display:inline-block;"></span>Internas</button>
+                <button id="filterExternas" class="notif-filter" data-filter="externas" style="background:#fff7ed;color:#b45309;border:0;padding:6px 10px;border-radius:10px;font-weight:600;font-size:13px;display:flex;align-items:center;gap:8px;"><span style="width:10px;height:10px;background:#f59e0b;border-radius:50%;display:inline-block;"></span>Externas</button>
+              </div>
+
+              <div style="max-height:320px;overflow:auto;background:white;padding:8px 6px;">
+                <ul id="adminNotifList" class="admin-notif-list" style="list-style:none;margin:0;padding:6px;">
+                  <li class="admin-notif-empty" style="color:#6b7280;padding:12px;text-align:center">No hay notificaciones</li>
+                </ul>
+              </div>
+              <div class="admin-notif-footer" style="padding:10px 14px;background:#fafafa;text-align:right;border-top:1px solid #f3f4f6;">
+                <a id="adminNotifVerTodas" href="{% url 'core:panel_administrativo_seccion' 'gestion_visitas' %}" style="color:#2563eb;font-weight:600;text-decoration:none;">Ver todas</a>
+              </div>
+            </div>
           </div>
+          <style>
+            /* Campana blanca y badge */
+            #adminNotifBtn { background: white !important; }
+            #adminNotifBtn .notification-icon { color: #10b981; }
+            #adminNotifDropdown .admin-notif-item:hover { background:#f3f4f6; }
+            .row-selected { background: #fff7cd !important; color: #4b3710 !important; }
+          </style>
           <div class="topbar-user-profile">
             <div class="user-profile-dropdown">
               <button class="user-profile-btn" id="userDropdownBtn" aria-label="User menu">
@@ -735,6 +769,199 @@
   <script defer src="{% static 'documentos/js/panel_documentos_visitas.js' %}?v=20260311-correccion"></script>
   <script defer src="{% static 'js/panel_visitas.js' %}?v=20260313-quitar-devolver"></script>
   {% endif %}
+
+  <script>
+    (function () {
+      const gestionUrl = "{% url 'core:panel_administrativo_seccion' 'gestion_visitas' %}";
+      const btn = document.getElementById('adminNotifBtn');
+      const badge = document.getElementById('adminNotifBadge');
+      const dropdown = document.getElementById('adminNotifDropdown');
+      if (dropdown) {
+        dropdown.addEventListener('click', function (e) { e.stopPropagation(); });
+      }
+      const list = document.getElementById('adminNotifList');
+      const verTodas = document.getElementById('adminNotifVerTodas');
+      const countSmall = document.getElementById('adminNotifCountSmall');
+      const filterAll = document.getElementById('filterAll');
+      const filterInternas = document.getElementById('filterInternas');
+      const filterExternas = document.getElementById('filterExternas');
+
+      window._adminNotifications = window._adminNotifications || [];
+
+      // Local persistence for read notifications (client-only)
+      const READ_KEY = 'adminNotifReadIds_v1';
+      function getReadSet() {
+        try {
+          const raw = localStorage.getItem(READ_KEY) || '[]';
+          return new Set(JSON.parse(raw));
+        } catch (err) { return new Set(); }
+      }
+      function saveReadSet(set) {
+        try { localStorage.setItem(READ_KEY, JSON.stringify(Array.from(set))); } catch (err) {}
+      }
+      function markAsReadClient(id, tipo) {
+        try {
+          const s = getReadSet();
+          s.add(`${tipo}::${id}`);
+          saveReadSet(s);
+        } catch (err) { console.error(err); }
+      }
+
+      function closeDropdown() {
+        if (!dropdown) return;
+        dropdown.setAttribute('aria-hidden', 'true');
+        dropdown.style.display = 'none';
+      }
+
+      function toggleDropdown(e) {
+        e.stopPropagation();
+        if (!dropdown) return;
+        const open = dropdown.getAttribute('aria-hidden') === 'false';
+        dropdown.setAttribute('aria-hidden', String(open ? 'true' : 'false'));
+        dropdown.style.display = open ? 'none' : 'block';
+      }
+
+      if (btn) btn.addEventListener('click', function (e) { toggleDropdown(e); if (window._adminNotifications.length === 0) refreshNotificaciones(); });
+      document.addEventListener('click', closeDropdown);
+
+      function tipoNormalized(raw) {
+        const t = (raw || '').toString().toLowerCase();
+        return (t.indexOf('ext') >= 0 || t.indexOf('extern') >= 0) ? 'externas' : 'internas';
+      }
+
+      function initials(name) {
+        if (!name) return '';
+        const parts = name.trim().split(/\s+/);
+        if (parts.length === 1) return parts[0].substring(0,2).toUpperCase();
+        return (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+      }
+
+      function buildItem(v) {
+        const tipo = tipoNormalized(v.tipo);
+        const tipoLabel = tipo === 'internas' ? 'Visita Interna' : 'Visita Externa';
+        const titulo = v.responsable || v.institucion || (`Visita #${v.id}`);
+        const subtitle = tipoLabel;
+        const desc = v.resumen || v.motivo || v.informacion || '';
+        const time = v.fecha_visita || v.created_at || '';
+
+        const a = document.createElement('a');
+        a.href = `${gestionUrl}?tipo=${tipo}&id=${v.id}`;
+        a.className = 'admin-notif-item';
+        a.setAttribute('data-visita-id', v.id);
+        a.setAttribute('data-visita-tipo', tipo);
+        a.style.display = 'block';
+        a.style.color = '#111827';
+        a.style.textDecoration = 'none';
+
+        const nameInitials = initials(v.responsable || v.nombre || 'US');
+        const letter = tipo === 'internas' ? 'I' : 'E';
+        const avatarBg = tipo === 'internas' ? 'linear-gradient(135deg,#00af00,#007a00)' : 'linear-gradient(135deg,#f59e0b,#d97706)';
+
+        a.innerHTML = `
+          <div style="display:flex;align-items:center;gap:12px;padding:6px 4px;">
+            <div style="width:44px;height:44px;border-radius:50%;background:${avatarBg};display:flex;align-items:center;justify-content:center;color:white;font-weight:700;flex:0 0 44px;font-size:15px;">${letter}</div>
+            <div style="flex:1 1 auto;min-width:0;">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                <div style="font-weight:700;font-size:14px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${titulo}</div>
+                <div style="font-size:12px;color:#6b7280;flex:0 0 auto;">${time}</div>
+              </div>
+              <div style="margin-top:4px;display:flex;align-items:center;gap:8px;">
+                <span style="background:${tipo === 'internas' ? '#e6fff0' : '#fff4e6'};color:${tipo === 'internas' ? '#047857' : '#b45309'};padding:4px 8px;border-radius:8px;font-size:12px;font-weight:600;">${subtitle}</span>
+                <div style="font-size:13px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${desc}</div>
+              </div>
+            </div>
+            <div style="width:8px;height:8px;background:#2563eb;border-radius:50%;flex:0 0 8px;margin-left:8px;"></div>
+          </div>`;
+
+        a.addEventListener('click', function (e) {
+          e.preventDefault();
+          try {
+            // persistir como leído en localStorage
+            markAsReadClient(v.id, tipo);
+            // eliminar de la lista en memoria
+            window._adminNotifications = (window._adminNotifications || []).filter(function (n) {
+              return `${(n.tipo||'')}::${n.id}` !== `${tipo}::${v.id}`;
+            });
+            // actualizar badge y contador pequeño
+            const remaining = (window._adminNotifications || []).length;
+            if (badge) {
+              if (remaining > 0) { badge.style.display = 'inline-block'; badge.textContent = remaining; }
+              else { badge.style.display = 'none'; }
+            }
+            if (countSmall) countSmall.textContent = remaining + ' nuevas';
+            // volver a renderizar filtro actual
+            renderFilter(window._adminNotifCurrentFilter || 'all');
+          } catch (err) { console.error('mark read error', err); }
+          try { closeDropdown(); } catch (err) {}
+          // navegar a la página de gestión con tipo&id
+          window.location.href = a.href;
+        });
+
+        return a;
+      }
+
+      function refreshNotificaciones() {
+        Promise.all([
+          fetch('/gestion/visitas/?tipo=internas&estado=todos&buscar=').then(r => r.json()),
+          fetch('/gestion/visitas/?tipo=externas&estado=todos&buscar=').then(r => r.json())
+        ]).then(([intData, extData]) => {
+          const items = [];
+          const push = (arr, tipo) => {
+            if (!arr || !arr.visitas) return;
+            arr.visitas.forEach(v => {
+              v.tipo = tipo;
+              items.push(v);
+            });
+          };
+          push(intData, 'internas');
+          push(extData, 'externas');
+
+          // filtrar notificaciones ya marcadas como leídas (localStorage)
+          try {
+            const readSet = getReadSet();
+            const visible = items.filter(v => !readSet.has(`${v.tipo}::${v.id}`));
+            window._adminNotifications = visible;
+            // update counters and render
+            if (countSmall) countSmall.textContent = `${visible.length} nuevas`;
+            if (badge) {
+              if (visible.length > 0) { badge.style.display = 'inline-block'; badge.textContent = visible.length; }
+              else { badge.style.display = 'none'; }
+            }
+            renderFilter(window._adminNotifCurrentFilter || 'all');
+          } catch (err) {
+            window._adminNotifications = items;
+            if (countSmall) countSmall.textContent = `${items.length} nuevas`;
+            if (badge) {
+              if (items.length > 0) { badge.style.display = 'inline-block'; badge.textContent = items.length; }
+              else { badge.style.display = 'none'; }
+            }
+            renderFilter('all');
+          }
+        }).catch(err => { console.error('Error fetching notificaciones', err); });
+      }
+
+      function renderFilter(filter) {
+        const data = window._adminNotifications || [];
+        list.innerHTML = '';
+        let filtered = data;
+        if (filter === 'internas') filtered = data.filter(d => (d.tipo || '').toLowerCase() === 'internas');
+        if (filter === 'externas') filtered = data.filter(d => (d.tipo || '').toLowerCase() === 'externas');
+        if (filtered.length === 0) { const empty = document.createElement('li'); empty.className='admin-notif-empty'; empty.style.padding='12px'; empty.style.color='#6b7280'; empty.textContent='No hay notificaciones'; list.appendChild(empty); return; }
+        filtered.slice(0, 50).forEach(v => { const li = document.createElement('li'); li.style.padding='6px 0'; li.appendChild(buildItem(v)); list.appendChild(li); });
+      }
+      function setActiveFilterBtn(btn) { document.querySelectorAll('.notif-filter').forEach(b=>b.classList.remove('active')); if (btn) btn.classList.add('active'); }
+      window._adminNotifCurrentFilter = 'all';
+      if (filterAll) filterAll.addEventListener('click', function(){ window._adminNotifCurrentFilter = 'all'; setActiveFilterBtn(this); renderFilter('all'); });
+      if (filterInternas) filterInternas.addEventListener('click', function(){ window._adminNotifCurrentFilter = 'internas'; setActiveFilterBtn(this); renderFilter('internas'); });
+      if (filterExternas) filterExternas.addEventListener('click', function(){ window._adminNotifCurrentFilter = 'externas'; setActiveFilterBtn(this); renderFilter('externas'); });
+
+      
+
+      // initial load
+      refreshNotificaciones();
+      setInterval(refreshNotificaciones, 30000);
+    })();
+  </script>
 
   <!-- Modal Personalizado de Alertas/Confirmaciones -->
   <div id="customModal" class="cm-overlay">
