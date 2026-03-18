@@ -1,0 +1,1516 @@
+{% load static %}
+{% load accesibility_tags %}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalle Visita #{{ visita.id }} - MINEGATE</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}">
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+<style>
+  :root { --sena-verde: #39a900; --sena-verde-oscuro: #2d8600; }
+
+  body { padding-top: 0 !important; margin-top: 0 !important; }
+
+  .page-header { background: linear-gradient(135deg, #1a5c00, var(--sena-verde)); color: white; padding: 2rem 0; }
+  .page-header h2 { font-weight: 800; }
+  .breadcrumb-nav a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.85rem; }
+  .breadcrumb-nav span { color: rgba(255,255,255,0.5); margin: 0 6px; }
+
+  .detail-card { background: white; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden; margin-bottom: 1.5rem; }
+  .detail-card-header { padding: 1rem 1.5rem; display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1rem; border-bottom: 1px solid #f0f0f0; }
+  .detail-card-header.verde { background: #f0fdf4; color: #166534; border-bottom-color: #bbf7d0; }
+  .detail-card-header.azul { background: #eff6ff; color: #1e40af; border-bottom-color: #bfdbfe; }
+  .detail-card-header.morado { background: #faf5ff; color: #6b21a8; border-bottom-color: #e9d5ff; }
+  .detail-card-body { padding: 1.5rem; }
+  .info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.2rem; }
+  .info-item label { display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #9ca3af; margin-bottom: 3px; }
+  .info-item span { font-size: 0.95rem; font-weight: 600; color: #111827; }
+
+  /* Timeline */
+  .timeline { padding: 0.5rem 0; }
+  .timeline-step { display: flex; align-items: flex-start; gap: 1.2rem; margin-bottom: 1.5rem; position: relative; }
+  .timeline-step:not(:last-child)::before { content:''; position:absolute; left:18px; top:38px; width:2px; height:calc(100% + 8px); background:#e5e7eb; }
+  .timeline-step.done::before { background: var(--sena-verde); }
+  .step-circle { width:38px; height:38px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:1rem; border:2px solid #e5e7eb; background:white; color:#9ca3af; position:relative; z-index:1; }
+  .step-circle.done { background:var(--sena-verde); border-color:var(--sena-verde); color:white; }
+  .step-circle.active { background:#fef3c7; border-color:#f59e0b; color:#92400e; }
+  .step-circle.rejected { background:#fee2e2; border-color:#ef4444; color:#991b1b; }
+  .step-info h6 { font-size:0.9rem; font-weight:700; margin:0 0 2px; color:#111827; }
+  .step-info small { font-size:0.78rem; color:#6b7280; }
+  .step-info.done h6 { color: var(--sena-verde); }
+  .step-info.active h6 { color:#92400e; }
+
+  /* Asistentes */
+  .asistente-item { background:#f9fafb; border:1px solid #e5e7eb; border-radius:10px; padding:0.9rem 1.2rem; margin-bottom:0.7rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+  .asistente-info h6 { font-size:0.9rem; font-weight:700; margin:0 0 3px; color:#111827; }
+  .asistente-info small { color:#6b7280; font-size:0.8rem; }
+  .btn-registrar { background:var(--sena-verde); color:white; border:none; padding:10px 22px; border-radius:50px; font-weight:700; font-size:0.9rem; text-decoration:none; display:inline-flex; align-items:center; gap:7px; transition:all 0.2s; }
+  .btn-registrar:hover { background:var(--sena-verde-oscuro); color:white; transform:translateY(-1px); }
+  .btn-enviar { background:#6366f1; color:white; border:none; padding:10px 22px; border-radius:50px; font-weight:700; font-size:0.9rem; text-decoration:none; display:inline-flex; align-items:center; gap:7px; transition:all 0.2s; }
+  .btn-enviar:hover { background:#4f46e5; color:white; }
+  .btn-actualizar-asi { background:transparent; color:#2563eb; border:1px solid #2563eb; padding:4px 12px; border-radius:50px; font-size:0.78rem; font-weight:600; text-decoration:none; transition:all 0.2s; }
+  .btn-actualizar-asi:hover { background:#dbeafe; color:#1d4ed8; }
+  .btn-eliminar-asi { background:transparent; color:#ef4444; border:1px solid #ef4444; padding:4px 12px; border-radius:50px; font-size:0.78rem; font-weight:600; text-decoration:none; transition:all 0.2s; }
+  .btn-eliminar-asi:hover { background:#fee2e2; color:#991b1b; }
+  .progress-wrap { background:#e9ecef; border-radius:50px; height:12px; overflow:hidden; margin:0.5rem 0; }
+  .progress-fill { background:linear-gradient(90deg, var(--sena-verde), #5dc72e); height:100%; border-radius:50px; transition:width 0.5s; }
+  .empty-asistentes { text-align:center; padding:2rem; color:#9ca3af; }
+  .empty-asistentes i { font-size:2rem; opacity:0.4; }
+  .estado-aprobada { background:#d1fae5; color:#065f46; padding:4px 12px; border-radius:50px; font-size:0.8rem; font-weight:700; }
+  .info-box-aprobada { background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:1rem 1.3rem; font-size:0.88rem; color:#166534; }
+  .info-box-enviado { background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; padding:1rem 1.3rem; font-size:0.88rem; color:#1e40af; }
+
+  .doc-resumen-box { background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:1rem 1.2rem; margin-bottom:1rem; color:#92400e; }
+  .doc-ok-box { background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:1rem 1.2rem; margin-bottom:1rem; color:#166534; }
+  .doc-issue-item { background:#f9fafb; border:1px solid #e5e7eb; border-radius:10px; padding:0.9rem 1rem; margin-bottom:0.7rem; }
+  .doc-issue-title { font-weight:700; font-size:0.9rem; color:#111827; margin-bottom:0.4rem; }
+  .doc-issue-sub { color:#6b7280; font-size:0.78rem; display:block; margin-top:0.1rem; }
+  .doc-issue-line { display:flex; align-items:flex-start; gap:8px; margin-top:6px; }
+  .estado-pill-mini { font-size:0.68rem; font-weight:700; border-radius:999px; padding:3px 8px; white-space:nowrap; display:inline-block; }
+  .estado-pill-mini.faltante { background:#fee2e2; color:#991b1b; }
+  .estado-pill-mini.rechazado { background:#fecaca; color:#7f1d1d; }
+  .estado-pill-mini.pendiente { background:#fef3c7; color:#92400e; }
+  .estado-pill-mini.aprobado { background:#d1fae5; color:#065f46; }
+  .final-doc-item { margin-bottom: 10px; padding: 10px; border: 1px solid #d7dee7; border-radius: 10px; background: #ffffff; box-shadow: 0 3px 8px rgba(15, 23, 42, 0.04); }
+  .final-doc-head { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .final-doc-icon { width:34px; height:34px; border-radius:9px; background:#eef9e8; color:#228B22; display:flex; align-items:center; justify-content:center; font-size:0.9rem; }
+  .final-doc-title { font-weight: 800; color: #1f2937; margin:0; font-size: 0.94rem; line-height:1.2; }
+  .final-doc-subtitle { margin:2px 0 0; color:#6b7280; font-size:0.8rem; }
+  .final-doc-input { display: block; margin-top: 4px; padding: 7px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%; background:#fff; }
+  .final-cat-card { border: 1px solid #c7dfb3; border-radius: 12px; background: #fff; overflow: hidden; margin-bottom: 14px; }
+  .final-cat-top { display:flex; align-items:center; gap:10px; background: #edf6e7; padding: 10px 12px; border-bottom: 1px solid #d8e9cb; }
+  .final-cat-top-icon { width:44px; height:44px; border-radius: 12px; background: #3faa08; color:#fff; display:flex; align-items:center; justify-content:center; box-shadow: 0 8px 14px rgba(63,170,8,0.24); font-size: 1rem; }
+  .final-cat-top-title { margin:0; font-size: 1.05rem; font-weight: 800; color: #0f172a; line-height: 1.1; }
+  .final-cat-top-sub { margin:3px 0 0; color:#5b677a; font-size:0.76rem; font-weight:600; }
+  .final-cat-body { padding: 10px; background: #f8fafc; }
+  .final-modal-title { color: #145a32; margin: 0 0 8px; display:flex; align-items:center; gap:10px; font-size: 2.2rem; font-weight: 800; letter-spacing: 0.2px; line-height: 1.1; }
+  .final-modal-title-icon { width:48px; height:48px; border-radius:12px; display:inline-flex; align-items:center; justify-content:center; background: linear-gradient(135deg, #39a900, #2d8600); color:#fff; box-shadow: 0 8px 16px rgba(57, 169, 0, 0.28); font-size: 1.25rem; }
+  .final-modal-subtitle { color: #4b5563; margin: 0 0 16px; font-size: 0.95rem; font-weight: 500; }
+
+  .mensaje-confirmacion-final {
+    background: linear-gradient(135deg, #eaffd8 0%, #f6ffe9 50%, #ffffff 100%);
+    border: 1px solid #b9e6a2;
+    border-left: 8px solid var(--sena-verde);
+    border-radius: 16px;
+    padding: 1.25rem 1.35rem;
+    box-shadow: 0 8px 20px rgba(45, 134, 0, 0.12);
+    margin-bottom: 1.3rem;
+  }
+  .mensaje-confirmacion-final h4 {
+    margin: 0 0 0.45rem;
+    font-weight: 900;
+    color: #14532d;
+    font-size: 1.35rem;
+    line-height: 1.2;
+  }
+  .mensaje-confirmacion-final p {
+    margin: 0 0 0.6rem;
+    color: #166534;
+    font-size: 0.98rem;
+    line-height: 1.5;
+    font-weight: 600;
+  }
+  .mensaje-confirmacion-final ul {
+    margin: 0.35rem 0 0;
+    padding-left: 1.1rem;
+  }
+  .mensaje-confirmacion-final li {
+    color: #14532d;
+    margin-bottom: 0.25rem;
+    font-size: 0.92rem;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="container">
+    <div class="breadcrumb-nav mb-2">
+      <a href="{% url 'panel_instructor_interno:panel' %}">Mi Panel</a>
+      <span>›</span>
+      <span style="color:rgba(255,255,255,0.9)">Visita #{{ visita.id }}</span>
+    </div>
+    <h2><i class="fas fa-clipboard-check me-3"></i>Detalle de Visita #{{ visita.id }}</h2>
+    <p class="mb-0 mt-1" style="opacity:0.85;">{{ visita.nombre_programa }} — Ficha {{ visita.numero_ficha }}</p>
+  </div>
+</div>
+
+<div class="container py-4">
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{% if 'error' in message.tags %}danger{% elif 'success' in message.tags %}success{% else %}warning{% endif %} alert-dismissible fade show" role="alert">
+        {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {% if visita.estado == 'confirmada' or visita.estado == 'aprobada_final' %}
+  <div class="mensaje-confirmacion-final">
+    <h4><i class="fas fa-medal me-2"></i>Visita confirmada definitivamente</h4>
+    <p>
+      Gracias por visitar el SENA Centro Minero. Esperamos que sea una experiencia de tu agrado.
+      Gracias por elegirnos.
+    </p>
+    <ul>
+      <li>Lleva el EPP necesario para el recorrido (casco, botas y elementos de seguridad requeridos).</li>
+      <li>Presentate con al menos 15 minutos de anticipacion al horario programado.</li>
+      <li>Porta documento de identidad y sigue siempre las indicaciones del personal de seguridad.</li>
+      <li>Mantente con tu grupo durante la actividad y respeta las zonas demarcadas.</li>
+    </ul>
+  </div>
+  {% endif %}
+
+  <!-- ===== TIMELINE DE ESTADO ===== -->
+  <div class="detail-card">
+    <div class="detail-card-header verde"><i class="fas fa-map-signs"></i>Estado de la Solicitud</div>
+    <div class="detail-card-body">
+      {% with estado=visita.estado %}
+      <div class="timeline">
+
+        <div class="timeline-step {% if estado != 'pendiente' %}done{% endif %}">
+          <div class="step-circle {% if estado == 'pendiente' %}active{% else %}done{% endif %}">
+            {% if estado == 'pendiente' %}<i class="fas fa-clock"></i>{% else %}<i class="fas fa-check"></i>{% endif %}
+          </div>
+          <div class="step-info {% if estado == 'pendiente' %}active{% else %}done{% endif %}">
+            <h6>Solicitud enviada</h6>
+            <small>{{ visita.fecha_solicitud|date:"d M Y H:i" }}</small>
+          </div>
+        </div>
+
+        {% if estado != 'rechazada' %}
+        <div class="timeline-step {% if estado in 'documentos_enviados,en_revision_documentos,confirmada' %}done{% endif %}">
+          <div class="step-circle {% if estado == 'aprobada_inicial' %}active{% elif estado in 'documentos_enviados,en_revision_documentos,confirmada' %}done{% endif %}">
+            <i class="fas fa-check"></i>
+          </div>
+          <div class="step-info {% if estado == 'aprobada_inicial' %}active{% elif estado in 'documentos_enviados,en_revision_documentos,confirmada' %}done{% endif %}">
+            <h6>Aprobación inicial — Registrar aprendices</h6>
+            <small>{% if estado == 'aprobada_inicial' %}¡Puedes registrar los aprendices ahora!{% else %}Registro de aprendices habilitado{% endif %}</small>
+          </div>
+        </div>
+
+        <div class="timeline-step {% if estado == 'confirmada' %}done{% endif %}">
+          <div class="step-circle {% if estado == 'documentos_enviados' or estado == 'en_revision_documentos' %}active{% elif estado == 'confirmada' %}done{% endif %}">
+            <i class="fas fa-file-alt"></i>
+          </div>
+          <div class="step-info {% if estado == 'documentos_enviados' or estado == 'en_revision_documentos' %}active{% elif estado == 'confirmada' %}done{% endif %}">
+            <h6>Solicitud final enviada — Documentos en revisión</h6>
+            <small>El administrador verifica los documentos de cada aprendiz</small>
+          </div>
+        </div>
+
+        <div class="timeline-step">
+          <div class="step-circle {% if estado == 'confirmada' %}done{% endif %}">
+            <i class="fas fa-trophy"></i>
+          </div>
+          <div class="step-info {% if estado == 'confirmada' %}done{% endif %}">
+            <h6>Visita confirmada</h6>
+            <small>Todo listo para la visita</small>
+          </div>
+        </div>
+
+        {% else %}
+        <div class="timeline-step">
+          <div class="step-circle rejected"><i class="fas fa-times"></i></div>
+          <div class="step-info" style="color:#991b1b;">
+            <h6>Visita rechazada</h6>
+            <small>Contacte al administrador para más información</small>
+          </div>
+        </div>
+        {% endif %}
+
+      </div>
+      {% endwith %}
+    </div>
+  </div>
+
+  <!-- ===== DETALLES DE LA VISITA ===== -->
+  <div class="detail-card">
+    <div class="detail-card-header azul"><i class="fas fa-calendar-check"></i>Detalles de la Visita</div>
+    <div class="detail-card-body">
+      <div class="info-grid">
+        <div class="info-item">
+          <label>Fecha de la visita</label>
+          <span>{% if visita.fecha_visita %}{{ visita.fecha_visita|date:"d M Y" }}{% else %}Por definir{% endif %}</span>
+        </div>
+        <div class="info-item">
+          <label>Horario programado</label>
+          <span>
+            {% if visita.hora_inicio and visita.hora_fin %}
+              {{ visita.hora_inicio|time:"h:i A" }} - {{ visita.hora_fin|time:"h:i A" }}
+            {% elif visita.hora_inicio %}
+              Desde {{ visita.hora_inicio|time:"h:i A" }}
+            {% else %}
+              Por definir
+            {% endif %}
+          </span>
+        </div>
+        <div class="info-item">
+          <label>Estado actual</label>
+          <span>{{ visita.get_estado_display }}</span>
+        </div>
+        <div class="info-item">
+          <label>Cantidad de aprendices</label>
+          <span>{{ visita.cantidad_aprendices }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if visita.estado == 'reprogramacion_solicitada' %}
+  <div class="detail-card" style="border:1px solid #fcd34d;">
+    <div class="detail-card-header" style="background:#fffbeb;color:#92400e;border-bottom:1px solid #fde68a;">
+      <i class="fas fa-calendar-day"></i> Reprogramación solicitada
+    </div>
+    <div class="detail-card-body">
+      <p style="margin:0 0 10px;color:#6b7280;">
+        Coordinación solicitó cambiar la fecha de esta visita. Selecciona una nueva fecha y hora para reenviar la solicitud.
+      </p>
+      {% if reprogramacion_pendiente %}
+      <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px;margin-bottom:12px;">
+        <div style="font-weight:700;color:#9a3412;margin-bottom:4px;">Motivo</div>
+        <div style="color:#7c2d12;">{{ reprogramacion_pendiente.motivo }}</div>
+      </div>
+      <button type="button" id="btnReprogramarAhora" class="btn-enviar" onclick="abrirModalReprogramacionInstructor()" style="background:#f59e0b;">
+        <i class="fas fa-calendar-plus"></i> Reprogramar ahora
+      </button>
+      {% else %}
+      <div class="doc-resumen-box" style="margin-bottom:0;">No se encontró el motivo de reprogramación. Intenta actualizar la página.</div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if visita.estado == 'documentos_enviados' or visita.estado == 'en_revision_documentos' or visita.estado == 'confirmada' or visita.estado == 'aprobada_inicial' and visita.asistentes.count > 0 %}
+  <!-- ===== REPORTE DE DILIGENCIAMIENTO DOCUMENTAL ===== -->
+  <div class="detail-card">
+    <div class="detail-card-header {% if reporte_documental.hay_alertas %}morado{% else %}verde{% endif %}">
+      <i class="fas fa-file-circle-check"></i>Reporte de Diligenciamiento
+      <span class="ms-auto" style="font-size:0.8rem; color:#6b7280; font-weight:600;">
+        {% if reporte_documental.hay_alertas %}{{ reporte_documental.total_alertas }} novedad(es){% else %}Sin novedades{% endif %}
+      </span>
+    </div>
+    <div class="detail-card-body">
+      {% if reporte_documental.hay_alertas %}
+        <div class="doc-resumen-box">
+          <i class="fas fa-triangle-exclamation me-2"></i>
+          Hay archivos con inconsistencias, faltantes o rechazo. Revise el detalle por persona y por archivos finales.
+        </div>
+
+        {% if visita.estado != 'confirmada' and visita.asistentes.count > 0 %}
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          {% if mostrar_boton_corregir_archivos_finales %}
+          <button type="button" onclick="abrirModalArchivosFinales(true)" class="btn-registrar" style="background: linear-gradient(135deg, #eae1b2 0%, #fff177 100%); color: #333; border: none; cursor: pointer;">
+            <i class="fas fa-upload"></i> Corregir / subir archivo final
+          </button>
+          {% endif %}
+          <a href="{% url 'panel_visitante:registrar_asistentes' tipo='interna' visita_id=visita.id %}" class="btn-registrar">
+            <i class="fas fa-eye"></i> Ver registro completo
+          </a>
+        </div>
+        {% endif %}
+
+        {% if reporte_documental.asistentes_con_alertas %}
+          <h6 style="font-weight:800; color:#111827; margin-bottom:10px;">Novedades por asistente</h6>
+          {% for asistente_alerta in reporte_documental.asistentes_con_alertas %}
+            <div class="doc-issue-item">
+              <div class="doc-issue-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
+                <div>
+                  <i class="fas fa-user me-2" style="color:#6b21a8;"></i>{{ asistente_alerta.nombre }}
+                  <span class="doc-issue-sub">{{ asistente_alerta.documento }}</span>
+                </div>
+                {% for incidencia in asistente_alerta.incidencias %}
+                  {% if incidencia.tipo == 'rechazado' and incidencia.documento_subido_id %}
+                    <button type="button" class="btn" style="padding:4px 8px; font-size:0.75rem; background:#ef4444; color:white; border:none; border-radius:4px; cursor:pointer;" onclick="abrirModalSubirPorAsistente('{{ asistente_alerta.nombre }}', '{{ asistente_alerta.id }}', '{{ incidencia.detalle|escapejs }}', '{{ incidencia.documento_subido_id }}')">
+                      <i class="fas fa-upload me-1"></i>Subir corrección
+                    </button>
+                  {% endif %}
+                {% endfor %}
+              </div>
+              {% for incidencia in asistente_alerta.incidencias %}
+                <div class="doc-issue-line">
+                  <span class="estado-pill-mini {% if incidencia.tipo == 'faltante' %}faltante{% else %}rechazado{% endif %}">
+                    {% if incidencia.tipo == 'faltante' %}FALTANTE{% else %}RECHAZADO{% endif %}
+                  </span>
+                  <span style="font-size:0.82rem; color:#374151;">{{ incidencia.detalle }}</span>
+                </div>
+              {% endfor %}
+            </div>
+          {% endfor %}
+        {% endif %}
+
+        <h6 style="font-weight:800; color:#111827; margin:14px 0 10px;">Estado de archivos finales</h6>
+        {% if reporte_documental.archivos_finales_rechazados %}
+          <div class="doc-resumen-box" style="background:#fff7ed;border:1px solid #fdba74;color:#9a3412;">
+            <i class="fas fa-file-circle-xmark me-2"></i>
+            Archivo final rechazado:
+            {% for archivo in reporte_documental.archivos_finales_rechazados %}
+              <strong>{{ archivo.titulo }}</strong>{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+            . Esta novedad corresponde a archivo final, no a un asistente.
+          </div>
+        {% endif %}
+        {% for archivo in reporte_documental.archivos_finales_estado %}
+          <div class="doc-issue-item" style="margin-bottom:8px;">
+            <div class="doc-issue-line" style="justify-content:space-between; flex-wrap:wrap; gap:10px; margin-top:0;">
+              <div>
+                <strong style="font-size:0.86rem; color:#1f2937;">{{ archivo.titulo }}</strong>
+                <span class="doc-issue-sub">{{ archivo.categoria }}</span>
+              </div>
+              <span class="estado-pill-mini {{ archivo.estado }}">
+                {% if archivo.estado == 'faltante' %}FALTANTE{% elif archivo.estado == 'rechazado' %}RECHAZADO{% elif archivo.estado == 'pendiente' %}EN REVISIÓN{% else %}APROBADO{% endif %}
+              </span>
+            </div>
+            <div style="font-size:0.82rem; color:#4b5563; margin-top:6px;">{{ archivo.detalle }}</div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="doc-ok-box">
+          <i class="fas fa-circle-check me-2"></i>
+          Todos los documentos cargados en esta visita se encuentran completos y sin observaciones de rechazo. Debe mandar nuevamente la solicitud para continuar con el proceso.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ===== SECCIÓN REGISTRO DE APRENDICES (visible solo cuando corresponde) ===== -->
+  {% if visita.estado == 'aprobada_inicial' or visita.estado == 'documentos_enviados' or visita.estado == 'en_revision_documentos' or visita.estado == 'confirmada' %}
+  <div class="detail-card">
+    <div class="detail-card-header morado">
+      <i class="fas fa-users"></i>Registro de Aprendices
+      <span class="ms-auto" style="font-size:0.82rem; font-weight:600; color:#9ca3af;">
+        {{ visita.asistentes.count }} / {{ visita.cantidad_aprendices }} registrados
+      </span>
+    </div>
+    <div class="detail-card-body">
+
+      <!-- Barra de progreso -->
+      <div class="mb-3">
+        {% widthratio visita.asistentes.count visita.cantidad_aprendices 100 as pct %}
+        <div class="progress-wrap">
+          <div class="progress-fill" style="width:{% if pct %}{{ pct }}{% else %}0{% endif %}%;"></div>
+        </div>
+        <small class="text-muted">{{ visita.asistentes.count }} de {{ visita.cantidad_aprendices }} aprendices registrados</small>
+      </div>
+
+      {% if visita.estado == 'aprobada_inicial' %}
+        <div class="info-box-aprobada mb-3">
+          <i class="fas fa-check-circle me-2"></i>
+          <strong>¡Visita aprobada!</strong> Ya puedes registrar los aprendices y luego enviar la solicitud final.
+        </div>
+        <div class="d-flex flex-wrap gap-2 mb-4">
+          <a href="{% url 'panel_instructor_interno:registrar_aprendices_visita' visita_id=visita.id %}" class="btn-registrar" title="Registrar aprendices de la ficha rápidamente">
+            <i class="fas fa-graduation-cap"></i> Registrar aprendices de la ficha
+          </a>
+          <a href="{% url 'panel_visitante:registrar_asistentes' tipo='interna' visita_id=visita.id %}" class="btn-registrar">
+            <i class="fas fa-user-plus"></i> Registrar / Ver aprendices
+          </a>
+          {% if mostrar_boton_subir_archivos_finales %}
+          <button type="button" onclick="abrirModalArchivosFinales(false)" class="btn-registrar" style="background: linear-gradient(135deg, #eae1b2 0%, #fff177 100%); color: #333; border: none; cursor: pointer;">
+            <i class="fas fa-folder-open"></i> Subir archivos finales
+          </button>
+          {% elif visita.asistentes.count > 0 %}
+          <span class="btn-registrar" style="background:#ecfdf3;color:#166534;border:1px solid #86efac;cursor:default;">
+            <i class="fas fa-check-circle"></i> Archivos cargados para revisión
+          </span>
+          {% endif %}
+          {% if visita.asistentes.count > 0 %}
+          <form method="post" action="{% url 'panel_visitante:enviar_solicitud_final' tipo='interna' visita_id=visita.id %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" id="btnEnviarSolicitudFinal" class="btn-enviar" {% if not enviar_final_habilitado %}disabled{% endif %} style="{% if not enviar_final_habilitado %}opacity: 0.5; cursor: not-allowed;{% endif %}" onclick="return confirmarEnvioSolicitudFinal(event, this, 'aprendices');">
+              <i class="fas fa-paper-plane"></i> Enviar solicitud final
+            </button>
+          </form>
+          {% endif %}
+        </div>
+      {% elif visita.estado == 'documentos_enviados' or visita.estado == 'en_revision_documentos' %}
+        <div class="info-box-enviado mb-3">
+          <i class="fas fa-search me-2"></i>
+          <strong>Solicitud final enviada.</strong> El administrador está revisando los documentos de los aprendices.
+        </div>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <a href="{% url 'panel_visitante:registrar_asistentes' tipo='interna' visita_id=visita.id %}" class="btn-registrar">
+            <i class="fas fa-eye"></i> Ver aprendices registrados
+          </a>
+          {% if mostrar_boton_corregir_archivos_finales %}
+          <button type="button" onclick="abrirModalArchivosFinales(true)" class="btn-registrar" style="background: linear-gradient(135deg, #eae1b2 0%, #fff177 100%); color: #333; border: none; cursor: pointer;">
+            <i class="fas fa-upload"></i> Corregir / subir archivo final
+          </button>
+          {% endif %}
+        </div>
+      {% elif visita.estado == 'confirmada' %}
+        <a href="{% url 'panel_visitante:registrar_asistentes' tipo='interna' visita_id=visita.id %}" class="btn-registrar mb-3">
+          <i class="fas fa-eye"></i> Ver lista de aprendices
+        </a>
+      {% endif %}
+
+      <!-- Lista resumida de aprendices -->
+      {% if visita.asistentes.all %}
+        {% for asistente in visita.asistentes.all|slice:":5" %}
+        <div class="asistente-item">
+          <div class="asistente-info">
+            <h6><i class="fas fa-user me-2" style="color:#6b21a8;"></i>{{ asistente.nombre_completo }}</h6>
+            <small>{{ asistente.get_tipo_documento_display }}: {{ asistente.numero_documento }}</small>
+          </div>
+          {% if visita.estado == 'aprobada_inicial' %}
+          <div class="d-flex gap-2">
+            <a href="{% url 'panel_visitante:actualizar_info_asistente' tipo='interna' asistente_id=asistente.id %}"
+               class="btn-actualizar-asi"
+               onclick="return abrirModalActualizarAsistente(this.href);">
+              <i class="fas fa-pen me-1"></i>Actualizar
+            </a>
+            <a href="{% url 'panel_instructor_interno:eliminar_asistente_visita' visita_id=visita.id asistente_id=asistente.id tipo='interna' %}"
+               class="btn-eliminar-asi"
+               onclick="return confirm('¿Eliminar a {{ asistente.nombre_completo }}?')">
+              <i class="fas fa-trash me-1"></i>Eliminar
+            </a>
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+        {% if visita.asistentes.count > 5 %}
+          <p class="text-muted small text-center mt-2">y {{ visita.asistentes.count|add:"-5" }} más...
+            <a href="{% url 'panel_visitante:registrar_asistentes' tipo='interna' visita_id=visita.id %}">Ver todos</a>
+          </p>
+        {% endif %}
+      {% else %}
+        <div class="empty-asistentes">
+          <i class="fas fa-users-slash d-block mb-2"></i>
+          <p class="mb-0">Aún no hay aprendices registrados.</p>
+        </div>
+      {% endif %}
+
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ===== DATOS DEL PROGRAMA ===== -->
+  <div class="detail-card">
+    <div class="detail-card-header verde"><i class="fas fa-graduation-cap"></i>Datos del Programa</div>
+    <div class="detail-card-body">
+      <div class="info-grid">
+        <div class="info-item"><label>Programa</label><span>{{ visita.nombre_programa }}</span></div>
+        <div class="info-item"><label>Número de Ficha</label><span>{{ visita.numero_ficha }}</span></div>
+        <div class="info-item"><label>Cantidad de Aprendices</label><span>{{ visita.cantidad_aprendices }}</span></div>
+        <div class="info-item"><label>Fecha de Solicitud</label><span>{{ visita.fecha_solicitud|date:"d M Y H:i" }}</span></div>
+      </div>
+      {% if visita.observaciones %}
+      <div class="mt-3">
+        <label style="font-size:0.75rem;font-weight:700;text-transform:uppercase;color:#9ca3af;">Observaciones</label>
+        <p style="font-size:0.9rem;">{{ visita.observaciones }}</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ===== DATOS DEL RESPONSABLE ===== -->
+  <div class="detail-card">
+    <div class="detail-card-header azul"><i class="fas fa-user-tie"></i>Datos del Responsable</div>
+    <div class="detail-card-body">
+      <div class="info-grid">
+        <div class="info-item"><label>Responsable</label><span>{{ visita.responsable }}</span></div>
+        <div class="info-item"><label>Documento</label><span>{{ visita.tipo_documento_responsable }} {{ visita.documento_responsable }}</span></div>
+        <div class="info-item"><label>Correo</label><span>{{ visita.correo_responsable }}</span></div>
+        <div class="info-item"><label>Teléfono</label><span>{{ visita.telefono_responsable }}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTÓN VOLVER -->
+  <div class="d-flex gap-2">
+    <a href="{% url 'panel_instructor_interno:panel' %}" class="btn btn-outline-secondary">
+      <i class="fas fa-arrow-left me-2"></i>Volver al Panel
+    </a>
+    <a href="{% url 'panel_instructor_interno:panel' %}" class="btn btn-outline-success">
+      <i class="fas fa-home me-2"></i>Ir al Panel
+    </a>
+  </div>
+
+</div>
+
+<!-- Modal Archivos Finales -->
+<div id="modalArchivosFinales" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); overflow-y: auto; padding: 24px 0;">
+  <div style="background: #fff; padding: 32px 24px; border-radius: 12px; max-width: 600px; max-height: 88vh; overflow-y: auto; margin: 24px auto; box-shadow: 0 8px 32px rgba(0,0,0,0.2); position: relative;">
+    <button onclick="cerrarModalArchivosFinales()" style="position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 1.5rem; color: #888; cursor: pointer;">&times;</button>
+    <h2 class="final-modal-title"><span class="final-modal-title-icon"><i class="fas fa-folder-open"></i></span>Archivos Finales</h2>
+    <p class="final-modal-subtitle">Suba los archivos requeridos para finalizar el proceso:</p>
+    <form method="post" enctype="multipart/form-data" id="formArchivosFinales" action="{% url 'panel_visitante:registrar_asistentes' tipo='interna' visita_id=visita.id %}">
+      {% csrf_token %}
+      {% for categoria, docs in documentos_por_categoria.items %}
+        {% if 'ATS' in categoria or 'Inducción y Reinducción' in categoria or 'Charla de Seguridad y Calestenia' in categoria or 'Charla de Seguridad y Calistenia' in categoria %}
+          <div class="final-cat-card">
+            <div class="final-cat-top">
+              <div class="final-cat-top-icon">
+                <i class="fas fa-{% if 'ATS' in categoria %}clipboard-list{% elif 'Inducción' in categoria %}graduation-cap{% else %}users{% endif %}"></i>
+              </div>
+              <div>
+                <h5 class="final-cat-top-title">{% if 'ATS' in categoria %}ATS{% elif 'Inducción y Reinducción' in categoria %}Formato Inducción y Reinducción{% elif 'Charla de Seguridad y Calestenia' in categoria or 'Charla de Seguridad y Calistenia' in categoria %}Charla de Seguridad y Calistenia{% else %}{{ categoria }}{% endif %}</h5>
+                <p class="final-cat-top-sub">Documento requerido para completar el proceso</p>
+              </div>
+            </div>
+            <div class="final-cat-body">
+            {% for doc in docs %}
+              <div class="final-doc-item">
+                <div class="final-doc-head">
+                  <div class="final-doc-icon">
+                    <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% else %}file-alt{% endif %}"></i>
+                  </div>
+                  <div>
+                    <p class="final-doc-subtitle" style="font-size:0.98rem; font-weight:700; color:#334155; margin:0;">{{ doc.nombre_archivo }}</p>
+                  </div>
+                </div>
+                <input type="file" name="archivo_final_{{ doc.id }}" id="input_archivo_{{ doc.id }}" accept=".pdf,.doc,.docx" class="final-doc-input">
+                <span class="error-mensaje" id="error_{{ doc.id }}" style="display: none; color: #dc2626; font-size: 0.875rem; margin-top: 4px;"><i class="fas fa-exclamation-circle me-1"></i>No ha seleccionado ningún archivo</span>
+              </div>
+            {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+      {% endfor %}
+      <div id="statusMensaje" style="margin-top: 15px; display: none;">
+        <div id="statusContenido"></div>
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end;">
+        <button type="button" onclick="cerrarModalArchivosFinales()" style="background: #e5e7eb; color: #374151; font-weight: 600; padding: 10px 24px; border: none; border-radius: 8px; cursor: pointer;" id="btnCancelarModal">
+          Cancelar
+        </button>
+        <button type="submit" style="background: linear-gradient(90deg, #228B22, #2ecc40); color: #fff; font-weight: bold; padding: 10px 28px; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;" id="btnEnviarCompleto">
+          <i class="fas fa-upload me-2"></i>Subir Archivos Finales
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== MODAL PARA SUBIR DOCUMENTO POR ASISTENTE ===== -->
+<div id="modalSubirPorAsistente" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); overflow-y: auto; padding: 24px 0;">
+  <div style="background: #fff; padding: 32px 24px; border-radius: 12px; max-width: 500px; max-height: 88vh; overflow-y: auto; margin: 24px auto; box-shadow: 0 8px 32px rgba(0,0,0,0.2); position: relative;">
+    <button onclick="cerrarModalSubirPorAsistente()" style="position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 1.5rem; color: #888; cursor: pointer;">&times;</button>
+    <h2 class="final-modal-title"><span class="final-modal-title-icon"><i class="fas fa-user-check"></i></span>Subir Corrección</h2>
+    <p class="final-modal-subtitle" id="modalAsistenteInfo" style="margin-bottom: 20px;"></p>
+    <form method="post" enctype="multipart/form-data" id="formSubirPorAsistente" action="{% url 'panel_visitante:actualizar_documento_asistente' tipo='interna' asistente_id=0 %}">
+      {% csrf_token %}
+      <input type="hidden" name="documento_subido_id" id="inputDocumentoSubidoId" value="">
+      <div class="final-doc-item" style="background: #f9fafb; padding: 16px; border-radius: 8px;">
+        <div class="final-doc-head" style="margin-bottom: 12px;">
+          <div class="final-doc-icon">
+            <i class="fas fa-file-upload"></i>
+          </div>
+          <div>
+            <p class="final-doc-subtitle" style="font-size:0.98rem; font-weight:700; color:#334155; margin:0;" id="modalDocumentoNombre">Documento rechazado</p>
+          </div>
+        </div>
+        <input type="file" name="archivo_correccion" id="inputArchivoCorreccion" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" class="final-doc-input">
+        <span class="error-mensaje" id="errorArchivoCorreccion" style="display: none; color: #dc2626; font-size: 0.875rem; margin-top: 4px;"><i class="fas fa-exclamation-circle me-1"></i>Debe seleccionar un archivo</span>
+      </div>
+      <div id="statusMensajeAsistente" style="margin-top: 15px; display: none;">
+        <div id="statusContenidoAsistente"></div>
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end;">
+        <button type="button" onclick="cerrarModalSubirPorAsistente()" style="background: #e5e7eb; color: #374151; font-weight: 600; padding: 10px 24px; border: none; border-radius: 8px; cursor: pointer;">
+          Cancelar
+        </button>
+        <button type="submit" style="background: linear-gradient(90deg, #228B22, #2ecc40); color: #fff; font-weight: bold; padding: 10px 28px; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;" id="btnEnviarAsistente">
+          <i class="fas fa-upload me-2"></i>Subir Corrección
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== MODAL REPROGRAMAR VISITA ===== -->
+<div id="modalReprogramacionInstructor" style="display:none;position:fixed;z-index:10000;inset:0;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#fff;border-radius:12px;width:min(960px,95vw);padding:20px;box-shadow:0 12px 28px rgba(0,0,0,0.2);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <h5 style="margin:0;color:#111827;"><i class="fas fa-calendar-plus me-2" style="color:#f59e0b;"></i>Reprogramar visita</h5>
+      <button type="button" onclick="cerrarModalReprogramacionInstructor()" style="background:none;border:none;font-size:1.2rem;color:#6b7280;cursor:pointer;">&times;</button>
+    </div>
+    <p style="color:#6b7280;font-size:0.9rem;margin-bottom:12px;">Selecciona la nueva fecha y hora para reenviar tu solicitud a coordinación.</p>
+    <form id="formReprogramacionInstructor">
+      <input type="hidden" id="historialReprogramacionId" value="{{ reprogramacion_pendiente.id|default:'' }}">
+      <input type="hidden" id="reprogramarFecha" value="">
+      <input type="hidden" id="reprogramarHora" value="">
+      <input type="hidden" id="reprogramarHoraFin" value="">
+
+      <div id="reprogramacionCalendarioContainer" style="min-height:220px;border:1px solid #e5e7eb;border-radius:10px;padding:10px;background:#f9fafb;">
+        <p style="margin:0;text-align:center;color:#6b7280;padding:18px;">Cargando calendario...</p>
+      </div>
+
+      <div id="reprogramacionResumen" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px;margin-top:10px;">
+        <div style="font-size:0.82rem;font-weight:700;color:#166534;margin-bottom:4px;">Nueva programación seleccionada</div>
+        <div style="font-size:0.85rem;color:#14532d;">Fecha: <span id="reprogramacionResumenFecha" style="font-weight:700;">-</span></div>
+        <div style="font-size:0.85rem;color:#14532d;">Horario: <span id="reprogramacionResumenHorario" style="font-weight:700;">-</span></div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px;">
+        <button type="button" onclick="cerrarModalReprogramacionInstructor()" style="padding:8px 14px;border:1px solid #d1d5db;background:#fff;border-radius:8px;color:#374151;">Cancelar</button>
+        <button type="submit" style="padding:8px 14px;border:none;background:#f59e0b;color:#fff;border-radius:8px;font-weight:700;">Guardar y reenviar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="popupEmergente" style="display:none;position:fixed;right:20px;bottom:20px;z-index:11000;padding:12px 16px;border-radius:10px;color:#fff;font-weight:700;max-width:360px;box-shadow:0 8px 20px rgba(0,0,0,0.2);"></div>
+
+<div id="modalActualizarAsistente" onclick="if(event.target===this){cerrarModalActualizarAsistente();}" style="display:none;position:fixed;z-index:11020;inset:0;background:rgba(15,23,42,0.55);align-items:center;justify-content:center;padding:12px;">
+  <div onclick="event.stopPropagation();" style="background:#fff;border-radius:14px;width:min(980px,96vw);box-shadow:0 18px 45px rgba(0,0,0,0.28);overflow:hidden;">
+    <iframe id="iframeActualizarAsistente" title="Actualizar asistente" style="width:100%;height:min(84vh,760px);border:none;background:#f8fafc;display:block;"></iframe>
+  </div>
+</div>
+
+<!-- ===== MODAL DE CONFIRMACIÓN ANTES DE ENVIAR ===== -->
+<div id="modalConfirmacionEnvio" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); overflow-y: auto; padding: 24px 0;">
+  <div style="background: #fff; padding: 32px 24px; border-radius: 12px; max-width: 500px; margin: 24px auto; box-shadow: 0 8px 32px rgba(0,0,0,0.2); position: relative; text-align: center;">
+    <button onclick="cerrarModalConfirmacion()" style="position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 1.5rem; color: #888; cursor: pointer;">&times;</button>
+    <div style="font-size: 3rem; color: #f59e0b; margin-bottom: 16px;">
+      <i class="fas fa-exclamation-circle"></i>
+    </div>
+    <h2 style="font-size: 1.5rem; font-weight: 800; color: #1f2937; margin-bottom: 12px;">¿Está seguro?</h2>
+    <p style="font-size: 0.95rem; color: #4b5563; margin-bottom: 24px; line-height: 1.6;">
+      Asegúrese de que todos los documentos estén corregidos y listos. Una vez enviados, serán revisados por el administrador.
+    </p>
+    <div style="display: flex; gap: 10px; justify-content: center;">
+      <button type="button" onclick="cerrarModalConfirmacion()" style="background: #e5e7eb; color: #374151; font-weight: 600; padding: 12px 28px; border: none; border-radius: 8px; cursor: pointer;">
+        Cancelar
+      </button>
+      <button type="button" onclick="confirmarEnvioFinal()" style="background: linear-gradient(90deg, #228B22, #2ecc40); color: #fff; font-weight: bold; padding: 12px 28px; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;">
+        <i class="fas fa-paper-plane me-2"></i>Sí, Enviar Documentos
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function confirmarEnvioSolicitudFinal(event, boton, tipoPersona) {
+    const mensaje = '¿Enviar la solicitud final? Asegúrate de haber registrado todos los ' + tipoPersona + '.';
+    const form = boton && boton.form ? boton.form : null;
+
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    if (typeof window.mConfirm === 'function') {
+      window.mConfirm(mensaje, {
+        title: 'Enviar solicitud final',
+        icon: '<i class="fas fa-paper-plane"></i>',
+        iconClass: 'cm-info',
+        confirmText: 'Sí, enviar',
+        confirmClass: 'cm-btn-success',
+        confirmIcon: 'fas fa-paper-plane'
+      }).then(function (ok) {
+        if (ok && form) {
+          form.submit();
+        }
+      });
+      return false;
+    }
+
+    return confirm(mensaje);
+  }
+
+  function abrirModalActualizarAsistente(url) {
+    const modal = document.getElementById('modalActualizarAsistente');
+    const frame = document.getElementById('iframeActualizarAsistente');
+    if (!modal || !frame) {
+      window.location.href = url;
+      return false;
+    }
+
+    const sep = url.includes('?') ? '&' : '?';
+    frame.src = url + sep + 'embed=1';
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    return false;
+  }
+
+  function cerrarModalActualizarAsistente() {
+    const modal = document.getElementById('modalActualizarAsistente');
+    const frame = document.getElementById('iframeActualizarAsistente');
+    if (frame) {
+      frame.src = 'about:blank';
+    }
+    if (modal) {
+      modal.style.display = 'none';
+    }
+    document.body.style.overflow = '';
+  }
+
+  window.addEventListener('message', function(event) {
+    const data = event.data;
+    if (!data || typeof data !== 'object') return;
+
+    if (data.type === 'cerrarModalActualizarAsistente') {
+      cerrarModalActualizarAsistente();
+      return;
+    }
+
+    if (data.type === 'asistenteActualizado') {
+      cerrarModalActualizarAsistente();
+      mostrarPopupEmergente(data.message || 'Informacion actualizada correctamente.', 'success');
+      setTimeout(function () { window.location.reload(); }, 450);
+    }
+  });
+
+  document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+      const modal = document.getElementById('modalActualizarAsistente');
+      if (modal && modal.style.display === 'flex') {
+        cerrarModalActualizarAsistente();
+      }
+    }
+  });
+
+  // Variables globales
+  let esModalCorreccion = false;
+  let urlEnviarSolicitudFinal = "{% url 'panel_visitante:enviar_solicitud_final' tipo='interna' visita_id=visita.id %}";
+  const urlCompletarReprogramacion = "{% url 'gestion_visitas:completar_reprogramacion_legacy' tipo='interna' visita_id=visita.id %}";
+  let csrfTokenGlobal = '';
+  let reprogramacionSeleccion = { fecha: null, horario: null };
+  let enviandoSolicitudFinal = false;
+
+  function obtenerCSRFToken() {
+    const nombre = 'csrftoken=';
+    const cookies = document.cookie ? document.cookie.split(';') : [];
+    for (let i = 0; i < cookies.length; i += 1) {
+      const c = cookies[i].trim();
+      if (c.startsWith(nombre)) {
+        return decodeURIComponent(c.substring(nombre.length));
+      }
+    }
+    return '';
+  }
+
+  function mostrarPopupEmergente(mensaje, tipo) {
+    const popup = document.getElementById('popupEmergente');
+    if (!popup) return;
+    const color = tipo === 'error' ? '#dc2626' : (tipo === 'warning' ? '#f59e0b' : '#10b981');
+    popup.style.background = color;
+    popup.textContent = mensaje;
+    popup.style.display = 'block';
+    clearTimeout(popup._timer);
+    popup._timer = setTimeout(() => {
+      popup.style.display = 'none';
+    }, 4500);
+  }
+
+  function formatearFechaEs(dateStr) {
+    const parts = dateStr.split('-');
+    const months = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    return parseInt(parts[2], 10) + ' de ' + months[parseInt(parts[1], 10)] + ' de ' + parts[0];
+  }
+
+  function actualizarResumenReprogramacion() {
+    const box = document.getElementById('reprogramacionResumen');
+    const fechaEl = document.getElementById('reprogramacionResumenFecha');
+    const horarioEl = document.getElementById('reprogramacionResumenHorario');
+    if (!box || !fechaEl || !horarioEl) return;
+
+    if (reprogramacionSeleccion.fecha && reprogramacionSeleccion.horario) {
+      box.style.display = 'block';
+      fechaEl.textContent = formatearFechaEs(reprogramacionSeleccion.fecha);
+      horarioEl.textContent = reprogramacionSeleccion.horario.label;
+    } else {
+      box.style.display = 'none';
+      fechaEl.textContent = '-';
+      horarioEl.textContent = '-';
+    }
+  }
+
+  function cargarHorariosReprogramacion(fecha) {
+    const container = document.getElementById('reprogramacionCalendarioContainer');
+    if (!container) return;
+    const horarioHint = container.querySelector('#horarioHint');
+    const horariosList = container.querySelector('#horariosList');
+    if (horarioHint) horarioHint.textContent = 'Cargando horarios...';
+    if (horariosList) {
+      horariosList.innerHTML = '';
+      horariosList.style.display = 'none';
+    }
+
+    fetch('/calendario/horarios/' + fecha + '/', {
+      headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (!data.ok) {
+        if (horarioHint) horarioHint.textContent = 'Error: ' + (data.error || 'No se pudieron cargar');
+        return;
+      }
+      if (!data.ranges || !data.ranges.length) {
+        if (horarioHint) horarioHint.textContent = 'No hay horarios configurados para este día.';
+        return;
+      }
+
+      const horarioTitle = container.querySelector('#horarioTitle');
+      if (horarioTitle) horarioTitle.textContent = 'Horarios disponibles para ' + formatearFechaEs(fecha);
+      if (horarioHint) horarioHint.textContent = 'Selecciona el horario que prefieras:';
+
+      if (!horariosList) return;
+      horariosList.innerHTML = data.ranges.map(r =>
+        '<span class="horario-chip" data-start="' + r.start + '" data-end="' + r.end + '">' + r.label + '</span>'
+      ).join('');
+      horariosList.style.display = 'block';
+
+      horariosList.querySelectorAll('.horario-chip').forEach(chip => {
+        chip.addEventListener('click', function() {
+          horariosList.querySelectorAll('.horario-chip').forEach(c => c.classList.remove('selected'));
+          this.classList.add('selected');
+          reprogramacionSeleccion.horario = {
+            start: this.getAttribute('data-start'),
+            end: this.getAttribute('data-end'),
+            label: this.textContent
+          };
+          document.getElementById('reprogramarHora').value = reprogramacionSeleccion.horario.start;
+          document.getElementById('reprogramarHoraFin').value = reprogramacionSeleccion.horario.end;
+          actualizarResumenReprogramacion();
+        });
+      });
+    })
+    .catch(() => {
+      if (horarioHint) horarioHint.textContent = 'Error al cargar horarios.';
+    });
+  }
+
+  function initCalendarioReprogramacionEvents() {
+    const container = document.getElementById('reprogramacionCalendarioContainer');
+    if (!container) return;
+    const page = container.querySelector('#calendarioSeleccionPage');
+    if (!page) return;
+
+    const cardEl = page.querySelector('.calendar-card');
+    if (!cardEl) return;
+    const year = parseInt(cardEl.getAttribute('data-year'), 10);
+    const month = parseInt(cardEl.getAttribute('data-month'), 10);
+
+    const prev = page.querySelector('#prevSel');
+    const next = page.querySelector('#nextSel');
+
+    if (prev) {
+      prev.addEventListener('click', function() {
+        let y = year;
+        let m = month - 1;
+        if (m < 1) { m = 12; y -= 1; }
+        loadCalendarioReprogramacion(y, m);
+      });
+    }
+
+    if (next) {
+      next.addEventListener('click', function() {
+        let y = year;
+        let m = month + 1;
+        if (m > 12) { m = 1; y += 1; }
+        loadCalendarioReprogramacion(y, m);
+      });
+    }
+
+    const table = page.querySelector('.calendar-table');
+    if (table) {
+      table.addEventListener('click', function(e) {
+        const td = e.target.closest('td');
+        if (!td || !td.classList.contains('available')) return;
+
+        page.querySelectorAll('td.selected-day').forEach(el => el.classList.remove('selected-day'));
+        td.classList.add('selected-day');
+
+        reprogramacionSeleccion.fecha = td.getAttribute('data-date');
+        reprogramacionSeleccion.horario = null;
+        document.getElementById('reprogramarFecha').value = reprogramacionSeleccion.fecha;
+        document.getElementById('reprogramarHora').value = '';
+        document.getElementById('reprogramarHoraFin').value = '';
+        actualizarResumenReprogramacion();
+        cargarHorariosReprogramacion(reprogramacionSeleccion.fecha);
+      });
+    }
+  }
+
+  function loadCalendarioReprogramacion(year, month) {
+    const container = document.getElementById('reprogramacionCalendarioContainer');
+    if (!container) return;
+
+    let url = '/calendario/seleccion/';
+    if (year && month) {
+      url = '/calendario/seleccion/' + year + '/' + month + '/';
+    }
+
+    container.innerHTML = '<p style="margin:0;text-align:center;color:#6b7280;padding:18px;">Cargando calendario...</p>';
+    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(r => r.text())
+      .then(html => {
+        container.innerHTML = html;
+        initCalendarioReprogramacionEvents();
+      })
+      .catch(() => {
+        container.innerHTML = '<p style="margin:0;text-align:center;color:#b91c1c;padding:18px;">Error al cargar el calendario.</p>';
+      });
+  }
+
+  function abrirModalReprogramacionInstructor() {
+    const modal = document.getElementById('modalReprogramacionInstructor');
+    if (!modal) return;
+
+    reprogramacionSeleccion = { fecha: null, horario: null };
+    document.getElementById('reprogramarFecha').value = '';
+    document.getElementById('reprogramarHora').value = '';
+    document.getElementById('reprogramarHoraFin').value = '';
+    actualizarResumenReprogramacion();
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    loadCalendarioReprogramacion();
+  }
+
+  function cerrarModalReprogramacionInstructor() {
+    const modal = document.getElementById('modalReprogramacionInstructor');
+    if (modal) {
+      modal.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+  }
+
+  function restablecerEstadoSubidaArchivosFinales() {
+    const btnEnviar = document.getElementById('btnEnviarCompleto');
+    const btnCancelar = document.getElementById('btnCancelarModal');
+    const statusMensaje = document.getElementById('statusMensaje');
+    const statusContenido = document.getElementById('statusContenido');
+
+    if (btnEnviar) {
+      btnEnviar.disabled = false;
+      btnEnviar.style.background = 'linear-gradient(90deg, #228B22, #2ecc40)';
+      btnEnviar.innerHTML = '<i class="fas fa-upload me-2"></i>Subir Archivos Finales';
+    }
+
+    if (btnCancelar) {
+      btnCancelar.disabled = false;
+    }
+
+    if (statusMensaje) {
+      statusMensaje.style.display = 'none';
+    }
+
+    if (statusContenido) {
+      statusContenido.innerHTML = '';
+    }
+  }
+
+  function habilitarEnvioFinal() {
+    const btnSolicitudFinal = document.getElementById('btnEnviarSolicitudFinal');
+    if (!btnSolicitudFinal) return;
+    btnSolicitudFinal.disabled = false;
+    btnSolicitudFinal.style.opacity = '1';
+    btnSolicitudFinal.style.cursor = 'pointer';
+  }
+
+  function abrirModalArchivosFinales(esCorreccion) {
+    esModalCorreccion = esCorreccion;
+    restablecerEstadoSubidaArchivosFinales();
+    document.getElementById('modalArchivosFinales').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function cerrarModalArchivosFinales() {
+    document.getElementById('modalArchivosFinales').style.display = 'none';
+    document.body.style.overflow = '';
+    esModalCorreccion = false;
+    // Limpiar formulario
+    const form = document.getElementById('formArchivosFinales');
+    if (form) {
+      form.reset();
+      // Limpiar mensajes de error
+      const errorMensajes = form.querySelectorAll('.error-mensaje');
+      errorMensajes.forEach(msg => msg.style.display = 'none');
+      // Resetear bordes de inputs
+      const fileInputs = form.querySelectorAll('input[type="file"]');
+      fileInputs.forEach(input => input.style.borderColor = '#e5e7eb');
+    }
+    // Limpiar mensaje de estado
+    const statusMensaje = document.getElementById('statusMensaje');
+    if (statusMensaje) {
+      statusMensaje.style.display = 'none';
+    }
+    restablecerEstadoSubidaArchivosFinales();
+  }
+
+  function abrirModalSubirPorAsistente(nombre, asistenteId, documentoNombre, documentoSubidoId) {
+    if (!asistenteId || String(asistenteId).trim() === '') {
+      mostrarPopupEmergente('No se pudo identificar el asistente para subir la corrección.', 'error');
+      return;
+    }
+    if (!documentoSubidoId || String(documentoSubidoId).trim() === '') {
+      mostrarPopupEmergente('No se pudo identificar el documento rechazado para corregir.', 'error');
+      return;
+    }
+
+    document.getElementById('modalSubirPorAsistente').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+    document.getElementById('modalAsistenteInfo').innerHTML = `<strong>${nombre}</strong> - Cargue el archivo rechazado: <em>${documentoNombre}</em>`;
+    document.getElementById('modalDocumentoNombre').textContent = documentoNombre;
+    document.getElementById('inputDocumentoSubidoId').value = documentoSubidoId;
+    
+    // Actualizar la acción del formulario
+    const formSubir = document.getElementById('formSubirPorAsistente');
+    formSubir.action = "{% url 'panel_visitante:actualizar_documento_asistente' tipo='interna' asistente_id=0 %}".replace('/0/', '/' + asistenteId + '/');
+  }
+
+  function cerrarModalSubirPorAsistente() {
+    document.getElementById('modalSubirPorAsistente').style.display = 'none';
+    document.body.style.overflow = '';
+    const form = document.getElementById('formSubirPorAsistente');
+    if (form) {
+      form.reset();
+      const inputDocumentoSubidoId = document.getElementById('inputDocumentoSubidoId');
+      if (inputDocumentoSubidoId) inputDocumentoSubidoId.value = '';
+      const errorMensaje = document.getElementById('errorArchivoCorreccion');
+      if (errorMensaje) errorMensaje.style.display = 'none';
+      const statusMensaje = document.getElementById('statusMensajeAsistente');
+      if (statusMensaje) statusMensaje.style.display = 'none';
+    }
+  }
+
+  function abrirModalConfirmacion() {
+    document.getElementById('modalConfirmacionEnvio').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function cerrarModalConfirmacion() {
+    document.getElementById('modalConfirmacionEnvio').style.display = 'none';
+    document.body.style.overflow = '';
+    restablecerEstadoSubidaArchivosFinales();
+  }
+
+  function confirmarEnvioFinal() {
+    if (enviandoSolicitudFinal) {
+      return;
+    }
+    cerrarModalConfirmacion();
+    ejecutarEnvioFinal();
+  }
+
+  async function ejecutarEnvioFinal() {
+    if (enviandoSolicitudFinal) {
+      return;
+    }
+    enviandoSolicitudFinal = true;
+
+    const btnSolicitudFinal = document.getElementById('btnEnviarSolicitudFinal');
+    const statusMensaje = document.getElementById('statusMensaje');
+    const statusContenido = document.getElementById('statusContenido');
+    
+    if (statusMensaje) {
+      statusMensaje.style.display = 'block';
+      statusContenido.innerHTML = '<div style="background: #e0f2fe; border-left: 4px solid #0284c7; padding: 12px; border-radius: 6px; color: #075985;"><i class="fas fa-spinner fa-spin me-2"></i>Enviando solicitud...</div>';
+    }
+
+    try {
+      if (!csrfTokenGlobal) {
+        csrfTokenGlobal = obtenerCSRFToken();
+      }
+
+      const formDataEnvioFinal = new FormData();
+      if (csrfTokenGlobal) {
+        formDataEnvioFinal.append('csrfmiddlewaretoken', csrfTokenGlobal);
+      }
+
+      const respuestaEnvioFinal = await fetch(urlEnviarSolicitudFinal, {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': csrfTokenGlobal || obtenerCSRFToken()
+        },
+        body: formDataEnvioFinal
+      });
+      const dataEnvioFinal = await respuestaEnvioFinal.json().catch(() => ({}));
+
+      if (!respuestaEnvioFinal.ok || dataEnvioFinal.success === false) {
+        const mensajeErrorEnvio = dataEnvioFinal.error || 'revise el estado de la visita.';
+        if (statusMensaje && statusContenido) {
+          statusContenido.innerHTML = `<div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; border-radius: 6px; color: #92400e;"><i class="fas fa-exclamation-triangle me-2"></i>Error al enviar: ${mensajeErrorEnvio}</div>`;
+        }
+        mostrarPopupEmergente('No se pudo enviar la solicitud final: ' + mensajeErrorEnvio, 'error');
+        enviandoSolicitudFinal = false;
+        return;
+      }
+
+      if (btnSolicitudFinal) {
+        btnSolicitudFinal.disabled = false;
+        btnSolicitudFinal.style.opacity = '1';
+        btnSolicitudFinal.style.cursor = 'pointer';
+      }
+
+      if (statusMensaje && statusContenido) {
+        statusContenido.innerHTML = '<div style="background: #d1fae5; border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; color: #065f46;"><i class="fas fa-check-circle me-2"></i>¡Listo! Documentos corregidos enviados para revisión final.</div>';
+      }
+      mostrarPopupEmergente('Solicitud final enviada correctamente.', 'success');
+
+      setTimeout(function() {
+        location.reload();
+      }, 1500);
+    } catch (error) {
+      console.error('Error:', error);
+      if (statusMensaje && statusContenido) {
+        statusContenido.innerHTML = '<div style="background: #fee2e2; border-left: 4px solid #dc2626; padding: 12px; border-radius: 6px; color: #991b1b;"><i class="fas fa-exclamation-circle me-2"></i>Error de conexión. Por favor intente nuevamente.</div>';
+      }
+      mostrarPopupEmergente('Error de conexión al enviar la solicitud final.', 'error');
+      enviandoSolicitudFinal = false;
+    }
+  }
+
+  // Manejar envío del formulario con AJAX
+  document.addEventListener('DOMContentLoaded', function() {
+    const btnReprogramarAhora = document.getElementById('btnReprogramarAhora');
+    if (btnReprogramarAhora) {
+      btnReprogramarAhora.addEventListener('click', function() {
+        abrirModalReprogramacionInstructor();
+      });
+    }
+
+    const formReprogramacion = document.getElementById('formReprogramacionInstructor');
+    if (formReprogramacion) {
+      formReprogramacion.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const fecha = document.getElementById('reprogramarFecha').value;
+        const hora = document.getElementById('reprogramarHora').value;
+        const horaFin = document.getElementById('reprogramarHoraFin').value;
+        const historialId = document.getElementById('historialReprogramacionId').value;
+
+        if (!fecha || !hora || !horaFin || !historialId) {
+          mostrarPopupEmergente('Debes seleccionar fecha y horario desde el calendario.', 'warning');
+          return;
+        }
+
+        const body = new URLSearchParams({
+          fecha,
+          hora,
+          hora_fin: horaFin,
+          historial_id: historialId,
+        });
+
+        try {
+          const response = await fetch(urlCompletarReprogramacion, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'X-CSRFToken': obtenerCSRFToken(),
+            },
+            body,
+          });
+          const contentType = response.headers.get('content-type') || '';
+          if (!contentType.includes('application/json')) {
+            mostrarPopupEmergente('La sesión expiró o la respuesta del servidor no fue válida. Ingresa nuevamente.', 'error');
+            return;
+          }
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || data.success === false) {
+            mostrarPopupEmergente(data.message || 'No se pudo reprogramar la visita.', 'error');
+            return;
+          }
+          cerrarModalReprogramacionInstructor();
+          mostrarPopupEmergente(data.message || 'Visita reprogramada correctamente.', 'success');
+          setTimeout(() => location.reload(), 1400);
+        } catch (err) {
+          mostrarPopupEmergente('Error de conexión al reprogramar la visita.', 'error');
+        }
+      });
+    }
+
+    const form = document.getElementById('formArchivosFinales');
+    const btnEnviar = document.getElementById('btnEnviarCompleto');
+    const btnCancelar = document.getElementById('btnCancelarModal');
+    const btnSolicitudFinal = document.getElementById('btnEnviarSolicitudFinal');
+    
+    if (form) {
+      // Limpiar mensajes de error cuando se seleccione un archivo
+      const fileInputs = form.querySelectorAll('input[type="file"]');
+      const extensionesPermitidas = ['pdf', 'doc', 'docx'];
+      fileInputs.forEach(input => {
+        input.addEventListener('change', function() {
+          const errorId = this.id.replace('input_archivo_', 'error_');
+          const errorSpan = document.getElementById(errorId);
+          if (!errorSpan || this.files.length === 0) {
+            return;
+          }
+          const nombre = this.files[0].name || '';
+          const extension = nombre.includes('.') ? nombre.split('.').pop().toLowerCase() : '';
+          if (!extensionesPermitidas.includes(extension)) {
+            errorSpan.innerHTML = '<i class="fas fa-exclamation-circle me-1"></i>Formato no permitido. Solo PDF o Word (.doc, .docx).';
+            errorSpan.style.display = 'block';
+            this.style.borderColor = '#dc2626';
+            this.value = '';
+          } else {
+            errorSpan.style.display = 'none';
+            this.style.borderColor = '#e5e7eb';
+          }
+        });
+      });
+      
+      form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Limpiar mensajes de error previos
+        const errorMensajes = form.querySelectorAll('.error-mensaje');
+        errorMensajes.forEach(msg => msg.style.display = 'none');
+        fileInputs.forEach(input => input.style.borderColor = '#e5e7eb');
+        
+        // Validar que se hayan seleccionado TODOS los archivos
+        let hayErrores = false;
+        
+        fileInputs.forEach(input => {
+          if (!input.files || input.files.length === 0) {
+            // Mostrar error en este campo
+            const errorId = input.id.replace('input_archivo_', 'error_');
+            const errorSpan = document.getElementById(errorId);
+            if (errorSpan) {
+              errorSpan.innerHTML = '<i class="fas fa-exclamation-circle me-1"></i>No ha seleccionado ningún archivo';
+              errorSpan.style.display = 'block';
+              input.style.borderColor = '#dc2626';
+              hayErrores = true;
+            }
+          } else {
+            const nombre = input.files[0].name || '';
+            const extension = nombre.includes('.') ? nombre.split('.').pop().toLowerCase() : '';
+            if (!extensionesPermitidas.includes(extension)) {
+              const errorId = input.id.replace('input_archivo_', 'error_');
+              const errorSpan = document.getElementById(errorId);
+              if (errorSpan) {
+                errorSpan.innerHTML = '<i class="fas fa-exclamation-circle me-1"></i>Formato no permitido. Solo PDF o Word (.doc, .docx).';
+                errorSpan.style.display = 'block';
+              }
+              input.style.borderColor = '#dc2626';
+              hayErrores = true;
+            }
+          }
+        });
+        
+        // Si hay errores, no enviar el formulario
+        if (hayErrores) {
+        // Permitir corrección parcial: basta con adjuntar al menos un archivo final.
+        const hayArchivoSeleccionado = Array.from(fileInputs).some(
+          input => input.files && input.files.length > 0
+        );
+        if (!hayArchivoSeleccionado) {
+          const statusMensaje = document.getElementById('statusMensaje');
+          const statusContenido = document.getElementById('statusContenido');
+          statusMensaje.style.display = 'block';
+          statusContenido.innerHTML = '<div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; border-radius: 6px; color: #92400e;"><i class="fas fa-exclamation-circle me-2"></i>Debe adjuntar al menos un archivo para corregir.</div>';
+          return;
+        }
+        }
+        
+        const formData = new FormData(this);
+        csrfTokenGlobal = formData.get('csrfmiddlewaretoken');
+        
+        // Cambiar estado del botón
+        btnEnviar.disabled = true;
+        btnCancelar.disabled = true;
+        btnEnviar.style.background = 'linear-gradient(90deg, #FF9800, #FFB74D)';
+        btnEnviar.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Procesando...';
+        
+        const statusMensaje = document.getElementById('statusMensaje');
+        const statusContenido = document.getElementById('statusContenido');
+        statusMensaje.style.display = 'block';
+
+        try {
+          const respuestaSubida = await fetch(form.action, {
+            method: 'POST',
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+          });
+          const dataSubida = await respuestaSubida.json().catch(() => ({}));
+
+          if (!respuestaSubida.ok || dataSubida.success === false) {
+            statusContenido.innerHTML = `<div style="background: #fee2e2; border-left: 4px solid #dc2626; padding: 12px; border-radius: 6px; color: #991b1b;"><i class="fas fa-exclamation-circle me-2"></i>${dataSubida.error || 'Error al subir archivos. Por favor intente nuevamente.'}</div>`;
+            btnEnviar.disabled = false;
+            btnCancelar.disabled = false;
+            btnEnviar.style.background = 'linear-gradient(90deg, #228B22, #2ecc40)';
+            btnEnviar.innerHTML = '<i class="fas fa-upload me-2"></i>Subir Archivos Finales';
+            return;
+          }
+
+          const pendientesCorreccion = Number(dataSubida.pendientes_correccion || 0);
+          const listoParaConfirmar = dataSubida.listo_para_confirmar_envio === true || pendientesCorreccion === 0;
+
+          // Primer envío de finales: solo habilitar envío final si ya no quedan pendientes.
+          if (!esModalCorreccion) {
+            if (listoParaConfirmar) {
+              habilitarEnvioFinal();
+              statusContenido.innerHTML = '<div style="background: #d1fae5; border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; color: #065f46;"><i class="fas fa-check-circle me-2"></i>¡Archivos finales completos! Ahora puedes hacer clic en "Enviar solicitud final".</div>';
+            } else {
+              if (btnSolicitudFinal) {
+                btnSolicitudFinal.disabled = true;
+                btnSolicitudFinal.style.opacity = '0.5';
+                btnSolicitudFinal.style.cursor = 'not-allowed';
+              }
+              statusContenido.innerHTML = `<div style="background: #e0f2fe; border-left: 4px solid #0284c7; padding: 12px; border-radius: 6px; color: #075985;"><i class="fas fa-info-circle me-2"></i>Archivo(s) guardado(s). Aún faltan ${pendientesCorreccion} archivo(s)/corrección(es) para completar el envío final.</div>`;
+            }
+            btnEnviar.style.background = 'linear-gradient(90deg, #10b981, #059669)';
+            btnEnviar.innerHTML = '<i class="fas fa-check me-2"></i>Enviado correctamente';
+            btnEnviar.disabled = true;
+            setTimeout(function() {
+              cerrarModalArchivosFinales();
+              location.reload();
+            }, 1800);
+            return;
+          }
+
+          // SI es corrección y aún faltan correcciones, no mostrar confirmación final.
+          if (!listoParaConfirmar) {
+            statusContenido.innerHTML = `<div style="background: #e0f2fe; border-left: 4px solid #0284c7; padding: 12px; border-radius: 6px; color: #075985;"><i class="fas fa-info-circle me-2"></i>Corrección cargada. Aún faltan ${pendientesCorreccion} corrección(es) por enviar.</div>`;
+            btnEnviar.style.background = 'linear-gradient(90deg, #10b981, #059669)';
+            btnEnviar.innerHTML = '<i class="fas fa-check me-2"></i>Guardado';
+            btnEnviar.disabled = true;
+            setTimeout(function() {
+              cerrarModalArchivosFinales();
+              location.reload();
+            }, 1500);
+            return;
+          }
+
+          // Si ya todo está corregido, habilitar envío y recargar para reflejar estado actualizado.
+          habilitarEnvioFinal();
+          statusContenido.innerHTML = '<div style="background: #d1fae5; border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; color: #065f46;"><i class="fas fa-check-circle me-2"></i>Todos los archivos corregidos fueron cargados. Ya puedes reenviar la solicitud final.</div>';
+          btnEnviar.style.background = 'linear-gradient(90deg, #10b981, #059669)';
+          btnEnviar.innerHTML = '<i class="fas fa-check me-2"></i>Corrección guardada';
+          btnEnviar.disabled = true;
+
+          // No abrir confirmación automática para evitar confusión; el usuario decide cuándo reenviar.
+          setTimeout(function() {
+            cerrarModalArchivosFinales();
+            location.reload();
+          }, 1200);
+
+        } catch (error) {
+          console.error('Error:', error);
+          statusContenido.innerHTML = '<div style="background: #fee2e2; border-left: 4px solid #dc2626; padding: 12px; border-radius: 6px; color: #991b1b;"><i class="fas fa-exclamation-circle me-2"></i>Error de conexión. Por favor intente nuevamente.</div>';
+          btnEnviar.disabled = false;
+          btnCancelar.disabled = false;
+          btnEnviar.style.background = 'linear-gradient(90deg, #228B22, #2ecc40)';
+          btnEnviar.innerHTML = '<i class="fas fa-upload me-2"></i>Subir Archivos Finales';
+        }
+      });
+    }
+
+    // Manejar subida por asistente
+    const formSubirAsistente = document.getElementById('formSubirPorAsistente');
+    if (formSubirAsistente) {
+      formSubirAsistente.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const inputArchivo = document.getElementById('inputArchivoCorreccion');
+        const errorMensaje = document.getElementById('errorArchivoCorreccion');
+        const btnEnviarAsistente = document.getElementById('btnEnviarAsistente');
+        const statusMensaje = document.getElementById('statusMensajeAsistente');
+        const statusContenido = document.getElementById('statusContenidoAsistente');
+        const inputDocumentoSubidoId = document.getElementById('inputDocumentoSubidoId');
+
+        if (!inputArchivo.files || inputArchivo.files.length === 0) {
+          errorMensaje.style.display = 'block';
+          return;
+        }
+
+        if (!inputDocumentoSubidoId || !inputDocumentoSubidoId.value) {
+          statusMensaje.style.display = 'block';
+          statusContenido.innerHTML = '<div style="background: #fee2e2; border-left: 4px solid #dc2626; padding: 12px; border-radius: 6px; color: #991b1b;"><i class="fas fa-exclamation-circle me-2"></i>No se encontró el documento rechazado para aplicar la corrección.</div>';
+          return;
+        }
+
+        errorMensaje.style.display = 'none';
+        btnEnviarAsistente.disabled = true;
+        btnEnviarAsistente.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Procesando...';
+        statusMensaje.style.display = 'block';
+        statusContenido.innerHTML = '<div style="background: #e0f2fe; border-left: 4px solid #0284c7; padding: 12px; border-radius: 6px; color: #075985;"><i class="fas fa-spinner fa-spin me-2"></i>Subiendo corrección...</div>';
+
+        try {
+          if (!this.action || this.action.includes('/interna//') || this.action.includes('/externa//')) {
+            statusContenido.innerHTML = '<div style="background: #fee2e2; border-left: 4px solid #dc2626; padding: 12px; border-radius: 6px; color: #991b1b;"><i class="fas fa-exclamation-circle me-2"></i>No se pudo identificar el asistente seleccionado.</div>';
+            btnEnviarAsistente.disabled = false;
+            btnEnviarAsistente.innerHTML = '<i class="fas fa-upload me-2"></i>Subir Corrección';
+            return;
+          }
+
+          const formData = new FormData(this);
+          const response = await fetch(this.action, {
+            method: 'POST',
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+          });
+
+          const data = await response.json().catch(() => ({}));
+
+          if (!response.ok || data.success === false) {
+            statusContenido.innerHTML = `<div style="background: #fee2e2; border-left: 4px solid #dc2626; padding: 12px; border-radius: 6px; color: #991b1b;"><i class="fas fa-exclamation-circle me-2"></i>${data.error || 'Error al subir el archivo.'}</div>`;
+            btnEnviarAsistente.disabled = false;
+            btnEnviarAsistente.innerHTML = '<i class="fas fa-upload me-2"></i>Subir Corrección';
+            return;
+          }
+
+          const pendientesCorreccion = Number(data.pendientes_correccion || 0);
+          const listoParaConfirmar = data.listo_para_confirmar_envio === true || pendientesCorreccion === 0;
+
+          if (listoParaConfirmar) {
+            habilitarEnvioFinal();
+            statusContenido.innerHTML = '<div style="background: #d1fae5; border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; color: #065f46;"><i class="fas fa-check-circle me-2"></i>Archivo subido. Todas las correcciones están completas. Ahora puedes reenviar la solicitud final.</div>';
+          } else {
+            statusContenido.innerHTML = `<div style="background: #e0f2fe; border-left: 4px solid #0284c7; padding: 12px; border-radius: 6px; color: #075985;"><i class="fas fa-check-circle me-2"></i>Archivo subido. Aún faltan ${pendientesCorreccion} corrección(es).</div>`;
+          }
+
+          btnEnviarAsistente.style.background = 'linear-gradient(90deg, #10b981, #059669)';
+          btnEnviarAsistente.innerHTML = '<i class="fas fa-check me-2"></i>Corrección guardada';
+          btnEnviarAsistente.disabled = true;
+
+          setTimeout(function() {
+            cerrarModalSubirPorAsistente();
+            location.reload();
+          }, listoParaConfirmar ? 1200 : 1400);
+        } catch (error) {
+          console.error('Error:', error);
+          statusContenido.innerHTML = '<div style="background: #fee2e2; border-left: 4px solid #dc2626; padding: 12px; border-radius: 6px; color: #991b1b;"><i class="fas fa-exclamation-circle me-2"></i>Error de conexión.</div>';
+          btnEnviarAsistente.disabled = false;
+          btnEnviarAsistente.innerHTML = '<i class="fas fa-upload me-2"></i>Subir Corrección';
+        }
+      });
+    }
+  });
+
+  // Cerrar modal al hacer clic fuera
+  const modalElement = document.getElementById('modalArchivosFinales');
+  const modalReprogramacion = document.getElementById('modalReprogramacionInstructor');
+  if (modalElement) {
+    modalElement.addEventListener('click', function(e) {
+      if (e.target === this) {
+        cerrarModalArchivosFinales();
+      }
+    });
+  }
+  if (modalReprogramacion) {
+    modalReprogramacion.addEventListener('click', function(e) {
+      if (e.target === this) {
+        cerrarModalReprogramacionInstructor();
+      }
+    });
+  }
+
+  // Cerrar modal con tecla Escape
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && document.getElementById('modalArchivosFinales').style.display === 'block') {
+      cerrarModalArchivosFinales();
+    }
+    if (e.key === 'Escape' && modalReprogramacion && modalReprogramacion.style.display === 'flex') {
+      cerrarModalReprogramacionInstructor();
+    }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% accessibility_widget %}
+</body>
+</html>

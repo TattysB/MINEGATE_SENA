@@ -1,0 +1,82 @@
+{% load static %}
+
+<!-- Modal Form - Solo el formulario sin layout completo -->
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  {% endfor %}
+{% endif %}
+
+<div class="alert alert-info alert-dismissible fade show" role="alert" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; border-radius: 8px;">
+  <i class="fas fa-info-circle me-2"></i>
+  Si el programa no existe aún, créalo junto con la ficha en <a href="{% url 'panel_instructor_interno:gestionar_fichas_programas' %}" style="color: #1e40af; font-weight: 600;">Gestionar Fichas y Programas</a>.
+  <button type="button" class="btn-close" data-bs-dismiss="alert" style="color: #1e40af;"></button>
+</div>
+
+<form method="POST" id="formCrearFicha" style="margin-top: 1.5rem;">
+  {% csrf_token %}
+  
+  <div class="mb-3">
+    <label for="{{ form.numero.id_for_label }}" style="font-weight: 600; font-size: 0.9rem; color: #374151; margin-bottom: 4px; display: block;">
+      Número de Ficha <span class="text-danger">*</span>
+    </label>
+    {{ form.numero }}
+    {% if form.numero.errors %}
+      <div class="text-danger small mt-1">{{ form.numero.errors.0 }}</div>
+    {% endif %}
+  </div>
+
+  <div class="mb-3">
+    <label for="{{ form.programa.id_for_label }}" style="font-weight: 600; font-size: 0.9rem; color: #374151; margin-bottom: 4px; display: block;">
+      Programa <span class="text-danger">*</span>
+    </label>
+    {{ form.programa }}
+    {% if form.programa.errors %}
+      <div class="text-danger small mt-1">{{ form.programa.errors.0 }}</div>
+    {% endif %}
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-md-6">
+      <label for="{{ form.jornada.id_for_label }}" style="font-weight: 600; font-size: 0.9rem; color: #374151; margin-bottom: 4px; display: block;">
+        Jornada
+      </label>
+      {{ form.jornada }}
+    </div>
+    <div class="col-md-6">
+      <label for="{{ form.cantidad_aprendices.id_for_label }}" style="font-weight: 600; font-size: 0.9rem; color: #374151; margin-bottom: 4px; display: block;">
+        Cantidad de Aprendices
+      </label>
+      {{ form.cantidad_aprendices }}
+    </div>
+  </div>
+  <div class="d-flex gap-2 justify-content-end pt-3" style="border-top: 1px solid #e5e7eb;">
+    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" style="border-radius: 50px; padding: 0.5rem 1.5rem; font-weight: 600;">
+      <i class="fas fa-times me-1"></i>Cancelar
+    </button>
+    <button type="submit" class="btn btn-primary" style="background: #1d4ed8; border: none; border-radius: 50px; padding: 0.5rem 1.5rem; font-weight: 600;">
+      <i class="fas fa-save me-1"></i>{{ accion }}
+    </button>
+  </div>
+</form>
+
+<style>
+  form input[type="text"],
+  form input[type="number"],
+  form select {
+    border-radius: 8px;
+    border: 1.5px solid #d1d5db;
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+    width: 100%;
+  }
+
+  form input[type="text"]:focus,
+  form input[type="number"]:focus,
+  form select:focus {
+    border-color: #1d4ed8;
+    box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
+  }
+</style>

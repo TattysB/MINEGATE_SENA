@@ -1,0 +1,98 @@
+{% extends "panel_visitante_base.html" %}
+{% load static %}
+
+{% block title %}Correo Enviado - MINEGATE{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'login_responsable.css' %}">
+<style>
+    .step-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        counter-reset: step;
+        display: flex;
+        gap: 16px;
+        flex-wrap: nowrap;
+    }
+    .step-list li {
+        counter-increment: step;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+        color: #333;
+        flex: 1 1 0;
+        min-width: 0;
+        text-align: center;
+        font-size: 0.9rem;
+        line-height: 1.25;
+    }
+    .step-list li::before {
+        content: counter(step);
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: #00af00;
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+        font-weight: 700;
+        flex: 0 0 26px;
+        margin-top: 2px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <i class="fas fa-check-circle"></i>
+            <h2>¡Correo Enviado!</h2>
+            <p>Revisa tu bandeja de entrada y tu carpeta de spam</p>
+        </div>
+
+        <div class="login-body">
+            <div class="info-box">
+                <p><i class="fas fa-info-circle"></i> Se ha enviado un correo con instrucciones para restablecer tu contraseña.</p>
+            </div>
+
+            <div class="form-group">
+                <label><i class="fas fa-list-check"></i> Pasos siguientes</label>
+                <ul class="step-list">
+                    <li>Ve a tu correo electrónico</li>
+                    <li>Busca el mensaje de <strong>SICAM - Recuperacion de Contrasena</strong></li>
+                    <li>Haz clic en el enlace (válido por 24 horas)</li>
+                    <li>Crea una nueva contraseña segura</li>
+                </ul>
+            </div>
+
+            <div class="info-box" style="background: #fef3c7; border-color: #fcd34d;">
+                <p style="color: #92400e;"><i class="fas fa-exclamation-circle"></i> Si no recibes el correo, revisa spam o solicita otro envio.</p>
+            </div>
+
+            <div style="display: flex; justify-content: center;">
+                <a href="{% url 'panel_visitante:restablecer_contraseña' %}" class="btn-login" style="max-width: 260px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                    <i class="fas fa-redo"></i> Enviar otro correo
+                </a>
+            </div>
+
+            <div class="recovery-link">
+                <a href="{% url 'panel_visitante:login_responsable' %}">
+                    <i class="fas fa-arrow-left"></i> Volver a iniciar sesion
+                </a>
+            </div>
+        </div>
+
+        <div class="login-footer">
+            <p>Necesitas ayuda adicional?</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

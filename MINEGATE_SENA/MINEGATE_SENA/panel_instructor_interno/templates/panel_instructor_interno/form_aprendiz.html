@@ -1,0 +1,673 @@
+{% load static %}
+{% load accesibility_tags %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if aprendiz %}Editar{% else %}Registrar{% endif %} Aprendiz - MINEGATE</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}?v=20260311c">
+    <style>
+        :root {
+            --sena-verde: #39a900;
+            --sena-verde-oscuro: #2d8600;
+            --sena-suave: #e8f5e9;
+            --sena-borde: #dcefd8;
+            --card-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            --card-radius: 16px;
+            --transition: all 0.25s ease;
+        }
+
+        body {
+            background: #f4f6f9;
+            padding-top: 0 !important;
+            margin-top: 0 !important;
+        }
+
+        .page-header {
+            background: linear-gradient(135deg, #1a5c00 0%, var(--sena-verde) 60%, #5dc72e 100%);
+            color: white;
+            padding: 2.1rem 0 1.7rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .page-header::before {
+            content: "";
+            position: absolute;
+            top: -60px;
+            right: -60px;
+            width: 220px;
+            height: 220px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 50%;
+        }
+
+        .breadcrumb-nav a {
+            color: rgba(255,255,255,0.75);
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+
+        .breadcrumb-nav a:hover { color: white; }
+
+        .breadcrumb-nav span {
+            color: rgba(255,255,255,0.45);
+            margin: 0 6px;
+        }
+
+        .page-header h2 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin: 0.3rem 0 0.2rem;
+        }
+
+        .page-header .sub {
+            font-size: 0.92rem;
+            color: rgba(255,255,255,0.88);
+            margin: 0;
+        }
+
+        .btn-volver-header {
+            background: rgba(255,255,255,0.16);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.45);
+            border-radius: 50px;
+            padding: 9px 20px;
+            font-weight: 700;
+            font-size: 0.88rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            transition: var(--transition);
+        }
+
+        .btn-volver-header:hover {
+            background: rgba(255,255,255,0.28);
+            color: white;
+        }
+
+        .content-wrap { padding: 1.8rem 0 2.4rem; }
+
+        .full-screen-container {
+            width: 100%;
+            max-width: 1540px;
+            margin: 0 auto;
+            padding: 0 14px;
+        }
+
+        .form-card {
+            background: white;
+            border-radius: var(--card-radius);
+            padding: 26px;
+            margin-bottom: 18px;
+            border: 1px solid #edf0f3;
+            box-shadow: var(--card-shadow);
+        }
+
+        .form-card h5 {
+            font-size: 1.08rem;
+            font-weight: 800;
+            color: #1f2937;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 0.55rem;
+        }
+
+        .form-label {
+            font-weight: 700 !important;
+            color: #374151;
+            font-size: 0.9rem;
+            margin-bottom: 0.4rem;
+        }
+
+        .form-control,
+        .form-select {
+            border-radius: 10px;
+            border: 1.5px solid #d1d5db;
+            min-height: 42px;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: var(--sena-verde);
+            box-shadow: 0 0 0 3px rgba(57,169,0,0.15);
+        }
+
+        .required { color: #dc2626; }
+
+        .error-message {
+            color: #dc2626;
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+        }
+
+        .doc-category-badge {
+            background: #ecfdf3;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+            border-radius: 50px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 4px 10px;
+        }
+
+        .doc-required-category {
+            background: #f3f4f6;
+            color: #374151;
+            border-radius: 50px;
+            padding: 4px 10px;
+            font-size: 0.72rem;
+            font-weight: 700;
+        }
+
+        .doc-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8faf5;
+            border: 1px solid var(--sena-borde);
+            padding: 14px;
+            border-radius: 10px;
+            margin-bottom: 9px;
+            gap: 10px;
+        }
+
+        .btn-sena-green {
+            background: #ecfdf3;
+            color: #166534;
+            border: 1px solid #86efac;
+            font-weight: 700;
+            border-radius: 8px;
+            min-width: 34px;
+        }
+
+        .btn-sena-green:hover {
+            background: var(--sena-verde);
+            border-color: var(--sena-verde);
+            color: white;
+        }
+
+        .btn-doc-download {
+            background: #e0f2fe;
+            color: #0369a1;
+            border: 1px solid #7dd3fc;
+            border-radius: 8px;
+            min-width: 34px;
+            font-weight: 700;
+        }
+
+        .btn-doc-download:hover {
+            background: #0284c7;
+            border-color: #0284c7;
+            color: white;
+        }
+
+        .alert-info {
+            background: #ecfdf3;
+            border-color: #bbf7d0;
+            color: #166534;
+        }
+
+        .btn-action-primary {
+            background: var(--sena-verde);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-weight: 800;
+            font-size: 0.92rem;
+            padding: 11px 26px;
+        }
+
+        .btn-action-primary:hover {
+            background: var(--sena-verde-oscuro);
+            color: white;
+        }
+
+        .btn-action-secondary {
+            background: white;
+            color: #374151;
+            border: 1.5px solid #d1d5db;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 0.92rem;
+            padding: 11px 26px;
+        }
+
+        .btn-action-secondary:hover {
+            background: #f3f4f6;
+            color: #111827;
+        }
+
+        @media (max-width: 992px) {
+            .page-header h2 { font-size: 1.5rem; }
+            .form-card { padding: 18px; }
+            .doc-row { padding: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-header">
+    <div class="container">
+        <div class="breadcrumb-nav mb-2">
+            <a href="{% url 'panel_instructor_interno:panel' %}"><i class="fas fa-home me-1"></i>Mi Panel</a>
+            <span>&rsaquo;</span>
+            <a href="{% url 'panel_instructor_interno:gestionar_fichas_programas' %}">Fichas y Programas</a>
+            <span>&rsaquo;</span>
+            <a href="{% url 'panel_instructor_interno:detalle_aprendices_ficha' ficha.id %}">Ficha {{ ficha.numero }}</a>
+            <span>&rsaquo;</span>
+            <span style="color: rgba(255,255,255,0.92);">{% if aprendiz %}Editar{% else %}Registrar{% endif %}</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h2><i class="fas fa-{% if aprendiz %}user-edit{% else %}user-plus{% endif %} me-2"></i>{% if aprendiz %}Editar Aprendiz{% else %}Registrar Nuevo Aprendiz{% endif %}</h2>
+                <p class="sub">Ficha {{ ficha.numero }} | {{ ficha.programa.nombre }} | Jornada: {{ ficha.get_jornada_display }}</p>
+            </div>
+            <a href="{% url 'panel_instructor_interno:detalle_aprendices_ficha' ficha.id %}" class="btn-volver-header">
+                <i class="fas fa-arrow-left"></i> Volver
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="content-wrap">
+<div class="full-screen-container">
+
+    <div class="d-flex justify-content-end align-items-center mb-3 d-lg-none">
+        <a href="{% url 'panel_instructor_interno:detalle_aprendices_ficha' ficha.id %}" class="btn-action-secondary">Volver</a>
+    </div>
+
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            {% for error in form.non_field_errors %}
+                <div>{{ error }}</div>
+            {% endfor %}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    {% endif %}
+
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col-xl-5">
+                <div class="form-card">
+                    <h5 class="fw-bold mb-3 border-bottom pb-2"><i class="fas fa-download me-2 text-primary"></i>Plantillas para descargar</h5>
+                    {% if documentos_por_categoria %}
+                        {% for categoria, docs in documentos_por_categoria.items %}
+                            <div class="mb-4">
+                                <span class="doc-category-badge mb-2">{{ categoria }}</span>
+                                {% for doc in docs %}
+                                <div class="doc-row">
+                                    <div>
+                                        <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% else %}file-alt{% endif %} me-2" 
+                                           style="color: {% if doc.extension == '.pdf' %}#dc2626{% elif doc.extension == '.doc' or doc.extension == '.docx' %}#2563eb{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}#059669{% else %}#667eea{% endif %};"></i>
+                                        <span class="fw-bold">{{ doc.titulo }}</span>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" onclick="verDocumento('{% url 'documentos:ver_documento_inline' doc.id %}', '{{ doc.titulo }}', '{{ doc.extension }}', '{% url 'documentos:descargar_documento_publico' doc.id %}')" class="btn btn-sm btn-sena-green"><i class="fas fa-eye"></i></button>
+                                        <a href="{% url 'documentos:descargar_documento_publico' doc.id %}" download class="btn btn-sm btn-doc-download"><i class="fas fa-download"></i></a>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center py-3">No hay documentos disponibles</p>
+                    {% endif %}
+                </div>
+
+                {% if aprendiz %}
+                <div class="form-card bg-light">
+                    <h5 class="fw-bold mb-3 border-bottom pb-2"><i class="fas fa-history me-2"></i>Información de Auditoría</h5>
+                    <p class="mb-1"><strong>Creado:</strong> {{ aprendiz.fecha_creacion|date:"d/m/Y H:i" }}</p>
+                    <p class="mb-0"><strong>Actualizado:</strong> {{ aprendiz.fecha_actualizacion|date:"d/m/Y H:i" }}</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="col-xl-7">
+                <div class="form-card">
+                    <h5 class="fw-bold mb-4 border-bottom pb-2"><i class="fas fa-id-card me-2"></i>Información Personal</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Nombre <span class="required">*</span></label>
+                            {{ form.nombre }}
+                            {% if form.nombre.errors %}
+                                <div class="error-message"><i class="fas fa-times-circle me-1"></i>{{ form.nombre.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Apellido <span class="required">*</span></label>
+                            {{ form.apellido }}
+                            {% if form.apellido.errors %}
+                                <div class="error-message"><i class="fas fa-times-circle me-1"></i>{{ form.apellido.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <h5 class="fw-bold mt-5 mb-4 border-bottom pb-2"><i class="fas fa-card-list me-2"></i>Documento de Identidad</h5>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Tipo <span class="required">*</span></label>
+                            {{ form.tipo_documento }}
+                            {% if form.tipo_documento.errors %}
+                                <div class="error-message"><i class="fas fa-times-circle me-1"></i>{{ form.tipo_documento.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold">Número <span class="required">*</span></label>
+                            {{ form.numero_documento }}
+                            {% if form.numero_documento.errors %}
+                                <div class="error-message"><i class="fas fa-times-circle me-1"></i>{{ form.numero_documento.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <h5 class="fw-bold mt-5 mb-4 border-bottom pb-2"><i class="fas fa-envelope me-2"></i>Información de Contacto</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Correo <span class="required">*</span></label>
+                            {{ form.correo }}
+                            {% if form.correo.errors %}
+                                <div class="error-message"><i class="fas fa-times-circle me-1"></i>{{ form.correo.errors.0 }}</div>
+                            {% endif %}
+                            <small class="text-muted d-block mt-1"><i class="fas fa-info-circle me-1"></i>Se enviarán QR e información a este correo</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Teléfono</label>
+                            {{ form.telefono }}
+                            {% if form.telefono.errors %}
+                                <div class="error-message"><i class="fas fa-times-circle me-1"></i>{{ form.telefono.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <h5 class="fw-bold mt-5 mb-4 border-bottom pb-2"><i class="fas fa-toggle-on me-2"></i>Estado</h5>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            {{ form.estado }}
+                            {% if form.estado.errors %}
+                                <div class="error-message"><i class="fas fa-times-circle me-1"></i>{{ form.estado.errors.0 }}</div>
+                            {% endif %}
+                            <small class="text-muted d-block mt-2">Solo los aprendices activos serán utilizados en visitas</small>
+                        </div>
+                    </div>
+
+                    <h5 class="fw-bold mt-5 mb-4 border-bottom pb-2"><i class="fas fa-file-upload me-2"></i>Documentos Requeridos</h5>
+
+                    <!-- Nota importante -->
+                    <div class="alert alert-info alert-dismissible fade show" role="alert" style="margin-bottom: 20px;">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Importante:</strong> Para aprendices internos se solicitan estos documentos: Auto Reporte de Salud (obligatorio) y Autorizacion de Padres (solo si aplica), este ultimo es en caso de ser menor de edad.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+
+                    <!-- Documentos requeridos para aprendices internos -->
+                    <div class="mb-4">
+                        {% if documentos_por_categoria %}
+                            {% for categoria, docs in documentos_por_categoria.items %}
+                                {% if categoria == '👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud' or categoria == '📋 Formato Autorización Padres de Familia' %}
+                                    <div class="mb-2 mt-3">
+                                        <span class="doc-required-category">{{ categoria }}</span>
+                                    </div>
+                                    {% for doc in docs %}
+                                        <div style="padding: 15px; background: #f3f4f6; border: 2px solid #d1d5db; border-radius: 8px; margin-bottom: 12px;">
+                                            <label style="font-weight: 600; margin-bottom: 8px; display: block; color: #1f2937;">
+                                                <i class="fas fa-upload me-2" style="color: #667eea;"></i>
+                                                Cargar {{ doc.titulo }}
+                                                {% if categoria == '👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud' and doc.id not in docs_subidos_ids %}
+                                                    <span class="required">*</span>
+                                                {% endif %}
+                                                {% if categoria == '📋 Formato Autorización Padres de Familia' %}
+                                                    <span class="badge bg-warning text-dark ms-2">Solo si aplica</span>
+                                                {% endif %}
+                                                {% if doc.id in docs_subidos_ids %}
+                                                    <span class="badge bg-success ms-2">Ya cargado</span>
+                                                {% endif %}
+                                            </label>
+                                            <input
+                                                type="file"
+                                                name="documento_{{ doc.id }}"
+                                                class="form-control"
+                                                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                                data-required="{% if categoria == '👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud' and doc.id not in docs_subidos_ids %}true{% else %}false{% endif %}"
+                                                data-reporte-salud="{% if doc.categoria == 'Formato Auto Reporte Condiciones de Salud' %}true{% else %}false{% endif %}"
+                                                data-autorizacion-padres="{% if categoria == '📋 Formato Autorización Padres de Familia' %}true{% else %}false{% endif %}"
+                                                data-ya-cargado="{% if doc.id in docs_subidos_ids %}true{% else %}false{% endif %}"
+                                                data-doc-titulo="{{ doc.titulo }}"
+                                                style="padding: 10px; border-radius: 6px; border: 1px solid #d1d5db;"
+                                            >
+                                            {% if doc.id in docs_subidos_ids %}
+                                                <small class="text-success d-block mt-1"><i class="fas fa-check-circle me-1"></i>Documento cargado en esta categoria. Si subes otro archivo, se reemplaza.</small>
+                                            {% endif %}
+                                            <small style="color: #6b7280; display: block; margin-top: 6px;"><i class="fas fa-info-circle me-1"></i>Formatos aceptados: PDF, DOC, DOCX (Max. 10MB)</small>
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            <div style="padding: 15px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 8px; margin-bottom: 12px; color: #6b7280;">
+                                <i class="fas fa-info-circle me-2"></i>No hay documentos de apoyo configurados en este momento.
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex gap-2 mt-5">
+                        <button type="submit" class="btn btn-action-primary" id="btnGuardar">
+                            <i class="fas fa-{% if aprendiz %}check-circle{% else %}plus-circle{% endif %} me-2"></i>
+                            {% if aprendiz %}Actualizar Aprendiz{% else %}Guardar Registro{% endif %}
+                        </button>
+                        <a href="{% url 'panel_instructor_interno:detalle_aprendices_ficha' ficha.id %}" class="btn btn-action-secondary">
+                            <i class="fas fa-times-circle me-2"></i>Cancelar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+</div>
+
+<!-- Modal para Ver Documento -->
+<script>
+function verDocumento(urlViewer, titulo, extension, urlDescarga) {
+    const imgExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    
+    const modalVerDoc = document.createElement('div');
+    modalVerDoc.id = 'modalVerDoc';
+    modalVerDoc.style.cssText = 'display:block; position:fixed; z-index:9998; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.75); overflow-y:auto;';
+    
+    const contenido = document.createElement('div');
+    contenido.style.cssText = 'background:#fff; margin:2% auto; padding:20px; border-radius:12px; width:92%; max-width:960px; height:90vh; display:flex; flex-direction:column; box-shadow:0 8px 40px rgba(0,0,0,0.4);';
+    
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid #e5e7eb;';
+    header.innerHTML = `
+        <h5 style="margin:0; color:#1f2937; font-size:16px;"><i class="fas fa-file me-2" style="color:#39a900;"></i>${titulo}</h5>
+        <div style="display:flex; gap:8px; align-items:center;">
+            <a href="${urlDescarga}" download style="background:#39a900; color:white; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:13px; display:inline-flex; align-items:center; gap:4px; font-weight:600;">
+                <i class="fas fa-download"></i> Descargar
+            </a>
+            <button style="background:#ef4444; color:white; border:none; font-size:18px; cursor:pointer; width:36px; height:36px; border-radius:6px; display:flex; align-items:center; justify-content:center;">&times;</button>
+        </div>
+    `;
+    
+    const cuerpoNuevo = document.createElement('div');
+    cuerpoNuevo.style.cssText = 'flex:1; overflow:auto; border:1px solid #e5e7eb; border-radius:8px; background:#f0f0f0; display:flex; align-items:center; justify-content:center;';
+    
+    if (extension === '.pdf' || imgExts.includes(extension)) {
+        cuerpoNuevo.innerHTML = '<iframe src="' + urlViewer + '" style="width:100%; height:100%; min-height:600px; border:none;"></iframe>';
+    } else {
+        cuerpoNuevo.innerHTML = '<div style="text-align:center; padding:50px; color:#6b7280;">'
+            + '<i class="fas fa-file-alt" style="font-size:64px; color:#9ca3af; display:block; margin-bottom:20px;"></i>'
+            + '<p style="font-size:16px; margin-bottom:20px;">Vista previa no disponible para este tipo de archivo.</p>'
+            + '<a href="' + urlDescarga + '" download style="background:#39a900; color:white; padding:12px 28px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:8px;">'
+            + '<i class="fas fa-download"></i> Descargar</a></div>';
+    }
+    
+    contenido.appendChild(header);
+    contenido.appendChild(cuerpoNuevo);
+    modalVerDoc.appendChild(contenido);
+    document.body.appendChild(modalVerDoc);
+    
+    header.querySelector('button').onclick = function() {
+        modalVerDoc.remove();
+        document.body.style.overflow = '';
+    };
+    
+    modalVerDoc.onclick = function(e) {
+        if (e.target === this) {
+            modalVerDoc.remove();
+            document.body.style.overflow = '';
+        }
+    };
+    
+    document.addEventListener('keydown', function handler(e) {
+        if (e.key === 'Escape') {
+            modalVerDoc.remove();
+            document.body.style.overflow = '';
+            document.removeEventListener('keydown', handler);
+        }
+    });
+    
+    document.body.style.overflow = 'hidden';
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Validación de Documentos Requeridos -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const formulario = document.querySelector('form');
+    const btnGuardar = document.getElementById('btnGuardar');
+    const tipoDocumentoSelect = document.querySelector('select[name="tipo_documento"]');
+    const extensionesPermitidas = ['.pdf', '.doc', '.docx'];
+
+    function obtenerExtension(nombreArchivo) {
+        const punto = nombreArchivo.lastIndexOf('.');
+        return punto >= 0 ? nombreArchivo.substring(punto).toLowerCase() : '';
+    }
+
+    function mostrarAlertaError(contenidoHtml) {
+        const alertaExistente = document.getElementById('alerta-validacion-archivos');
+        if (alertaExistente) {
+            alertaExistente.remove();
+        }
+
+        const alerta = document.createElement('div');
+        alerta.id = 'alerta-validacion-archivos';
+        alerta.className = 'alert alert-danger alert-dismissible fade show';
+        alerta.role = 'alert';
+        alerta.style.marginBottom = '20px';
+        alerta.innerHTML = contenidoHtml + '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>';
+
+        const firstCard = document.querySelector('.form-card');
+        if (firstCard) {
+            firstCard.insertAdjacentElement('beforebegin', alerta);
+            alerta.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    document.querySelectorAll('input[type="file"][name^="documento_"]').forEach(campo => {
+        campo.addEventListener('change', function() {
+            if (!this.files || !this.files.length) {
+                return;
+            }
+
+            const extension = obtenerExtension(this.files[0].name);
+            if (!extensionesPermitidas.includes(extension)) {
+                this.value = '';
+                mostrarAlertaError(
+                    '<i class="fas fa-exclamation-circle me-2"></i><strong>Formato no permitido:</strong><br>Solo puedes subir archivos PDF o Word (.doc, .docx).'
+                );
+            }
+        });
+    });
+    
+    if (formulario && btnGuardar) {
+        formulario.addEventListener('submit', function(evento) {
+            const camposArchivo = Array.from(document.querySelectorAll('input[type="file"][name^="documento_"]'));
+            const camposRequeridos = Array.from(
+                document.querySelectorAll('input[type="file"][data-required="true"]')
+            ).filter(campo => {
+                const esReporteSalud = campo.dataset.reporteSalud === 'true';
+                const yaCargado = campo.dataset.yaCargado === 'true';
+                return !(esReporteSalud && yaCargado);
+            });
+            const esMenorEdad = tipoDocumentoSelect && tipoDocumentoSelect.value === 'TI';
+            const archivosFormatoInvalido = [];
+
+            camposArchivo.forEach(campo => {
+                if (campo.files && campo.files.length) {
+                    const extension = obtenerExtension(campo.files[0].name);
+                    if (!extensionesPermitidas.includes(extension)) {
+                        archivosFormatoInvalido.push(campo.files[0].name);
+                        campo.style.borderColor = '#dc2626';
+                        campo.style.borderWidth = '2px';
+                    }
+                }
+            });
+
+            if (archivosFormatoInvalido.length > 0) {
+                evento.preventDefault();
+                mostrarAlertaError(
+                    '<i class="fas fa-exclamation-circle me-2"></i><strong>Formatos no permitidos:</strong><br>Solo se permiten PDF o Word (.doc, .docx).<ul class="mb-0 mt-2">'
+                    + archivosFormatoInvalido.map(archivo => `<li>${archivo}</li>`).join('')
+                    + '</ul>'
+                );
+                return;
+            }
+
+            if (esMenorEdad) {
+                const camposAutorizacion = document.querySelectorAll('input[type="file"][data-autorizacion-padres="true"]');
+                camposAutorizacion.forEach(campo => {
+                    if (campo.dataset.yaCargado !== 'true' && !camposRequeridos.includes(campo)) {
+                        camposRequeridos.push(campo);
+                    }
+                });
+            }
+
+            let todosLosArchivosCompletos = true;
+            const archivosNoSubidos = [];
+            
+            camposRequeridos.forEach(campo => {
+                campo.style.borderColor = '#d1d5db';
+                campo.style.borderWidth = '1px';
+
+                if (!campo.value) {
+                    todosLosArchivosCompletos = false;
+                    const titulo = campo.dataset.docTitulo || campo.name;
+                    archivosNoSubidos.push(titulo);
+                    campo.style.borderColor = '#dc2626';
+                    campo.style.borderWidth = '2px';
+                }
+            });
+            
+            if (!todosLosArchivosCompletos) {
+                evento.preventDefault();
+
+                mostrarAlertaError(`
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <strong>⚠️ Documentos Requeridos Faltantes:</strong>
+                    <br>
+                    Debes cargar los siguientes documentos antes de continuar:
+                    <ul class="mb-0 mt-2">
+                        ${archivosNoSubidos.map(archivo => `<li>${archivo}</li>`).join('')}
+                    </ul>
+                `);
+            }
+        });
+    }
+});
+</script>
+
+{% accessibility_widget %}
+</body>
+</html>

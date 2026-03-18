@@ -1,0 +1,829 @@
+/* ========================================
+   VARIABLES Y CONFIGURACIÓN GLOBAL
+   ======================================== */
+:root {
+  /* Paleta de Verdes SENA */
+  --verde-primario: #39A900;
+  --verde-oscuro: #2d8500;
+  --verde-claro: #4FBF26;
+  --verde-suave: #E8F5E9;
+  --verde-gradiente-1: #2d8500;
+  --verde-gradiente-2: #39A900;
+  --verde-gradiente-3: #4FBF26;
+
+  /* Colores Complementarios */
+  --blanco: #FFFFFF;
+  --negro: #1A1A1A;
+  --gris-oscuro: #2C3E50;
+  --gris-medio: #5A6C7D;
+  --gris-claro: #ECF0F1;
+  --gris-muy-claro: #F8F9FA;
+
+  /* Colores de Estado */
+  --azul-info: #3498DB;
+  --amarillo-warning: #F39C12;
+  --rojo-danger: #E74C3C;
+  --verde-success: #27AE60;
+
+  /* Sombras */
+  --sombra-suave: 0 2px 8px rgba(57, 169, 0, 0.1);
+  --sombra-media: 0 4px 16px rgba(57, 169, 0, 0.15);
+  --sombra-fuerte: 0 8px 24px rgba(57, 169, 0, 0.2);
+  --sombra-topbar: 0 2px 10px rgba(0, 0, 0, 0.1);
+
+  /* Transiciones */
+  --transicion-rapida: all 0.2s ease;
+  --transicion-media: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transicion-suave: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Tamaños */
+  --sidebar-width: 280px;
+  --sidebar-collapsed-width: 120px;
+  --topbar-height: 90px;
+  --border-radius: 12px;
+  --border-radius-small: 8px;
+}
+
+/* Reset y Base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: linear-gradient(135deg, var(--verde-suave) 0%, var(--gris-muy-claro) 100%);
+  color: var(--gris-oscuro);
+  line-height: 1.6;
+  overflow-x: hidden;
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+/* ========================================
+   CONTENEDOR PRINCIPAL
+   ======================================== */
+.app-container {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* ========================================
+   TOPBAR - BARRA SUPERIOR
+   ======================================== */
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: var(--topbar-height);
+  background: var(--verde-primario);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  box-shadow: var(--sombra-topbar);
+  z-index: 900;
+  transition: all var(--transicion-media);
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+}
+
+.topbar-logo-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.topbar-logo-img {
+  height: 50px;
+  /* Made slightly larger */
+  width: auto;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  /* Subtle shadow to pop */
+  transition: transform var(--transicion-media);
+}
+
+.topbar-logo-img:hover {
+  transform: scale(1.05);
+}
+
+
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  color: white;
+}
+
+.brand-main {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.brand-divider {
+  font-size: 1.2rem;
+  opacity: 0.8;
+}
+
+.brand-sub {
+  font-size: 0.95rem;
+  font-weight: 400;
+  opacity: 0.9;
+}
+
+/* Buscador Central */
+.topbar-center {
+  display: flex;
+  justify-content: flex-end;
+  margin-left: auto;
+  /* Push to the right */
+  margin-right: 2rem;
+  /* Spacing from notifications */
+}
+
+.search-container {
+  width: 450px;
+  /* Fixed width for a more compact look */
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 0.2rem 1rem;
+  transition: var(--transicion-media);
+}
+
+
+.search-container:focus-within {
+  background: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+}
+
+.search-icon {
+  color: white;
+  font-size: 1.2rem;
+  margin-right: 0.8rem;
+}
+
+.search-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: white;
+  font-size: 0.95rem;
+  padding: 0.6rem 0;
+  outline: none;
+}
+
+.search-input::placeholder {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Acciones Derecha */
+.topbar-right {
+  display: flex;
+  align-items: center;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.notification-wrapper {
+  position: relative;
+  cursor: pointer;
+  transition: var(--transicion-rapida);
+}
+
+.notification-wrapper:hover {
+  transform: scale(1.1);
+}
+
+.notification-icon {
+  color: white;
+  font-size: 2.2rem;
+  /* Significantly larger */
+}
+
+
+.notification-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: #E74C3C;
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 700;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  padding-bottom: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--verde-primario);
+}
+
+
+.user-profile-photo-container {
+  width: 55px;
+  /* Enlarged from 40px */
+  height: 55px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid white;
+  /* Thicker border */
+  cursor: pointer;
+  transition: var(--transicion-media);
+}
+
+
+.user-profile-photo-container:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+.profile-img-topbar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user-profile-btn {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1.5px solid rgba(255, 255, 255, 0.45);
+  border-radius: 50px;
+  padding: 5px 14px 5px 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.user-profile-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+.topbar-role-label {
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  white-space: nowrap;
+}
+
+
+/* ========================================
+   SIDEBAR - BARRA LATERAL
+   ======================================== */
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: var(--topbar-height);
+  width: var(--sidebar-width);
+  height: calc(100vh - var(--topbar-height));
+  background: var(--blanco);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+  transition: width var(--transicion-media);
+  border-right: 1px solid var(--gris-claro);
+  box-shadow: 4px 0 10px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  /* Prevent sidebar itself from scrolling */
+}
+
+
+
+/* Sidebar Contraído */
+.sidebar.collapsed {
+  width: var(--sidebar-collapsed-width);
+}
+
+/* Scrollbar personalizado para sidebar */
+.sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: var(--gris-claro);
+  border-radius: 10px;
+}
+
+/* Lista del Sidebar */
+.sidebar ul {
+  list-style: none;
+  padding: 1rem 0;
+  margin: 0;
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: none;
+  /* Hide scrollbar for Firefox */
+  -ms-overflow-style: none;
+  /* Hide scrollbar for IE/Edge */
+}
+
+.sidebar ul::-webkit-scrollbar {
+  display: none;
+  /* Hide scrollbar for Chrome/Safari */
+}
+
+
+
+/* Items del Sidebar */
+.sidebar li {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  margin: 0;
+  color: var(--gris-oscuro);
+  cursor: pointer;
+  transition: var(--transicion-media);
+  font-size: 1rem;
+  font-weight: 600;
+  background: transparent;
+  border-left: 4px solid transparent;
+}
+
+.sidebar-link,
+.sidebar li:not(:has(.sidebar-link)) {
+  display: flex !important;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1rem 2rem;
+  width: 100%;
+  color: inherit !important;
+  text-decoration: none !important;
+}
+
+.sidebar.collapsed li {
+  justify-content: center;
+}
+
+.sidebar.collapsed .sidebar-link,
+.sidebar.collapsed li:not(:has(.sidebar-link)) {
+  padding: 1rem 0;
+  justify-content: center;
+  gap: 0;
+}
+
+
+
+
+.sidebar li:hover,
+.sidebar li.active,
+.sidebar li:hover .sidebar-link,
+.sidebar li.active .sidebar-link,
+.sidebar li:hover span,
+.sidebar li.active span {
+  background: linear-gradient(90deg, #E8F5E9 0%, rgba(255, 255, 255, 0) 100%);
+  color: var(--verde-primario) !important;
+  border-left-color: var(--verde-primario);
+}
+
+
+/* ICONOS DEL SIDEBAR */
+.sidebar li i {
+  font-size: 1.5rem;
+  width: 25px;
+  /* Subtle fixed width for alignment without "box" feel */
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gris-medio);
+  transition: var(--transicion-media);
+}
+
+.sidebar li:hover i,
+.sidebar li.active i {
+  color: var(--verde-primario);
+  transform: scale(1.1);
+}
+
+.sidebar.collapsed li i {
+  font-size: 1.8rem;
+  width: 32px;
+  min-width: 32px;
+  margin: 0 auto;
+}
+
+
+
+/* Texto del Sidebar */
+.sidebar li span {
+  flex: 1;
+  opacity: 1;
+  transition: var(--transicion-media);
+}
+
+
+.sidebar.collapsed li span {
+  opacity: 0;
+  width: 0;
+  display: none;
+}
+
+
+/* Botón de Logout */
+.logout-button {
+  width: 100%;
+  margin-top: auto;
+  margin-bottom: 2rem;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--gris-claro);
+  cursor: pointer;
+  transition: var(--transicion-media);
+}
+
+.logout-button:hover {
+  background: rgba(231, 76, 60, 0.05);
+}
+
+.logout-button li {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1rem 2rem;
+}
+
+
+.logout-button:hover li {
+  background: linear-gradient(90deg, #fff5f5 0%, #ffe3e3 100%) !important;
+  color: #e74c3c !important;
+  border-left-color: #e74c3c !important;
+}
+
+.logout-button:hover li i,
+.logout-button:hover li span {
+  color: #e74c3c !important;
+  background: transparent !important;
+  /* Remove any residual background */
+}
+
+
+
+.logout-button:hover i {
+  color: var(--rojo-danger) !important;
+}
+
+
+/* ========================================
+   HAMBURGER BUTTON (MOBILE)
+   ======================================== */
+.hamburger-btn {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, var(--verde-primario), var(--verde-claro));
+  border: none;
+  border-radius: var(--border-radius);
+  color: var(--blanco);
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+  box-shadow: var(--sombra-media);
+  transition: var(--transicion-media);
+}
+
+.hamburger-btn:hover {
+  transform: scale(1.05);
+  box-shadow: var(--sombra-fuerte);
+}
+
+.hamburger-btn.active {
+  background: linear-gradient(135deg, var(--verde-oscuro), var(--verde-primario));
+}
+
+/* Overlay para Mobile */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  visibility: hidden;
+  transition: var(--transicion-media);
+  z-index: 999;
+}
+
+.sidebar-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ========================================
+   MAIN CONTENT
+   ======================================== */
+main {
+  flex: 1;
+  margin-left: var(--sidebar-width);
+  margin-top: var(--topbar-height);
+  padding: 0.75rem 2rem 2rem;
+  min-height: calc(100vh - var(--topbar-height));
+  transition: margin-left var(--transicion-media);
+  animation: fadeIn 0.6s ease;
+}
+
+/* Ajuste cuando el sidebar está contraído */
+.app-container:has(.sidebar.collapsed) main {
+  margin-left: var(--sidebar-collapsed-width);
+}
+
+/* ========================================
+   MODALES
+   ======================================== */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  z-index: 2000;
+  justify-content: center;
+  align-items: center;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-contenido {
+  background: var(--blanco);
+  border-radius: var(--border-radius);
+  max-width: 500px;
+  width: 90%;
+  box-shadow: var(--sombra-fuerte);
+  overflow: hidden;
+  animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-encabezado {
+  background: linear-gradient(135deg, var(--verde-primario), var(--verde-claro));
+  color: var(--blanco);
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-encabezado h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.modal-cerrar {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: var(--blanco);
+  font-size: 1.8rem;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transicion-rapida);
+}
+
+.modal-cerrar:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg);
+}
+
+.modal-cuerpo {
+  padding: 2rem;
+}
+
+.modal-pie {
+  padding: 1.5rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  background: var(--gris-muy-claro);
+}
+
+.btn-modal {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--border-radius-small);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transicion-media);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-cancelar {
+  background: var(--gris-claro);
+  color: var(--gris-oscuro);
+}
+
+.btn-cancelar:hover {
+  background: var(--gris-medio);
+  color: var(--blanco);
+  transform: translateY(-2px);
+}
+
+.btn-confirmar {
+  background: linear-gradient(135deg, var(--verde-primario), var(--verde-claro));
+  color: var(--blanco);
+  box-shadow: var(--sombra-suave);
+}
+
+.btn-confirmar:hover {
+  box-shadow: var(--sombra-media);
+  transform: translateY(-2px);
+}
+
+/* ========================================
+   ANIMACIONES
+   ======================================== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Efecto Ripple */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transform: scale(0);
+  animation: ripple-animation 0.6s ease-out;
+  pointer-events: none;
+}
+
+@keyframes ripple-animation {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+@media (max-width: 768px) {
+  .hamburger-btn {
+    display: flex;
+  }
+
+  .sidebar {
+    transform: translateX(-100%);
+    width: var(--sidebar-width) !important;
+    top: var(--topbar-height) !important;
+  }
+
+  .sidebar.active {
+    transform: translateX(0);
+  }
+
+  .sidebar.collapsed {
+    transform: translateX(-100%);
+  }
+
+  .topbar {
+    left: 0 !important;
+    padding: 0 1rem 0 5rem;
+    width: 100% !important;
+  }
+
+  .topbar-logo h1 {
+    font-size: 1.3rem;
+  }
+
+  main {
+    margin-left: 0 !important;
+    padding: 1.5rem;
+  }
+
+  .topbar-user {
+    padding: 0.4rem 0.8rem;
+    gap: 0.5rem;
+  }
+
+  .user-profile-photo {
+    width: 35px;
+    height: 35px;
+  }
+
+  .user-info {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar-logo img {
+    height: 35px;
+    width: 35px;
+  }
+
+  .topbar-logo h1 {
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+  }
+
+  main {
+    padding: 1rem;
+  }
+}
+
+/* ========================================
+   UTILIDADES
+   ======================================== */
+.text-center {
+  text-align: center;
+}
+
+.mb-1 {
+  margin-bottom: 1rem;
+}
+
+.mb-2 {
+  margin-bottom: 2rem;
+}
+
+.mt-1 {
+  margin-top: 1rem;
+}
+
+.mt-2 {
+  margin-top: 2rem;
+}

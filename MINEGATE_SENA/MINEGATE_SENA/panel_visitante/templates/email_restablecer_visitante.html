@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f3f4f6;
+            margin: 0;
+            padding: 24px 12px;
+        }
+
+        .email-container {
+            max-width: 520px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.2);
+        }
+
+        .email-header {
+            background: linear-gradient(135deg, #00af00 0%, #008c00 100%);
+            padding: 28px 24px;
+            color: #ffffff;
+            text-align: center;
+        }
+
+        .email-header h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .email-header p {
+            margin: 8px 0 0;
+            opacity: 0.9;
+            font-size: 13px;
+        }
+
+        .icon-circle {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #ffffff;
+            color: #00af00;
+            display: block;
+            text-align: center;
+            line-height: 48px;
+            font-size: 22px;
+            font-weight: 700;
+            margin: 0 auto 12px;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .email-body {
+            padding: 28px 26px;
+        }
+
+        .info-box {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 10px;
+            padding: 14px;
+            margin: 16px 0 20px;
+            color: #1e40af;
+            font-size: 13px;
+        }
+
+        .highlight-box {
+            background: #f0fdf4;
+            border-left: 4px solid #10b981;
+            padding: 12px 14px;
+            border-radius: 8px;
+            color: #166534;
+            font-size: 13px;
+            margin: 18px 0;
+        }
+
+        .button-container {
+            text-align: center;
+            margin: 22px 0 10px;
+        }
+
+        .reset-button {
+            background: linear-gradient(135deg, #00af00 0%, #008c00 100%);
+            color: #ffffff;
+            padding: 13px 26px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 14px;
+            display: inline-block;
+        }
+
+        .steps {
+            margin: 16px 0;
+            padding: 0;
+            list-style: none;
+            font-size: 13px;
+            color: #374151;
+        }
+
+        .steps li {
+            margin: 6px 0;
+        }
+
+        .warning-box {
+            background: #fef3c7;
+            border: 1px solid #fcd34d;
+            border-radius: 10px;
+            padding: 12px 14px;
+            color: #92400e;
+            font-size: 12px;
+            margin: 18px 0;
+        }
+
+        .alternative-link {
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 14px;
+            text-align: center;
+            font-size: 12px;
+            color: #6b7280;
+            margin: 18px 0;
+        }
+
+        .alternative-link a {
+            color: #00af00;
+            text-decoration: none;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 11px;
+        }
+
+        .danger-box {
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            border-radius: 10px;
+            padding: 12px 14px;
+            color: #991b1b;
+            font-size: 12px;
+            margin: 18px 0;
+        }
+
+        .footer {
+            background: #f9fafb;
+            padding: 18px 20px;
+            text-align: center;
+            border-top: 1px solid #e5e7eb;
+            font-size: 11px;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="email-header">
+            <div class="icon-circle">&#10003;</div>
+            <h1>Recuperación de Contraseña</h1>
+            <p>MINEGATE - Sistema de Gestión de Visitas</p>
+        </div>
+
+        <div class="email-body">
+            <p style="margin: 0 0 10px;">Hola,</p>
+            <p style="margin: 0 0 12px;">
+                Recibimos una solicitud para restablecer la contraseña de tu cuenta de MINEGATE. Si no fuiste tú quien realizó esta solicitud, puedes ignorar este correo de forma segura.
+            </p>
+
+            <div class="info-box">
+                Tu solicitud es segura: este enlace es único y solo puede ser utilizado una vez.
+            </div>
+
+            <div class="button-container">
+                <a href="{{ reset_url }}" class="reset-button" style="color: #ffffff;">RESTABLECER CONTRASEÑA</a>
+            </div>
+
+            <div class="warning-box">
+                <strong>Pasos a seguir:</strong>
+                <ul class="steps">
+                    <li>1. Haz clic en el botón "RESTABLECER CONTRASEÑA"</li>
+                    <li>2. Ingresa una contraseña nueva y segura</li>
+                    <li>3. Confirma tu nueva contraseña</li>
+                    <li>4. Ya puedes iniciar sesión con tus nuevas credenciales</li>
+                </ul>
+            </div>
+
+            <div class="alternative-link">
+                <p style="margin: 0 0 8px;"><strong>Si el botón no funciona, copia y pega este enlace:</strong></p>
+                <a href="{{ reset_url }}">{{ reset_url }}</a>
+            </div>
+
+            <div class="highlight-box">
+                <strong>Vigencia:</strong> Este enlace es válido por 24 horas. Después expirará por seguridad.
+            </div>
+
+            <div class="danger-box">
+                <strong>Seguridad importante:</strong>
+                <ul style="margin: 6px 0 0; padding-left: 16px;">
+                    <li>No compartas este enlace con otros usuarios</li>
+                    <li>Usa una contraseña fuerte (mayúsculas, minúsculas, números y caracteres especiales)</li>
+                    <li>No respondas a este correo con tu contraseña</li>
+                </ul>
+            </div>
+
+            <p style="font-size: 12px; color: #6b7280; margin: 12px 0 0;">
+                Si no solicitaste restablecer tu contraseña, por favor contacta al equipo de soporte de MINEGATE de inmediato.
+            </p>
+        </div>
+
+        <div class="footer">
+            MINEGATE - Sistema de Gestión de Visitas - SENA
+            <div style="margin-top: 6px;">Este es un correo automático. No respondas a este mensaje.</div>
+        </div>
+    </div>
+</body>
+</html>

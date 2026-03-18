@@ -1,0 +1,211 @@
+{%extends 'core/panel_administrativo.html' %}
+{% load bootstrap5 %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css" />
+<link rel="stylesheet" href="{% static 'css/editar_usuario.css' %}" />
+{% endblock %}
+{% block content %}
+<!-- Main Content -->
+<main class="main-content">
+    <div class="modal-edit-overlay">
+        <div class="modal-edit-card">
+
+            <!-- Modal Header -->
+            <div class="modal-edit-header">
+                <h3 class="modal-edit-title">{% if es_perfil_propio %}Editar Perfil{% else %}Editar Usuario{% endif %}
+                </h3>
+                <a href="{% url 'usuarios:configuracion_perfil' %}" class="btn-close-edit">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+            </div>
+
+            <!-- Modal Body (Form) -->
+            <div class="modal-edit-body">
+                {% if messages %}
+                <div class="alerts-container">
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        <i class="bi bi-check-circle"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if form_usuario.errors or form_perfil.errors %}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <div class="alert-content-header">
+                        <i class="bi bi-exclamation-circle"></i>
+                        <strong>Por favor revisa los errores en el formulario.</strong>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endif %}
+
+                <form method="post" enctype="multipart/form-data" novalidate>
+                    {% csrf_token %}
+
+                    <div class="modal-edit-flex-container">
+                        <!-- Avatar Profile Header -->
+                        <div class="profile-header-card">
+                            <div class="profile-image-section">
+                                <div id="perfilActualInfo"
+                                    style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+                                    <div class="perfil-avatar-container-edit">
+                                        <img id="perfilActualImg"
+                                            src="{% if perfil.foto_perfil %}{{ perfil.foto_perfil.url }}{% else %}{% static 'core/img/usuario.png' %}{% endif %}"
+                                            alt="Foto de perfil">
+                                    </div>
+                                    <h2 class="profile-name-edit">{{ usuario.get_full_name|default:usuario.username }}
+                                    </h2>
+                                    <p class="profile-role-edit">Administrador del Sistema</p>
+                                    <p class="profile-email-edit">{{ usuario.email }}</p>
+                                </div>
+
+                                <!-- Mostrar el cropper luego de seleccionar archivo -->
+                                <div id="cropperWrapper"
+                                    style="display:none; width:100%; max-width:400px; margin: 0 auto;">
+                                    <p style="font-size:0.9rem; color:#6c757d; margin-bottom:8px;">Ajusta tu foto de
+                                        perfil:
+                                    </p>
+                                    <div
+                                        style="background:transparent; padding:0; border-radius:12px; border: 2px dashed #00a600; overflow: hidden; margin-bottom: 15px;">
+                                        <img id="cropperPreview" src="" alt="Vista previa"
+                                            style="width: 100%; max-height: 200px; display: block; object-fit: contain;">
+                                    </div>
+                                </div>
+
+                                <div class="btn-change-photo-wrapper">
+                                    <label for="id_foto_perfil" class="btn-change-photo">Cambiar Foto</label>
+                                    {% if form_perfil.foto_perfil %}
+                                    <div style="display: none;">{{ form_perfil.foto_perfil }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <input type="hidden" name="crop_x" id="crop_x" />
+                                <input type="hidden" name="crop_y" id="crop_y" />
+                                <input type="hidden" name="crop_w" id="crop_w" />
+                                <input type="hidden" name="crop_h" id="crop_h" />
+                            </div>
+                        </div>
+
+                        <!-- Personal Information Form -->
+                        <div class="form-section-edit-container">
+                            <div class="form-section-edit">
+                                <h4 class="section-title-edit">Información Personal</h4>
+
+                                <div class="form-grid-edit">
+                                    <div class="form-group-edit">
+                                        <label class="form-label-edit">{{ form_usuario.first_name.label }}</label>
+                                        {{ form_usuario.first_name }}
+                                        {% if form_usuario.first_name.errors %}
+                                        <div class="error-text">{{ form_usuario.first_name.errors }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="form-group-edit">
+                                        <label class="form-label-edit">{{ form_usuario.last_name.label }}</label>
+                                        {{ form_usuario.last_name }}
+                                        {% if form_usuario.last_name.errors %}
+                                        <div class="error-text">{{ form_usuario.last_name.errors }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="form-group-edit full-width-edit">
+                                        <label class="form-label-edit">{{ form_usuario.email.label }}</label>
+                                        {{ form_usuario.email }}
+                                        {% if form_usuario.email.errors %}
+                                        <div class="error-text">{{ form_usuario.email.errors }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    {% if form_perfil.telefono %}
+                                    <div class="form-group-edit">
+                                        <label class="form-label-edit">{{ form_perfil.telefono.label }}</label>
+                                        {{ form_perfil.telefono }}
+                                        {% if form_perfil.telefono.errors %}
+                                        <div class="error-text">{{ form_perfil.telefono.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+
+                                    <!-- Document or Role (Static as per design, but keeping form fields if they exist) -->
+                                    {% if form_perfil.documento %}
+                                    <div class="form-group-edit">
+                                        <label class="form-label-edit">{{ form_perfil.documento.label }}</label>
+                                        {{ form_perfil.documento }}
+                                        {% if form_perfil.documento.errors %}
+                                        <div class="error-text">{{ form_perfil.documento.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <!-- Actions -->
+                            <div class="form-actions-edit">
+                                <button type="submit" class="btn-guardar-edit">Guardar Cambios</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
+<script>
+    // Script del cropper adaptado
+    (function () {
+        const input = document.getElementById("id_foto_perfil");
+        const preview = document.getElementById("cropperPreview");
+        const form = document.querySelector("form");
+        let cropper = null;
+
+        function setCropData() {
+            if (!cropper) return;
+            const data = cropper.getData(true);
+            document.getElementById("crop_x").value = data.x || 0;
+            document.getElementById("crop_y").value = data.y || 0;
+            document.getElementById("crop_w").value = data.width || 0;
+            document.getElementById("crop_h").value = data.height || 0;
+        }
+
+        if (input && preview) {
+            input.addEventListener("change", function (e) {
+                const file = e.target.files && e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function (evt) {
+                    const wrapper = document.getElementById("cropperWrapper");
+                    if (wrapper) wrapper.style.display = "block";
+
+                    const infoWrapper = document.getElementById("perfilActualInfo");
+                    if (infoWrapper) infoWrapper.style.display = "none";
+
+                    const changeBtn = document.querySelector(".btn-change-photo-wrapper");
+                    if (changeBtn) changeBtn.style.display = "none";
+
+                    preview.src = evt.target.result;
+                    if (cropper) cropper.destroy();
+                    cropper = new Cropper(preview, {
+                        aspectRatio: 1,
+                        viewMode: 1,
+                        autoCropArea: 1,
+                        responsive: true,
+                    });
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        if (form) {
+            form.addEventListener("submit", setCropData);
+        }
+    })();
+</script>
+{% endblock %}

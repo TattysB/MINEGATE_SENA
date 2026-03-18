@@ -1,0 +1,888 @@
+{% load static %}
+{% load accesibility_tags %}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reservar Visita Interna - MINEGATE</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css">
+  <link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}">
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+<style>
+  :root {
+    --sena-verde: #39a900;
+    --sena-verde-oscuro: #2d8600;
+  }
+  body.reservar-visita-interna-page {
+    padding-top: 0;
+  }
+  .page-header {
+    background: linear-gradient(135deg, #1a5c00, var(--sena-verde));
+    color: white;
+    padding: 2rem 0;
+  }
+  .page-header h2 { font-weight: 800; margin: 0; }
+  .breadcrumb-nav a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.85rem; }
+  .breadcrumb-nav span { color: rgba(255,255,255,0.5); margin: 0 6px; }
+
+  .form-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    overflow: hidden;
+    margin-bottom: 2rem;
+  }
+  .form-card-header {
+    background: #f8fffe;
+    border-bottom: 2px solid #e8f8e0;
+    padding: 1.2rem 1.8rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    color: var(--sena-verde-oscuro);
+    font-size: 1rem;
+  }
+  .form-card-header i { font-size: 1.1rem; }
+  .form-card-body { padding: 1.8rem; }
+  label { font-weight: 600; font-size: 0.9rem; color: #374151; margin-bottom: 4px; }
+  .form-control, .form-select { border-radius: 8px; border: 1.5px solid #d1d5db; font-size: 0.9rem; padding: 0.55rem 0.85rem; }
+  .form-control:focus, .form-select:focus { border-color: var(--sena-verde); box-shadow: 0 0 0 3px rgba(57,169,0,0.12); }
+  .section-label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.8px; color: #6b7280; font-weight: 700; margin-bottom: 0.8rem; padding-bottom: 6px; border-bottom: 1px solid #f0f0f0; }
+  .helper-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 1rem; margin-bottom: 1.5rem; font-size: 0.85rem; color: #065f46; }
+  .btn-submit { background: var(--sena-verde); border: none; color: white; padding: 0.75rem 2.5rem; border-radius: 50px; font-weight: 700; font-size: 1rem; transition: all 0.2s; }
+  .btn-submit:hover { background: var(--sena-verde-oscuro); transform: translateY(-1px); }
+  .fichas-dropdown { max-height: 200px; overflow-y: auto; }
+  .ts-wrapper.single .ts-control {
+    border-radius: 8px;
+    border: 1.5px solid #d1d5db;
+    font-size: 0.9rem;
+    min-height: 42px;
+    padding: 0.4rem 0.75rem;
+  }
+  .ts-wrapper.focus .ts-control {
+    border-color: var(--sena-verde);
+    box-shadow: 0 0 0 3px rgba(57,169,0,0.12);
+  }
+  .ts-dropdown {
+    border-radius: 8px;
+    border: 1.5px solid #d1d5db;
+    overflow: hidden;
+  }
+  
+  /* Estilos del calendario embebido */
+  #calendarioContainer {
+    min-height: 200px;
+  }
+  #calendarioContainer .calendar-page {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding: 0;
+  }
+  #calendarioContainer .calendar-card {
+    flex: 1;
+    min-width: 300px;
+    max-width: 420px;
+    position: relative;
+    padding: 15px;
+  }
+  #calendarioContainer .card-top {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 15px;
+    position: relative;
+  }
+  #calendarioContainer .card-top .nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    border: 1px solid #e5e7eb;
+    background: #f9fafb;
+    border-radius: 50%;
+    font-size: 20px;
+    font-weight: bold;
+    color: #374151;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    z-index: 10;
+  }
+  #calendarioContainer .card-top .nav:hover {
+    background: var(--sena-verde);
+    color: white;
+    border-color: var(--sena-verde);
+  }
+  #calendarioContainer .card-top #prevSel { left: 0; }
+  #calendarioContainer .card-top #nextSel { right: 0; }
+  #calendarioContainer .availability-config {
+    flex: 1;
+    min-width: 260px;
+    max-width: 380px;
+    padding: 15px;
+  }
+  #calendarioContainer .availability-config h3 {
+    margin: 0 0 10px 0;
+    font-size: 1rem;
+    color: var(--sena-verde);
+  }
+  #calendarioContainer .calendar-table td.available { cursor: pointer; }
+  #calendarioContainer .calendar-table td.disabled { cursor: not-allowed; }
+  #calendarioContainer .legend { margin-top: 10px; padding: 8px 0; }
+  #calendarioContainer #horariosList .horario-chip {
+    display: inline-block;
+    padding: 8px 16px;
+    margin: 5px;
+    background: #f3f4f6;
+    border: 2px solid #d1d5db;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+  }
+  #calendarioContainer #horariosList .horario-chip:hover {
+    border-color: var(--sena-verde);
+    background: #f0fdf4;
+  }
+  #calendarioContainer #horariosList .horario-chip.selected {
+    background: var(--sena-verde);
+    color: white;
+    border-color: var(--sena-verde);
+  }
+  
+  /* Resumen de selección */
+  .seleccion-resumen {
+    background: #f0fdf4;
+    border: 2px solid #bbf7d0;
+    border-radius: 12px;
+    padding: 15px 20px;
+    margin-top: 15px;
+    display: none;
+  }
+  .seleccion-resumen.visible { display: block; }
+  .seleccion-resumen h4 {
+    margin: 0 0 8px 0;
+    font-size: 1rem;
+    color: var(--sena-verde-oscuro);
+  }
+  .seleccion-resumen p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #374151;
+  }
+  .seleccion-resumen .fecha-hora {
+    font-weight: 700;
+    color: var(--sena-verde);
+  }
+
+  /* Confirmacion de envio */
+  .modal-confirmacion-envio {
+    border-radius: 16px;
+    border: 1px solid #bbf7d0;
+    box-shadow: 0 14px 35px rgba(34, 98, 0, 0.2);
+  }
+  .modal-confirmacion-envio .modal-header {
+    background: #f0fdf4;
+    border-bottom: 1px solid #bbf7d0;
+  }
+  .modal-confirmacion-envio .modal-title {
+    color: var(--sena-verde-oscuro);
+    font-weight: 800;
+  }
+  .confirmacion-alerta {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-left: 5px solid var(--sena-verde);
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+  .btn-confirmar-envio {
+    background: var(--sena-verde);
+    border-color: var(--sena-verde);
+    color: #fff;
+    font-weight: 700;
+  }
+  .btn-confirmar-envio:hover {
+    background: var(--sena-verde-oscuro);
+    border-color: var(--sena-verde-oscuro);
+    color: #fff;
+  }
+</style>
+</head>
+<body class="reservar-visita-interna-page">
+
+<!-- Page Header -->
+<div class="page-header">
+  <div class="container">
+    <div class="breadcrumb-nav mb-2">
+      <a href="{% url 'panel_instructor_interno:panel' %}"><i class="fas fa-home me-1"></i>Mi Panel</a>
+      <span>›</span>
+      <span style="color:rgba(255,255,255,0.9)">Reservar Visita Interna</span>
+    </div>
+    <h2><i class="fas fa-calendar-plus me-3"></i>Reservar Visita Interna</h2>
+    <p class="mb-0 mt-1" style="opacity:0.85;">Complete el formulario para solicitar una visita al SENA Centro Minero</p>
+  </div>
+</div>
+
+<div class="container py-4">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{% if 'error' in message.tags %}danger{% else %}success{% endif %} alert-dismissible fade show" role="alert">
+        {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {% if form.non_field_errors %}
+    <div class="alert alert-danger" role="alert">
+      {% for err in form.non_field_errors %}
+        <div>{{ err }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if not fichas %}
+  <div class="alert alert-warning">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    Para reservar una visita debes seleccionar una ficha existente (incluye su programa).
+    <a href="{% url 'panel_instructor_interno:gestionar_fichas_programas' %}" class="alert-link">Crea una ficha y su programa</a>
+    antes de continuar.
+  </div>
+  {% endif %}
+
+  <form method="POST" id="formReservaInterna">
+    {% csrf_token %}
+    
+    <!-- Campos ocultos para fecha y hora -->
+    {{ form.fecha_visita }}
+    {{ form.hora_inicio }}
+    {{ form.hora_fin }}
+
+    <!-- Selección de Fecha y Horario -->
+    <div class="form-card">
+      <div class="form-card-header">
+        <i class="fas fa-calendar-alt"></i>Fecha y Horario de la Visita
+      </div>
+      <div class="form-card-body">
+        <p class="text-muted mb-3">Selecciona un día disponible (verde) y luego elige el horario que prefieras.</p>
+        <div id="calendarioContainer">
+          <p class="text-center py-4"><i class="fas fa-spinner fa-spin me-2"></i>Cargando calendario...</p>
+        </div>
+        
+        <div class="seleccion-resumen" id="resumenSeleccion">
+          <h4><i class="fas fa-check-circle me-2 text-success"></i>Fecha y horario seleccionados</h4>
+          <p>Fecha: <span class="fecha-hora" id="resumenFecha">-</span></p>
+          <p>Hora inicio: <span class="fecha-hora" id="resumenHoraInicio">-</span></p>
+          <p>Hora fin: <span class="fecha-hora" id="resumenHoraFin">-</span></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Datos de la Ficha -->
+    <div class="form-card">
+      <div class="form-card-header">
+        <i class="fas fa-graduation-cap"></i>Datos de la Ficha
+      </div>
+      <div class="form-card-body">
+        <div class="row g-3">
+          <div class="col-md-8">
+            <label for="id_numero_ficha">Programa y Ficha <span class="text-danger">*</span></label>
+            {{ form.numero_ficha }}
+            {% if form.numero_ficha.errors %}<div class="text-danger small mt-1">{{ form.numero_ficha.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label for="id_cantidad_aprendices">Cantidad de Aprendices <span class="text-danger">*</span></label>
+            {{ form.cantidad_aprendices }}
+            {% if form.cantidad_aprendices.errors %}<div class="text-danger small mt-1">{{ form.cantidad_aprendices.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Datos del Responsable -->
+    <div class="form-card">
+      <div class="form-card-header">
+        <i class="fas fa-user-tie"></i>Datos del Responsable
+      </div>
+      <div class="form-card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="id_responsable">Nombre del Responsable <span class="text-danger">*</span></label>
+            {{ form.responsable }}
+          </div>
+          <div class="col-md-3">
+            <label for="id_tipo_documento_responsable">Tipo de Documento</label>
+            {{ form.tipo_documento_responsable }}
+          </div>
+          <div class="col-md-3">
+            <label for="id_documento_responsable">Número de Documento <span class="text-danger">*</span></label>
+            {{ form.documento_responsable }}
+          </div>
+          <div class="col-md-6">
+            <label for="id_correo_responsable">Correo Electrónico <span class="text-danger">*</span></label>
+            {{ form.correo_responsable }}
+          </div>
+          <div class="col-md-6">
+            <label for="id_telefono_responsable">Teléfono <span class="text-danger">*</span></label>
+            {{ form.telefono_responsable }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Observaciones -->
+    <div class="form-card">
+      <div class="form-card-header">
+        <i class="fas fa-comment-alt"></i>Observaciones
+      </div>
+      <div class="form-card-body">
+        {{ form.observaciones }}
+        <div class="form-check mt-3" style="align-items:center;">
+          <input class="form-check-input" type="checkbox" value="1" id="acepto_terminos" style="transform:scale(1.4);margin-right:.5rem;">
+          <label class="form-check-label" for="acepto_terminos" style="font-size:1.05rem;font-weight:600;color:#222;">
+            He leído y acepto los <a href="#" data-bs-toggle="modal" data-bs-target="#modalTerminos" class="fw-bold text-primary">Términos y Condiciones</a> y la Política de Privacidad del Centro Minero SENA.
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center">
+      <a href="{% url 'panel_instructor_interno:panel' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Volver al Panel
+      </a>
+      <button type="button" class="btn-submit btn" id="btnEnviar" {% if not fichas %}disabled{% endif %}>
+        <i class="fas fa-paper-plane me-2"></i>Enviar Solicitud
+      </button>
+    </div>
+  </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const container = document.getElementById('calendarioContainer');
+  const formSolicitud = document.getElementById('formReservaInterna');
+  const btnEnviar = document.getElementById('btnEnviar');
+  const btnAceptoModal = document.getElementById('aceptoModalBtn');
+  const modalTerminosEl = document.getElementById('modalTerminos');
+  const modalConfirmarEnvioEl = document.getElementById('modalConfirmarEnvio');
+  const btnConfirmarEnvioFinal = document.getElementById('btnConfirmarEnvioFinal');
+  const modalConfirmarEnvio = (modalConfirmarEnvioEl && typeof bootstrap !== 'undefined')
+    ? bootstrap.Modal.getOrCreateInstance(modalConfirmarEnvioEl)
+    : null;
+  const modalTerminos = (modalTerminosEl && typeof bootstrap !== 'undefined')
+    ? bootstrap.Modal.getOrCreateInstance(modalTerminosEl)
+    : null;
+  let selectedDate = null;
+  let selectedHorario = null;
+
+  // Cargar calendario inicial
+  loadCalendario();
+  
+  function loadCalendario(year, month) {
+    let url = '/calendario/seleccion/';
+    if (year && month) {
+      url = '/calendario/seleccion/' + year + '/' + month + '/';
+    }
+    
+    fetch(url, {
+      headers: {'X-Requested-With': 'XMLHttpRequest'}
+    })
+    .then(r => r.text())
+    .then(html => {
+      container.innerHTML = html;
+      initCalendarioEvents();
+    })
+    .catch(err => {
+      container.innerHTML = '<p class="text-danger">Error al cargar el calendario</p>';
+    });
+  }
+  
+  function initCalendarioEvents() {
+    const page = container.querySelector('#calendarioSeleccionPage');
+    if (!page) return;
+    
+    const cardEl = page.querySelector('.calendar-card');
+    const year = parseInt(cardEl.getAttribute('data-year'));
+    const month = parseInt(cardEl.getAttribute('data-month'));
+    
+    // Navegación de meses
+    const prev = page.querySelector('#prevSel');
+    const next = page.querySelector('#nextSel');
+    
+    if (prev) {
+      prev.addEventListener('click', function() {
+        let y = year, m = month - 1;
+        if (m < 1) { m = 12; y -= 1; }
+        loadCalendario(y, m);
+      });
+    }
+    
+    if (next) {
+      next.addEventListener('click', function() {
+        let y = year, m = month + 1;
+        if (m > 12) { m = 1; y += 1; }
+        loadCalendario(y, m);
+      });
+    }
+    
+    // Click en días
+    const table = page.querySelector('.calendar-table');
+    if (table) {
+      table.addEventListener('click', function(e) {
+        const td = e.target.closest('td');
+        if (!td || !td.classList.contains('available')) return;
+        
+        // Quitar selección anterior
+        page.querySelectorAll('td.selected-day').forEach(el => el.classList.remove('selected-day'));
+        td.classList.add('selected-day');
+        
+        selectedDate = td.getAttribute('data-date');
+        selectedHorario = null;
+        updateResumen();
+        loadHorarios(selectedDate);
+      });
+    }
+  }
+  
+  function loadHorarios(dateStr) {
+    const horarioHint = container.querySelector('#horarioHint');
+    const horariosList = container.querySelector('#horariosList');
+    
+    if (horarioHint) horarioHint.textContent = 'Cargando horarios...';
+    if (horariosList) {
+      horariosList.innerHTML = '';
+      horariosList.style.display = 'none';
+    }
+    
+    fetch('/calendario/horarios/' + dateStr + '/', {
+      headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'}
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (!data.ok) {
+        if (horarioHint) horarioHint.textContent = 'Error: ' + (data.error || 'No se pudieron cargar');
+        return;
+      }
+      
+      if (!data.ranges || !data.ranges.length) {
+        if (horarioHint) horarioHint.textContent = 'No hay horarios configurados para este día.';
+        return;
+      }
+      
+      const horarioTitle = container.querySelector('#horarioTitle');
+      if (horarioTitle) horarioTitle.textContent = 'Horarios disponibles para ' + formatDate(dateStr);
+      if (horarioHint) horarioHint.textContent = 'Selecciona el horario que prefieras:';
+      
+      if (horariosList) {
+        horariosList.innerHTML = data.ranges.map(r => {
+          const formattedLabel = formatRangeAmPm(r.start, r.end, r.label);
+          return '<span class="horario-chip" data-start="' + r.start + '" data-end="' + r.end + '">' + formattedLabel + '</span>';
+        }).join('');
+        horariosList.style.display = 'block';
+        
+        // Event listeners para chips
+        horariosList.querySelectorAll('.horario-chip').forEach(chip => {
+          chip.addEventListener('click', function() {
+            horariosList.querySelectorAll('.horario-chip').forEach(c => c.classList.remove('selected'));
+            this.classList.add('selected');
+            selectedHorario = {
+              start: this.getAttribute('data-start'),
+              end: this.getAttribute('data-end'),
+              label: this.textContent
+            };
+            updateResumen();
+            updateFormFields();
+          });
+        });
+      }
+    })
+    .catch(err => {
+      if (horarioHint) horarioHint.textContent = 'Error al cargar horarios.';
+    });
+  }
+  
+  function formatDate(dateStr) {
+    const parts = dateStr.split('-');
+    const months = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    return parseInt(parts[2]) + ' de ' + months[parseInt(parts[1])] + ' de ' + parts[0];
+  }
+
+  function formatTimeAmPm(timeStr) {
+    if (!timeStr) return '';
+    const raw = String(timeStr).trim().split(':');
+    if (raw.length < 2) return String(timeStr);
+
+    let hours = parseInt(raw[0], 10);
+    const minutes = raw[1];
+    if (Number.isNaN(hours)) return String(timeStr);
+
+    const period = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    if (hours === 0) hours = 12;
+
+    return String(hours).padStart(2, '0') + ':' + minutes + ' ' + period;
+  }
+
+  function formatRangeAmPm(start, end, fallbackLabel) {
+    if (start && end) {
+      return formatTimeAmPm(start) + ' - ' + formatTimeAmPm(end);
+    }
+    return fallbackLabel || '';
+  }
+  
+  function updateResumen() {
+    const resumen = document.getElementById('resumenSeleccion');
+    const resumenFecha = document.getElementById('resumenFecha');
+    const resumenHoraInicio = document.getElementById('resumenHoraInicio');
+    const resumenHoraFin = document.getElementById('resumenHoraFin');
+    
+    if (selectedDate && selectedHorario) {
+      resumen.classList.add('visible');
+      resumenFecha.textContent = formatDate(selectedDate);
+      resumenHoraInicio.textContent = formatTimeAmPm(selectedHorario.start);
+      resumenHoraFin.textContent = formatTimeAmPm(selectedHorario.end);
+    } else {
+      resumen.classList.remove('visible');
+    }
+  }
+  
+  function updateFormFields() {
+    if (selectedDate) {
+      document.getElementById('id_fecha_visita').value = selectedDate;
+    }
+    if (selectedHorario) {
+      document.getElementById('id_hora_inicio').value = selectedHorario.start;
+      document.getElementById('id_hora_fin').value = selectedHorario.end;
+    }
+  }
+  
+  function validarAntesDeEnviar() {
+    if (!selectedDate || !selectedHorario) {
+      alert('Por favor selecciona una fecha y un horario para la visita.');
+      container.scrollIntoView({ behavior: 'smooth' });
+      return false;
+    }
+
+    const checkbox = document.getElementById('acepto_terminos');
+    if (checkbox && !checkbox.checked) {
+      if (modalTerminos) {
+        modalTerminos.show();
+      } else {
+        alert('Debe aceptar los Términos y Condiciones antes de enviar la solicitud.');
+      }
+      return false;
+    }
+
+    if (!formSolicitud) return false;
+
+    // Asegura que la fecha/hora seleccionada viaje en el POST.
+    updateFormFields();
+
+    if (typeof formSolicitud.reportValidity === 'function' && !formSolicitud.reportValidity()) {
+      return false;
+    }
+
+    return true;
+  }
+
+  if (btnEnviar) {
+    btnEnviar.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (!validarAntesDeEnviar()) return;
+
+      if (modalConfirmarEnvio) {
+        modalConfirmarEnvio.show();
+      } else {
+        formSolicitud.submit();
+      }
+    });
+  }
+
+  if (btnConfirmarEnvioFinal) {
+    btnConfirmarEnvioFinal.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (!validarAntesDeEnviar()) return;
+
+      btnConfirmarEnvioFinal.setAttribute('disabled', 'disabled');
+      formSolicitud.submit();
+    });
+  }
+
+  if (modalConfirmarEnvioEl) {
+    modalConfirmarEnvioEl.addEventListener('hidden.bs.modal', function() {
+      if (btnConfirmarEnvioFinal) {
+        btnConfirmarEnvioFinal.removeAttribute('disabled');
+      }
+    });
+  }
+
+  if (btnAceptoModal) {
+    btnAceptoModal.addEventListener('click', function() {
+      const checkbox = document.getElementById('acepto_terminos');
+      if (checkbox) checkbox.checked = true;
+      if (modalTerminos) {
+        modalTerminos.hide();
+      }
+    });
+  }
+
+  // Actualizar cantidad máxima de aprendices según la ficha seleccionada
+  const fichasData = {
+    {% for ficha in fichas %}
+      '{{ ficha.numero }}': {{ ficha.cantidad_aprendices }},
+    {% endfor %}
+  };
+
+  const selectFicha = document.getElementById('id_numero_ficha');
+  const inputCantidad = document.getElementById('id_cantidad_aprendices');
+  const labelCantidad = document.querySelector('label[for="id_cantidad_aprendices"]');
+  let tomSelectFicha = null;
+
+  if (selectFicha && typeof TomSelect !== 'undefined') {
+    tomSelectFicha = new TomSelect(selectFicha, {
+      create: false,
+      maxOptions: 500,
+      searchField: ['text'],
+      dropdownParent: 'body',
+      placeholder: 'Selecciona o escribe para buscar una ficha',
+      render: {
+        no_results: function(data, escape) {
+          return '<div class="no-results p-2">No se encontraron fichas para "' + escape(data.input) + '"</div>';
+        }
+      }
+    });
+  }
+
+  if (selectFicha && inputCantidad) {
+    function actualizarMaxAprendices() {
+      const fichaSeleccionada = selectFicha.value;
+      const maxAprendices = fichasData[fichaSeleccionada];
+
+      if (maxAprendices) {
+        inputCantidad.setAttribute('max', maxAprendices);
+        inputCantidad.setAttribute('min', '1');
+        
+        // Mostrar el máximo en un helper
+        let helper = document.getElementById('helper_cantidad_aprendices');
+        if (!helper) {
+          helper = document.createElement('small');
+          helper.id = 'helper_cantidad_aprendices';
+          helper.className = 'form-text text-muted d-block mt-1';
+          inputCantidad.parentElement.appendChild(helper);
+        }
+        helper.textContent = `Máximo: ${maxAprendices} aprendices registrados en la ficha`;
+
+        // Validar si el valor actual es 0 o excede el máximo
+        const valor = parseInt(inputCantidad.value);
+        if (isNaN(valor) || valor === 0 || valor < 1) {
+          inputCantidad.value = 1;
+        } else if (valor > maxAprendices) {
+          inputCantidad.value = maxAprendices;
+        }
+      }
+    }
+
+    // Validar cambios en el input de cantidad
+    inputCantidad.addEventListener('change', function() {
+      const valor = parseInt(this.value);
+      if (isNaN(valor) || valor === 0 || valor < 1) {
+        this.value = 1;
+      }
+    });
+
+    selectFicha.addEventListener('change', actualizarMaxAprendices);
+    if (tomSelectFicha) {
+      tomSelectFicha.on('change', actualizarMaxAprendices);
+    }
+    actualizarMaxAprendices(); // Llamar al cargar la página
+  }
+});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Modal Términos y Condiciones -->
+<div class="modal fade" id="modalTerminos" tabindex="-1" aria-labelledby="modalTerminosLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalTerminosLabel">Términos y Condiciones</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body" style="max-height:70vh;overflow:auto;">
+
+        <p><strong>Sistema SICAM</strong></p>
+        <p><strong>Centro Minero – Servicio Nacional de Aprendizaje (SENA)</strong></p>
+
+        <p><strong>1. Objeto</strong></p>
+        <p>Los presentes Términos y Condiciones regulan el uso del Sistema de Control y Administración de Mina (SICAM), plataforma utilizada para el registro, control y gestión de visitas a las instalaciones de práctica minera del Centro Minero del Servicio Nacional de Aprendizaje (SENA).</p>
+        <p>El objetivo del sistema es permitir el registro organizado de visitantes, el control de ingreso y salida de personas y el apoyo a los protocolos de seguridad institucional, garantizando un manejo responsable de la información.</p>
+        <p>El uso del sistema implica la aceptación expresa de las condiciones establecidas en el presente documento.</p>
+
+        <p><strong>2. Identificación del Sistema</strong></p>
+        <p>El sistema SICAM es una herramienta tecnológica diseñada para facilitar la gestión de visitantes en el Centro Minero del SENA.</p>
+        <p>Este sistema permite:</p>
+        <ul>
+          <li>Registrar información de visitantes.</li>
+          <li>Gestionar solicitudes de visitas.</li>
+          <li>Controlar horarios de ingreso y salida.</li>
+          <li>Identificar responsables de cada visita.</li>
+          <li>Mantener un registro institucional de las visitas realizadas.</li>
+        </ul>
+        <p>El sistema forma parte de un proyecto formativo desarrollado dentro del programa Tecnólogo en Análisis y Desarrollo de Software del SENA.</p>
+
+        <p><strong>3. Aceptación de los Términos y Condiciones</strong></p>
+        <p>Al utilizar el sistema SICAM, el usuario manifiesta que:</p>
+        <ul>
+          <li>Ha leído y comprendido los presentes términos y condiciones.</li>
+          <li>Acepta el tratamiento de sus datos personales para los fines establecidos.</li>
+          <li>Se compromete a cumplir las normas de seguridad del Centro Minero.</li>
+        </ul>
+        <p>La aceptación se realiza mediante la selección de la opción:</p>
+        <p>“Acepto los términos y condiciones del sistema SICAM.”</p>
+        <p>Sin esta aceptación, el sistema no permitirá completar el registro de la visita.</p>
+
+        <p><strong>4. Información Solicitada para el Registro de Visitas</strong></p>
+        <p>Para realizar el registro de una visita, el sistema podrá solicitar la siguiente información:</p>
+        <ul>
+          <li>Nombre completo del visitante</li>
+          <li>Tipo y número de documento de identidad</li>
+          <li>Entidad o institución de procedencia</li>
+          <li>Motivo de la visita</li>
+          <li>Persona responsable dentro del Centro Minero</li>
+          <li>Fecha de la visita</li>
+          <li>Hora de ingreso</li>
+          <li>Hora de salida</li>
+          <li>Información de contacto cuando sea necesario</li>
+        </ul>
+        <p>El usuario se compromete a proporcionar información veraz, completa y actualizada.</p>
+        <p>El suministro de información falsa o incompleta podrá ocasionar la cancelación o restricción de la visita.</p>
+
+        <p><strong>5. Tratamiento de Datos Personales</strong></p>
+        <p>La información personal recolectada mediante el sistema SICAM será tratada conforme a la normativa colombiana vigente sobre protección de datos personales, en especial:</p>
+        <ul>
+          <li>Ley 1581 de 2012 – Protección de Datos Personales</li>
+          <li>Decreto 1377 de 2013</li>
+          <li>Ley 1266 de 2008 – Habeas Data</li>
+        </ul>
+        <p>Los datos personales serán utilizados únicamente para:</p>
+        <ul>
+          <li>Control de ingreso y salida de visitantes</li>
+          <li>Seguridad institucional</li>
+          <li>Registro administrativo de visitas</li>
+          <li>Seguimiento de actividades realizadas en el Centro Minero</li>
+          <li>Procesos académicos relacionados con el proyecto formativo</li>
+        </ul>
+        <p>El SENA garantiza el uso responsable, seguro y confidencial de la información registrada.</p>
+
+        <p><strong>6. Uso Adecuado del Sistema</strong></p>
+        <p>El sistema SICAM deberá utilizarse exclusivamente para fines relacionados con el registro y gestión de visitas.</p>
+        <p>Se encuentra prohibido:</p>
+        <ul>
+          <li>Manipular o alterar información registrada en el sistema.</li>
+          <li>Acceder al sistema sin autorización.</li>
+          <li>Utilizar la información registrada con fines diferentes a los establecidos.</li>
+        </ul>
+        <p>El uso indebido del sistema podrá generar restricciones de acceso y acciones administrativas correspondientes.</p>
+
+        <p><strong>7. Normas de Seguridad para Visitantes</strong></p>
+        <p>Toda persona que ingrese a las instalaciones de práctica minera del Centro Minero deberá cumplir con las normas de seguridad establecidas por la institución, incluyendo:</p>
+        <ul>
+          <li>Seguir las indicaciones del personal autorizado.</li>
+          <li>Utilizar los elementos de protección personal (EPP) cuando sea requerido.</li>
+          <li>No ingresar a zonas restringidas.</li>
+          <li>No manipular equipos o maquinaria sin autorización.</li>
+        </ul>
+        <p>El incumplimiento de estas normas podrá generar la suspensión inmediata de la visita.</p>
+
+        <p><strong>8. Uso de Imágenes y Registros</strong></p>
+        <p>Los visitantes autorizan el registro de su información y, cuando sea necesario, la captura de fotografías, videos o registros audiovisuales relacionados con el control de acceso o actividades institucionales dentro del Centro Minero.</p>
+        <p>Estos registros podrán ser utilizados con fines:</p>
+        <ul>
+          <li>Institucionales</li>
+          <li>Académicos</li>
+          <li>Administrativos</li>
+          <li>De seguridad</li>
+        </ul>
+        <p>Todo uso se realizará respetando la normativa de protección de datos personales.</p>
+
+        <p><strong>9. Responsabilidad del Usuario</strong></p>
+        <p>El usuario es responsable de:</p>
+        <ul>
+          <li>Proporcionar información verídica.</li>
+          <li>Cumplir con las normas de seguridad del Centro Minero.</li>
+          <li>Utilizar correctamente el sistema.</li>
+        </ul>
+        <p>El usuario acepta que cualquier incumplimiento de estas condiciones podrá generar restricciones de acceso a las instalaciones o al sistema.</p>
+
+        <p><strong>10. Limitación de Responsabilidad</strong></p>
+        <p>El Centro Minero del SENA no se hace responsable por:</p>
+        <ul>
+          <li>Información incorrecta suministrada por los visitantes.</li>
+          <li>Incumplimiento de normas de seguridad por parte de los visitantes.</li>
+          <li>Uso indebido del sistema por parte de terceros no autorizados.</li>
+        </ul>
+
+        <p><strong>11. Legislación Aplicable</strong></p>
+        <p>Los presentes términos y condiciones se rigen por la legislación de la República de Colombia, especialmente en materia de:</p>
+        <ul>
+          <li>Protección de datos personales</li>
+          <li>Seguridad de la información</li>
+          <li>Normativa institucional del SENA</li>
+        </ul>
+        <p>Cualquier controversia derivada del uso del sistema será resuelta conforme a las políticas institucionales y a la legislación vigente.</p>
+
+        <p><strong>12. Modificaciones</strong></p>
+        <p>El Centro Minero del SENA se reserva el derecho de actualizar o modificar los presentes términos y condiciones cuando sea necesario para mejorar el funcionamiento del sistema o cumplir con cambios normativos.</p>
+
+        <p><strong>13. Aceptación Final</strong></p>
+        <p>Antes de completar el registro en el sistema SICAM, el usuario deberá confirmar la siguiente declaración:</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-primary" id="aceptoModalBtn">Entendido y Acepto</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Confirmacion de Envio -->
+<div class="modal fade" id="modalConfirmarEnvio" tabindex="-1" aria-labelledby="modalConfirmarEnvioLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content modal-confirmacion-envio">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalConfirmarEnvioLabel">
+          <i class="fas fa-circle-check me-2 text-success"></i>Confirmar envio de solicitud
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="confirmacion-alerta">
+          <p class="mb-2 fw-semibold text-dark">¿Esta seguro de enviar su solicitud?</p>
+          <p class="mb-0 text-muted">Revise su informacion y verifique que este debidamente diligenciada y completa antes de enviar.</p>
+        </div>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Revisar informacion</button>
+        <button type="button" class="btn btn-confirmar-envio" id="btnConfirmarEnvioFinal">
+          <i class="fas fa-paper-plane me-2"></i>Si, enviar solicitud
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% accessibility_widget %}
+</body>
+</html>

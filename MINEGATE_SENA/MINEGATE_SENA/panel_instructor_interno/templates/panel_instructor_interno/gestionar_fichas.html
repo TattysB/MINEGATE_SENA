@@ -1,0 +1,477 @@
+{% load static %}
+{% load accesibility_tags %}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestionar Fichas - MINEGATE</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+  <link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}?v=20260311c">
+<style>
+  :root { --sena-azul: #1d4ed8; }
+  body { padding-top: 0 !important; margin-top: 0 !important; }
+  .page-header { background: linear-gradient(135deg, #1e3a8a, var(--sena-azul)); color: white; padding: 2rem 0; }
+  .page-header h2 { font-weight: 800; }
+  .breadcrumb-nav a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.85rem; }
+  .breadcrumb-nav span { color: rgba(255,255,255,0.5); margin: 0 6px; }
+  .filter-bar { background: white; border-radius: 12px; padding: 1rem 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.06); margin-bottom: 1.5rem; }
+  .table-card { background: white; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); overflow: hidden; }
+  .table-card table { margin: 0; }
+  .table-card thead th { background: #f8f9fa; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; border-bottom: 2px solid #e9ecef; padding: 0.9rem 1rem; }
+  .table-card tbody td { padding: 0.85rem 1rem; vertical-align: middle; font-size: 0.9rem; border-color: #f0f0f0; }
+  .badge-activo { background: #d1fae5; color: #065f46; padding: 3px 10px; border-radius: 50px; font-size: 0.75rem; font-weight: 700; }
+  .badge-inactivo { background: #fee2e2; color: #991b1b; padding: 3px 10px; border-radius: 50px; font-size: 0.75rem; font-weight: 700; }
+  .btn-accion { padding: 4px 12px; border-radius: 50px; font-size: 0.78rem; font-weight: 600; }
+  .empty-state { text-align: center; padding: 3rem; color: #9ca3af; }
+  .empty-state i { font-size: 3rem; margin-bottom: 1rem; opacity: 0.4; }
+  .btn-new { background: var(--sena-azul); color: white; border: none; padding: 8px 22px; border-radius: 50px; font-weight: 700; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; }
+  .btn-new:hover { background: #1e3a8a; color: white; }
+  .ficha-num { font-size: 1.1rem; font-weight: 900; color: var(--sena-azul); }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="container">
+    <div class="breadcrumb-nav mb-2">
+      <a href="{% url 'panel_instructor_interno:panel' %}">Mi Panel</a>
+      <span>›</span><span style="color:rgba(255,255,255,0.9)">Gestionar Fichas</span>
+    </div>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <h2 class="mb-0"><i class="fas fa-id-badge me-3"></i>Gestionar Fichas</h2>
+      <button type="button" class="btn-new" data-bs-toggle="modal" data-bs-target="#modalCrearFicha" onclick="resetFormularioModalFicha()">
+        <i class="fas fa-plus"></i>Nueva Ficha
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="container py-4">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{% if 'error' in message.tags %}danger{% else %}success{% endif %} alert-dismissible fade show" role="alert">
+        {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="filter-bar">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-7">
+        <label class="form-label small fw-bold">Buscar ficha</label>
+        <input type="text" name="buscar" class="form-control form-control-sm" placeholder="Número de ficha o nombre de programa..." value="{{ buscar }}">
+      </div>
+      <div class="col-md-5 d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-sm flex-fill"><i class="fas fa-search me-1"></i>Buscar</button>
+        <a href="{% url 'panel_instructor_interno:gestionar_fichas' %}" class="btn btn-outline-secondary btn-sm">Limpiar</a>
+      </div>
+    </form>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <p class="mb-0 text-muted small">{{ total }} ficha{{ total|pluralize }} encontrada{{ total|pluralize }}</p>
+  </div>
+
+  {% if fichas %}
+  <div class="table-card">
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th>Número</th>
+          <th>Programa</th>
+          <th>Jornada</th>
+          <th>Aprendices</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ficha in fichas %}
+        <tr>
+          <td>
+            <a href="{% url 'panel_instructor_interno:detalle_aprendices_ficha' ficha.pk %}" style="text-decoration: none; color: inherit;">
+              <span class="ficha-num">{{ ficha.numero }}</span>
+            </a>
+          </td>
+          <td><strong>{{ ficha.programa.nombre }}</strong></td>
+          <td>{{ ficha.get_jornada_display }}</td>
+          <td>
+            <a href="{% url 'panel_instructor_interno:detalle_aprendices_ficha' ficha.pk %}" style="text-decoration: none; color: inherit; cursor: pointer;">
+              <span class="badge" style="background-color: #e0e7ff; color: #3730a3;">
+                <i class="fas fa-users me-1"></i>{{ ficha.cantidad_aprendices }}
+              </span>
+            </a>
+          </td>
+          <td>
+            {% if ficha.activa %}
+              <span class="badge-activo"><i class="fas fa-circle me-1" style="font-size:0.5rem;"></i>Activa</span>
+            {% else %}
+              <span class="badge-inactivo"><i class="fas fa-circle me-1" style="font-size:0.5rem;"></i>Inactiva</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{% url 'panel_instructor_interno:detalle_aprendices_ficha' ficha.pk %}" class="btn btn-outline-success btn-accion" title="Gestionar aprendices">
+                <i class="fas fa-graduation-cap"></i>
+              </a>
+              <button type="button" class="btn btn-outline-primary btn-accion" data-bs-toggle="modal" data-bs-target="#modalCrearFicha" onclick="abrirModalEditarFicha('{% url 'panel_instructor_interno:editar_ficha' ficha.pk %}')" title="Editar ficha">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button type="button" class="btn btn-outline-danger btn-accion" onclick="confirmarEliminarFicha('{% url 'panel_instructor_interno:eliminar_ficha' ficha.pk %}')" title="Eliminar ficha">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <section class="mt-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <a href="{% url 'panel_instructor_interno:panel' %}" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left me-2"></i>Volver al Panel
+        </a>
+    </div>
+  </section>  
+  {% else %}
+  <div class="empty-state">
+    <i class="fas fa-id-badge d-block"></i>
+    <p>No hay fichas registradas aún.</p>
+    <button type="button" class="btn-new" data-bs-toggle="modal" data-bs-target="#modalCrearFicha" onclick="resetFormularioModalFicha()">
+      <i class="fas fa-plus me-2"></i>Crear primera ficha
+    </button>
+  </div>
+  <section class="mt-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <a href="{% url 'panel_instructor_interno:panel' %}" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left me-2"></i>Volver al Panel
+        </a>
+    </div>
+  </section>  
+  {% endif %}
+</div>
+
+<!-- Modal Crear Ficha -->
+<div class="modal fade" id="modalCrearFicha" tabindex="-1" aria-labelledby="modalCrearFichaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1e3a8a, #1d4ed8); color: white; border: none;">
+        <h5 class="modal-title" id="modalCrearFichaLabel">
+          <i class="fas fa-id-badge me-2"></i>Crear Nueva Ficha
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="modalCrearFichaBody" style="padding: 2rem;">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Cargando...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Confirmar Eliminación de Ficha -->
+<div class="modal fade" id="modalEliminarFicha" tabindex="-1" aria-labelledby="modalEliminarFichaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header" style="background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; border: none;">
+        <h5 class="modal-title" id="modalEliminarFichaLabel">
+          <i class="fas fa-exclamation-triangle me-2"></i>Confirmar Eliminación
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="modalEliminarFichaBody" style="padding: 2rem;">
+        <div class="spinner-border text-danger" role="status">
+          <span class="visually-hidden">Cargando...</span>
+        </div>
+      </div>
+      <div class="modal-footer" style="border-top: 1px solid #dee2e6;">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="fas fa-times me-2"></i>Cancelar
+        </button>
+        <button type="button" class="btn btn-danger" id="btnConfirmarEliminarFicha" onclick="eliminarFicha()">
+          <i class="fas fa-trash me-2"></i>Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'core/js/custom_modal.js' %}?v=20260311c"></script>
+<script>
+  // Variable global para almacenar la URL de la ficha en edición
+  let urlFichaEnEdicion = null;
+  // Variable global para almacenar la URL de la ficha a eliminar
+  let urlFichaEliminar = null;
+
+  // Función para abrir modal de confirmación de eliminación
+  function confirmarEliminarFicha(url) {
+    urlFichaEliminar = url;
+    
+    // Cargar información de la ficha
+    fetch(url + '?ajax=true', {
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      const mensaje = '<strong>¿Estás seguro de que deseas eliminar esta ficha?</strong><br><br>' +
+                      '<strong>Número:</strong> ' + data.numero + '<br>' +
+                      '<strong>Programa:</strong> ' + data.programa + '<br><br>' +
+                      '<small style="color: #6b7280;">Esta acción no se puede deshacer.</small>';
+      
+      if (typeof window.mConfirm === 'function') {
+        window.mConfirm(mensaje, {
+          title: 'Eliminar Ficha',
+          confirmText: 'Eliminar',
+          confirmClass: 'cm-btn-danger',
+          confirmIcon: 'fas fa-trash'
+        }).then(function(resultado) {
+          if (resultado) {
+            eliminarFicha();
+          }
+        });
+      } else {
+        // Fallback: usar Bootstrap modal si mConfirm no está disponible
+        const modalBody = document.getElementById('modalEliminarFichaBody');
+        modalBody.innerHTML = `
+          <div class="alert alert-warning" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>¿Estás seguro de que deseas eliminar esta ficha?</strong>
+          </div>
+          <div class="card border-0" style="background-color: #f8f9fa;">
+            <div class="card-body">
+              <p class="mb-2"><strong>Número:</strong> ${data.numero}</p>
+              <p class="mb-0"><strong>Programa:</strong> ${data.programa}</p>
+            </div>
+          </div>
+          <p class="text-muted mt-3 mb-0">
+            <small><i class="fas fa-info-circle me-1"></i>Esta acción no se puede deshacer.</small>
+          </p>
+        `;
+        const modal = new bootstrap.Modal(document.getElementById('modalEliminarFicha'));
+        modal.show();
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      if (typeof window.mAlert === 'function') {
+        window.mAlert('Error al cargar la información. Intenta nuevamente.');
+      } else {
+        alert('Error al cargar la información. Intenta nuevamente.');
+      }
+    });
+  }
+
+  // Función para eliminar la ficha
+  function eliminarFicha() {
+    if (!urlFichaEliminar) return;
+    
+    const btnEliminar = document.getElementById('btnConfirmarEliminarFicha');
+    btnEliminar.disabled = true;
+    btnEliminar.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Eliminando...';
+    
+    // Función para obtener el CSRF token de las cookies
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+    
+    const csrfToken = getCookie('csrftoken');
+    
+    fetch(urlFichaEliminar + '?ajax=true', {
+      method: 'POST',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRFToken': csrfToken
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // Mostrar mensaje de éxito
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-success alert-dismissible fade show';
+        alertDiv.role = 'alert';
+        alertDiv.innerHTML = `
+          <i class="fas fa-check-circle me-2"></i>${data.message}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        // Agregar el mensaje al contenedor principal
+        const container = document.querySelector('.container');
+        if (container) {
+          container.insertBefore(alertDiv, container.firstChild);
+        }
+        
+        // Cerrar el modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalEliminarFicha'));
+        modal.hide();
+        
+        // Recargar la tabla después de un delay
+        setTimeout(() => {
+          location.reload();
+        }, 1500);
+      } else {
+        // Mostrar error
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+        alertDiv.role = 'alert';
+        alertDiv.innerHTML = `
+          <i class="fas fa-exclamation-circle me-2"></i>${data.message}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        // Agregar el mensaje al contenedor principal
+        const container = document.querySelector('.container');
+        if (container) {
+          container.insertBefore(alertDiv, container.firstChild);
+        }
+        
+        // Cerrar el modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalEliminarFicha'));
+        modal.hide();
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Error al eliminar la ficha. Intenta nuevamente.');
+      btnEliminar.disabled = false;
+      btnEliminar.innerHTML = '<i class="fas fa-trash me-2"></i>Eliminar';
+    });
+  }
+
+  // Función para abrir modal de edición
+  function abrirModalEditarFicha(url) {
+    urlFichaEnEdicion = url;
+    const modalBody = document.getElementById('modalCrearFichaBody');
+    modalBody.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>';
+    
+    fetch(url + '?ajax=true', {
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      modalBody.innerHTML = data.html;
+      // Agregar manejador de envío del formulario
+      const form = modalBody.querySelector('form');
+      if (form) {
+        form.addEventListener('submit', enviarFormularioFicha);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      modalBody.innerHTML = '<p class="text-danger">Error al cargar el formulario. Intenta nuevamente.</p>';
+    });
+  }
+
+  // Función para resetear y cargar el formulario en el modal (para crear)
+  function resetFormularioModalFicha() {
+    urlFichaEnEdicion = null;
+    const modalBody = document.getElementById('modalCrearFichaBody');
+    modalBody.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>';
+    
+    fetch('{% url "panel_instructor_interno:crear_ficha" %}?ajax=true', {
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      modalBody.innerHTML = data.html;
+      // Agregar manejador de envío del formulario
+      const form = modalBody.querySelector('form');
+      if (form) {
+        form.addEventListener('submit', enviarFormularioFicha);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      modalBody.innerHTML = '<p class="text-danger">Error al cargar el formulario. Intenta nuevamente.</p>';
+    });
+  }
+
+  // Función para enviar el formulario por AJAX
+  function enviarFormularioFicha(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    const modalBody = document.getElementById('modalCrearFichaBody');
+    
+    // Determinar la URL según si es crear o editar
+    let url = '{% url "panel_instructor_interno:crear_ficha" %}?ajax=true';
+    if (urlFichaEnEdicion) {
+      url = urlFichaEnEdicion + '?ajax=true';
+    }
+    
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // Mostrar mensaje de éxito
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-success alert-dismissible fade show';
+        alertDiv.role = 'alert';
+        alertDiv.innerHTML = `
+          <i class="fas fa-check-circle me-2"></i>${data.message}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        // Agregar el mensaje al contenedor principal
+        const container = document.querySelector('.container');
+        if (container) {
+          const messagesContainer = container.querySelector('[role="alert"]')?.parentElement || container;
+          messagesContainer.insertBefore(alertDiv, messagesContainer.firstChild);
+        }
+        
+        // Cerrar el modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalCrearFicha'));
+        modal.hide();
+        
+        // Recargar la tabla después de un delay
+        setTimeout(() => {
+          location.reload();
+        }, 1500);
+      } else {
+        // Mostrar errores del formulario
+        modalBody.innerHTML = data.html;
+        const form = modalBody.querySelector('form');
+        if (form) {
+          form.addEventListener('submit', enviarFormularioFicha);
+        }
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      modalBody.innerHTML = '<p class="text-danger">Error al enviar el formulario. Intenta nuevamente.</p>';
+    });
+  }
+</script>
+{% accessibility_widget %}
+</body>
+</html>
