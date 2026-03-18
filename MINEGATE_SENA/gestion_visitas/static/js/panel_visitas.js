@@ -102,7 +102,7 @@ function cargarVisitas() {
       <p>Cargando visitas...</p>
     </td></tr>`;
 
-  fetch(`/gestion/visitas/?tipo=${tipoVisitaActual}&estado=${estado}&buscar=${encodeURIComponent(buscar)}`)
+  return fetch(`/gestion/visitas/?tipo=${tipoVisitaActual}&estado=${estado}&buscar=${encodeURIComponent(buscar)}`)
     .then(response => response.json())
     .then(data => {
       document.getElementById('statPendientes').textContent = data.stats.pendientes;
@@ -161,7 +161,7 @@ function cargarVisitas() {
       let html = '';
       data.visitas.forEach(v => {
         const estadoBadge = getEstadoBadge(v.estado);
-        html += `<tr class="docs-fila gv-fila">
+        html += `<tr id="visita-${tipoVisitaActual}-${v.id}" class="docs-fila gv-fila visit-row" data-id="${v.id}" data-tipo="${tipoVisitaActual}">
             <td class="gv-celda-id">#${v.id}</td>
             <td>
               <span class="gv-tipo-badge ${v.tipo === 'interna' ? 'interna' : 'externa'}">
@@ -327,7 +327,7 @@ function mostrarVisitasAprobadas() {
       <p>Cargando visitas aprobadas...</p>
     </td></tr>`;
 
-  fetch(`/gestion/visitas-aprobadas/?tipo=${tipoVisitaActual}`)
+  return fetch(`/gestion/visitas-aprobadas/?tipo=${tipoVisitaActual}`)
     .then(response => response.json())
     .then(data => {
       const visitas = data.visitas || [];
@@ -343,7 +343,7 @@ function mostrarVisitasAprobadas() {
       let html = '';
       visitas.forEach(v => {
         const estadoBadge = getEstadoBadge(v.estado);
-        html += `<tr class="docs-fila gv-fila">
+        html += `<tr id="visita-${tipoVisitaActual}-${v.id}" class="docs-fila gv-fila visit-row" data-id="${v.id}" data-tipo="${tipoVisitaActual}">
             <td class="gv-celda-id">#${v.id}</td>
             <td>
               <span class="gv-tipo-badge ${v.tipo === 'interna' ? 'interna' : 'externa'}">${v.tipo_display}</span>
@@ -1727,4 +1727,55 @@ document.addEventListener('DOMContentLoaded', function () {
       if (e.target === this) cerrarModalVisualizarDoc();
     });
   }
+});
+
+// Resaltar fila objetivo si la URL contiene ?tipo=&id=
+document.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(window.location.search);
+  const tipoParam = params.get('tipo');
+  const idParam = params.get('id');
+  if (!tipoParam || !idParam) return;
+
+  // Asegurar que la pestaña correcta esté activa
+  if (typeof cambiarTabVisita === 'function') {
+    cambiarTabVisita(tipoParam);
+  }
+
+  const attempt = () => {
+    // selector por id creado: visita-<tipo>-<id>
+    const sel = `#visita-${tipoParam}-${idParam}`;
+    let el = document.querySelector(sel);
+    if (!el) {
+      // fallback: buscar por data attributes
+      el = document.querySelector(`.visit-row[data-id="${idParam}"][data-tipo="${tipoParam}"]`);
+    }
+    if (el) {
+      el.classList.add('row-selected');
+      el.scrollIntoView({behavior: 'smooth', block: 'center'});
+      return true;
+    }
+    return false;
+  };
+
+  // Esperar la carga de visitas si cargarVisitas devuelve promesa
+  if (typeof cargarVisitas === 'function') {
+    const p = cargarVisitas();
+    if (p && typeof p.then === 'function') {
+      p.then(() => {
+        let tries = 0;
+        const max = 12;
+        const iv = setInterval(() => {
+          if (attempt() || ++tries >= max) clearInterval(iv);
+        }, 300);
+      }).catch(() => setTimeout(attempt, 500));
+      return;
+    }
+  }
+
+  // fallback retries
+  let tries = 0;
+  const max = 12;
+  const iv = setInterval(() => {
+    if (attempt() || ++tries >= max) clearInterval(iv);
+  }, 300);
 });
