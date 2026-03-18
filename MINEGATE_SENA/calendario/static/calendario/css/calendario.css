@@ -29,7 +29,7 @@
   align-items: start;
 }
 
-.admin-calendar-page .calendar-layout > * {
+.admin-calendar-page .calendar-layout>* {
   min-width: 0;
 }
 
@@ -66,12 +66,13 @@
 }
 
 .admin-calendar-page .day-inspector {
-  position: sticky;
-  top: 104px;
+  position: relative;
+  top: auto;
   width: 100%;
   max-width: 400px;
+  height: auto;
   max-height: none;
-  overflow: visible;
+  overflow: hidden;
   justify-self: stretch;
   align-self: start;
   border-left: 4px solid #e6f3eb;
@@ -149,7 +150,7 @@
   align-items: start;
 }
 
-#mainContent .admin-calendar-page .calendar-layout > * {
+#mainContent .admin-calendar-page .calendar-layout>* {
   min-width: 0;
 }
 
@@ -180,12 +181,35 @@
 }
 
 #mainContent .admin-calendar-page .day-inspector {
-  position: sticky;
-  top: 104px;
+  position: relative;
+  top: auto;
   width: 100%;
   max-width: none;
+  height: auto;
+  max-height: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   align-self: start;
   z-index: 2;
+}
+
+#mainContent .admin-calendar-page #inspectorRangesBlock {
+  flex: 0 0 auto;
+}
+
+#mainContent .admin-calendar-page #inspectorVisitsBlock {
+  flex: 1 1 auto;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+}
+
+#mainContent .admin-calendar-page .inspector-visit-list {
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 100%;
+  padding-right: 6px;
 }
 
 /* Keep both columns clean even when sidebar is collapsed (icons-only mode). */
@@ -217,7 +241,19 @@
   #mainContent .admin-calendar-page .day-inspector {
     position: static;
     top: auto;
+    max-height: none;
+    overflow: visible;
     margin-top: 8px;
+  }
+
+  #mainContent .admin-calendar-page #inspectorVisitsBlock {
+    min-height: auto;
+  }
+
+  #mainContent .admin-calendar-page .inspector-visit-list {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
   }
 }
 
@@ -253,6 +289,24 @@
 #coordinadorCalendarPage .legend {
   margin-top: 16px;
   font-size: 18px;
+}
+
+/* Coordinator-specific adjustments to keep nav arrows inside the card and
+   avoid overlapping the app header/panel. These override generic .nav values. */
+#coordinadorCalendarPage .card-top {
+  padding-top: 10px; /* ensure space at top inside the card */
+}
+#coordinadorCalendarPage .card-top .nav {
+  top: 18px; /* position relative to the card */
+  width: 40px;
+  height: 40px;
+  z-index: 2; /* keep them above card content but below global header */
+}
+#coordinadorCalendarPage .card-top .nav#prev {
+  left: 18px;
+}
+#coordinadorCalendarPage .card-top .nav#next {
+  right: 18px;
 }
 
 .calendar-page .card-top {
@@ -678,13 +732,17 @@
 }
 
 .day-inspector {
-  background: #ffffff;
-  border: 1px solid #e4ede7;
-  border-radius: 16px;
-  box-shadow: 0 12px 28px rgba(25, 52, 37, 0.08);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fffb 100%);
+  border: 1px solid #dfece5;
+  border-radius: 18px;
+  box-shadow: 0 14px 30px rgba(20, 66, 43, 0.12);
   padding: 14px;
   position: sticky;
   top: 14px;
+  max-height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .day-inspector-head {
@@ -692,6 +750,8 @@
   justify-content: space-between;
   align-items: center;
   gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e7f1eb;
 }
 
 .day-inspector h3 {
@@ -734,11 +794,22 @@
 }
 
 .inspector-block {
-  margin-top: 12px;
+  margin-top: 10px;
   border: 1px solid #e8efea;
   border-radius: 12px;
   padding: 10px;
   background: #fbfdfc;
+}
+
+#inspectorRangesBlock {
+  flex: 0 0 auto;
+}
+
+#inspectorVisitsBlock {
+  flex: 1 1 auto;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
 }
 
 .inspector-block h4 {
@@ -767,13 +838,36 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 6px;
+}
+
+.inspector-visit-list::-webkit-scrollbar {
+  width: 10px;
+}
+
+.inspector-visit-list::-webkit-scrollbar-track {
+  background: #eef4f0;
+  border-radius: 999px;
+}
+
+.inspector-visit-list::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #9fd7bb, #61b28c);
+  border-radius: 999px;
+  border: 2px solid #eef4f0;
+}
+
+.inspector-visit-list::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #7ec8a4, #469d75);
 }
 
 .visit-item {
   border: 1px solid #e2ebe6;
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 9px;
   background: #ffffff;
+  box-shadow: 0 4px 10px rgba(31, 91, 62, 0.05);
 }
 
 .visit-item-head {
@@ -920,6 +1014,16 @@
     position: static;
     max-height: none;
     overflow: visible;
+  }
+
+  #inspectorVisitsBlock {
+    min-height: auto;
+  }
+
+  .inspector-visit-list {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
   }
 
   .calendar-page .calendar-card {

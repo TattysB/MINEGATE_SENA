@@ -13,8 +13,8 @@
          onclick="document.getElementById('inputArchivosDocumentos').click();">
       <i class="fas fa-cloud-upload-alt docs-zona-subida-icono"></i>
       <h4>Arrastra archivos aquí o haz clic para seleccionar</h4>
-      <p>PDF, JPG, PNG, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT — Máximo 10 MB por archivo</p>
-      <input type="file" id="inputArchivosDocumentos" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" style="display: none;" onchange="prepararArchivosDocumentos(this.files)">
+      <p>Solo se permiten archivos PDF o Word (DOC, DOCX) — Máximo 10 MB por archivo</p>
+      <input type="file" id="inputArchivosDocumentos" multiple accept=".pdf,.doc,.docx" style="display: none;" onchange="prepararArchivosDocumentos(this.files)">
     </div>
 
     <!-- Archivos seleccionados (antes de subir) -->

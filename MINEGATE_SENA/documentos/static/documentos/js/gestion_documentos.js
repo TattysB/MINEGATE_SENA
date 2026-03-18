@@ -1,4 +1,5 @@
 let archivosPendientesLista = [];
+var categoriasFaltantesActuales = [];
 
 console.log("✓ gestion_documentos.js CARGADO CORRECTAMENTE");
 
@@ -47,6 +48,11 @@ function _cerrarModal(overlay) {
  * @param {string} tipo - 'success' | 'error' | 'warning' | 'info'
  */
 function mostrarAlerta(mensaje, tipo) {
+    if (typeof window.mAlert === 'function') {
+        window.mAlert(mensaje, tipo || 'info');
+        return;
+    }
+
     tipo = tipo || 'info';
     var modal = _crearModalBase();
 
@@ -82,6 +88,20 @@ function mostrarAlerta(mensaje, tipo) {
  * @param {string} tipo - 'danger' | 'warning' | 'info'
  */
 function mostrarConfirmacion(titulo, mensaje, onConfirmar, tipo) {
+    if (typeof window.mConfirm === 'function') {
+        window.mConfirm(mensaje, {
+            title: titulo || 'Confirmar acción',
+            confirmText: (tipo === 'danger' ? 'Eliminar' : 'Confirmar'),
+            confirmClass: (tipo === 'danger' ? 'cm-btn-danger' : 'cm-btn-primary'),
+            confirmIcon: (tipo === 'danger' ? 'fas fa-trash' : 'fas fa-check')
+        }).then(function (ok) {
+            if (ok && typeof onConfirmar === 'function') {
+                onConfirmar();
+            }
+        });
+        return;
+    }
+
     tipo = tipo || 'danger';
     var modal = _crearModalBase();
 
@@ -170,6 +190,22 @@ function getCategoriaBadge(categoria, display) {
     const c = config[categoria] || { clase: 'docs-badge-otro', icono: 'fas fa-tag' };
     var texto = display || categoria;
     return '<span class="docs-badge ' + c.clase + '" title="' + texto + '"><i class="' + c.icono + '"></i> ' + texto + '</span>';
+}
+
+function nombreArchivoNormalizado(nombre) {
+    return (nombre || '').trim().toLowerCase();
+}
+
+function cargarCategoriasFaltantes() {
+    return fetch('/documentos/api/categorias-faltantes/')
+        .then(function (r) {
+            if (!r.ok) throw new Error('Error ' + r.status);
+            return r.json();
+        })
+        .then(function (data) {
+            categoriasFaltantesActuales = data.categorias_faltantes || [];
+            return categoriasFaltantesActuales;
+        });
 }
 
 function formatearTamaño(bytes) {
@@ -314,17 +350,26 @@ function detectarCategoria(nombreArchivo) {
 // Generar HTML de <select> de categorías con una seleccionada
 function generarSelectCategoria(index, seleccionada) {
     var html = '<select id="catArchivo_' + index + '" class="docs-archivo-cat select">';
-    for (var c = 0; c < CATEGORIAS_DOCUMENTO.length; c++) {
-        var cat = CATEGORIAS_DOCUMENTO[c];
+    var categoriasPermitidas = categoriasFaltantesActuales.length > 0
+        ? CATEGORIAS_DOCUMENTO.filter(function (cat) {
+            return categoriasFaltantesActuales.indexOf(cat.value) !== -1;
+        })
+        : CATEGORIAS_DOCUMENTO;
+
+    for (var c = 0; c < categoriasPermitidas.length; c++) {
+        var cat = categoriasPermitidas[c];
         html += '<option value="' + cat.value + '"' + (cat.value === seleccionada ? ' selected' : '') + '>' + cat.label + '</option>';
     }
     html += '</select>';
     return html;
 }
 
+// Extensiones permitidas para documentos
+var EXTENSIONES_PERMITIDAS_DOCS = ['.pdf', '.doc', '.docx'];
+
 // Preparar archivos para subir
 function prepararArchivosDocumentos(files) {
-    archivosPendientesLista = Array.from(files);
+    var archivosNuevos = Array.from(files);
     var contenedor = document.getElementById('archivosPendientes');
     var lista = document.getElementById('listaArchivosPendientes');
 
@@ -334,32 +379,90 @@ function prepararArchivosDocumentos(files) {
         return;
     }
 
-    if (archivosPendientesLista.length === 0) {
-        contenedor.style.display = 'none';
-        return;
+    // Validar formatos permitidos
+    var rechazados = [];
+    archivosNuevos = archivosNuevos.filter(function (archivo) {
+        var ext = '.' + archivo.name.split('.').pop().toLowerCase();
+        if (EXTENSIONES_PERMITIDAS_DOCS.indexOf(ext) === -1) {
+            rechazados.push(archivo.name);
+            return false;
+        }
+        return true;
+    });
+
+    if (rechazados.length > 0) {
+        mostrarAlerta(
+            '⚠️ Formato no permitido.\n\nSolo se aceptan archivos PDF o Word (DOC, DOCX).\n\nArchivo(s) rechazado(s):\n' + rechazados.join('\n'),
+            'error'
+        );
+        // Limpiar el input para que no quede el archivo inválido seleccionado
+        var inputFile = document.getElementById('inputArchivosDocumentos');
+        if (inputFile) inputFile.value = '';
+        if (archivosNuevos.length === 0) return;
     }
 
-    contenedor.style.display = 'block';
-    var html = '';
-    for (var i = 0; i < archivosPendientesLista.length; i++) {
-        var f = archivosPendientesLista[i];
-        var ext = '.' + f.name.split('.').pop().toLowerCase();
-        var catDetectada = detectarCategoria(f.name);
-        html += '<div class="docs-archivo-item">' +
-            getIconoDocumento(ext) +
-            '<div class="docs-archivo-info">' +
-            '<div class="docs-archivo-nombre">' + f.name + '</div>' +
-            '<div class="docs-archivo-size">' + formatearTamaño(f.size) + '</div>' +
-            '</div>' +
-            '<div class="docs-archivo-cat">' +
-            '<span><i class="fas fa-tag"></i></span>' +
-            generarSelectCategoria(i, catDetectada) +
-            '</div>' +
-            '<button onclick="quitarArchivoPendiente(' + i + ')" class="docs-btn-quitar" title="Quitar">' +
-            '<i class="fas fa-times-circle"></i></button></div>';
-    }
-    lista.innerHTML = html;
-    console.log("Archivos preparados:", archivosPendientesLista.length);
+    cargarCategoriasFaltantes()
+        .then(function () {
+            if (categoriasFaltantesActuales.length === 0) {
+                archivosPendientesLista = [];
+                contenedor.style.display = 'none';
+                lista.innerHTML = '';
+                mostrarAlerta('Ya se cargaron todos los documentos requeridos. No hay categorías pendientes.', 'info');
+                return;
+            }
+
+            var sinDuplicados = [];
+            var nombresVistos = {};
+            for (var f = 0; f < archivosNuevos.length; f++) {
+                var archivo = archivosNuevos[f];
+                var claveNombre = nombreArchivoNormalizado(archivo.name);
+                if (nombresVistos[claveNombre]) continue;
+                nombresVistos[claveNombre] = true;
+                sinDuplicados.push(archivo);
+            }
+
+            if (sinDuplicados.length > categoriasFaltantesActuales.length) {
+                mostrarAlerta('Solo puedes subir ' + categoriasFaltantesActuales.length + ' archivo(s), uno por cada documento pendiente.', 'warning');
+                sinDuplicados = sinDuplicados.slice(0, categoriasFaltantesActuales.length);
+            }
+
+            archivosPendientesLista = sinDuplicados;
+
+            if (archivosPendientesLista.length === 0) {
+                contenedor.style.display = 'none';
+                lista.innerHTML = '';
+                return;
+            }
+
+            contenedor.style.display = 'block';
+            var html = '';
+            for (var i = 0; i < archivosPendientesLista.length; i++) {
+                var archivoPendiente = archivosPendientesLista[i];
+                var ext = '.' + archivoPendiente.name.split('.').pop().toLowerCase();
+                var catDetectada = detectarCategoria(archivoPendiente.name);
+                if (categoriasFaltantesActuales.indexOf(catDetectada) === -1) {
+                    catDetectada = categoriasFaltantesActuales[0];
+                }
+                html += '<div class="docs-archivo-item">' +
+                    getIconoDocumento(ext) +
+                    '<div class="docs-archivo-info">' +
+                    '<div class="docs-archivo-nombre">' + archivoPendiente.name + '</div>' +
+                    '<div class="docs-archivo-size">' + formatearTamaño(archivoPendiente.size) + '</div>' +
+                    '</div>' +
+                    '<div class="docs-archivo-cat">' +
+                    '<span><i class="fas fa-tag"></i></span>' +
+                    generarSelectCategoria(i, catDetectada) +
+                    '</div>' +
+                    '<button onclick="quitarArchivoPendiente(' + i + ')" class="docs-btn-quitar" title="Quitar">' +
+                    '<i class="fas fa-times-circle"></i></button></div>';
+            }
+            lista.innerHTML = html;
+            console.log("Archivos preparados:", archivosPendientesLista.length);
+        })
+        .catch(function (e) {
+            console.error('Error cargando categorías faltantes:', e);
+            mostrarAlerta('No se pudieron cargar las categorías pendientes.', 'error');
+        });
 }
 
 function quitarArchivoPendiente(index) {
@@ -382,10 +485,24 @@ function subirArchivosDocumentos() {
     }
 
     var formData = new FormData();
+    var categoriasSeleccionadas = {};
+    var nombresArchivoSeleccionados = {};
     for (var i = 0; i < archivosPendientesLista.length; i++) {
+        var nombreNormalizado = nombreArchivoNormalizado(archivosPendientesLista[i].name);
+        if (nombresArchivoSeleccionados[nombreNormalizado]) {
+            mostrarAlerta('No se permiten archivos repetidos en la misma carga.', 'warning');
+            return;
+        }
+        nombresArchivoSeleccionados[nombreNormalizado] = true;
+
         formData.append('archivos', archivosPendientesLista[i]);
         var selectCat = document.getElementById('catArchivo_' + i);
         var cat = selectCat ? selectCat.value : CATEGORIAS_DOCUMENTO[0].value;
+        if (categoriasSeleccionadas[cat]) {
+            mostrarAlerta('No se permite repetir la misma categoría en una sola carga.', 'warning');
+            return;
+        }
+        categoriasSeleccionadas[cat] = true;
         formData.append('categorias', cat);
     }
     formData.append('csrfmiddlewaretoken', getCsrfToken());
@@ -435,6 +552,7 @@ function subirArchivosDocumentos() {
                     }
                     cancelarSubida();
                     cargarDocumentos();
+                    cargarCategoriasFaltantes();
                 } else {
                     mostrarAlerta(data.error || 'Error desconocido', 'error');
                 }
@@ -472,6 +590,57 @@ function verDocumentoSafe(button) {
     verDocumento(archivoUrl, nombreArchivo);
 }
 
+var _docxPreviewLoaderPromise = null;
+
+function _loadScriptOnce(src) {
+    return new Promise(function (resolve, reject) {
+        var existing = document.querySelector('script[src="' + src + '"]');
+        if (existing) {
+            if (existing.getAttribute('data-loaded') === 'true') {
+                resolve();
+                return;
+            }
+            existing.addEventListener('load', function () { resolve(); }, { once: true });
+            existing.addEventListener('error', function () { reject(new Error('No se pudo cargar ' + src)); }, { once: true });
+            return;
+        }
+
+        var script = document.createElement('script');
+        script.src = src;
+        script.async = true;
+        script.onload = function () {
+            script.setAttribute('data-loaded', 'true');
+            resolve();
+        };
+        script.onerror = function () {
+            reject(new Error('No se pudo cargar ' + src));
+        };
+        document.head.appendChild(script);
+    });
+}
+
+function _ensureDocxPreviewReady() {
+    if (window.docx && window.JSZip) {
+        return Promise.resolve();
+    }
+
+    if (_docxPreviewLoaderPromise) {
+        return _docxPreviewLoaderPromise;
+    }
+
+    _docxPreviewLoaderPromise = _loadScriptOnce('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js')
+        .then(function () {
+            return _loadScriptOnce('https://cdn.jsdelivr.net/npm/docx-preview@0.3.3/dist/docx-preview.min.js');
+        })
+        .finally(function () {
+            if (!(window.docx && window.JSZip)) {
+                _docxPreviewLoaderPromise = null;
+            }
+        });
+
+    return _docxPreviewLoaderPromise;
+}
+
 // Función original verDocumento
 function verDocumento(archivoUrl, nombreArchivo) {
     console.log("=== verDocumento INICIANDO ===");
@@ -497,9 +666,10 @@ function verDocumento(archivoUrl, nombreArchivo) {
 
     // Detectar el tipo de archivo
     var isPDF = extension === 'pdf';
+    var isDocx = extension === 'docx';
     var isImagen = ['jpg', 'jpeg', 'png', 'gif', 'webp'].indexOf(extension) !== -1;
 
-    console.log("Tipo de archivo detectado:", { isPDF, isImagen, extension });
+    console.log("Tipo de archivo detectado:", { isPDF, isDocx, isImagen, extension });
 
     if (isPDF) {
         var headerHtml = '<div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #e5e7eb; background: #f9fafb;">' +
@@ -518,6 +688,58 @@ function verDocumento(archivoUrl, nombreArchivo) {
             headerHtml + contentHtml + '</div>';
 
         card.innerHTML = fullHtml;
+    } else if (isDocx) {
+        var headerHtml = '<div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #e5e7eb; background: #f9fafb;">' +
+            '<h3 style="margin: 0; color: #1f2937; font-size: 16px;"><i class="fas fa-file-word" style="margin-right: 8px; color: #2563eb;"></i>' + nombreArchivo + '</h3>' +
+            '<div style="display:flex;gap:8px;align-items:center;">' +
+            '<a href="' + archivoUrl + '" target="_blank" rel="noopener noreferrer" style="background:#6b7280;color:white;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:500;"><i class="fas fa-external-link-alt"></i> Nueva pestaña</a>' +
+            '<button onclick="_cerrarModalButton()" style="background:#ef4444;color:white;border:none;font-size:20px;cursor:pointer;width:34px;height:34px;border-radius:6px;line-height:1;">&times;</button>' +
+            '</div></div>';
+
+        var contentHtml = '<div id="docxPreviewContainer" style="flex:1;overflow:auto;background:#fff;padding:24px;">' +
+            '<div id="docxPreviewLoading" style="text-align:center;color:#6b7280;padding:40px 20px;">' +
+            '<i class="fas fa-spinner fa-spin" style="font-size:26px;display:block;margin-bottom:12px;"></i>' +
+            'Cargando documento Word...' +
+            '</div>' +
+            '</div>';
+
+        card.innerHTML = '<div style="display:flex;flex-direction:column;height:100%;background:white;border-radius:8px;overflow:hidden;">' +
+            headerHtml + contentHtml + '</div>';
+
+        _ensureDocxPreviewReady()
+            .then(function () {
+                return fetch(archivoUrl, { credentials: 'same-origin' });
+            })
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error('No se pudo obtener el archivo DOCX (HTTP ' + response.status + ')');
+                }
+                return response.arrayBuffer();
+            })
+            .then(function (arrayBuffer) {
+                var container = document.getElementById('docxPreviewContainer');
+                if (!container) return;
+                container.innerHTML = '';
+                return window.docx.renderAsync(arrayBuffer, container, null, {
+                    inWrapper: true,
+                    breakPages: true,
+                    ignoreWidth: false,
+                    ignoreHeight: false
+                });
+            })
+            .catch(function (err) {
+                console.error('Error previsualizando DOCX:', err);
+                var container = document.getElementById('docxPreviewContainer');
+                if (!container) return;
+                container.innerHTML = '<div style="text-align:center;padding:50px;color:#6b7280;">' +
+                    '<i class="fas fa-file-word" style="font-size:64px;color:#9ca3af;display:block;margin-bottom:20px;"></i>' +
+                    '<p style="font-size:16px;margin-bottom:8px;color:#1f2937;">No se pudo mostrar el archivo Word</p>' +
+                    '<p style="font-size:13px;margin-bottom:24px;">Intente descargar el archivo para abrirlo en Microsoft Word.</p>' +
+                    '<a href="' + archivoUrl + '" target="_blank" rel="noopener noreferrer" class="docs-modal-btn docs-modal-btn-confirm" style="text-decoration:none;display:inline-block;background:#6b7280;color:#fff;">' +
+                    '<i class="fas fa-external-link-alt"></i> Nueva pestaña' +
+                    '</a>' +
+                    '</div>';
+            });
     } else if (isImagen) {
         var headerHtml = '<div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #e5e7eb; background: #f9fafb;">' +
             '<h3 style="margin: 0; color: #1f2937; font-size: 16px;"><i class="fas fa-image" style="margin-right: 8px; color: #8b5cf6;"></i>' + nombreArchivo + '</h3>' +
@@ -602,3 +824,5 @@ function eliminarDocumento(id, titulo) {
         'danger'
     );
 }
+
+cargarCategoriasFaltantes().catch(function () { });

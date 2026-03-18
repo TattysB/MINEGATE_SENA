@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   {% load static %}
   {% load accesibility_tags %}
+  <link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}?v=20260311c">
   
 <style>
   :root { --ext-azul:#39a900; --ext-azul-oscuro:#2d8600; --card-shadow:0 4px 20px rgba(0,0,0,0.08); --card-radius:16px; --transition:all 0.25s ease; }
@@ -50,6 +51,10 @@
   .ep-en_revision_documentos { background:#ede9fe; color:#5b21b6; }
   .empty-state { text-align:center; padding:3rem; color:#9ca3af; }
   .empty-state i { font-size:3rem; opacity:0.3; margin-bottom:1rem; }
+
+  .perfil-modal-overlay { position: fixed; inset: 0; background: rgba(2, 22, 7, 0.55); display: none; align-items: center; justify-content: center; z-index: 11050; padding: 16px; }
+  .perfil-modal-card { width: min(1040px, 96vw); height: min(90vh, 860px); background: #fff; border-radius: 18px; box-shadow: 0 24px 60px rgba(0,0,0,0.34); overflow: hidden; border: 1px solid rgba(255,255,255,0.45); }
+  .perfil-modal-iframe { width: 100%; height: 100%; border: none; display: block; background: #f8fafc; }
 </style>
 </head>
 <body>
@@ -64,10 +69,10 @@
         <p class="mb-0"><i class="fas fa-envelope me-2"></i>{{ correo }}</p>
       </div>
       <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-        <a href="{% url 'panel_visitante:actualizar_perfil' %}" class="btn-logout-header">
+        <a href="{% url 'panel_visitante:actualizar_perfil' %}" class="btn-logout-header" id="btnAbrirActualizarPerfil">
           <i class="fas fa-user-edit"></i> Actualizar Perfil
         </a>
-        <button type="button" class="btn-logout-header" data-bs-toggle="modal" data-bs-target="#confirmLogoutModal">
+        <button type="button" class="btn-logout-header" onclick="confirmarCerrarSesion('{% url 'panel_visitante:logout_responsable' %}')">
           <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
         </button>
       </div>
@@ -151,6 +156,13 @@
   {% endif %}
 </div>
 
+<!-- Modal de Perfil Embebido -->
+<div id="modalActualizarPerfilExterno" class="perfil-modal-overlay" onclick="if(event.target===this){cerrarModalActualizarPerfil();}">
+  <div class="perfil-modal-card">
+    <iframe id="iframeActualizarPerfilExterno" class="perfil-modal-iframe" title="Actualizar Perfil"></iframe>
+  </div>
+</div>
+
 <!-- Modal de Confirmación de Cierre de Sesión -->
 <div class="modal fade" id="confirmLogoutModal" tabindex="-1" aria-labelledby="confirmLogoutLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
@@ -175,9 +187,84 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'core/js/custom_modal.js' %}?v=20260311c"></script>
 <script>
+  function confirmarCerrarSesion(logoutUrl) {
+    const mensaje = '¿Estás seguro de que deseas cerrar sesión?<br><br><small style="color: #6b7280;">Tendrás que volver a ingresar tus credenciales para acceder nuevamente.</small>';
+    
+    if (typeof window.mConfirm === 'function') {
+      window.mConfirm(mensaje, {
+        title: 'Cerrar Sesión',
+        confirmText: 'Cerrar Sesión',
+        confirmClass: 'cm-btn-danger',
+        confirmIcon: 'fas fa-right-from-bracket'
+      }).then(function(resultado) {
+        if (resultado) {
+          window.location.href = logoutUrl;
+        }
+      });
+    } else {
+      // Fallback: usar Bootstrap modal si mConfirm no está disponible
+      const modal = new bootstrap.Modal(document.getElementById('confirmLogoutModal'));
+      modal.show();
+    }
+  }
+
+  function abrirModalActualizarPerfil(url) {
+    const modal = document.getElementById('modalActualizarPerfilExterno');
+    const iframe = document.getElementById('iframeActualizarPerfilExterno');
+    if (!modal || !iframe) {
+      window.location.href = url;
+      return;
+    }
+
+    const sep = url.includes('?') ? '&' : '?';
+    iframe.src = url + sep + 'embed=1';
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function cerrarModalActualizarPerfil() {
+    const modal = document.getElementById('modalActualizarPerfilExterno');
+    const iframe = document.getElementById('iframeActualizarPerfilExterno');
+    if (iframe) {
+      iframe.src = 'about:blank';
+    }
+    if (modal) {
+      modal.style.display = 'none';
+    }
+    document.body.style.overflow = '';
+  }
+
+  window.addEventListener('message', function(event) {
+    const data = event.data;
+    if (!data || typeof data !== 'object') {
+      return;
+    }
+    if (data.type === 'cerrarModalActualizarPerfil') {
+      cerrarModalActualizarPerfil();
+    }
+  });
+
+  document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+      const modal = document.getElementById('modalActualizarPerfilExterno');
+      if (modal && modal.style.display === 'flex') {
+        cerrarModalActualizarPerfil();
+      }
+    }
+  });
+  
   // Auto-cerrar alertas después de 5 segundos
   document.addEventListener('DOMContentLoaded', function() {
+    const btnPerfil = document.getElementById('btnAbrirActualizarPerfil');
+    if (btnPerfil) {
+      btnPerfil.addEventListener('click', function(e) {
+        e.preventDefault();
+        abrirModalActualizarPerfil(this.href);
+      });
+    }
+
     const alerts = document.querySelectorAll('.alert');
     alerts.forEach(function(alert) {
       setTimeout(function() {

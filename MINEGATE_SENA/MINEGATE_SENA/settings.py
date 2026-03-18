@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'panel_instructor_externo',
     'coordinador',
     'reportes',
+    'chatbot',
     'control_acceso_mina',
 ]
 

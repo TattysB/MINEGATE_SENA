@@ -328,4 +328,56 @@
     .carousel-item img {
         height: 300px;
     }
+
+    .hero-section {
+        padding: 100px 15px;
+        min-height: 50vh;
+    }
+
+    .sicam-title {
+        font-size: 2em !important;
+    }
+
+    .sicam-tagline {
+        font-size: 1.1em !important;
+    }
+
+    .sicam-invitation {
+        font-size: 1.3em !important;
+    }
+
+    .sicam-description p {
+        font-size: 1.2em !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-section {
+        padding: 80px 10px;
+        min-height: 40vh;
+    }
+
+    .sicam-title {
+        font-size: 1.5em !important;
+    }
+
+    .sicam-tagline {
+        font-size: 0.95em !important;
+    }
+
+    .sicam-invitation {
+        font-size: 1.1em !important;
+    }
+
+    .sicam-description p {
+        font-size: 1rem !important;
+    }
+
+    .protocol-card {
+        margin-bottom: 10px;
+    }
+
+    .card.h-100.shadow-sm {
+        margin-bottom: 15px;
+    }
 }

@@ -4,6 +4,8 @@ import re
 
 
 class RegistroVisitanteForm(forms.Form):
+    DOMINIOS_CORREO_INTERNO = ("@sena.edu.co",)
+
     nombre = forms.CharField(
         label="Nombre",
         max_length=100,
@@ -37,7 +39,7 @@ class RegistroVisitanteForm(forms.Form):
     )
     telefono = forms.CharField(
         label="Telefono",
-        max_length=15,
+        max_length=10,
         required=True,
         widget=forms.TextInput(
             attrs={"class": "form-control", "placeholder": "Telefono"}
@@ -98,9 +100,8 @@ class RegistroVisitanteForm(forms.Form):
         telefono = self.cleaned_data.get("telefono", "").strip()
         if not telefono:
             raise forms.ValidationError("El telefono es obligatorio.")
-        # Permitir solo números, espacios, guiones y paréntesis
-        if not re.match(r"^[\d\s\-\(\)+]+$", telefono):
-            raise forms.ValidationError("El telefono solo debe contener numeros y caracteres validos.")
+        if not re.match(r"^\d{10}$", telefono):
+            raise forms.ValidationError("El telefono debe tener exactamente 10 numeros.")
         return telefono
 
     def clean_documento(self):
@@ -156,12 +157,44 @@ class RegistroVisitanteForm(forms.Form):
         cleaned_data = super().clean()
         password1 = cleaned_data.get("password1")
         password2 = cleaned_data.get("password2")
+        rol = cleaned_data.get("rol")
+        correo = cleaned_data.get("correo", "").strip().lower()
+
+        if rol == "interno" and correo:
+            if not any(correo.endswith(dominio) for dominio in self.DOMINIOS_CORREO_INTERNO):
+                self.add_error(
+                    "correo",
+                    "Para usuario interno, el correo debe terminar en @sena.edu.co.",
+                )
 
         if password1 and password2:
             if password1 != password2:
                 raise forms.ValidationError("Las contrasenias no coinciden.")
 
         return cleaned_data
+
+
+class VerificacionCodigoRegistroForm(forms.Form):
+    codigo = forms.CharField(
+        label="Codigo de verificacion",
+        max_length=6,
+        min_length=6,
+        required=True,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Ingrese el codigo de 6 digitos",
+                "inputmode": "numeric",
+                "autocomplete": "one-time-code",
+            }
+        ),
+    )
+
+    def clean_codigo(self):
+        codigo = self.cleaned_data.get("codigo", "").strip()
+        if not codigo.isdigit():
+            raise forms.ValidationError("El codigo debe contener solo numeros.")
+        return codigo
 
 
 class PasswordResetRequestForm(forms.Form):
@@ -276,7 +309,7 @@ class ActualizarPerfilForm(forms.Form):
     )
     telefono = forms.CharField(
         label="Teléfono",
-        max_length=15,
+        max_length=10,
         required=True,
         widget=forms.TextInput(
             attrs={"class": "form-control", "placeholder": "Teléfono"}
@@ -313,8 +346,8 @@ class ActualizarPerfilForm(forms.Form):
         telefono = self.cleaned_data.get("telefono", "").strip()
         if not telefono:
             raise forms.ValidationError("El teléfono es obligatorio.")
-        if not re.match(r"^[\d\s\-\(\)+]+$", telefono):
-            raise forms.ValidationError("El teléfono solo debe contener números y caracteres válidos.")
+        if not re.match(r"^\d{10}$", telefono):
+            raise forms.ValidationError("El teléfono debe tener exactamente 10 números.")
         return telefono
 
     def clean_correo(self):

@@ -6,6 +6,17 @@
 {% block content %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <link rel="stylesheet" href="{% static 'registro_visita.css' %}">
+<style>
+	.realtime-invalid {
+		border-color: #dc2626 !important;
+		box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15) !important;
+	}
+
+	.realtime-valid {
+		border-color: #16a34a !important;
+		box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15) !important;
+	}
+</style>
 
 <div class="login-container">
 	<div class="login-card">
@@ -107,7 +118,7 @@
 						<label for="{{ form.telefono.id_for_label }}">
 							<i class="fas fa-phone"></i> Telefono
 						</label>
-						<input type="tel" name="telefono" id="id_telefono" class="form-control" maxlength="10" pattern="\d{1,10}" placeholder="Ingrese el número" required>
+						<input type="tel" name="telefono" id="id_telefono" class="form-control" maxlength="10" minlength="10" pattern="\d{10}" title="Ingrese exactamente 10 numeros" placeholder="Ingrese 10 numeros" value="{{ form.telefono.value|default:'' }}" required>
 						{% if form.telefono.errors %}
 							<span class="field-error">{{ form.telefono.errors|striptags }}</span>
 						{% endif %}
@@ -182,8 +193,151 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+	const form = document.querySelector('form[method="POST"]');
+	const nombreInput = document.querySelector('input[name="nombre"]');
+	const apellidoInput = document.querySelector('input[name="apellido"]');
+	const documentoInput = document.querySelector('input[name="documento"]');
+	const telefonoInput = document.querySelector('input[name="telefono"]');
+	const emailInput = document.querySelector('input[name="correo"]');
+	const roleInputs = document.querySelectorAll('input[name="rol"]');
 	const passwordInput = document.querySelector('input[name="password1"]');
+	const password2Input = document.querySelector('input[name="password2"]');
 	const requirementsDiv = document.getElementById('password-requirements');
+	const allowedInternalDomains = ['@sena.edu.co'];
+
+	function getRealtimeErrorElement(field) {
+		if (!field) {
+			return null;
+		}
+
+		const formGroup = field.closest('.form-group');
+		if (!formGroup) {
+			return null;
+		}
+
+		let errorEl = formGroup.querySelector('.field-error.realtime-error');
+		if (!errorEl) {
+			errorEl = document.createElement('span');
+			errorEl.className = 'field-error realtime-error';
+			errorEl.style.display = 'none';
+			formGroup.appendChild(errorEl);
+		}
+
+		return errorEl;
+	}
+
+	function setFieldError(field, message) {
+		if (!field) {
+			return false;
+		}
+
+		const errorEl = getRealtimeErrorElement(field);
+		field.setCustomValidity(message || '');
+
+		if (errorEl) {
+			if (message) {
+				errorEl.textContent = message;
+				errorEl.style.display = 'block';
+				field.classList.add('realtime-invalid');
+				field.classList.remove('realtime-valid');
+			} else {
+				errorEl.textContent = '';
+				errorEl.style.display = 'none';
+				field.classList.remove('realtime-invalid');
+
+				const value = (field.value || '').trim();
+				if (value) {
+					field.classList.add('realtime-valid');
+				} else {
+					field.classList.remove('realtime-valid');
+				}
+			}
+		}
+
+		return !message;
+	}
+
+	function getSelectedRole() {
+		const selectedRole = document.querySelector('input[name="rol"]:checked');
+		return selectedRole ? selectedRole.value : '';
+	}
+
+	function validateNombreApellido(field, label, onBlur) {
+		if (!field) {
+			return true;
+		}
+
+		const value = (field.value || '').trim();
+		if (!value) {
+			return onBlur ? setFieldError(field, 'El ' + label + ' es obligatorio.') : setFieldError(field, '');
+		}
+
+		const regex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/;
+		if (!regex.test(value)) {
+			return setFieldError(field, 'El ' + label + ' solo debe contener letras.');
+		}
+
+		return setFieldError(field, '');
+	}
+
+	function validateDocumento(onBlur) {
+		if (!documentoInput) {
+			return true;
+		}
+
+		const value = (documentoInput.value || '').trim();
+		if (!value) {
+			return onBlur ? setFieldError(documentoInput, 'El numero de documento es obligatorio.') : setFieldError(documentoInput, '');
+		}
+
+		if (!/^\d+$/.test(value)) {
+			return setFieldError(documentoInput, 'El documento solo debe contener numeros.');
+		}
+
+		return setFieldError(documentoInput, '');
+	}
+
+	function validateTelefono(onBlur) {
+		if (!telefonoInput) {
+			return true;
+		}
+
+		const value = (telefonoInput.value || '').trim();
+		if (!value) {
+			return onBlur ? setFieldError(telefonoInput, 'El telefono es obligatorio.') : setFieldError(telefonoInput, '');
+		}
+
+		if (!/^\d{10}$/.test(value)) {
+			return setFieldError(telefonoInput, 'El telefono debe tener exactamente 10 numeros.');
+		}
+
+		return setFieldError(telefonoInput, '');
+	}
+
+	function validateEmailByRole(onBlur) {
+		if (!emailInput) {
+			return true;
+		}
+
+		const role = getSelectedRole();
+		const email = (emailInput.value || '').trim().toLowerCase();
+
+		if (!email) {
+			return onBlur ? setFieldError(emailInput, 'El correo es obligatorio.') : setFieldError(emailInput, '');
+		}
+
+		if (role === 'interno') {
+			const isValidDomain = allowedInternalDomains.some(function(domain) {
+				return email.endsWith(domain);
+			});
+
+			if (!isValidDomain) {
+				return setFieldError(emailInput, 'Para usuario interno, use un correo @sena.edu.co.');
+			}
+		}
+
+		return setFieldError(emailInput, '');
+	}
 	
 	if (passwordInput && requirementsDiv) {
 		// Mostrar requisitos cuando el usuario hace foco en el campo
@@ -196,19 +350,35 @@ document.addEventListener('DOMContentLoaded', function() {
 			const password = this.value;
 			
 			// Validar longitud mínima
-			validateRequirement('req-length', password.length >= 8);
+			const lengthValid = password.length >= 8;
+			validateRequirement('req-length', lengthValid);
 			
 			// Validar mayúscula
-			validateRequirement('req-uppercase', /[A-Z]/.test(password));
+			const uppercaseValid = /[A-Z]/.test(password);
+			validateRequirement('req-uppercase', uppercaseValid);
 			
 			// Validar minúscula
-			validateRequirement('req-lowercase', /[a-z]/.test(password));
+			const lowercaseValid = /[a-z]/.test(password);
+			validateRequirement('req-lowercase', lowercaseValid);
 			
 			// Validar número
-			validateRequirement('req-number', /\d/.test(password));
+			const numberValid = /\d/.test(password);
+			validateRequirement('req-number', numberValid);
 			
 			// Validar carácter especial
-			validateRequirement('req-special', /[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\;'`~]/.test(password));
+			const specialValid = /[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\;'`~]/.test(password);
+			validateRequirement('req-special', specialValid);
+
+			const allValid = lengthValid && uppercaseValid && lowercaseValid && numberValid && specialValid;
+			if (!password) {
+				setFieldError(passwordInput, '');
+			} else if (!allValid) {
+				setFieldError(passwordInput, 'La contrasena no cumple los requisitos de seguridad.');
+			} else {
+				setFieldError(passwordInput, '');
+			}
+
+			validatePassword2(false);
 		});
 	}
 	
@@ -242,7 +412,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	// Toggle mostrar/ocultar contraseña - Campo 2
 	const togglePassword2 = document.getElementById('togglePassword2');
-	const password2Input = document.querySelector('input[name="password2"]');
 	
 	if (togglePassword2 && password2Input) {
 		togglePassword2.addEventListener('click', function() {
@@ -252,6 +421,84 @@ document.addEventListener('DOMContentLoaded', function() {
 			// Cambiar icono
 			this.classList.toggle('fa-eye');
 			this.classList.toggle('fa-eye-slash');
+		});
+	}
+
+	function validatePassword2(onBlur) {
+		if (!password2Input) {
+			return true;
+		}
+
+		const password1 = (passwordInput && passwordInput.value) ? passwordInput.value : '';
+		const password2 = (password2Input.value || '').trim();
+
+		if (!password2) {
+			return onBlur ? setFieldError(password2Input, 'Debe confirmar la contrasena.') : setFieldError(password2Input, '');
+		}
+
+		if (password1 && password1 !== password2) {
+			return setFieldError(password2Input, 'Las contrasenas no coinciden.');
+		}
+
+		return setFieldError(password2Input, '');
+	}
+
+	if (nombreInput) {
+		nombreInput.addEventListener('input', function() { validateNombreApellido(nombreInput, 'nombre', false); });
+		nombreInput.addEventListener('blur', function() { validateNombreApellido(nombreInput, 'nombre', true); });
+	}
+
+	if (apellidoInput) {
+		apellidoInput.addEventListener('input', function() { validateNombreApellido(apellidoInput, 'apellido', false); });
+		apellidoInput.addEventListener('blur', function() { validateNombreApellido(apellidoInput, 'apellido', true); });
+	}
+
+	if (documentoInput) {
+		documentoInput.addEventListener('input', function() { validateDocumento(false); });
+		documentoInput.addEventListener('blur', function() { validateDocumento(true); });
+	}
+
+	if (telefonoInput) {
+		telefonoInput.addEventListener('input', function() { validateTelefono(false); });
+		telefonoInput.addEventListener('blur', function() { validateTelefono(true); });
+	}
+
+	if (emailInput) {
+		emailInput.addEventListener('input', function() { validateEmailByRole(false); });
+		emailInput.addEventListener('blur', function() { validateEmailByRole(true); });
+	}
+
+	roleInputs.forEach(function(roleInput) {
+		roleInput.addEventListener('change', function() { validateEmailByRole(false); });
+	});
+
+	if (passwordInput) {
+		passwordInput.addEventListener('blur', function() {
+			if (!passwordInput.value) {
+				setFieldError(passwordInput, 'La contrasena es obligatoria.');
+			}
+		});
+	}
+
+	if (password2Input) {
+		password2Input.addEventListener('input', function() { validatePassword2(false); });
+		password2Input.addEventListener('blur', function() { validatePassword2(true); });
+	}
+
+	if (form) {
+		form.addEventListener('submit', function(event) {
+			const validaciones = [
+				validateNombreApellido(nombreInput, 'nombre', true),
+				validateNombreApellido(apellidoInput, 'apellido', true),
+				validateDocumento(true),
+				validateTelefono(true),
+				validateEmailByRole(true),
+				validatePassword2(true),
+			];
+
+			if (validaciones.some(function(estado) { return !estado; })) {
+				event.preventDefault();
+			}
 		});
 	}
 });

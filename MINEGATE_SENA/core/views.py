@@ -1,9 +1,11 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect
+from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db.models import Q
 from django.db.utils import OperationalError, ProgrammingError
 from django.urls import reverse
+from django.utils import timezone
 from PIL import Image, ImageOps, UnidentifiedImageError
 from datetime import date, timedelta
 import calendar
@@ -140,7 +142,10 @@ def index(request):
 
     try:
         contenido_pagina = ContenidoPaginaInformativa.obtener()
-        elementos_galeria = ElementoGaleriaInformativa.objects.filter(activo=True)
+        # Evita inconsistencias visuales si existen filas sin archivo asociado.
+        elementos_galeria = ElementoGaleriaInformativa.objects.filter(
+            activo=True
+        ).exclude(archivo="")
         elementos_encabezado = ElementoEncabezadoInformativo.objects.filter(activo=True)
         if not elementos_encabezado.exists():
             elementos_encabezado = _construir_slides_legacy(contenido_pagina)
@@ -160,12 +165,12 @@ def index(request):
     )
 
 
-@login_required(login_url='usuarios:login')
+@login_required(login_url="usuarios:login")
 def panel_administrativo(request):
     return _render_panel_administrativo(request, seccion_activa="panel_principal")
 
 
-@login_required(login_url='usuarios:login')
+@login_required(login_url="usuarios:login")
 def panel_administrativo_seccion(request, seccion):
     secciones_validas = {
         "panel_principal",
@@ -193,7 +198,7 @@ def _agregar_contexto_calendario(context):
 
     cal = calendar.Calendar(firstweekday=6)
     month_days = list(cal.itermonthdates(year, month))
-    weeks_raw = [month_days[i:i + 7] for i in range(0, len(month_days), 7)]
+    weeks_raw = [month_days[i : i + 7] for i in range(0, len(month_days), 7)]
 
     weeks = []
     for week in weeks_raw:
@@ -274,24 +279,29 @@ def _render_panel_administrativo(request, seccion_activa="panel_principal"):
     # Verificar que el usuario esté activo (excepto superusuarios)
     if not request.user.is_superuser:
         if not request.user.is_active:
-            messages.error(request, "Tu cuenta está inactiva. Contacta al administrador.")
+            messages.error(
+                request, "Tu cuenta está inactiva. Contacta al administrador."
+            )
             return redirect("usuarios:login")
 
     # Redirigir instructores a sus paneles correspondientes
-    if request.user.groups.filter(name='coordinador').exists():
-        return redirect('coordinador:panel')
-    if request.user.groups.filter(name='instructor_interno').exists():
-        return redirect('panel_instructor_interno:panel')
-    if request.user.groups.filter(name='instructor_externo').exists():
-        return redirect('panel_instructor_externo:panel')
+    if request.user.groups.filter(name="coordinador").exists():
+        return redirect("coordinador:panel")
+    if request.user.groups.filter(name="instructor_interno").exists():
+        return redirect("panel_instructor_interno:panel")
+    if request.user.groups.filter(name="instructor_externo").exists():
+        return redirect("panel_instructor_externo:panel")
 
     if not (request.user.is_superuser or request.user.is_staff):
-        messages.error(request, "No tienes permisos para acceder al panel administrativo.")
+        messages.error(
+            request, "No tienes permisos para acceder al panel administrativo."
+        )
         return redirect("core:index")
 
     context = {
         "es_superusuario": request.user.is_superuser,
         "perfil": getattr(request.user, "perfil", None),
+        "perfil_panel": getattr(request.user, "perfil", None),
         "seccion_activa": seccion_activa,
     }
 
@@ -412,6 +422,11 @@ def _agregar_contexto_pagina_informativa(request, context):
     form_slide = ElementoEncabezadoInformativoForm(instance=slide_en_edicion)
     form_elemento = ElementoGaleriaInformativaForm(instance=galeria_en_edicion)
 
+    destino_gpi = reverse(
+        "core:panel_administrativo_seccion",
+        kwargs={"seccion": "gestion_pagina_informativa"},
+    )
+
     if request.method == "POST":
         accion = request.POST.get("accion")
 
@@ -429,10 +444,11 @@ def _agregar_contexto_pagina_informativa(request, context):
                     request,
                     "Configuración general actualizada correctamente.",
                 )
-                return redirect(
+                destino = reverse(
                     "core:panel_administrativo_seccion",
-                    seccion="gestion_pagina_informativa",
+                    kwargs={"seccion": "gestion_pagina_informativa"},
                 )
+                return redirect(f"{destino}?recargar={int(timezone.now().timestamp())}")
             errores = []
             for campo, lista in form_contenido.errors.items():
                 nombre = "general" if campo == "__all__" else campo
@@ -446,9 +462,15 @@ def _agregar_contexto_pagina_informativa(request, context):
             slide_id = request.POST.get("slide_id")
             instancia_slide = None
             if slide_id:
-                instancia_slide = get_object_or_404(
-                    ElementoEncabezadoInformativo, pk=slide_id
-                )
+                instancia_slide = ElementoEncabezadoInformativo.objects.filter(
+                    pk=slide_id
+                ).first()
+                if not instancia_slide:
+                    messages.warning(
+                        request,
+                        "La diapositiva que intentas editar ya no existe. Recarga la sección y vuelve a intentar.",
+                    )
+                    return redirect(f"{destino_gpi}?abrir=encabezado")
 
             form_contenido = ContenidoPaginaInformativaForm(instance=contenido)
             form_slide = ElementoEncabezadoInformativoForm(
@@ -502,38 +524,53 @@ def _agregar_contexto_pagina_informativa(request, context):
                                 "La diapositiva se guardó, pero no se pudo aplicar el ajuste de recorte.",
                             )
 
-                    messages.success(request, "Diapositiva del encabezado guardada correctamente.")
-                    destino = reverse(
-                        "core:panel_administrativo_seccion",
-                        kwargs={"seccion": "gestion_pagina_informativa"},
+                    messages.success(
+                        request, "Diapositiva del encabezado guardada correctamente."
                     )
-                    return redirect(f"{destino}?abrir=encabezado&enfocar=gpi-encabezado-lista")
+                    return redirect(
+                        f"{destino_gpi}?abrir=encabezado&enfocar=gpi-encabezado-lista&recargar={int(timezone.now().timestamp())}"
+                    )
             errores = []
             for campo, lista in form_slide.errors.items():
                 nombre = "encabezado" if campo == "__all__" else campo
                 errores.append(f"{nombre}: {', '.join(lista)}")
             messages.error(
                 request,
-                "No se pudo guardar la diapositiva del encabezado. " + " | ".join(errores),
+                "No se pudo guardar la diapositiva del encabezado. "
+                + " | ".join(errores),
             )
 
         elif accion == "eliminar_slide":
             slide_id = request.POST.get("slide_id")
-            slide = get_object_or_404(ElementoEncabezadoInformativo, pk=slide_id)
+            slide = ElementoEncabezadoInformativo.objects.filter(pk=slide_id).first()
+            if not slide:
+                messages.warning(
+                    request,
+                    "La diapositiva que intentas eliminar ya no existe.",
+                )
+                return redirect(f"{destino_gpi}?abrir=encabezado")
             slide.delete()
-            messages.success(request, "Diapositiva del encabezado eliminada correctamente.")
-            abrir_destino = request.POST.get("abrir_seccion") or "encabezado"
-            destino = reverse(
-                "core:panel_administrativo_seccion",
-                kwargs={"seccion": "gestion_pagina_informativa"},
+            messages.success(
+                request, "Diapositiva del encabezado eliminada correctamente."
             )
-            return redirect(f"{destino}?abrir={abrir_destino}&enfocar=gpi-encabezado-lista")
+            abrir_destino = request.POST.get("abrir_seccion") or "encabezado"
+            return redirect(
+                f"{destino_gpi}?abrir={abrir_destino}&enfocar=gpi-encabezado-lista&recargar={int(timezone.now().timestamp())}"
+            )
 
         elif accion == "guardar_elemento":
             elemento_id = request.POST.get("elemento_id")
             instancia = None
             if elemento_id:
-                instancia = get_object_or_404(ElementoGaleriaInformativa, pk=elemento_id)
+                instancia = ElementoGaleriaInformativa.objects.filter(
+                    pk=elemento_id
+                ).first()
+                if not instancia:
+                    messages.warning(
+                        request,
+                        "El elemento de galería que intentas editar ya no existe. Recarga la sección y vuelve a intentar.",
+                    )
+                    return redirect(f"{destino_gpi}?abrir=galeria")
 
             form_contenido = ContenidoPaginaInformativaForm(instance=contenido)
             form_slide = ElementoEncabezadoInformativoForm(instance=slide_en_edicion)
@@ -548,7 +585,9 @@ def _agregar_contexto_pagina_informativa(request, context):
                     request.POST.get("confirmar_reemplazo_galeria") == "1"
                 )
 
-                conflictos = ElementoGaleriaInformativa.objects.filter(orden=orden_objetivo)
+                conflictos = ElementoGaleriaInformativa.objects.filter(
+                    orden=orden_objetivo
+                )
                 if instancia:
                     conflictos = conflictos.exclude(pk=instancia.pk)
 
@@ -574,7 +613,8 @@ def _agregar_contexto_pagina_informativa(request, context):
 
                     if (
                         "archivo" in request.FILES
-                        and elemento_guardado.tipo == ElementoGaleriaInformativa.TIPO_IMAGEN
+                        and elemento_guardado.tipo
+                        == ElementoGaleriaInformativa.TIPO_IMAGEN
                         and elemento_guardado.archivo
                     ):
                         resultado_recorte = _aplicar_recorte_desde_request(
@@ -592,11 +632,9 @@ def _agregar_contexto_pagina_informativa(request, context):
                         request,
                         "Elemento de galería guardado correctamente.",
                     )
-                    destino = reverse(
-                        "core:panel_administrativo_seccion",
-                        kwargs={"seccion": "gestion_pagina_informativa"},
+                    return redirect(
+                        f"{destino_gpi}?abrir=galeria&enfocar=gpi-galeria-lista&recargar={int(timezone.now().timestamp())}"
                     )
-                    return redirect(f"{destino}?abrir=galeria&enfocar=gpi-galeria-lista")
             errores = []
             for campo, lista in form_elemento.errors.items():
                 nombre = "galería" if campo == "__all__" else campo
@@ -608,15 +646,23 @@ def _agregar_contexto_pagina_informativa(request, context):
 
         elif accion == "eliminar_elemento":
             elemento_id = request.POST.get("elemento_id")
-            elemento = get_object_or_404(ElementoGaleriaInformativa, pk=elemento_id)
+            elemento = ElementoGaleriaInformativa.objects.filter(pk=elemento_id).first()
+            if not elemento:
+                messages.warning(
+                    request,
+                    "El elemento de galería que intentas eliminar ya no existe.",
+                )
+                return redirect(f"{destino_gpi}?abrir=galeria")
             elemento.delete()
             messages.success(request, "Elemento de galería eliminado correctamente.")
             abrir_destino = request.POST.get("abrir_seccion") or "galeria"
-            destino = reverse(
-                "core:panel_administrativo_seccion",
-                kwargs={"seccion": "gestion_pagina_informativa"},
+            return redirect(
+                f"{destino_gpi}?abrir={abrir_destino}&enfocar=gpi-galeria-lista&recargar={int(timezone.now().timestamp())}"
             )
-            return redirect(f"{destino}?abrir={abrir_destino}&enfocar=gpi-galeria-lista")
+
+    # Refresca listas desde BD para evitar que el render use datos antiguos.
+    elementos_encabezado = list(ElementoEncabezadoInformativo.objects.all())
+    elementos_galeria = list(ElementoGaleriaInformativa.objects.all())
 
     context.update(
         {
@@ -629,10 +675,12 @@ def _agregar_contexto_pagina_informativa(request, context):
             "galeria_en_edicion": galeria_en_edicion,
             "abrir_seccion": abrir_seccion,
             "slide_base_preview": (
-                slide_en_edicion or (elementos_encabezado[0] if elementos_encabezado else None)
+                slide_en_edicion
+                or (elementos_encabezado[0] if elementos_encabezado else None)
             ),
             "galeria_base_preview": (
-                galeria_en_edicion or (elementos_galeria[0] if elementos_galeria else None)
+                galeria_en_edicion
+                or (elementos_galeria[0] if elementos_galeria else None)
             ),
         }
     )
@@ -673,14 +721,47 @@ def rechazar_usuario(request, usuario_id):
 
 def protocolos(request):
     """Renderiza la página de Protocolos de Seguridad."""
-    return render(request, 'protocolos.html')
+    return render(request, "protocolos.html")
 
 
 def visitas(request):
     """Renderiza la página de Registro de Visitas."""
-    return render(request, 'core/visitas.html')
+    return render(request, "core/visitas.html")
 
 
 def error_404(request, exception=None):
     """Maneja errores 404 - Página no encontrada"""
-    return render(request, '404.html', status=404)
+    return render(request, "404.html", status=404)
+
+
+@login_required(login_url="usuarios:login")
+@user_passes_test(es_superusuario, login_url="core:panel_administrativo")
+def api_galeria_informativa(request):
+    elementos = ElementoGaleriaInformativa.objects.all().order_by("orden", "id")
+    payload = []
+
+    for item in elementos:
+        archivo_url = ""
+        if item.archivo:
+            try:
+                archivo_url = (
+                    f"{item.archivo.url}?v={int(item.actualizado_en.timestamp())}"
+                )
+            except (ValueError, OSError, AttributeError):
+                archivo_url = ""
+
+        payload.append(
+            {
+                "id": item.id,
+                "tipo": item.tipo,
+                "tipo_display": item.get_tipo_display(),
+                "titulo": item.titulo or "",
+                "descripcion": item.descripcion or "",
+                "orden": item.orden,
+                "activo": item.activo,
+                "mime": item.mime_type,
+                "archivo_url": archivo_url,
+            }
+        )
+
+    return JsonResponse({"items": payload})

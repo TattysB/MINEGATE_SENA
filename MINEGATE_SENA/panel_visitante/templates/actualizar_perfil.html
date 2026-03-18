@@ -10,7 +10,7 @@
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 	<link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
-<body style="background-color: #f8f9fa;">
+<body>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <style>
 	:root {
@@ -18,21 +18,74 @@
 		--sena-verde-oscuro: #008c00;
 		--card-shadow: 0 4px 20px rgba(0,0,0,0.08);
 	}
+
+	body {
+		margin: 0;
+		min-height: 100vh;
+		background:
+			radial-gradient(circle at 8% 12%, rgba(57, 169, 0, 0.18), transparent 34%),
+			radial-gradient(circle at 92% 20%, rgba(6, 95, 70, 0.12), transparent 36%),
+			#edf2f7;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 20px;
+	}
+
+	{% if embed_mode %}
+	body {
+		min-height: 0;
+		background: transparent;
+		display: block;
+		padding: 0;
+	}
+	{% endif %}
 	
 	.perfil-container {
-		max-width: 900px;
-		margin: 2rem auto;
-		padding: 0 1rem;
+		width: min(980px, 100%);
 	}
+
+	{% if embed_mode %}
+	.perfil-container {
+		width: 100%;
+	}
+	{% endif %}
+
+	.perfil-shell {
+		border-radius: 20px;
+		border: 1px solid rgba(255, 255, 255, 0.45);
+		background: rgba(249, 252, 255, 0.72);
+		backdrop-filter: blur(8px);
+		box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+		overflow: hidden;
+		animation: emergerPerfil 0.28s ease;
+	}
+
+	{% if embed_mode %}
+	.perfil-shell {
+		border: none;
+		border-radius: 0;
+		background: transparent;
+		backdrop-filter: none;
+		box-shadow: none;
+		animation: none;
+	}
+	{% endif %}
 	
 	.perfil-header {
 		background: linear-gradient(135deg, var(--sena-verde) 0%, var(--sena-verde-oscuro) 100%);
 		color: white;
 		padding: 2rem;
-		border-radius: 16px 16px 0 0;
-		box-shadow: var(--card-shadow);
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 1rem;
 	}
 	
+	.perfil-header-main {
+		max-width: calc(100% - 60px);
+	}
+
 	.perfil-header h1 {
 		font-size: 1.8rem;
 		font-weight: 800;
@@ -46,10 +99,37 @@
 	
 	.perfil-card {
 		background: white;
-		border-radius: 0 0 16px 16px;
-		box-shadow: var(--card-shadow);
+		border-radius: 0;
+		box-shadow: none;
 		padding: 2rem;
-		margin-bottom: 2rem;
+		max-height: calc(100vh - 170px);
+		overflow: auto;
+	}
+
+	{% if embed_mode %}
+	.perfil-card {
+		max-height: none;
+	}
+	{% endif %}
+
+	.btn-close-float {
+		width: 38px;
+		height: 38px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 999px;
+		border: 1px solid rgba(255, 255, 255, 0.45);
+		background: rgba(255, 255, 255, 0.16);
+		color: #fff;
+		text-decoration: none;
+		transition: transform 0.2s ease, background-color 0.2s ease;
+	}
+
+	.btn-close-float:hover {
+		color: #fff;
+		background: rgba(255, 255, 255, 0.28);
+		transform: scale(1.06);
 	}
 	
 	.section-divider {
@@ -161,6 +241,13 @@
 		display: flex;
 		align-items: center;
 		gap: 0.75rem;
+		font-weight: 600;
+		box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+	}
+
+	.alert i {
+		font-size: 1rem;
+		min-width: 18px;
 	}
 	
 	.alert-success {
@@ -173,6 +260,18 @@
 		background: #fee2e2;
 		color: #991b1b;
 		border-left: 4px solid #ef4444;
+	}
+
+	.alert-warning {
+		background: #fef3c7;
+		color: #92400e;
+		border-left: 4px solid #f59e0b;
+	}
+
+	.alert-info {
+		background: #e0f2fe;
+		color: #075985;
+		border-left: 4px solid #0ea5e9;
 	}
 	
 	.form-row {
@@ -233,8 +332,60 @@
 	.toggle-password:hover {
 		color: var(--sena-verde);
 	}
+
+	.realtime-invalid {
+		border-color: #dc2626 !important;
+		box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15) !important;
+	}
+
+	.realtime-valid {
+		border-color: #16a34a !important;
+		box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15) !important;
+	}
+
+	.realtime-error {
+		display: block;
+		margin-top: 0.4rem;
+		color: #dc2626;
+		font-size: 0.85rem;
+	}
+
+	@keyframes emergerPerfil {
+		from {
+			opacity: 0;
+			transform: translateY(12px) scale(0.98);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0) scale(1);
+		}
+	}
 	
 	@media (max-width: 768px) {
+		body {
+			padding: 0;
+		}
+
+		.perfil-shell {
+			width: 100%;
+			height: 100vh;
+			border-radius: 0;
+			border: none;
+		}
+
+		.perfil-header {
+			padding: 1.3rem 1rem;
+		}
+
+		.perfil-header h1 {
+			font-size: 1.35rem;
+		}
+
+		.perfil-card {
+			padding: 1rem;
+			max-height: calc(100vh - 135px);
+		}
+
 		.form-row {
 			grid-template-columns: 1fr;
 		}
@@ -254,18 +405,32 @@
 {% accessibility_widget %}
 
 <div class="perfil-container">
-	<div class="perfil-header">
-		<h1><i class="fas fa-user-edit"></i> Actualizar Mi Perfil</h1>
-		<p>{{ visitante.nombre }} {{ visitante.apellido }} - {{ visitante.get_tipo_documento_display }} {{ visitante.documento }}</p>
-	</div>
-	
-	<div class="perfil-card">
+	<div class="perfil-shell">
+		<div class="perfil-header">
+			<div class="perfil-header-main">
+				<h1><i class="fas fa-user-edit"></i> Actualizar Mi Perfil</h1>
+				<p>{{ visitante.nombre }} {{ visitante.apellido }} - {{ visitante.get_tipo_documento_display }} {{ visitante.documento }}</p>
+			</div>
+			{% if embed_mode %}
+			<button type="button" class="btn-close-float" aria-label="Cerrar y volver" onclick="cerrarPerfilEmbebido()">
+				<i class="fas fa-times"></i>
+			</button>
+			{% else %}
+			<a href="{{ volver_url }}" class="btn-close-float" aria-label="Cerrar y volver">
+				<i class="fas fa-times"></i>
+			</a>
+			{% endif %}
+		</div>
+		
+		<div class="perfil-card">
 		{% if messages %}
 			{% for message in messages %}
-				<div class="alert alert-{{ message.tags }}">
-					<i class="fas fa-{% if message.tags == 'success' %}check-circle{% else %}exclamation-circle{% endif %}"></i>
-					{{ message }}
-				</div>
+				{% with tags=message.tags %}
+					<div class="alert {% if 'error' in tags %}alert-danger{% elif 'success' in tags %}alert-success{% elif 'warning' in tags %}alert-warning{% else %}alert-info{% endif %}">
+						<i class="fas {% if 'success' in tags %}fa-check-circle{% elif 'error' in tags %}fa-triangle-exclamation{% elif 'warning' in tags %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}"></i>
+						<span>{{ message }}</span>
+					</div>
+				{% endwith %}
 			{% endfor %}
 		{% endif %}
 		
@@ -273,6 +438,8 @@
 		<form method="POST">
 			{% csrf_token %}
 			<input type="hidden" name="action" value="actualizar_datos">
+			<input type="hidden" name="tipo_documento" value="{{ visitante.tipo_documento }}">
+			{% if embed_mode %}<input type="hidden" name="embed" value="1">{% endif %}
 			
 			<div class="section-divider">
 				<h2><i class="fas fa-id-card"></i> Datos Personales</h2>
@@ -330,7 +497,7 @@
 			<div class="form-row">
 				<div class="form-group">
 					<label for="id_telefono">Teléfono</label>
-					<input type="tel" name="telefono" id="id_telefono" class="form-control" maxlength="10" pattern="\d{1,10}" placeholder="Ingrese el número" value="{{ form_perfil.telefono.value|default:'' }}" required>
+					<input type="tel" name="telefono" id="id_telefono" class="form-control" maxlength="10" minlength="10" pattern="\d{10}" title="Ingrese exactamente 10 números" placeholder="Ingrese 10 números" value="{{ form_perfil.telefono.value|default:'' }}" required>
 					{% if form_perfil.telefono.errors %}
 						<ul class="errorlist">
 							{% for error in form_perfil.telefono.errors %}
@@ -364,6 +531,7 @@
 		<form method="POST">
 			{% csrf_token %}
 			<input type="hidden" name="action" value="cambiar_contrasena">
+			{% if embed_mode %}<input type="hidden" name="embed" value="1">{% endif %}
 			
 			<div class="section-divider">
 				<h2><i class="fas fa-lock"></i> Cambiar Contraseña</h2>
@@ -372,6 +540,9 @@
 			
 			<div class="info-box">
 				<i class="fas fa-shield-alt"></i> La contraseña debe tener al menos 8 caracteres, incluyendo mayúsculas, minúsculas y números.
+			</div>
+			<div id="alerta-contrasena-igual" class="alert alert-danger" style="display: none;">
+				<i class="fas fa-exclamation-triangle"></i> La nueva contraseña no puede ser igual a la contraseña actual.
 			</div>
 			
 			<div class="form-group">
@@ -450,17 +621,156 @@
 				<button type="submit" class="btn-primary">
 					<i class="fas fa-key"></i> Cambiar Contraseña
 				</button>
-				<a href="javascript:history.back()" class="btn-secondary">
+				{% if embed_mode %}
+				<button type="button" class="btn-secondary" onclick="cerrarPerfilEmbebido()">
+					<i class="fas fa-arrow-left"></i> Cerrar
+				</button>
+				{% else %}
+				<a href="{{ volver_url }}" class="btn-secondary">
 					<i class="fas fa-arrow-left"></i> Volver
 				</a>
+				{% endif %}
 			</div>
 		</form>
+		</div>
 	</div>
 </div>
 
 <script>
+function cerrarPerfilEmbebido() {
+	if (window.parent && window.parent !== window) {
+		window.parent.postMessage({ type: 'cerrarModalActualizarPerfil' }, '*');
+		return;
+	}
+	window.location.href = '{{ volver_url }}';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+	const rolVisitante = '{{ visitante.rol|default:"" }}';
+	const allowedInternalDomains = ['@sena.edu.co'];
+
+	const formPerfil = document.querySelector('form input[name="action"][value="actualizar_datos"]')?.closest('form');
+	const nombreInput = document.querySelector('input[name="nombre"]');
+	const apellidoInput = document.querySelector('input[name="apellido"]');
+	const telefonoInput = document.querySelector('input[name="telefono"]');
+	const correoInput = document.querySelector('input[name="correo"]');
+
+	function getRealtimeErrorElement(field) {
+		if (!field) {
+			return null;
+		}
+
+		const formGroup = field.closest('.form-group');
+		if (!formGroup) {
+			return null;
+		}
+
+		let errorEl = formGroup.querySelector('.realtime-error');
+		if (!errorEl) {
+			errorEl = document.createElement('span');
+			errorEl.className = 'realtime-error';
+			errorEl.style.display = 'none';
+			formGroup.appendChild(errorEl);
+		}
+
+		return errorEl;
+	}
+
+	function setFieldError(field, message) {
+		if (!field) {
+			return false;
+		}
+
+		const errorEl = getRealtimeErrorElement(field);
+		field.setCustomValidity(message || '');
+
+		if (message) {
+			field.classList.add('realtime-invalid');
+			field.classList.remove('realtime-valid');
+			if (errorEl) {
+				errorEl.textContent = message;
+				errorEl.style.display = 'block';
+			}
+			return false;
+		}
+
+		field.classList.remove('realtime-invalid');
+		if ((field.value || '').trim()) {
+			field.classList.add('realtime-valid');
+		} else {
+			field.classList.remove('realtime-valid');
+		}
+
+		if (errorEl) {
+			errorEl.textContent = '';
+			errorEl.style.display = 'none';
+		}
+
+		return true;
+	}
+
+	function validateNombreApellido(field, label, onBlur) {
+		if (!field) {
+			return true;
+		}
+
+		const value = (field.value || '').trim();
+		if (!value) {
+			return onBlur ? setFieldError(field, 'El ' + label + ' es obligatorio.') : setFieldError(field, '');
+		}
+
+		if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(value)) {
+			return setFieldError(field, 'El ' + label + ' solo debe contener letras.');
+		}
+
+		return setFieldError(field, '');
+	}
+
+	function validateTelefono(onBlur) {
+		if (!telefonoInput) {
+			return true;
+		}
+
+		const value = (telefonoInput.value || '').trim();
+		if (!value) {
+			return onBlur ? setFieldError(telefonoInput, 'El telefono es obligatorio.') : setFieldError(telefonoInput, '');
+		}
+
+		if (!/^\d{10}$/.test(value)) {
+			return setFieldError(telefonoInput, 'El telefono debe tener exactamente 10 numeros.');
+		}
+
+		return setFieldError(telefonoInput, '');
+	}
+
+	function validateCorreo(onBlur) {
+		if (!correoInput) {
+			return true;
+		}
+
+		const value = (correoInput.value || '').trim().toLowerCase();
+		if (!value) {
+			return onBlur ? setFieldError(correoInput, 'El correo es obligatorio.') : setFieldError(correoInput, '');
+		}
+
+		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+			return setFieldError(correoInput, 'Ingrese un correo electronico valido.');
+		}
+
+		if (rolVisitante === 'interno') {
+			const isValidDomain = allowedInternalDomains.some(function(domain) {
+				return value.endsWith(domain);
+			});
+			if (!isValidDomain) {
+				return setFieldError(correoInput, 'Para usuario interno, use un correo @sena.edu.co.');
+			}
+		}
+
+		return setFieldError(correoInput, '');
+	}
+
 	const passwordInput = document.querySelector('input[name="nueva_contrasena"]');
+	const passwordConfirmarInput = document.querySelector('input[name="confirmar_contrasena"]');
 	const requirementsDiv = document.getElementById('password-requirements-perfil');
 	
 	if (passwordInput && requirementsDiv) {
@@ -474,25 +784,44 @@ document.addEventListener('DOMContentLoaded', function() {
 			const password = this.value;
 			
 			// Validar longitud mínima
-			validateRequirement('req-length-perfil', password.length >= 8);
+			const lengthValid = password.length >= 8;
+			validateRequirement('req-length-perfil', lengthValid);
 			
 			// Validar mayúscula
-			validateRequirement('req-uppercase-perfil', /[A-Z]/.test(password));
+			const uppercaseValid = /[A-Z]/.test(password);
+			validateRequirement('req-uppercase-perfil', uppercaseValid);
 			
 			// Validar minúscula
-			validateRequirement('req-lowercase-perfil', /[a-z]/.test(password));
+			const lowercaseValid = /[a-z]/.test(password);
+			validateRequirement('req-lowercase-perfil', lowercaseValid);
 			
 			// Validar número
-			validateRequirement('req-number-perfil', /\d/.test(password));
+			const numberValid = /\d/.test(password);
+			validateRequirement('req-number-perfil', numberValid);
 			
 			// Validar carácter especial
-			validateRequirement('req-special-perfil', /[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\;'`~]/.test(password));
+			const specialValid = /[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\;'`~]/.test(password);
+			validateRequirement('req-special-perfil', specialValid);
+
+			const allValid = lengthValid && uppercaseValid && lowercaseValid && numberValid && specialValid;
+			if (!password) {
+				setFieldError(passwordInput, '');
+			} else if (!allValid) {
+				setFieldError(passwordInput, 'La contrasena no cumple los requisitos de seguridad.');
+			} else {
+				setFieldError(passwordInput, '');
+			}
+
+			validateConfirmarContrasena(false);
+			validarContrasenaDistinta();
 		});
 	}
 	
 	// Toggle mostrar/ocultar contraseña - Contraseña Actual
 	const togglePasswordActual = document.getElementById('togglePasswordActual');
 	const passwordActualInput = document.querySelector('input[name="contrasena_actual"]');
+	const passwordForm = document.querySelector('form input[name="action"][value="cambiar_contrasena"]')?.closest('form');
+	const alertaContrasenaIgual = document.getElementById('alerta-contrasena-igual');
 	
 	if (togglePasswordActual && passwordActualInput) {
 		togglePasswordActual.addEventListener('click', function() {
@@ -522,7 +851,6 @@ document.addEventListener('DOMContentLoaded', function() {
 	
 	// Toggle mostrar/ocultar contraseña - Confirmar Contraseña
 	const togglePasswordConfirmar = document.getElementById('togglePasswordConfirmar');
-	const passwordConfirmarInput = document.querySelector('input[name="confirmar_contrasena"]');
 	
 	if (togglePasswordConfirmar && passwordConfirmarInput) {
 		togglePasswordConfirmar.addEventListener('click', function() {
@@ -532,6 +860,110 @@ document.addEventListener('DOMContentLoaded', function() {
 			// Cambiar icono
 			this.classList.toggle('fa-eye');
 			this.classList.toggle('fa-eye-slash');
+		});
+	}
+
+	function validarContrasenaDistinta() {
+		if (!passwordActualInput || !passwordNuevaInput || !alertaContrasenaIgual) {
+			return true;
+		}
+
+		const esIgual =
+			passwordActualInput.value.length > 0 &&
+			passwordNuevaInput.value.length > 0 &&
+			passwordActualInput.value === passwordNuevaInput.value;
+
+		alertaContrasenaIgual.style.display = esIgual ? 'block' : 'none';
+		if (esIgual) {
+			setFieldError(passwordNuevaInput, 'La nueva contrasena no puede ser igual a la actual.');
+		} else if (passwordNuevaInput && (passwordNuevaInput.value || '').trim()) {
+			if (!passwordNuevaInput.validationMessage || passwordNuevaInput.validationMessage === 'La nueva contrasena no puede ser igual a la actual.') {
+				setFieldError(passwordNuevaInput, '');
+			}
+		}
+		return !esIgual;
+	}
+
+	function validateConfirmarContrasena(onBlur) {
+		if (!passwordConfirmarInput) {
+			return true;
+		}
+
+		const nueva = (passwordNuevaInput && passwordNuevaInput.value) ? passwordNuevaInput.value : '';
+		const confirmar = (passwordConfirmarInput.value || '').trim();
+
+		if (!confirmar) {
+			return onBlur ? setFieldError(passwordConfirmarInput, 'Debe confirmar la nueva contrasena.') : setFieldError(passwordConfirmarInput, '');
+		}
+
+		if (nueva && nueva !== confirmar) {
+			return setFieldError(passwordConfirmarInput, 'Las contrasenas no coinciden.');
+		}
+
+		return setFieldError(passwordConfirmarInput, '');
+	}
+
+	if (passwordActualInput && passwordNuevaInput) {
+		passwordActualInput.addEventListener('input', validarContrasenaDistinta);
+		passwordNuevaInput.addEventListener('input', validarContrasenaDistinta);
+	}
+
+	if (passwordConfirmarInput) {
+		passwordConfirmarInput.addEventListener('input', function() {
+			validateConfirmarContrasena(false);
+		});
+		passwordConfirmarInput.addEventListener('blur', function() {
+			validateConfirmarContrasena(true);
+		});
+	}
+
+	if (nombreInput) {
+		nombreInput.addEventListener('input', function() { validateNombreApellido(nombreInput, 'nombre', false); });
+		nombreInput.addEventListener('blur', function() { validateNombreApellido(nombreInput, 'nombre', true); });
+	}
+
+	if (apellidoInput) {
+		apellidoInput.addEventListener('input', function() { validateNombreApellido(apellidoInput, 'apellido', false); });
+		apellidoInput.addEventListener('blur', function() { validateNombreApellido(apellidoInput, 'apellido', true); });
+	}
+
+	if (telefonoInput) {
+		telefonoInput.addEventListener('input', function() { validateTelefono(false); });
+		telefonoInput.addEventListener('blur', function() { validateTelefono(true); });
+	}
+
+	if (correoInput) {
+		correoInput.addEventListener('input', function() { validateCorreo(false); });
+		correoInput.addEventListener('blur', function() { validateCorreo(true); });
+	}
+
+	if (formPerfil) {
+		formPerfil.addEventListener('submit', function(e) {
+			const validaciones = [
+				validateNombreApellido(nombreInput, 'nombre', true),
+				validateNombreApellido(apellidoInput, 'apellido', true),
+				validateTelefono(true),
+				validateCorreo(true),
+			];
+
+			if (validaciones.some(function(estado) { return !estado; })) {
+				e.preventDefault();
+			}
+		});
+	}
+
+	if (passwordForm) {
+		passwordForm.addEventListener('submit', function(e) {
+			const validaConfirmacion = validateConfirmarContrasena(true);
+			if (!validaConfirmacion || !validarContrasenaDistinta()) {
+				e.preventDefault();
+				if (!validaConfirmacion) {
+					passwordConfirmarInput && passwordConfirmarInput.focus();
+					return;
+				}
+				alert('La nueva contraseña no puede ser igual a la contraseña actual.');
+				passwordNuevaInput.focus();
+			}
 		});
 	}
 	

@@ -1,4 +1,105 @@
 <div id="seccion-reportes" class="contenido-seccion" style="display:block;">
+  <style>
+    #seccion-reportes {
+      max-width: 100%;
+    }
+
+    .rp-tabla-card {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      max-width: 100%;
+    }
+
+    .rp-tabla-scroll {
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .rp-tabla {
+      width: 100%;
+      min-width: 0;
+      table-layout: fixed;
+      border-collapse: collapse;
+    }
+
+    .rp-tabla th,
+    .rp-tabla td {
+      white-space: normal;
+      vertical-align: middle;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      font-size: 13px;
+    }
+
+    .rp-tabla th {
+      line-height: 1.2;
+      word-break: normal;
+      overflow-wrap: anywhere;
+      hyphens: none;
+      vertical-align: middle;
+    }
+
+    .rp-tabla th:nth-child(1), .rp-tabla td:nth-child(1) { width: 6%; }
+    .rp-tabla th:nth-child(2), .rp-tabla td:nth-child(2) { width: 5%; }
+    .rp-tabla th:nth-child(3), .rp-tabla td:nth-child(3) { width: 14%; }
+    .rp-tabla th:nth-child(4), .rp-tabla td:nth-child(4) { width: 14%; }
+    .rp-tabla th:nth-child(5), .rp-tabla td:nth-child(5) { width: 10%; }
+    .rp-tabla th:nth-child(6), .rp-tabla td:nth-child(6) { width: 13%; }
+    .rp-tabla th:nth-child(7), .rp-tabla td:nth-child(7) { width: 8%; }
+    .rp-tabla th:nth-child(8), .rp-tabla td:nth-child(8) { width: 10%; }
+    .rp-tabla th:nth-child(9), .rp-tabla td:nth-child(9) { width: 8%; }
+    .rp-tabla th:nth-child(10), .rp-tabla td:nth-child(10) { width: 7%; }
+    .rp-tabla th:nth-child(11), .rp-tabla td:nth-child(11) { width: 110px; }
+
+    .rp-acciones-export {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 14px;
+    }
+
+    .rp-contador {
+      margin-left: auto;
+      background: #e5e7eb;
+      color: #111827;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .rp-celda-acciones {
+      text-align: center;
+      min-width: 110px;
+      white-space: nowrap !important;
+    }
+
+    .rp-acciones-fila {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 768px) {
+      .rp-tabla {
+        min-width: 920px;
+      }
+
+      .rp-contador {
+        margin-left: 0;
+      }
+
+      .rp-acciones-export {
+        align-items: stretch;
+      }
+    }
+  </style>
   <div style="padding:20px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:15px;">
       <h2 style="color:#1f2937;margin:0;display:flex;align-items:center;gap:10px;">
@@ -43,34 +144,35 @@
         </button>
       </form>
 
-      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px;">
+      <div class="rp-acciones-export">
         <a href="{% url 'reportes:descargar_pdf' %}{% if query_string_reportes %}?{{ query_string_reportes }}{% endif %}" style="padding:10px 14px;background:#dc2626;color:white;text-decoration:none;border-radius:8px;font-weight:600;display:inline-flex;align-items:center;gap:6px;">
           <i class="ri-file-pdf-line"></i> Descargar PDF
         </a>
         <a href="{% url 'reportes:descargar_excel' %}{% if query_string_reportes %}?{{ query_string_reportes }}{% endif %}" style="padding:10px 14px;background:#16a34a;color:white;text-decoration:none;border-radius:8px;font-weight:600;display:inline-flex;align-items:center;gap:6px;">
           <i class="ri-file-excel-2-line"></i> Descargar Excel
         </a>
-        <span style="margin-left:auto;background:#e5e7eb;color:#111827;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;">
+        <span class="rp-contador">
           Total: {{ total_filas_reportes }}
         </span>
       </div>
     </div>
 
-    <div style="background:white;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,0.1);overflow:hidden;">
-      <div style="overflow-x:auto;">
-        <table style="width:100%;border-collapse:collapse;">
+    <div class="rp-tabla-card">
+      <div class="rp-tabla-scroll">
+        <table class="rp-tabla">
           <thead>
             <tr style="background:#f3f4f6;">
               <th style="padding:12px 14px;text-align:left;">Tipo</th>
               <th style="padding:12px 14px;text-align:left;">ID</th>
-              <th style="padding:12px 14px;text-align:left;">Nombre/Programa</th>
+              <th style="padding:12px 14px;text-align:left;">Nombre /<br>Programa</th>
               <th style="padding:12px 14px;text-align:left;">Responsable</th>
-              <th style="padding:12px 14px;text-align:left;">Documento</th>
-              <th style="padding:12px 14px;text-align:left;">Correo</th>
-              <th style="padding:12px 14px;text-align:left;">Cantidad de visitantes</th>
-              <th style="padding:12px 14px;text-align:left;">Fecha Solicitud</th>
-              <th style="padding:12px 14px;text-align:left;">Fecha Visita</th>
+              <th style="padding:12px 14px;text-align:left;">Nro.<br>Documento</th>
+              <th style="padding:12px 14px;text-align:left;">Correo<br>electrónico</th>
+              <th style="padding:12px 14px;text-align:left;">Cantidad de<br>visitantes</th>
+              <th style="padding:12px 14px;text-align:left;">Fecha de<br>solicitud</th>
+              <th style="padding:12px 14px;text-align:left;">Fecha de<br>visita</th>
               <th style="padding:12px 14px;text-align:left;">Estado</th>
+              <th style="padding:12px 14px;text-align:center;">Descargar</th>
             </tr>
           </thead>
           <tbody>
@@ -86,10 +188,20 @@
               <td style="padding:10px 14px;">{{ fila.fecha_solicitud|date:'d/m/Y H:i' }}</td>
               <td style="padding:10px 14px;">{% if fila.fecha_visita %}{{ fila.fecha_visita|date:'d/m/Y' }}{% else %}-{% endif %}</td>
               <td style="padding:10px 14px;">{{ fila.estado }}</td>
+              <td class="rp-celda-acciones" style="padding:10px 14px;">
+                <div class="rp-acciones-fila">
+                  <a href="{% url 'reportes:descargar_pdf_individual' fila.tipo|lower fila.id %}" title="Descargar PDF" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:6px;border:1px solid #dc2626;color:#dc2626;text-decoration:none;">
+                    <i class="ri-file-pdf-line"></i>
+                  </a>
+                  <a href="{% url 'reportes:descargar_excel_individual' fila.tipo|lower fila.id %}" title="Descargar Excel" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:6px;border:1px solid #16a34a;color:#16a34a;text-decoration:none;">
+                    <i class="ri-file-excel-2-line"></i>
+                  </a>
+                </div>
+              </td>
             </tr>
             {% empty %}
             <tr>
-              <td colspan="10" style="padding:30px;text-align:center;color:#6b7280;">No hay visitas para los filtros seleccionados.</td>
+              <td colspan="11" style="padding:30px;text-align:center;color:#6b7280;">No hay visitas para los filtros seleccionados.</td>
             </tr>
             {% endfor %}
           </tbody>
@@ -113,7 +225,32 @@
       if (!form || form.dataset.ajaxBound === '1') return;
       form.dataset.ajaxBound = '1';
 
+      const desdeInput = form.querySelector('input[name="fecha_desde"]');
+      const hastaInput = form.querySelector('input[name="fecha_hasta"]');
+
+      const syncFechaHastaMin = () => {
+        if (!desdeInput || !hastaInput) return;
+        hastaInput.min = desdeInput.value || '';
+
+        if (desdeInput.value && hastaInput.value && hastaInput.value < desdeInput.value) {
+          hastaInput.value = desdeInput.value;
+        }
+      };
+
+      if (desdeInput && hastaInput) {
+        syncFechaHastaMin();
+        desdeInput.addEventListener('change', syncFechaHastaMin);
+        hastaInput.addEventListener('change', syncFechaHastaMin);
+      }
+
       form.addEventListener('submit', async function (event) {
+        if (desdeInput && hastaInput && desdeInput.value && hastaInput.value && hastaInput.value < desdeInput.value) {
+          event.preventDefault();
+          hastaInput.value = desdeInput.value;
+          hastaInput.reportValidity();
+          return;
+        }
+
         event.preventDefault();
         const params = new URLSearchParams(new FormData(form));
         const url = `${form.action}?${params.toString()}`;

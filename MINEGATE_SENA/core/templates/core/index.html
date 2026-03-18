@@ -12,6 +12,7 @@
 
 <section id="hero-section" class="hero-section">
     <link rel="stylesheet" href="{% static 'core/css/index_stl.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'chatbot/css/minero_chatbot.css' %}?v=2">
 
     {% block extra_css %}
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -159,26 +160,10 @@
             </div>
         </div>
 
-        <!-- Alerta Importante -->
-        <div class="important-note shadow-sm p-4 rounded-4"
-            style="background: rgba(63, 165, 0, 0.05); border: 1px solid rgba(63, 165, 0, 0.1);">
-            <div class="d-flex align-items-center flex-column flex-md-row gap-4">
-                <div class="important-icon-box">
-                    <i class="fas fa-triangle-exclamation"></i>
-                </div>
-                <div class="text-center text-md-start">
-                    <h4 class="text-dark fw-bold mb-2">Importante</h4>
-                    <p class="text-secondary mb-0">
-                        Todos los visitantes deben completar el formulario de salud y firmar el consentimiento informado
-                        antes de ingresar a la mina didáctica. La seguridad de nuestros visitantes es nuestra máxima
-                        prioridad.
-                    </p>
-                </div>
-            </div>
+        <div class="my-4 my-md-5" aria-hidden="true">
+            <div class="mx-auto" style="max-width: 1140px; border-top: 1px solid #d9dee3;"></div>
         </div>
-    </div>
-</section>
-<section>
+
     <!-- Publicidad / Características -->
     <div class="container mt-5 mb-4">
         <div class="row g-4">
@@ -427,5 +412,58 @@
         </div>
     </section>
 
+
+    <section id="modulo-ayuda-chatbot" aria-label="Modulo de ayuda">
+        <div id="mineroChatbot" class="minero-chatbot" aria-live="polite">
+            <button type="button" class="minero-chatbot-toggle" data-chatbot-toggle>
+                <i class="fa-solid fa-comments"></i>
+                <span>Ayuda?</span>
+            </button>
+
+            <div class="minero-chatbot-window" role="dialog" aria-label="Chat Bot Minero">
+                <div class="minero-chatbot-header">
+                    <div class="minero-chatbot-title">
+                        <i class="fa-solid fa-helmet-safety"></i>
+                        <div>
+                            <strong>Chat Bot Minero</strong>
+                        </div>
+                    </div>
+                    <button type="button" class="minero-chatbot-close" data-chatbot-close aria-label="Cerrar">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <div class="minero-chatbot-body" data-chatbot-body>
+                    <div class="minero-msg bot">
+                        Hola, soy Chat Bot Minero. Te ayudo con dudas sobre SICAM, visitas,
+                        seguridad, calendario y documentos.
+                    </div>
+                    <div class="minero-chatbot-chips" data-chatbot-chips>
+                        <button type="button" class="minero-chatbot-chip">Como registro una visita?</button>
+                        <button type="button" class="minero-chatbot-chip">Que requisitos de seguridad hay?</button>
+                        <button type="button" class="minero-chatbot-chip">Como entreno el chatbot?</button>
+                    </div>
+                </div>
+
+                <div class="minero-chatbot-footer">
+                    <form class="minero-chatbot-form" data-chatbot-form>
+                        <input
+                            type="text"
+                            class="minero-chatbot-input"
+                            data-chatbot-input
+                            placeholder="Escribe tu pregunta..."
+                            autocomplete="off"
+                            maxlength="240"
+                        >
+                        <button class="minero-chatbot-send" type="submit" aria-label="Enviar">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="{% static 'chatbot/js/minero_chatbot.js' %}?v=2"></script>
 
     {% endblock content %}

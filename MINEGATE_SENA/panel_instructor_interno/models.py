@@ -1,3 +1,4 @@
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -15,7 +16,8 @@ class Programa(models.Model):
     )
     descripcion = models.TextField(
         blank=True,
-        verbose_name='Descripción'
+        verbose_name='Descripción',
+        null=True
     )
     activo = models.BooleanField(
         default=True,
@@ -70,8 +72,12 @@ class Ficha(models.Model):
         verbose_name='Jornada'
     )
     cantidad_aprendices = models.PositiveIntegerField(
-        default=0,
-        verbose_name='Cantidad de Aprendices'
+        default=1,
+        verbose_name='Cantidad de Aprendices',
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(100),
+        ],
     )
     activa = models.BooleanField(
         default=True,
@@ -177,6 +183,25 @@ class Aprendiz(models.Model):
         ],
         default='activo',
         verbose_name='Estado'
+    )
+    
+    # Estado de documentos para seguimiento en visitas
+    estado_doc = models.CharField(
+        max_length=20,
+        choices=[
+            ('pendiente', 'Pendiente de revisión'),
+            ('aprobado', 'Documentos aprobados'),
+            ('rechazado', 'Documentos rechazados'),
+        ],
+        default='pendiente',
+        verbose_name='Estado de Documentos'
+    )
+    
+    observaciones_doc = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name='Observaciones sobre Documentos',
+        help_text='Observaciones del revisor sobre los documentos del aprendiz'
     )
     
     fecha_creacion = models.DateTimeField(auto_now_add=True)

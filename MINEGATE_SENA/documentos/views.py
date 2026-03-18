@@ -4,9 +4,129 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.clickjacking import xframe_options_exempt
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+from django.conf import settings
+from django.urls import reverse
+from django.utils import timezone
 from visitaInterna.models import VisitaInterna, AsistenteVisitaInterna
 from visitaExterna.models import VisitaExterna, AsistenteVisitaExterna
 from .models import Documento, DocumentoSubidoAsistente
+
+
+def _get_docsubido_aprendiz_model():
+    from .models import DocumentoSubidoAprendiz
+
+    return DocumentoSubidoAprendiz
+
+
+def devolver_visita_a_agendador(visita):
+    """Retorna la visita a estado editable para permitir correcciones y reenvío."""
+    if visita and visita.estado in ["documentos_enviados", "en_revision_documentos"]:
+        visita.estado = "aprobada_inicial"
+        visita.save(update_fields=["estado"])
+
+
+def _documentos_actuales_asistente(asistente):
+    """Retorna la última versión por documento para un asistente."""
+    docs = asistente.documentos_subidos.order_by(
+        "documento_requerido_id", "-fecha_subida", "-id"
+    )
+    latest_por_documento = {}
+    for ds in docs:
+        if ds.documento_requerido_id not in latest_por_documento:
+            latest_por_documento[ds.documento_requerido_id] = ds
+    return list(latest_por_documento.values())
+
+
+def _sincronizar_estado_asistente(asistente):
+    """Sincroniza estado agregado del asistente según sus documentos actuales."""
+    docs_actuales = _documentos_actuales_asistente(asistente)
+    tiene_rechazos = any(ds.estado == "rechazado" for ds in docs_actuales)
+    todos_aprobados = bool(docs_actuales) and all(
+        ds.estado == "aprobado" for ds in docs_actuales
+    )
+
+    if asistente.formato_autorizacion_padres:
+        if asistente.estado_autorizacion_padres == "rechazado":
+            tiene_rechazos = True
+        elif asistente.estado_autorizacion_padres != "aprobado":
+            todos_aprobados = False
+
+    nuevo_estado = "pendiente_documentos"
+    if tiene_rechazos:
+        nuevo_estado = "documentos_rechazados"
+    elif todos_aprobados:
+        nuevo_estado = "documentos_aprobados"
+
+    update_fields = []
+    if asistente.estado != nuevo_estado:
+        asistente.estado = nuevo_estado
+        update_fields.append("estado")
+
+    if nuevo_estado != "documentos_rechazados" and asistente.observaciones_revision:
+        asistente.observaciones_revision = ""
+        update_fields.append("observaciones_revision")
+
+    if update_fields:
+        asistente.save(update_fields=update_fields)
+
+    return nuevo_estado
+
+
+def _enviar_correo_documento_rechazado(request, doc, asistente, observaciones):
+    """Notifica al responsable que un documento fue rechazado y requiere correccion."""
+    try:
+        if not asistente:
+            return
+
+        es_interna = bool(getattr(doc, "asistente_interna_id", None))
+        visita = asistente.visita
+        correo_destino = (getattr(visita, "correo_responsable", "") or "").strip()
+        if not correo_destino:
+            return
+
+        tipo_visita = "Interna" if es_interna else "Externa"
+        responsable_nombre = (
+            getattr(visita, "responsable", "")
+            if es_interna
+            else getattr(visita, "nombre_responsable", "")
+        )
+
+        if getattr(visita, "token_acceso", None):
+            panel_path = reverse(
+                "documentos:registro_publico_interna" if es_interna else "documentos:registro_publico_externa",
+                kwargs={"token": visita.token_acceso},
+            )
+        else:
+            panel_path = reverse(
+                "panel_instructor_interno:panel" if es_interna else "panel_instructor_externo:panel"
+            )
+
+        context = {
+            "responsable_nombre": responsable_nombre or "Responsable",
+            "tipo_visita": tipo_visita,
+            "visita_id": visita.id,
+            "asistente_nombre": asistente.nombre_completo,
+            "documento_titulo": doc.documento_requerido.titulo,
+            "observaciones": observaciones or "Sin observaciones registradas.",
+            "fecha_revision": timezone.now().strftime("%d/%m/%Y %H:%M"),
+            "panel_url": request.build_absolute_uri(panel_path),
+        }
+
+        html_content = render_to_string("emails/documento_rechazado_correccion.html", context)
+        text_content = strip_tags(html_content)
+        msg = EmailMultiAlternatives(
+            f"Accion requerida: documento rechazado ({tipo_visita})",
+            text_content,
+            settings.DEFAULT_FROM_EMAIL,
+            [correo_destino],
+        )
+        msg.attach_alternative(html_content, "text/html")
+        msg.send(fail_silently=True)
+    except Exception:
+        pass
 
 
 def registro_publico_asistentes(request, token, tipo):
@@ -186,6 +306,71 @@ def eliminar_asistente_publico(request, tipo, token, asistente_id):
         return redirect("core:index")
 
 
+@require_POST
+def actualizar_asistente_publico(request, tipo, token, asistente_id):
+    """Permite corregir archivos de un asistente registrado desde el enlace público."""
+    if tipo == "interna":
+        visita = get_object_or_404(VisitaInterna, token_acceso=token)
+        asistente = get_object_or_404(
+            AsistenteVisitaInterna, id=asistente_id, visita=visita
+        )
+        redirect_name = "documentos:registro_publico_interna"
+        docs_qs = DocumentoSubidoAsistente.objects.filter(asistente_interna=asistente)
+    elif tipo == "externa":
+        visita = get_object_or_404(VisitaExterna, token_acceso=token)
+        asistente = get_object_or_404(
+            AsistenteVisitaExterna, id=asistente_id, visita=visita
+        )
+        redirect_name = "documentos:registro_publico_externa"
+        docs_qs = DocumentoSubidoAsistente.objects.filter(asistente_externa=asistente)
+    else:
+        messages.error(request, "Tipo de visita no válido.")
+        return redirect("core:index")
+
+    if visita.estado not in [
+        "aprobada_inicial",
+        "documentos_enviados",
+        "en_revision_documentos",
+    ]:
+        messages.error(
+            request,
+            "La visita no está disponible para correcciones en este momento.",
+        )
+        return redirect(redirect_name, token=token)
+
+    documento_identidad = request.FILES.get("documento_identidad")
+    documento_adicional = request.FILES.get("documento_adicional")
+    formato_autorizacion_padres = request.FILES.get("formato_autorizacion_padres")
+
+    if not any([documento_identidad, documento_adicional, formato_autorizacion_padres]):
+        messages.error(request, "Debe adjuntar al menos un archivo para corregir.")
+        return redirect(redirect_name, token=token)
+
+    if documento_identidad:
+        asistente.documento_identidad = documento_identidad
+    if documento_adicional:
+        asistente.documento_adicional = documento_adicional
+    if formato_autorizacion_padres:
+        asistente.formato_autorizacion_padres = formato_autorizacion_padres
+        asistente.estado_autorizacion_padres = "pendiente"
+        asistente.observaciones_autorizacion_padres = ""
+
+    asistente.estado = "pendiente_documentos"
+    asistente.observaciones_revision = ""
+    asistente.save()
+
+    docs_qs.filter(estado="rechazado").update(
+        estado="pendiente", observaciones_revision=""
+    )
+    devolver_visita_a_agendador(visita)
+
+    messages.success(
+        request,
+        f"Se actualizaron los archivos de {asistente.nombre_completo}. Ya puede reenviar la solicitud final.",
+    )
+    return redirect(redirect_name, token=token)
+
+
 # =============================================
 # API para gestión de documentos en panel admin
 # =============================================
@@ -224,7 +409,7 @@ def listar_documentos_api(request):
         data.append(
             {
                 "id": doc.id,
-                "titulo": doc.titulo,
+                "titulo": doc.categoria,
                 "archivo_url": archivo_url,
                 "nombre_archivo": doc.nombre_archivo,
                 "categoria": doc.categoria,
@@ -238,6 +423,22 @@ def listar_documentos_api(request):
         )
 
     return JsonResponse({"documentos": data, "total": len(data)})
+
+
+@login_required(login_url="usuarios:login")
+def categorias_faltantes_api(request):
+    """API: Retorna categorías pendientes por cargar."""
+    cats_validas = [c[0] for c in Documento.CATEGORIA_CHOICES]
+    categorias_ocupadas = set(Documento.objects.values_list("categoria", flat=True))
+    categorias_faltantes = [c for c in cats_validas if c not in categorias_ocupadas]
+
+    return JsonResponse(
+        {
+            "categorias_faltantes": categorias_faltantes,
+            "categorias_ocupadas": list(categorias_ocupadas),
+            "total_faltantes": len(categorias_faltantes),
+        }
+    )
 
 
 @login_required(login_url="usuarios:login")
@@ -258,16 +459,8 @@ def subir_documentos_api(request):
     # Extensiones permitidas
     extensiones_permitidas = [
         ".pdf",
-        ".jpg",
-        ".jpeg",
-        ".png",
         ".doc",
         ".docx",
-        ".xls",
-        ".xlsx",
-        ".ppt",
-        ".pptx",
-        ".txt",
     ]
     max_size = 10 * 1024 * 1024  # 10 MB
 
@@ -276,6 +469,17 @@ def subir_documentos_api(request):
 
     # Categorías válidas del modelo
     cats_validas = [c[0] for c in Documento.CATEGORIA_CHOICES]
+    categorias_existentes = set(Documento.objects.values_list("categoria", flat=True))
+
+    # Normalizar nombres de archivo ya existentes en BD
+    nombres_existentes = {
+        os.path.basename(nombre).lower()
+        for nombre in Documento.objects.values_list("archivo", flat=True)
+        if nombre
+    }
+
+    categorias_en_lote = set()
+    nombres_en_lote = set()
 
     for idx, archivo in enumerate(archivos):
         _, ext = os.path.splitext(archivo.name)
@@ -289,7 +493,13 @@ def subir_documentos_api(request):
             errores.append(f'"{archivo.name}": excede el tamaño máximo de 10 MB.')
             continue
 
-        titulo = os.path.splitext(archivo.name)[0]
+        nombre_normalizado = archivo.name.lower()
+        if (
+            nombre_normalizado in nombres_existentes
+            or nombre_normalizado in nombres_en_lote
+        ):
+            errores.append(f'"{archivo.name}": ya existe un archivo con ese nombre.')
+            continue
 
         # Obtener categoría individual del archivo
         cat_archivo = (
@@ -300,6 +510,15 @@ def subir_documentos_api(request):
         if cat_archivo not in cats_validas:
             cat_archivo = cats_validas[0] if cats_validas else "EPP Necesarios"
 
+        if cat_archivo in categorias_existentes or cat_archivo in categorias_en_lote:
+            errores.append(
+                f'"{archivo.name}": la categoría "{cat_archivo}" ya fue cargada.'
+            )
+            continue
+
+        # El título visible debe ser el label del formato/categoría
+        titulo = cat_archivo
+
         doc = Documento(
             titulo=titulo,
             archivo=archivo,
@@ -309,10 +528,12 @@ def subir_documentos_api(request):
             tamaño=archivo.size,
         )
         doc.save()
+        nombres_en_lote.add(nombre_normalizado)
+        categorias_en_lote.add(cat_archivo)
         documentos_creados.append(
             {
                 "id": doc.id,
-                "titulo": doc.titulo,
+                "titulo": doc.categoria,
                 "nombre_archivo": doc.nombre_archivo,
             }
         )
@@ -464,6 +685,67 @@ def descargar_documento_publico(request, documento_id):
 
 
 @xframe_options_exempt
+def ver_documento_aprendiz_doc_inline(request, documento_subido_id):
+    """Sirve un DocumentoSubidoAprendiz para visualización inline en iframe."""
+    import mimetypes
+    from django.http import FileResponse, HttpResponseNotFound
+
+    DocumentoSubidoAprendiz = _get_docsubido_aprendiz_model()
+    doc = get_object_or_404(DocumentoSubidoAprendiz, id=documento_subido_id)
+    if not doc.archivo or not doc.archivo.storage.exists(doc.archivo.name):
+        return HttpResponseNotFound("El archivo no existe")
+    f = doc.archivo.open("rb")
+    tipo_mime, _ = mimetypes.guess_type(doc.archivo.name)
+    if not tipo_mime:
+        tipo_mime = "application/octet-stream"
+    response = FileResponse(f, content_type=tipo_mime)
+    response["Content-Disposition"] = f'inline; filename="{doc.nombre_archivo}"'
+    response["X-Frame-Options"] = "SAMEORIGIN"
+    return response
+
+
+@xframe_options_exempt
+def ver_campo_asistente_inline(request, tipo, asistente_id, campo):
+    """Sirve un campo de archivo (documento_identidad, documento_adicional,
+    formato_autorizacion_padres) de un AsistenteVisitaInterna/Externa inline."""
+    import mimetypes
+    import os
+    from django.http import FileResponse, HttpResponseNotFound, HttpResponseBadRequest
+    from visitaInterna.models import AsistenteVisitaInterna
+    from visitaExterna.models import AsistenteVisitaExterna
+
+    campos_permitidos = [
+        "documento_identidad",
+        "documento_adicional",
+        "formato_autorizacion_padres",
+    ]
+    if campo not in campos_permitidos:
+        return HttpResponseBadRequest("Campo no válido")
+
+    if tipo == "interna":
+        asistente = get_object_or_404(AsistenteVisitaInterna, id=asistente_id)
+    elif tipo == "externa":
+        asistente = get_object_or_404(AsistenteVisitaExterna, id=asistente_id)
+    else:
+        return HttpResponseBadRequest("Tipo no válido")
+
+    archivo = getattr(asistente, campo)
+    if not archivo or not archivo.storage.exists(archivo.name):
+        return HttpResponseNotFound("El archivo no existe")
+
+    f = archivo.open("rb")
+    tipo_mime, _ = mimetypes.guess_type(archivo.name)
+    if not tipo_mime:
+        tipo_mime = "application/octet-stream"
+
+    nombre = os.path.basename(archivo.name)
+    response = FileResponse(f, content_type=tipo_mime)
+    response["Content-Disposition"] = f'inline; filename="{nombre}"'
+    response["X-Frame-Options"] = "SAMEORIGIN"
+    return response
+
+
+@xframe_options_exempt
 def ver_documento_asistente_inline(request, documento_subido_id):
     """Sirve un documento subido por asistente para visualización inline en iframe."""
     import mimetypes
@@ -519,25 +801,58 @@ def revisar_documento_asistente_api(request, documento_subido_id):
             {"success": False, "error": "Estado no válido."}, status=400
         )
 
+    # Solo se permite revisar documentos que estén pendientes.
+    if doc.estado != "pendiente":
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "Este documento ya fue revisado. Solo puede gestionar documentos en revisión.",
+            },
+            status=409,
+        )
+
+    if estado == "rechazado" and not observaciones.strip():
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "Debe indicar observaciones para rechazar el documento.",
+            },
+            status=400,
+        )
+
     doc.estado = estado
-    doc.observaciones_revision = observaciones
+    doc.observaciones_revision = observaciones if estado == "rechazado" else ""
     doc.save()
+
+    asistente = doc.asistente_interna or doc.asistente_externa
 
     # Sincronizar estado del asistente si hay un rechazo
     if estado == "rechazado":
-        asistente = doc.asistente_interna or doc.asistente_externa
         if asistente:
             asistente.estado = "documentos_rechazados"
-            # Si no hay observaciones en el asistente, copiar la del documento
-            if not asistente.observaciones_revision:
-                asistente.observaciones_revision = f"Documento '{doc.documento_requerido.titulo}' rechazado: {observaciones}"
-            asistente.save()
+            asistente.observaciones_revision = (
+                f"Documento '{doc.documento_requerido.titulo}' rechazado: {observaciones}"
+                if observaciones
+                else f"Documento '{doc.documento_requerido.titulo}' rechazado."
+            )
+            asistente.save(update_fields=["estado", "observaciones_revision"])
+            _enviar_correo_documento_rechazado(request, doc, asistente, observaciones)
+
+    if asistente:
+        nuevo_estado_asistente = _sincronizar_estado_asistente(asistente)
+    else:
+        nuevo_estado_asistente = None
 
     return JsonResponse(
         {
             "success": True,
-            "message": f"Documento marcado como {estado} correctamente.",
+            "message": (
+                f"Documento marcado como {estado} correctamente."
+                if estado == "aprobado"
+                else "Documento rechazado. Queda pendiente de corrección."
+            ),
             "nuevo_estado": estado,
+            "nuevo_estado_asistente": nuevo_estado_asistente,
         }
     )
 
@@ -564,12 +879,34 @@ def enviar_solicitud_final(request, token, tipo):
             status=400,
         )
 
+    cantidad_maxima = (
+        visita.cantidad_aprendices if tipo == "interna" else visita.cantidad_visitantes
+    )
+    if cantidad_maxima < 1:
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "La visita debe tener una cantidad de asistentes mayor a cero antes de enviar la solicitud final.",
+            },
+            status=400,
+        )
+
     # Verificar que haya al menos un asistente registrado
     if visita.asistentes.count() == 0:
         return JsonResponse(
             {
                 "success": False,
                 "error": "Debe registrar al menos un asistente antes de enviar la solicitud final.",
+            },
+            status=400,
+        )
+
+    # No permitir reenvío si aún hay asistentes con rechazo pendiente de corrección
+    if visita.asistentes.filter(estado="documentos_rechazados").exists():
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "Hay asistentes con documentos rechazados. Corrija los archivos antes de reenviar.",
             },
             status=400,
         )

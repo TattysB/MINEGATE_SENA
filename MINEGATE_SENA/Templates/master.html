@@ -20,6 +20,7 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}?v=20260311a">
 
     <!-- mapa -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -36,6 +37,7 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+            padding-top: 0;
         }
 
         h1,
@@ -62,7 +64,7 @@
 </head>
 
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
         <div class="container">
             <a class="navbar-brand" href="{% url 'core:index' %}">
                 <img src="{% static 'img/LogoMine.png' %}" alt="Logo MINEGATE" class="navbar-logo">
@@ -89,6 +91,55 @@
             </div>
         </div>
     </nav>
+
+    <script>
+        (function () {
+            function ajustarEspacioNavbar() {
+                var navbar = document.querySelector('.navbar.fixed-top');
+                if (!navbar) return;
+                document.body.style.paddingTop = navbar.offsetHeight + 'px';
+            }
+
+            ajustarEspacioNavbar();
+            window.addEventListener('resize', ajustarEspacioNavbar);
+            window.addEventListener('load', ajustarEspacioNavbar);
+
+            // Control manual del menú hamburguesa
+            var navbarToggler = document.querySelector('.navbar-toggler');
+            var navbarCollapse = document.querySelector('.navbar-collapse');
+            var navLinks = document.querySelectorAll('.navbar-nav .nav-link, .navbar-nav .btn');
+
+            function toggleMenu() {
+                navbarCollapse.classList.toggle('show');
+                var isOpen = navbarCollapse.classList.contains('show');
+                navbarToggler.setAttribute('aria-expanded', isOpen);
+            }
+
+            // Evitar que Bootstrap interfiera y hacer toggle manual
+            if (navbarToggler) {
+                navbarToggler.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    toggleMenu();
+                });
+            }
+
+            // Cerrar menú cuando se hace clic en un link
+            navLinks.forEach(function(link) {
+                link.addEventListener('click', function() {
+                    if (navbarCollapse.classList.contains('show')) {
+                        toggleMenu();
+                    }
+                });
+            });
+
+            // Cerrar menú si se hace clic fuera de él
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.navbar') && navbarCollapse.classList.contains('show')) {
+                    toggleMenu();
+                }
+            });
+        })();
+    </script>
 
     <main>
         {% block content %}
@@ -133,6 +184,7 @@
 
     <!-- Inclusión del widget de accesibilidad -->
     {% accessibility_widget %}
+    <script src="{% static 'core/js/custom_modal.js' %}?v=20260311a"></script>
 </body>
 
 </html>

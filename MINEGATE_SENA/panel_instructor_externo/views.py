@@ -2,13 +2,195 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Q
 from django.db import transaction
-from visitaExterna.models import VisitaExterna
+from visitaExterna.models import HistorialReprogramacion, VisitaExterna
 from .forms import VisitaExternaInstructorForm
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.conf import settings
 from calendario.models import ReservaHorario
+from documentos.models import Documento, DocumentoSubidoAsistente
+
+
+CATEGORIA_DOC_SALUD = "Formato Auto Reporte Condiciones de Salud"
+CATEGORIAS_ARCHIVOS_FINALES = [
+    "ATS",
+    "Formato Inducción y Reinducción",
+    "Charla de Seguridad y Calestenia",
+]
+
+
+def _normalizar_categoria_texto(value):
+    return (
+        str(value or "")
+        .lower()
+        .replace("á", "a")
+        .replace("é", "e")
+        .replace("í", "i")
+        .replace("ó", "o")
+        .replace("ú", "u")
+    )
+
+
+def construir_reporte_documental_visita(visita, tipo_visita):
+    """Genera un resumen de faltantes y rechazos por asistente y archivos finales."""
+    doc_salud_ids = set(
+        Documento.objects.filter(categoria=CATEGORIA_DOC_SALUD).values_list(
+            "id", flat=True
+        )
+    )
+    docs_finales_requeridos = list(
+        Documento.objects.filter(categoria__in=CATEGORIAS_ARCHIVOS_FINALES).order_by(
+            "categoria", "titulo"
+        )
+    )
+
+    filtros_finales_visita = {
+        "documento_requerido__categoria__in": CATEGORIAS_ARCHIVOS_FINALES
+    }
+    if tipo_visita == "interna":
+        filtros_finales_visita["asistente_interna__visita"] = visita
+    else:
+        filtros_finales_visita["asistente_externa__visita"] = visita
+
+    existe_archivo_final_subido = DocumentoSubidoAsistente.objects.filter(
+        **filtros_finales_visita
+    ).exists()
+    mostrar_faltantes_finales_como_alerta = (
+        visita.estado in ["documentos_enviados", "en_revision_documentos", "confirmada"]
+        or existe_archivo_final_subido
+    )
+
+    asistentes_con_alertas = []
+    asistentes = visita.asistentes.prefetch_related(
+        "documentos_subidos__documento_requerido"
+    )
+    for asistente in asistentes:
+        incidencias = []
+        # Tomar solo la version vigente (ultima subida) por documento requerido.
+        latest_por_documento = {}
+        for ds in asistente.documentos_subidos.all():
+            doc_id = ds.documento_requerido_id
+            actual = latest_por_documento.get(doc_id)
+            if not actual or (ds.fecha_subida, ds.id) > (
+                actual.fecha_subida,
+                actual.id,
+            ):
+                latest_por_documento[doc_id] = ds
+
+        documentos_personales = [
+            ds
+            for ds in latest_por_documento.values()
+            if ds.documento_requerido.categoria not in CATEGORIAS_ARCHIVOS_FINALES
+        ]
+
+        documentos_salud = [
+            ds
+            for ds in documentos_personales
+            if ds.documento_requerido_id in doc_salud_ids
+        ]
+        if doc_salud_ids and not documentos_salud:
+            incidencias.append(
+                {
+                    "tipo": "faltante",
+                    "detalle": "Falta el archivo de auto reporte de condiciones de salud.",
+                }
+            )
+
+        for doc_subido in documentos_personales:
+            if doc_subido.estado == "rechazado":
+                incidencias.append(
+                    {
+                        "tipo": "rechazado",
+                        "documento_subido_id": doc_subido.id,
+                        "detalle": (
+                            f"{doc_subido.documento_requerido.titulo}: "
+                            f"{doc_subido.observaciones_revision or 'Documento mal diligenciado.'}"
+                        ),
+                    }
+                )
+
+        if getattr(
+            asistente, "estado_autorizacion_padres", ""
+        ) == "rechazado" and getattr(
+            asistente, "observaciones_autorizacion_padres", ""
+        ):
+            incidencias.append(
+                {
+                    "tipo": "rechazado",
+                    "detalle": (
+                        "Autorización de padres: "
+                        f"{asistente.observaciones_autorizacion_padres}"
+                    ),
+                }
+            )
+
+        if incidencias:
+            asistentes_con_alertas.append(
+                {
+                    "id": asistente.id,
+                    "nombre": asistente.nombre_completo,
+                    "documento": f"{asistente.get_tipo_documento_display()} {asistente.numero_documento}",
+                    "incidencias": incidencias,
+                }
+            )
+
+    archivos_finales_estado = []
+    for doc_final in docs_finales_requeridos:
+        filtros = {"documento_requerido": doc_final}
+        if tipo_visita == "interna":
+            filtros["asistente_interna__visita"] = visita
+        else:
+            filtros["asistente_externa__visita"] = visita
+
+        ultimo_archivo = (
+            DocumentoSubidoAsistente.objects.filter(**filtros)
+            .order_by("-fecha_subida")
+            .first()
+        )
+
+        if not ultimo_archivo:
+            estado = "faltante"
+            detalle = "No se ha cargado este archivo final."
+        elif ultimo_archivo.estado == "rechazado":
+            estado = "rechazado"
+            detalle = (
+                ultimo_archivo.observaciones_revision or "Archivo final rechazado."
+            )
+        elif ultimo_archivo.estado == "pendiente":
+            estado = "pendiente"
+            detalle = "Archivo final cargado y en revisión."
+        else:
+            estado = "aprobado"
+            detalle = "Archivo final aprobado."
+
+        archivos_finales_estado.append(
+            {
+                "titulo": doc_final.titulo,
+                "categoria": doc_final.get_categoria_display(),
+                "estado": estado,
+                "detalle": detalle,
+            }
+        )
+
+    archivos_finales_con_alerta = [
+        a
+        for a in archivos_finales_estado
+        if a["estado"] == "rechazado"
+        or (a["estado"] == "faltante" and mostrar_faltantes_finales_como_alerta)
+    ]
+    total_incidencias_asistentes = sum(
+        len(item["incidencias"]) for item in asistentes_con_alertas
+    )
+
+    return {
+        "asistentes_con_alertas": asistentes_con_alertas,
+        "archivos_finales_estado": archivos_finales_estado,
+        "archivos_finales_con_alerta": archivos_finales_con_alerta,
+        "total_alertas": total_incidencias_asistentes
+        + len(archivos_finales_con_alerta),
+        "hay_alertas": bool(asistentes_con_alertas or archivos_finales_con_alerta),
+    }
 
 
 # ==================== AUTENTICACIÓN POR SESIÓN ====================
@@ -152,6 +334,11 @@ def reservar_visita_externa(request):
 def detalle_visita_externa(request, pk):
     correo, _ = get_sesion_instructor(request)
     visita = get_object_or_404(VisitaExterna, pk=pk, correo_responsable__iexact=correo)
+    reprogramacion_pendiente = (
+        HistorialReprogramacion.objects.filter(visita_externa=visita, completada=False)
+        .order_by("-fecha_solicitud")
+        .first()
+    )
 
     # Obtener documentos disponibles para descargar, agrupados por categoría
     from documentos.models import Documento
@@ -166,6 +353,48 @@ def detalle_visita_externa(request, pk):
             documentos_por_categoria[cat_display] = []
         documentos_por_categoria[cat_display].append(doc)
 
+    # Tomar un único documento por cada categoría final requerida para descarga.
+    documentos_finales_requeridos = []
+    categorias_finales_agregadas = set()
+    for doc in documentos_disponibles:
+        categoria_norm = _normalizar_categoria_texto(doc.categoria)
+        clave_categoria = None
+        etiqueta = doc.categoria
+
+        if "ats" in categoria_norm:
+            clave_categoria = "ats"
+            etiqueta = "ATS"
+        elif "induccion y reinduccion" in categoria_norm:
+            clave_categoria = "induccion"
+            etiqueta = "Formato Inducción y Reinducción"
+        elif "charla de seguridad" in categoria_norm and (
+            "calestenia" in categoria_norm or "calistenia" in categoria_norm
+        ):
+            clave_categoria = "charla"
+            etiqueta = "Charla de Seguridad y Calistenia"
+
+        if not clave_categoria or clave_categoria in categorias_finales_agregadas:
+            continue
+
+        doc.etiqueta_requerida = etiqueta
+        documentos_finales_requeridos.append(doc)
+        categorias_finales_agregadas.add(clave_categoria)
+
+    reporte_documental = construir_reporte_documental_visita(visita, "externa")
+    hay_alertas_documentales = bool(reporte_documental.get("hay_alertas"))
+    estados_finales = reporte_documental.get("archivos_finales_estado", [])
+    archivos_finales_faltantes = sum(
+        1 for item in estados_finales if item.get("estado") == "faltante"
+    )
+    archivos_finales_completos = archivos_finales_faltantes == 0
+
+    enviar_final_habilitado = (
+        visita.estado == "aprobada_inicial"
+        and visita.asistentes.exists()
+        and archivos_finales_completos
+        and not hay_alertas_documentales
+    )
+
     return render(
         request,
         "panel_instructor_externo/detalle_visita.html",
@@ -173,5 +402,9 @@ def detalle_visita_externa(request, pk):
             "visita": visita,
             "correo": correo,
             "documentos_por_categoria": documentos_por_categoria,
+            "documentos_finales_requeridos": documentos_finales_requeridos,
+            "reporte_documental": reporte_documental,
+            "reprogramacion_pendiente": reprogramacion_pendiente,
+            "enviar_final_habilitado": enviar_final_habilitado,
         },
     )

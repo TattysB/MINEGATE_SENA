@@ -1,4 +1,72 @@
 {% extends "coordinador/base_coordinador.html" %}
+{% block extra_css %}
+<style>
+  /* Resaltar fila objetivo: amarillo suave para mostrar selección desde notificaciones */
+  .row-selected{background:#fff7cd !important;color:#4b3710 !important}
+  .row-selected td{color:#4b3710 !important}
+  .row-selected button{color:#4b3710 !important}
+  @import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;600;700;800&display=swap');
+  #gestionVisitasPanel{font-family:"Work Sans",system-ui,Arial,Helvetica,sans-serif}
+  #gestionVisitasPanel.reg-card{background: linear-gradient(180deg,#ffffff 0%, #f7fff7 100%);border-radius:12px;padding:18px;border:1px solid rgba(0,0,0,0.06);box-shadow:0 8px 24px rgba(10,10,10,0.06)}
+  #gestionVisitasPanel .reg-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:12px}
+  #gestionVisitasPanel .reg-table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;border-radius:8px;overflow:hidden}
+  #gestionVisitasPanel .reg-table thead th{background:#00af00 !important;color:#ffffff !important;font-weight:800;text-align:left;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.08) !important;font-size:0.95rem}
+  #gestionVisitasPanel .reg-table tbody td{padding:12px 16px;color:#0b0b0b;border-bottom:1px solid rgba(0,175,0,0.06);vertical-align:middle;font-size:0.95rem}
+  #gestionVisitasPanel .reg-table tbody tr:nth-child(even) td{background:#f6fff6}
+  #gestionVisitasPanel .reg-empty{padding:28px;text-align:center;color:#6b6b6b;font-weight:700}
+  #gestionVisitasPanel .btn-approve{background:#00af00;color:#fff;border-radius:8px;padding:7px 12px;font-weight:800;border:1px solid rgba(0,0,0,0.06);cursor:pointer;box-shadow:0 2px 6px rgba(0,175,0,0.12)}
+  #gestionVisitasPanel .btn-reject{background:#fff;color:#111;border-radius:8px;padding:7px 12px;font-weight:800;border:1px solid rgba(0,0,0,0.08);cursor:pointer}
+  #gestionVisitasPanel .btn-detail{background:#e8f1ff;color:#1d4ed8;border-radius:8px;padding:7px 12px;font-weight:800;border:1px solid rgba(29,78,216,0.2);cursor:pointer}
+  #gestionVisitasPanel .btn-observaciones{background:#ecfeff;color:#0e7490;border-radius:8px;padding:7px 12px;font-weight:800;border:1px solid rgba(14,116,144,0.25);cursor:pointer}
+  #gestionVisitasPanel .btn-approve:hover{filter:brightness(0.95)}
+  #gestionVisitasPanel .btn-reject:hover{background:#f6f6f6}
+  #gestionVisitasPanel .btn-detail:hover{background:#dbeafe}
+  #gestionVisitasPanel .btn-observaciones:hover{background:#cffafe}
+
+  #modalConfirmarAprobacion .confirm-modal-card{background:#fff;border-radius:12px;padding:24px;max-width:460px;width:calc(100% - 32px);box-shadow:0 10px 30px rgba(0,0,0,0.2)}
+  #modalConfirmarAprobacion .confirm-title{margin:0 0 8px;color:#14532d;font-size:1.1rem;font-weight:800}
+  #modalConfirmarAprobacion .confirm-text{margin:0;color:#4b5563;font-size:0.92rem;line-height:1.55}
+  #modalConfirmarAprobacion .confirm-box{margin-top:14px;padding:12px;border:1px solid #bbf7d0;border-radius:10px;background:#f0fdf4;color:#166534;font-weight:700;font-size:0.9rem}
+  #modalConfirmarAprobacion .btn-confirm-approve{padding:9px 18px;border:none;background:#00af00;color:#fff;border-radius:8px;cursor:pointer;font-weight:700}
+  #modalConfirmarAprobacion .btn-confirm-cancel{padding:9px 18px;border:1px solid #d1d5db;background:#fff;color:#374151;border-radius:8px;cursor:pointer;font-weight:700}
+
+  #modalInfoVisita .info-modal-card{background:#fff;border-radius:14px;padding:20px;max-width:760px;width:calc(100% - 32px);box-shadow:0 8px 32px rgba(0,0,0,0.18)}
+  #modalInfoVisita .info-modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #e5e7eb}
+  #modalInfoVisita .info-modal-title{margin:0;color:#1f2937;font-size:1.05rem;font-weight:800}
+  #modalInfoVisita .info-kicker{font-size:0.8rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.6px}
+  #modalInfoVisita .info-summary-box{border:1px solid #dbeafe;background:#eff6ff;border-radius:12px;padding:12px 14px;margin-bottom:12px}
+  #modalInfoVisita .info-badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+  #modalInfoVisita .info-badge{padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700}
+  #modalInfoVisita .info-badge.tipo{background:#dcfce7;color:#166534}
+  #modalInfoVisita .info-badge.estado{background:#fef3c7;color:#92400e}
+  #modalInfoVisita .info-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  #modalInfoVisita .info-item{border:1px solid #e5e7eb;border-radius:10px;padding:10px 12px;background:#fff}
+  #modalInfoVisita .info-item-label{display:block;font-size:12px;color:#6b7280;font-weight:700;margin-bottom:3px}
+  #modalInfoVisita .info-item-value{display:block;font-size:14px;color:#111827;font-weight:600;line-height:1.35;word-break:break-word}
+  #modalInfoVisita .info-observaciones{margin-top:10px;border:1px solid #d1fae5;background:#ecfdf5;border-radius:10px;padding:10px 12px}
+  #modalInfoVisita .info-observaciones p{margin:0;font-size:13px;color:#065f46;line-height:1.5}
+
+  #modalObservaciones .obs-modal-card{background:#fff;border-radius:14px;padding:22px;max-width:560px;width:calc(100% - 32px);box-shadow:0 8px 32px rgba(0,0,0,0.2);border:1px solid #fde68a}
+  #modalObservaciones .obs-modal-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:10px 12px;border-radius:10px;background:linear-gradient(135deg,#fff7d6 0%, #ffedd5 55%, #ffe4d6 100%);border:1px solid #fcd34d}
+  #modalObservaciones .obs-modal-icon{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,0.75);color:#b45309;display:inline-flex;align-items:center;justify-content:center;font-size:18px;border:1px solid #fcd34d}
+  #modalObservaciones .obs-modal-title{margin:0;color:#b45309;font-size:1.05rem;font-weight:700}
+  #modalObservaciones .obs-modal-text{margin:0 0 12px;font-size:13px;color:#6b7280;line-height:1.5}
+  #modalObservaciones .obs-modal-hint{margin:0 0 14px;padding:9px 10px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:8px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+  #modalObservaciones .obs-label{display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px}
+  #modalObservaciones .obs-textarea{width:100%;padding:10px;border:1px solid #fcd34d;border-radius:8px;font-size:13px;font-family:"Work Sans",system-ui,Arial,Helvetica,sans-serif;font-weight:400;line-height:1.5;resize:vertical;box-sizing:border-box;outline:none;min-height:120px}
+  #modalObservaciones .obs-textarea::placeholder{font-family:"Work Sans",system-ui,Arial,Helvetica,sans-serif;font-size:13px;color:#9ca3af}
+  #modalObservaciones .obs-textarea:focus{border-color:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,0.18)}
+  #modalObservaciones .obs-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+  #modalObservaciones .obs-btn-cancel{padding:9px 18px;border:1px solid #d1d5db;background:#fff;color:#374151;border-radius:8px;cursor:pointer;font-weight:600}
+  #modalObservaciones .obs-btn-save{padding:9px 18px;border:none;background:#f59e0b;color:#fff;border-radius:8px;cursor:pointer;font-weight:600;box-shadow:0 2px 8px rgba(245,158,11,0.28)}
+  #modalObservaciones .obs-btn-save:hover{filter:brightness(0.95)}
+  #modalObservaciones .obs-btn-cancel:hover{background:#f9fafb}
+  @media (max-width:760px){
+    #modalInfoVisita .info-grid{grid-template-columns:1fr}
+  }
+  @media (max-width:900px){#gestionVisitasPanel .reg-table thead th,#gestionVisitasPanel .reg-table tbody td{padding:10px}}
+</style>
+{% endblock %}
 {% block content %}
 <div style="padding: 20px;">
   <h2 style="margin:0 0 14px;color:#1f2937;">Gestión de Visitas</h2>
@@ -20,7 +88,7 @@
     </div>
   </div>
 
-  <div id="gestionVisitasPanel" style="margin-top:18px;background:#fff;border-radius:10px;padding:16px;box-shadow:0 2px 10px rgba(0,0,0,0.08);">
+  <div id="gestionVisitasPanel" class="reg-card" style="margin-top:18px;">
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
       <h3 style="margin:0;">Solicitudes pendientes de coordinación</h3>
       <select id="tipoVisita" onchange="recargarSolicitudes()" style="padding:8px;border:1px solid #d1d5db;border-radius:8px;">
@@ -33,15 +101,15 @@
     </div>
 
     <div style="overflow:auto;">
-      <table style="width:100%;border-collapse:collapse;">
+      <table class="reg-table">
         <thead>
           <tr style="background:#f3f4f6;">
-            <th style="padding:10px;text-align:left;">ID</th>
-            <th style="padding:10px;text-align:left;">Tipo</th>
-            <th style="padding:10px;text-align:left;">Responsable</th>
-            <th style="padding:10px;text-align:left;">Institución/Programa</th>
-            <th style="padding:10px;text-align:left;">Fecha solicitud</th>
-            <th style="padding:10px;text-align:center;">Acciones</th>
+            <th>ID</th>
+            <th>Tipo</th>
+            <th>Responsable</th>
+            <th>Institución/Programa</th>
+            <th>Fecha solicitud</th>
+            <th style="text-align:center;">Acciones</th>
           </tr>
         </thead>
         <tbody id="cuerpoSolicitudes">
@@ -91,8 +159,9 @@
     const year = parseInt(card.getAttribute('data-year'), 10);
     const month = parseInt(card.getAttribute('data-month'), 10);
 
-    const prev = document.getElementById('prevReadonly');
-    const next = document.getElementById('nextReadonly');
+    // Support both ID variants: older `prevReadonly/nextReadonly` and `prev/next` used in template
+    const prev = document.getElementById('prevReadonly') || document.getElementById('prev');
+    const next = document.getElementById('nextReadonly') || document.getElementById('next');
 
     if (prev) {
       prev.onclick = () => {
@@ -212,13 +281,9 @@
         `Horario: ${visita.hora}`,
       ].join('\n');
 
-      if (typeof mAlert === 'function') {
-        mAlert(texto, 'info');
-      } else {
-        alert(texto);
-      }
+      abrirModalInfoVisita(texto);
     } catch (error) {
-      alert('No se pudo mostrar la información de la visita.');
+      mostrarToast('No se pudo mostrar la información de la visita.', 'error');
     }
   }
 
@@ -265,37 +330,53 @@
 
     cuerpo.innerHTML = visitas.map(v => `
       <tr id="visita-${v.tipo}-${v.id}" data-tipo="${v.tipo}" data-id="${v.id}">
-        <td style="padding:10px;">#${v.id}</td>
-        <td style="padding:10px;">${v.tipo_display}</td>
-        <td style="padding:10px;">${v.responsable}</td>
-        <td style="padding:10px;">${v.institucion}</td>
-        <td style="padding:10px;">${v.fecha_solicitud}</td>
-        <td style="padding:10px;text-align:center;display:flex;justify-content:center;gap:8px;">
-          <button onclick="accionSolicitud('${v.tipo}', ${v.id}, 'aprobar')" style="padding:6px 10px;border:none;background:#10b981;color:white;border-radius:6px;cursor:pointer;">Aprobar</button>
-          <button onclick="accionSolicitud('${v.tipo}', ${v.id}, 'rechazar')" style="padding:6px 10px;border:none;background:#ef4444;color:white;border-radius:6px;cursor:pointer;">Rechazar</button>
+        <td>#${v.id}</td>
+        <td>${v.tipo_display}</td>
+        <td>${v.responsable}</td>
+        <td>${v.institucion}</td>
+        <td>${v.fecha_solicitud}</td>
+        <td style="text-align:center;">
+          <div style="display:inline-flex;gap:8px;align-items:center;justify-content:center;">
+            <button class="btn-detail" onclick="verDetalleSolicitud('${v.tipo}', ${v.id})">Detalle</button>
+            <button class="btn-observaciones" onclick="abrirModalObservaciones('${v.tipo}', ${v.id})">Observaciones</button>
+            <button class="btn-approve" onclick="accionSolicitud('${v.tipo}', ${v.id}, 'aprobar')">Aprobar</button>
+            <button class="btn-reject" onclick="accionSolicitud('${v.tipo}', ${v.id}, 'rechazar')">Rechazar</button>
+          </div>
         </td>
       </tr>
     `).join('');
   }
 
   async function accionSolicitud(tipo, id, accion) {
-    let observaciones = '';
     if (accion === 'rechazar') {
-      observaciones = prompt('Motivo de rechazo (opcional):') || '';
+      abrirModalRechazo(tipo, id);
+      return;
     }
 
+    if (accion === 'aprobar') {
+      abrirModalConfirmarAprobacion(tipo, id);
+    }
+  }
+
+  async function ejecutarAprobacion(tipo, id) {
     const csrf = getCookie('csrftoken');
     const formData = new FormData();
-    formData.append('observaciones', observaciones);
+    formData.append('observaciones', '');
 
-    const res = await fetch(`/coordinador/api/solicitudes/${tipo}/${id}/${accion}/`, {
-      method: 'POST',
-      headers: csrf ? { 'X-CSRFToken': csrf } : {},
-      body: formData
-    });
+    let data;
+    try {
+      const res = await fetch(`/coordinador/api/solicitudes/${tipo}/${id}/aprobar/`, {
+        method: 'POST',
+        headers: csrf ? { 'X-CSRFToken': csrf } : {},
+        body: formData
+      });
+      data = await res.json();
+    } catch (e) {
+      mostrarToast('Error de conexión al intentar aprobar.', 'error');
+      return;
+    }
 
-    const data = await res.json();
-    alert(data.message || data.error || 'Operación realizada');
+    mostrarToast(data.message || data.error || 'Operación realizada', data.success ? 'success' : 'error');
     if (data.success) {
       recargarSolicitudes();
       loadCalendar();
@@ -321,11 +402,11 @@
     const tryFind = () => {
       const row = document.getElementById(`visita-${tipoParam.slice(0,-1)}-${idParam}`) || document.getElementById(`visita-${tipoParam}-${idParam}`);
       if (row) {
-        row.style.transition = 'background-color 0.4s ease';
-        const original = row.style.backgroundColor;
-        row.style.backgroundColor = '#fff7cc';
+        // Añadir clase que resalta con el color principal
+        row.classList.add('row-selected');
         row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        setTimeout(() => { row.style.backgroundColor = original; }, 2500);
+        // Remover la clase después de unos segundos
+        setTimeout(() => { row.classList.remove('row-selected'); }, 4500);
         return true;
       }
       return false;
@@ -338,5 +419,403 @@
       if (tryFind() || attempts > 20) clearInterval(interval);
     }, 500);
   })();
+
+  // ── Modal Rechazo / Reprogramación ──────────────────────────────
+  let _aprobarTipo = null;
+  let _aprobarId = null;
+  let _rechazoTipo = null;
+  let _rechazoId = null;
+  let _observacionesTipo = null;
+  let _observacionesId = null;
+
+  function abrirModalConfirmarAprobacion(tipo, id) {
+    _aprobarTipo = tipo;
+    _aprobarId = id;
+    const modal = document.getElementById('modalConfirmarAprobacion');
+    if (modal) {
+      modal.style.display = 'flex';
+    }
+  }
+
+  function cerrarModalConfirmarAprobacion() {
+    const modal = document.getElementById('modalConfirmarAprobacion');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+    _aprobarTipo = null;
+    _aprobarId = null;
+  }
+
+  async function confirmarAprobacionDesdeModal() {
+    if (!_aprobarTipo || !_aprobarId) {
+      cerrarModalConfirmarAprobacion();
+      return;
+    }
+    const tipo = _aprobarTipo;
+    const id = _aprobarId;
+    cerrarModalConfirmarAprobacion();
+    await ejecutarAprobacion(tipo, id);
+  }
+
+  function abrirModalRechazo(tipo, id) {
+    _rechazoTipo = tipo;
+    _rechazoId = id;
+    document.getElementById('motivoRechazoInput').value = '';
+    document.getElementById('modalRechazo').style.display = 'flex';
+    document.getElementById('motivoRechazoInput').focus();
+  }
+
+  function cerrarModalRechazo() {
+    document.getElementById('modalRechazo').style.display = 'none';
+    _rechazoTipo = null;
+    _rechazoId = null;
+  }
+
+  async function abrirModalObservaciones(tipo, id) {
+    _observacionesTipo = tipo;
+    _observacionesId = id;
+
+    const modal = document.getElementById('modalObservaciones');
+    const input = document.getElementById('observacionesInput');
+    if (!modal || !input) return;
+
+    input.value = '';
+    modal.style.display = 'flex';
+
+    try {
+      const res = await fetch(`/coordinador/api/solicitudes/${tipo}/${id}/observaciones/`);
+      const data = await res.json();
+      if (data.success) {
+        input.value = data.observaciones || '';
+      }
+    } catch (error) {
+      mostrarToast('No se pudieron cargar las observaciones actuales.', 'warning');
+    }
+
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+  }
+
+  function cerrarModalObservaciones() {
+    const modal = document.getElementById('modalObservaciones');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+    _observacionesTipo = null;
+    _observacionesId = null;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const formRechazo = document.getElementById('formRechazo');
+    if (formRechazo) {
+      formRechazo.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const observaciones = document.getElementById('motivoRechazoInput').value.trim();
+        if (!observaciones) {
+          document.getElementById('motivoRechazoInput').focus();
+          return;
+        }
+
+        const csrf = getCookie('csrftoken');
+        const formData = new FormData();
+        formData.append('observaciones', observaciones);
+
+        let data;
+        try {
+          const res = await fetch(`/coordinador/api/solicitudes/${_rechazoTipo}/${_rechazoId}/rechazar/`, {
+            method: 'POST',
+            headers: csrf ? { 'X-CSRFToken': csrf } : {},
+            body: formData
+          });
+          data = await res.json();
+        } catch (err) {
+          mostrarToast('Error de conexión al intentar enviar a reprogramación.', 'error');
+          cerrarModalRechazo();
+          return;
+        }
+
+        cerrarModalRechazo();
+        mostrarToast(data.message || data.error || 'Operación realizada', data.success ? 'warning' : 'error');
+        if (data.success) {
+          recargarSolicitudes();
+          loadCalendar();
+        }
+      });
+    }
+
+    const formObservaciones = document.getElementById('formObservaciones');
+    if (formObservaciones) {
+      formObservaciones.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        if (!_observacionesTipo || !_observacionesId) {
+          cerrarModalObservaciones();
+          return;
+        }
+
+        const observaciones = document.getElementById('observacionesInput').value.trim();
+        const csrf = getCookie('csrftoken');
+        const formData = new FormData();
+        formData.append('observaciones', observaciones);
+
+        let data;
+        try {
+          const res = await fetch(`/coordinador/api/solicitudes/${_observacionesTipo}/${_observacionesId}/observaciones/`, {
+            method: 'POST',
+            headers: csrf ? { 'X-CSRFToken': csrf } : {},
+            body: formData
+          });
+          data = await res.json();
+        } catch (err) {
+          mostrarToast('Error de conexión al guardar observaciones.', 'error');
+          return;
+        }
+
+        mostrarToast(data.message || data.error || 'Operación realizada', data.success ? 'success' : 'error');
+        if (data.success) {
+          cerrarModalObservaciones();
+          recargarSolicitudes();
+        }
+      });
+    }
+
+    const modal = document.getElementById('modalRechazo');
+    const modalAprobacion = document.getElementById('modalConfirmarAprobacion');
+    const modalInfo = document.getElementById('modalInfoVisita');
+    const modalObservaciones = document.getElementById('modalObservaciones');
+    if (modal) {
+      modal.addEventListener('click', (event) => {
+        if (event.target === modal) {
+          cerrarModalRechazo();
+        }
+      });
+    }
+    if (modalAprobacion) {
+      modalAprobacion.addEventListener('click', (event) => {
+        if (event.target === modalAprobacion) {
+          cerrarModalConfirmarAprobacion();
+        }
+      });
+    }
+    if (modalInfo) {
+      modalInfo.addEventListener('click', (event) => {
+        if (event.target === modalInfo) {
+          cerrarModalInfoVisita();
+        }
+      });
+    }
+    if (modalObservaciones) {
+      modalObservaciones.addEventListener('click', (event) => {
+        if (event.target === modalObservaciones) {
+          cerrarModalObservaciones();
+        }
+      });
+    }
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && modal && modal.style.display === 'flex') {
+        cerrarModalRechazo();
+      }
+      if (event.key === 'Escape' && modalAprobacion && modalAprobacion.style.display === 'flex') {
+        cerrarModalConfirmarAprobacion();
+      }
+      if (event.key === 'Escape' && modalInfo && modalInfo.style.display === 'flex') {
+        cerrarModalInfoVisita();
+      }
+      if (event.key === 'Escape' && modalObservaciones && modalObservaciones.style.display === 'flex') {
+        cerrarModalObservaciones();
+      }
+    });
+  });
+
+  // ── Toast ────────────────────────────────────────────────────────
+  function mostrarToast(mensaje, tipo) {
+    const toast = document.getElementById('toastCoord');
+    toast.textContent = mensaje;
+    toast.className = 'coord-toast coord-toast-' + (tipo || 'info');
+    toast.style.display = 'block';
+    clearTimeout(toast._hideTimer);
+    toast._hideTimer = setTimeout(() => { toast.style.display = 'none'; }, 4500);
+  }
+
+  function escapeHtml(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function abrirModalInfoVisita(texto) {
+    const modal = document.getElementById('modalInfoVisita');
+    const contenidoTexto = document.getElementById('modalInfoVisitaContenidoTexto');
+    const contenidoDetallado = document.getElementById('modalInfoVisitaContenidoDetallado');
+    if (!modal || !contenidoTexto || !contenidoDetallado) {
+      mostrarToast(texto, 'info');
+      return;
+    }
+    contenidoDetallado.style.display = 'none';
+    contenidoTexto.style.display = 'block';
+    contenidoTexto.textContent = texto;
+    modal.style.display = 'flex';
+  }
+
+  function abrirModalInfoVisitaDetallado(detalle) {
+    const modal = document.getElementById('modalInfoVisita');
+    const contenidoTexto = document.getElementById('modalInfoVisitaContenidoTexto');
+    const contenidoDetallado = document.getElementById('modalInfoVisitaContenidoDetallado');
+    if (!modal || !contenidoTexto || !contenidoDetallado) {
+      mostrarToast('No se pudo mostrar el detalle de la visita.', 'error');
+      return;
+    }
+
+    const d = detalle || {};
+    contenidoTexto.style.display = 'none';
+    contenidoDetallado.style.display = 'block';
+    contenidoDetallado.innerHTML = `
+      <div class="info-summary-box">
+        <div class="info-kicker">Solicitud #${escapeHtml(d.id)}</div>
+        <div class="info-badges">
+          <span class="info-badge tipo">${escapeHtml(d.tipo)}</span>
+          <span class="info-badge estado">${escapeHtml(d.estado)}</span>
+        </div>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-item"><span class="info-item-label">Responsable</span><span class="info-item-value">${escapeHtml(d.responsable)}</span></div>
+        <div class="info-item"><span class="info-item-label">Tipo de documento</span><span class="info-item-value">${escapeHtml(d.tipo_documento)}</span></div>
+        <div class="info-item"><span class="info-item-label">Documento</span><span class="info-item-value">${escapeHtml(d.documento)}</span></div>
+        <div class="info-item"><span class="info-item-label">Correo</span><span class="info-item-value">${escapeHtml(d.correo)}</span></div>
+        <div class="info-item"><span class="info-item-label">Teléfono</span><span class="info-item-value">${escapeHtml(d.telefono)}</span></div>
+        <div class="info-item"><span class="info-item-label">Institución / Programa</span><span class="info-item-value">${escapeHtml(d.institucion_programa)}</span></div>
+        <div class="info-item"><span class="info-item-label">Ficha</span><span class="info-item-value">${escapeHtml(d.ficha)}</span></div>
+        <div class="info-item"><span class="info-item-label">Cantidad visitantes/aprendices</span><span class="info-item-value">${escapeHtml(d.cantidad)}</span></div>
+        <div class="info-item"><span class="info-item-label">Fecha solicitud</span><span class="info-item-value">${escapeHtml(d.fecha_solicitud)}</span></div>
+        <div class="info-item"><span class="info-item-label">Fecha visita</span><span class="info-item-value">${escapeHtml(d.fecha_visita)}</span></div>
+        <div class="info-item"><span class="info-item-label">Hora inicio</span><span class="info-item-value">${escapeHtml(d.hora_inicio)}</span></div>
+        <div class="info-item"><span class="info-item-label">Hora fin</span><span class="info-item-value">${escapeHtml(d.hora_fin)}</span></div>
+      </div>
+
+      <div class="info-observaciones">
+        <p><strong>Observaciones:</strong> ${escapeHtml(d.observaciones)}</p>
+      </div>
+    `;
+    modal.style.display = 'flex';
+  }
+
+  async function verDetalleSolicitud(tipo, id) {
+    let data;
+    try {
+      const res = await fetch(`/coordinador/api/solicitudes/${tipo}/${id}/detalle/`);
+      data = await res.json();
+    } catch (error) {
+      mostrarToast('No se pudo cargar el detalle de la visita.', 'error');
+      return;
+    }
+
+    if (!data.ok || !data.detalle) {
+      mostrarToast(data.error || 'No se encontró el detalle de la visita.', 'error');
+      return;
+    }
+
+    abrirModalInfoVisitaDetallado(data.detalle);
+  }
+
+  function cerrarModalInfoVisita() {
+    const modal = document.getElementById('modalInfoVisita');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  }
 </script>
+
+<!-- Modal: Confirmar aprobación -->
+<div id="modalConfirmarAprobacion" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+  <div class="confirm-modal-card">
+    <h3 class="confirm-title">✅ Confirmar visita</h3>
+    <p class="confirm-text">Está seguro que desea confirmar esta visita y enviarla al siguiente paso del flujo.</p>
+    <div class="confirm-box">¿Está seguro que desea confirmar esta visita?</div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+      <button type="button" class="btn-confirm-cancel" onclick="cerrarModalConfirmarAprobacion()">Cancelar</button>
+      <button type="button" class="btn-confirm-approve" onclick="confirmarAprobacionDesdeModal()">Sí, confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Motivo de rechazo / reprogramación -->
+<div id="modalRechazo" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:12px;padding:28px 24px;max-width:480px;width:calc(100% - 32px);box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+    <h3 style="margin:0 0 6px;color:#1f2937;font-size:1.1rem;">🔄 Enviar a reprogramación</h3>
+    <p style="margin:0 0 16px;font-size:13px;color:#6b7280;">El instructor deberá elegir una nueva fecha para la visita. Indica el motivo del rechazo.</p>
+    <form id="formRechazo">
+      <label for="motivoRechazoInput" style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">Motivo <span style="color:#ef4444;">*</span></label>
+      <textarea id="motivoRechazoInput" rows="4" required
+        placeholder="Ej: La fecha seleccionada no está disponible, conflicto con otra actividad..."
+        style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;resize:vertical;box-sizing:border-box;outline:none;"
+      ></textarea>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+        <button type="button" onclick="cerrarModalRechazo()"
+          style="padding:9px 18px;border:1px solid #d1d5db;background:#fff;color:#374151;border-radius:8px;cursor:pointer;font-weight:600;">
+          Cancelar
+        </button>
+        <button type="submit"
+          style="padding:9px 18px;border:none;background:#f59e0b;color:#fff;border-radius:8px;cursor:pointer;font-weight:600;">
+          🔄 Enviar a reprogramar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: información de la visita -->
+<div id="modalInfoVisita" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9998;align-items:center;justify-content:center;">
+  <div class="info-modal-card">
+    <div class="info-modal-header">
+      <h3 class="info-modal-title">Detalle de la visita</h3>
+      <button type="button" onclick="cerrarModalInfoVisita()" style="border:none;background:none;color:#6b7280;font-size:1.2rem;cursor:pointer;">&times;</button>
+    </div>
+    <div id="modalInfoVisitaContenidoDetallado"></div>
+    <pre id="modalInfoVisitaContenidoTexto" style="display:none;margin:0;white-space:pre-wrap;font-family:inherit;font-size:13px;color:#374151;line-height:1.5;"></pre>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px;">
+      <button type="button" onclick="cerrarModalInfoVisita()" style="padding:8px 16px;border:none;background:#3b82f6;color:#fff;border-radius:8px;cursor:pointer;">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: editar observaciones -->
+<div id="modalObservaciones" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+  <div class="obs-modal-card">
+    <div class="obs-modal-header">
+      <span class="obs-modal-icon"><i class="ri-error-warning-line"></i></span>
+      <h3 class="obs-modal-title">Observaciones de coordinación</h3>
+    </div>
+    <p class="obs-modal-text">Agrega o edita observaciones para esta solicitud.</p>
+    <p class="obs-modal-hint"><i class="ri-shield-check-line"></i> Usa observaciones claras y preventivas para el responsable de la visita.</p>
+    <form id="formObservaciones">
+      <label for="observacionesInput" class="obs-label">Observaciones</label>
+      <textarea id="observacionesInput" rows="5"
+        placeholder="Escribe aquí las observaciones..."
+        class="obs-textarea"
+      ></textarea>
+      <div class="obs-actions">
+        <button type="button" onclick="cerrarModalObservaciones()" class="obs-btn-cancel">
+          Cancelar
+        </button>
+        <button type="submit" class="obs-btn-save">
+          Guardar observaciones
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Toast de notificación -->
+<div id="toastCoord" style="display:none;position:fixed;bottom:28px;right:28px;z-index:10000;padding:14px 20px;border-radius:10px;font-size:14px;font-weight:600;max-width:380px;box-shadow:0 4px 16px rgba(0,0,0,0.15);"></div>
+
+<style>
+  .coord-toast-success { background:#10b981; color:#fff; }
+  .coord-toast-error   { background:#ef4444; color:#fff; }
+  .coord-toast-warning { background:#f59e0b; color:#fff; }
+  .coord-toast-info    { background:#3b82f6; color:#fff; }
+</style>
 {% endblock %}

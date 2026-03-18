@@ -1,9 +1,12 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.contrib import messages
+from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.db import IntegrityError
 from django.db import transaction
+import os
 from visitaInterna.models import VisitaInterna
 from .models import Ficha, Programa
 from .forms import VisitaInternaInstructorForm, ProgramaForm, FichaForm
@@ -14,10 +17,231 @@ from django.conf import settings
 from calendario.models import ReservaHorario
 
 from django.http import JsonResponse
-from visitaInterna.models import VisitaInterna, AsistenteVisitaInterna
+from visitaInterna.models import (
+    HistorialReprogramacion,
+    VisitaInterna,
+    AsistenteVisitaInterna,
+)
 from .models import Ficha, Programa, Aprendiz
 from .forms import VisitaInternaInstructorForm, ProgramaForm, FichaForm, AprendizForm
-from documentos.models import Documento, DocumentoSubidoAprendiz, DocumentoSubidoAsistente
+from documentos.models import Documento, DocumentoSubidoAsistente
+from documentos.models import (
+    Documento,
+    DocumentoSubidoAprendiz,
+    DocumentoSubidoAsistente,
+)
+
+CATEGORIA_DOC_SALUD = "Formato Auto Reporte Condiciones de Salud"
+CATEGORIAS_ARCHIVOS_FINALES = [
+    "ATS",
+    "Formato Inducción y Reinducción",
+    "Charla de Seguridad y Calestenia",
+]
+EXTENSIONES_DOCUMENTOS_APRENDIZ = {".pdf", ".doc", ".docx"}
+
+
+def validar_archivos_documentos_aprendiz(files):
+    """Valida que los documentos dinámicos del aprendiz solo sean PDF o Word."""
+    errores = []
+
+    for campo, archivo in files.items():
+        if not campo.startswith("documento_") or not archivo:
+            continue
+
+        extension = os.path.splitext(archivo.name)[1].lower()
+        if extension not in EXTENSIONES_DOCUMENTOS_APRENDIZ:
+            errores.append(
+                f'❌ El archivo "{archivo.name}" no es válido. Solo se permiten PDF o Word (.doc, .docx).'
+            )
+
+    return errores
+
+
+def _normalizar_categoria_texto(value):
+    return (
+        str(value or "")
+        .lower()
+        .replace("á", "a")
+        .replace("é", "e")
+        .replace("í", "i")
+        .replace("ó", "o")
+        .replace("ú", "u")
+    )
+
+
+def _es_categoria_archivo_final(categoria):
+    cat = _normalizar_categoria_texto(categoria)
+    if "ats" in cat:
+        return True
+    if "induccion y reinduccion" in cat:
+        return True
+    return "charla de seguridad" in cat and ("calestenia" in cat or "calistenia" in cat)
+
+
+def construir_reporte_documental_visita(visita, tipo_visita):
+    """Genera un resumen de faltantes y rechazos por asistente y archivos finales."""
+    doc_salud_ids = set(
+        Documento.objects.filter(categoria=CATEGORIA_DOC_SALUD).values_list(
+            "id", flat=True
+        )
+    )
+    docs_finales_requeridos = list(
+        Documento.objects.filter(categoria__in=CATEGORIAS_ARCHIVOS_FINALES).order_by(
+            "categoria", "titulo"
+        )
+    )
+
+    filtros_finales_visita = {
+        "documento_requerido__categoria__in": CATEGORIAS_ARCHIVOS_FINALES
+    }
+    if tipo_visita == "interna":
+        filtros_finales_visita["asistente_interna__visita"] = visita
+    else:
+        filtros_finales_visita["asistente_externa__visita"] = visita
+
+    existe_archivo_final_subido = DocumentoSubidoAsistente.objects.filter(
+        **filtros_finales_visita
+    ).exists()
+    mostrar_faltantes_finales_como_alerta = (
+        visita.estado in ["documentos_enviados", "en_revision_documentos", "confirmada"]
+        or existe_archivo_final_subido
+    )
+
+    asistentes_con_alertas = []
+    asistentes = visita.asistentes.prefetch_related(
+        "documentos_subidos__documento_requerido"
+    )
+    for asistente in asistentes:
+        incidencias = []
+        # Tomar solo la version vigente (ultima subida) por documento requerido.
+        latest_por_documento = {}
+        for ds in asistente.documentos_subidos.all():
+            doc_id = ds.documento_requerido_id
+            actual = latest_por_documento.get(doc_id)
+            if not actual or (ds.fecha_subida, ds.id) > (
+                actual.fecha_subida,
+                actual.id,
+            ):
+                latest_por_documento[doc_id] = ds
+
+        documentos_personales = [
+            ds
+            for ds in latest_por_documento.values()
+            if not _es_categoria_archivo_final(ds.documento_requerido.categoria)
+        ]
+
+        documentos_salud = [
+            ds
+            for ds in documentos_personales
+            if ds.documento_requerido_id in doc_salud_ids
+        ]
+        if doc_salud_ids and not documentos_salud:
+            incidencias.append(
+                {
+                    "tipo": "faltante",
+                    "detalle": "Falta el archivo de auto reporte de condiciones de salud.",
+                }
+            )
+
+        for doc_subido in documentos_personales:
+            if doc_subido.estado == "rechazado":
+                incidencias.append(
+                    {
+                        "tipo": "rechazado",
+                        "documento_subido_id": doc_subido.id,
+                        "detalle": (
+                            f"{doc_subido.documento_requerido.titulo}: "
+                            f"{doc_subido.observaciones_revision or 'Documento mal diligenciado.'}"
+                        ),
+                    }
+                )
+
+        if getattr(
+            asistente, "estado_autorizacion_padres", ""
+        ) == "rechazado" and getattr(
+            asistente, "observaciones_autorizacion_padres", ""
+        ):
+            incidencias.append(
+                {
+                    "tipo": "rechazado",
+                    "detalle": (
+                        "Autorización de padres: "
+                        f"{asistente.observaciones_autorizacion_padres}"
+                    ),
+                }
+            )
+
+        if incidencias:
+            asistentes_con_alertas.append(
+                {
+                    "id": asistente.id,
+                    "nombre": asistente.nombre_completo,
+                    "documento": f"{asistente.get_tipo_documento_display()} {asistente.numero_documento}",
+                    "incidencias": incidencias,
+                }
+            )
+
+    archivos_finales_estado = []
+    for doc_final in docs_finales_requeridos:
+        filtros = {"documento_requerido": doc_final}
+        if tipo_visita == "interna":
+            filtros["asistente_interna__visita"] = visita
+        else:
+            filtros["asistente_externa__visita"] = visita
+
+        ultimo_archivo = (
+            DocumentoSubidoAsistente.objects.filter(**filtros)
+            .order_by("-fecha_subida")
+            .first()
+        )
+
+        if not ultimo_archivo:
+            estado = "faltante"
+            detalle = "No se ha cargado este archivo final."
+        elif ultimo_archivo.estado == "rechazado":
+            estado = "rechazado"
+            detalle = (
+                ultimo_archivo.observaciones_revision or "Archivo final rechazado."
+            )
+        elif ultimo_archivo.estado == "pendiente":
+            estado = "pendiente"
+            detalle = "Archivo final cargado y en revisión."
+        else:
+            estado = "aprobado"
+            detalle = "Archivo final aprobado."
+
+        archivos_finales_estado.append(
+            {
+                "titulo": doc_final.titulo,
+                "categoria": doc_final.get_categoria_display(),
+                "estado": estado,
+                "detalle": detalle,
+            }
+        )
+
+    archivos_finales_con_alerta = [
+        a
+        for a in archivos_finales_estado
+        if a["estado"] == "rechazado"
+        or (a["estado"] == "faltante" and mostrar_faltantes_finales_como_alerta)
+    ]
+    archivos_finales_rechazados = [
+        a for a in archivos_finales_estado if a["estado"] == "rechazado"
+    ]
+    total_incidencias_asistentes = sum(
+        len(item["incidencias"]) for item in asistentes_con_alertas
+    )
+
+    return {
+        "asistentes_con_alertas": asistentes_con_alertas,
+        "archivos_finales_estado": archivos_finales_estado,
+        "archivos_finales_con_alerta": archivos_finales_con_alerta,
+        "archivos_finales_rechazados": archivos_finales_rechazados,
+        "total_alertas": total_incidencias_asistentes
+        + len(archivos_finales_con_alerta),
+        "hay_alertas": bool(asistentes_con_alertas or archivos_finales_con_alerta),
+    }
+
 
 # ==================== AUTENTICACIÓN POR SESIÓN ====================
 
@@ -56,12 +280,50 @@ def instructor_interno_required(view_func):
     return wrapper
 
 
+def _obtener_propietario_instructor(request):
+    """Resuelve el usuario propietario para aislar datos por instructor interno."""
+    correo = (request.session.get("responsable_correo") or "").strip().lower()
+    documento = (request.session.get("responsable_documento") or "").strip()
+    nombre = (request.session.get("responsable_nombre") or "").strip()
+    apellido = (request.session.get("responsable_apellido") or "").strip()
+
+    if not documento:
+        return None
+
+    UserModel = get_user_model()
+    username = f"interno_{documento}"
+    user, _ = UserModel.objects.get_or_create(
+        username=username,
+        defaults={
+            "email": correo,
+            "first_name": nombre,
+            "last_name": apellido,
+        },
+    )
+
+    update_fields = []
+    if correo and user.email != correo:
+        user.email = correo
+        update_fields.append("email")
+    if nombre and user.first_name != nombre:
+        user.first_name = nombre
+        update_fields.append("first_name")
+    if apellido and user.last_name != apellido:
+        user.last_name = apellido
+        update_fields.append("last_name")
+    if update_fields:
+        user.save(update_fields=update_fields)
+
+    return user
+
+
 # ==================== PANEL PRINCIPAL ====================
 
 
 @instructor_interno_required
 def panel_instructor_interno(request):
     correo, documento = get_sesion_instructor(request)
+    owner_user = _obtener_propietario_instructor(request)
     visitas = VisitaInterna.objects.filter(correo_responsable__iexact=correo).order_by(
         "-fecha_solicitud"
     )
@@ -71,8 +333,12 @@ def panel_instructor_interno(request):
         "nombre": request.session.get("responsable_nombre", ""),
         "apellido": request.session.get("responsable_apellido", ""),
         "visitas": visitas[:5],
-        "total_programas": Programa.objects.filter(activo=True).count(),
-        "total_fichas": Ficha.objects.filter(activa=True).count(),
+        "total_programas": Programa.objects.filter(
+            activo=True, creado_por=owner_user
+        ).count(),
+        "total_fichas": Ficha.objects.filter(
+            activa=True, creado_por=owner_user
+        ).count(),
         "total_visitas": visitas.count(),
     }
     return render(request, "panel_instructor_interno/panel.html", context)
@@ -84,6 +350,7 @@ def panel_instructor_interno(request):
 @instructor_interno_required
 def reservar_visita_interna(request):
     correo, documento = get_sesion_instructor(request)
+    owner_user = _obtener_propietario_instructor(request)
 
     # Obtener datos adicionales de la sesión
     nombre = request.session.get("responsable_nombre", "")
@@ -93,9 +360,40 @@ def reservar_visita_interna(request):
     nombre_completo = f"{nombre} {apellido}".strip()
 
     if request.method == "POST":
-        form = VisitaInternaInstructorForm(request.POST)
+        form = VisitaInternaInstructorForm(request.POST, owner_user=owner_user)
         if form.is_valid():
+            numero_ficha = form.cleaned_data.get("numero_ficha")
+            ficha = (
+                Ficha.objects.select_related("programa")
+                .filter(
+                    numero=numero_ficha,
+                    activa=True,
+                    programa__activo=True,
+                    creado_por=owner_user,
+                )
+                .first()
+            )
+
+            if not ficha:
+                form.add_error(
+                    "numero_ficha",
+                    "La ficha seleccionada no es válida o está inactiva.",
+                )
+                context = {
+                    "form": form,
+                    "fichas": Ficha.objects.filter(
+                        activa=True, creado_por=owner_user
+                    ).select_related("programa"),
+                    "correo": correo,
+                    "titulo": "Reservar Visita Interna",
+                }
+                return render(
+                    request, "panel_instructor_interno/reservar_visita.html", context
+                )
+
             visita = form.save(commit=False)
+            visita.nombre_programa = ficha.programa.nombre
+            visita.numero_ficha = ficha.numero
             visita.correo_responsable = correo
             visita.documento_responsable = documento
             visita.estado = "enviada_coordinacion"
@@ -172,7 +470,7 @@ def reservar_visita_interna(request):
                         request,
                         "✅ Solicitud enviada. El horario quedó bloqueado y está pendiente de aprobación por coordinación.",
                     )
-                    return redirect("panel_instructor_interno:mis_visitas")
+                    return redirect("panel_instructor_interno:panel")
     else:
         form = VisitaInternaInstructorForm(
             initial={
@@ -181,14 +479,15 @@ def reservar_visita_interna(request):
                 "documento_responsable": documento,
                 "correo_responsable": correo,
                 "telefono_responsable": telefono,
-            }
+            },
+            owner_user=owner_user,
         )
-    fichas = Ficha.objects.filter(activa=True).select_related("programa")
-    programas = Programa.objects.filter(activo=True)
+    fichas = Ficha.objects.filter(activa=True, creado_por=owner_user).select_related(
+        "programa"
+    )
     context = {
         "form": form,
         "fichas": fichas,
-        "programas": programas,
         "correo": correo,
         "titulo": "Reservar Visita Interna",
     }
@@ -196,33 +495,14 @@ def reservar_visita_interna(request):
 
 
 @instructor_interno_required
-def mis_visitas_internas(request):
-    correo, _ = get_sesion_instructor(request)
-    visitas = VisitaInterna.objects.filter(correo_responsable__iexact=correo).order_by(
-        "-fecha_solicitud"
-    )
-    estado = request.GET.get("estado", "")
-    if estado:
-        visitas = visitas.filter(estado=estado)
-    buscar = request.GET.get("buscar", "")
-    if buscar:
-        visitas = visitas.filter(
-            Q(nombre_programa__icontains=buscar) | Q(numero_ficha__icontains=buscar)
-        )
-    context = {
-        "visitas": visitas,
-        "correo": correo,
-        "estado_filtrado": estado,
-        "buscar": buscar,
-        "estados": VisitaInterna.ESTADO_CHOICES,
-    }
-    return render(request, "panel_instructor_interno/mis_visitas.html", context)
-
-
-@instructor_interno_required
 def detalle_visita_interna(request, pk):
     correo, _ = get_sesion_instructor(request)
     visita = get_object_or_404(VisitaInterna, pk=pk, correo_responsable__iexact=correo)
+    reprogramacion_pendiente = (
+        HistorialReprogramacion.objects.filter(visita_interna=visita, completada=False)
+        .order_by("-fecha_solicitud")
+        .first()
+    )
 
     # Obtener documentos disponibles para descargar, agrupados por categoría
     from documentos.models import Documento
@@ -237,6 +517,54 @@ def detalle_visita_interna(request, pk):
             documentos_por_categoria[cat_display] = []
         documentos_por_categoria[cat_display].append(doc)
 
+    # Tomar un unico documento por cada categoria final requerida para descarga.
+    documentos_finales_requeridos = []
+    categorias_finales_agregadas = set()
+    for doc in documentos_disponibles:
+        categoria_norm = _normalizar_categoria_texto(doc.categoria)
+        clave_categoria = None
+        etiqueta = doc.categoria
+
+        if "ats" in categoria_norm:
+            clave_categoria = "ats"
+            etiqueta = "ATS"
+        elif "induccion y reinduccion" in categoria_norm:
+            clave_categoria = "induccion"
+            etiqueta = "Formato Inducción y Reinducción"
+        elif "charla de seguridad" in categoria_norm and (
+            "calestenia" in categoria_norm or "calistenia" in categoria_norm
+        ):
+            clave_categoria = "charla"
+            etiqueta = "Charla de Seguridad y Calistenia"
+
+        if not clave_categoria or clave_categoria in categorias_finales_agregadas:
+            continue
+
+        doc.etiqueta_requerida = etiqueta
+        documentos_finales_requeridos.append(doc)
+        categorias_finales_agregadas.add(clave_categoria)
+
+    reporte_documental = construir_reporte_documental_visita(visita, "interna")
+    hay_alertas_documentales = bool(reporte_documental.get("hay_alertas"))
+    estados_finales = reporte_documental.get("archivos_finales_estado", [])
+    archivos_finales_faltantes = sum(
+        1 for item in estados_finales if item.get("estado") == "faltante"
+    )
+    archivos_finales_completos = archivos_finales_faltantes == 0
+
+    enviar_final_habilitado = (
+        visita.estado == "aprobada_inicial"
+        and visita.asistentes.exists()
+        and archivos_finales_completos
+        and not hay_alertas_documentales
+    )
+
+    mostrar_boton_subir_archivos_finales = (
+        visita.estado == "aprobada_inicial"
+        and visita.asistentes.exists()
+        and not archivos_finales_completos
+    )
+
     return render(
         request,
         "panel_instructor_interno/detalle_visita.html",
@@ -244,6 +572,11 @@ def detalle_visita_interna(request, pk):
             "visita": visita,
             "correo": correo,
             "documentos_por_categoria": documentos_por_categoria,
+            "documentos_finales_requeridos": documentos_finales_requeridos,
+            "reporte_documental": reporte_documental,
+            "reprogramacion_pendiente": reprogramacion_pendiente,
+            "enviar_final_habilitado": enviar_final_habilitado,
+            "mostrar_boton_subir_archivos_finales": mostrar_boton_subir_archivos_finales,
         },
     )
 
@@ -254,7 +587,8 @@ def detalle_visita_interna(request, pk):
 @instructor_interno_required
 def gestionar_programas(request):
     correo, _ = get_sesion_instructor(request)
-    programas = Programa.objects.all().order_by("nombre")
+    owner_user = _obtener_propietario_instructor(request)
+    programas = Programa.objects.filter(creado_por=owner_user).order_by("nombre")
     buscar = request.GET.get("buscar", "")
     if buscar:
         programas = programas.filter(nombre__icontains=buscar)
@@ -273,6 +607,7 @@ def gestionar_programas(request):
 @instructor_interno_required
 def crear_programa(request):
     correo, _ = get_sesion_instructor(request)
+    owner_user = _obtener_propietario_instructor(request)
     is_ajax = (
         request.GET.get("ajax") == "true"
         or request.headers.get("X-Requested-With") == "XMLHttpRequest"
@@ -281,7 +616,9 @@ def crear_programa(request):
     if request.method == "POST":
         form = ProgramaForm(request.POST)
         if form.is_valid():
-            programa = form.save()
+            programa = form.save(commit=False)
+            programa.creado_por = owner_user
+            programa.save()
             if is_ajax:
                 return JsonResponse(
                     {
@@ -352,7 +689,8 @@ def crear_programa(request):
 @instructor_interno_required
 def editar_programa(request, pk):
     correo, _ = get_sesion_instructor(request)
-    programa = get_object_or_404(Programa, pk=pk)
+    owner_user = _obtener_propietario_instructor(request)
+    programa = get_object_or_404(Programa, pk=pk, creado_por=owner_user)
     is_ajax = (
         request.GET.get("ajax") == "true"
         or request.headers.get("X-Requested-With") == "XMLHttpRequest"
@@ -434,7 +772,8 @@ def editar_programa(request, pk):
 @instructor_interno_required
 def eliminar_programa(request, pk):
     correo, _ = get_sesion_instructor(request)
-    programa = get_object_or_404(Programa, pk=pk)
+    owner_user = _obtener_propietario_instructor(request)
+    programa = get_object_or_404(Programa, pk=pk, creado_por=owner_user)
     is_ajax = (
         request.GET.get("ajax") == "true"
         or request.headers.get("X-Requested-With") == "XMLHttpRequest"
@@ -489,7 +828,8 @@ def eliminar_programa(request, pk):
 @instructor_interno_required
 def gestionar_fichas(request):
     correo, _ = get_sesion_instructor(request)
-    fichas = Ficha.objects.select_related("programa").all()
+    owner_user = _obtener_propietario_instructor(request)
+    fichas = Ficha.objects.select_related("programa").filter(creado_por=owner_user)
     buscar = request.GET.get("buscar", "")
     if buscar:
         fichas = fichas.filter(
@@ -510,15 +850,18 @@ def gestionar_fichas(request):
 @instructor_interno_required
 def crear_ficha(request):
     correo, _ = get_sesion_instructor(request)
+    owner_user = _obtener_propietario_instructor(request)
     is_ajax = (
         request.GET.get("ajax") == "true"
         or request.headers.get("X-Requested-With") == "XMLHttpRequest"
     )
 
     if request.method == "POST":
-        form = FichaForm(request.POST)
+        form = FichaForm(request.POST, owner_user=owner_user)
         if form.is_valid():
-            ficha = form.save()
+            ficha = form.save(commit=False)
+            ficha.creado_por = owner_user
+            ficha.save()
             if is_ajax:
                 return JsonResponse(
                     {
@@ -557,7 +900,7 @@ def crear_ficha(request):
                 },
             )
     else:
-        form = FichaForm()
+        form = FichaForm(owner_user=owner_user)
 
     if is_ajax:
         # Para AJAX GET, retornar solo el formulario sin headers/footers
@@ -589,14 +932,15 @@ def crear_ficha(request):
 @instructor_interno_required
 def editar_ficha(request, pk):
     correo, _ = get_sesion_instructor(request)
-    ficha = get_object_or_404(Ficha, pk=pk)
+    owner_user = _obtener_propietario_instructor(request)
+    ficha = get_object_or_404(Ficha, pk=pk, creado_por=owner_user)
     is_ajax = (
         request.GET.get("ajax") == "true"
         or request.headers.get("X-Requested-With") == "XMLHttpRequest"
     )
 
     if request.method == "POST":
-        form = FichaForm(request.POST, instance=ficha)
+        form = FichaForm(request.POST, instance=ficha, owner_user=owner_user)
         if form.is_valid():
             form.save()
             if is_ajax:
@@ -636,7 +980,7 @@ def editar_ficha(request, pk):
                 },
             )
     else:
-        form = FichaForm(instance=ficha)
+        form = FichaForm(instance=ficha, owner_user=owner_user)
 
     if is_ajax:
         # Para AJAX GET, retornar solo el formulario
@@ -669,7 +1013,8 @@ def editar_ficha(request, pk):
 @instructor_interno_required
 def eliminar_ficha(request, pk):
     correo, _ = get_sesion_instructor(request)
-    ficha = get_object_or_404(Ficha, pk=pk)
+    owner_user = _obtener_propietario_instructor(request)
+    ficha = get_object_or_404(Ficha, pk=pk, creado_por=owner_user)
     is_ajax = (
         request.GET.get("ajax") == "true"
         or request.headers.get("X-Requested-With") == "XMLHttpRequest"
@@ -716,40 +1061,41 @@ def eliminar_ficha(request, pk):
 @instructor_interno_required
 def listar_fichas_aprendices(request):
     """
-    Lista todas las fichas con sus aprendices registrados.
+    Ruta legacy. Redirige al módulo principal de fichas.
     """
-    correo, _ = get_sesion_instructor(request)
+    return redirect("panel_instructor_interno:gestionar_fichas")
 
-    # Obtener fichas
-    fichas_all = Ficha.objects.select_related("programa").order_by("-numero")
 
-    buscar = request.GET.get("buscar", "")
-    if buscar:
-        fichas_all = fichas_all.filter(
-            Q(numero__icontains=buscar) | Q(programa__nombre__icontains=buscar)
-        )
+from django.views.decorators.clickjacking import xframe_options_exempt
 
-    # Agregar información de conteo de aprendices
-    fichas_info = []
-    for ficha in fichas_all:
-        fichas_info.append(
-            {
-                "ficha": ficha,
-                "total_aprendices": ficha.aprendices.count(),
-                "aprendices_activos": ficha.aprendices.filter(estado="activo").count(),
-            }
-        )
 
-    context = {
-        "fichas_info": fichas_info,
-        "buscar": buscar,
-        "total": len(fichas_info),
-        "correo": correo,
-    }
+@xframe_options_exempt
+@instructor_interno_required
+def ver_documento_aprendiz_inline(request, aprendiz_id, campo):
+    """Sirve un campo de archivo de un Aprendiz (documento_identidad o documento_adicional) inline."""
+    import mimetypes
+    from django.http import FileResponse, HttpResponseNotFound, HttpResponseBadRequest
 
-    return render(
-        request, "panel_instructor_interno/listar_fichas_aprendices.html", context
-    )
+    campos_permitidos = ["documento_identidad", "documento_adicional"]
+    if campo not in campos_permitidos:
+        return HttpResponseBadRequest("Campo no válido")
+
+    owner_user = _obtener_propietario_instructor(request)
+    aprendiz = get_object_or_404(Aprendiz, id=aprendiz_id, ficha__creado_por=owner_user)
+    archivo = getattr(aprendiz, campo)
+    if not archivo or not archivo.storage.exists(archivo.name):
+        return HttpResponseNotFound("El archivo no existe")
+
+    nombre = os.path.basename(archivo.name)
+    f = archivo.open("rb")
+    tipo_mime, _ = mimetypes.guess_type(archivo.name)
+    if not tipo_mime:
+        tipo_mime = "application/octet-stream"
+
+    response = FileResponse(f, content_type=tipo_mime)
+    response["Content-Disposition"] = f'inline; filename="{nombre}"'
+    response["X-Frame-Options"] = "SAMEORIGIN"
+    return response
 
 
 @instructor_interno_required
@@ -759,7 +1105,8 @@ def detalle_aprendices_ficha(request, pk):
     Permite crear, editar y eliminar aprendices.
     """
     correo, _ = get_sesion_instructor(request)
-    ficha = get_object_or_404(Ficha, pk=pk)
+    owner_user = _obtener_propietario_instructor(request)
+    ficha = get_object_or_404(Ficha, pk=pk, creado_por=owner_user)
 
     aprendices = ficha.aprendices.all().order_by("apellido", "nombre")
     estado_filtro = request.GET.get("estado", "")
@@ -794,32 +1141,39 @@ def crear_aprendiz(request, ficha_id):
     Crea un nuevo aprendiz para una ficha.
     """
     correo, _ = get_sesion_instructor(request)
-    ficha = get_object_or_404(Ficha, pk=ficha_id)
+    owner_user = _obtener_propietario_instructor(request)
+    ficha = get_object_or_404(Ficha, pk=ficha_id, creado_por=owner_user)
 
     # Obtener documentos por categoría
     documentos_por_categoria = obtener_documentos_por_categoria()
 
     if request.method == "POST":
         form = AprendizForm(request.POST, request.FILES, ficha=ficha)
-        if form.is_valid():
+        errores_archivos = validar_archivos_documentos_aprendiz(request.FILES)
+
+        if form.is_valid() and not errores_archivos:
             aprendiz = form.save(commit=False)
             aprendiz.ficha = ficha
             try:
-                aprendiz.save()
-                
-                # Guardar documentos de apoyo subidos
-                for categoria, docs in documentos_por_categoria.items():
-                    if categoria == '👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud':
-                        for doc in docs:
-                            archivo = request.FILES.get(f"documento_{doc.id}")
-                            if archivo:
-                                DocumentoSubidoAprendiz.objects.create(
-                                    documento_requerido=doc,
-                                    aprendiz=aprendiz,
-                                    archivo=archivo,
-                                    estado='pendiente'
-                                )
-                
+                with transaction.atomic():
+                    aprendiz.save()
+
+                    # Guardar documentos de apoyo subidos
+                    for categoria, docs in documentos_por_categoria.items():
+                        if (
+                            categoria
+                            == "👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud"
+                        ):
+                            for doc in docs:
+                                archivo = request.FILES.get(f"documento_{doc.id}")
+                                if archivo:
+                                    DocumentoSubidoAprendiz.objects.create(
+                                        documento_requerido=doc,
+                                        aprendiz=aprendiz,
+                                        archivo=archivo,
+                                        estado="pendiente",
+                                    )
+
                 messages.success(
                     request,
                     f'✅ Aprendiz "{aprendiz.get_nombre_completo()}" registrado correctamente con documentos.',
@@ -829,11 +1183,13 @@ def crear_aprendiz(request, ficha_id):
                 )
             except IntegrityError:
                 messages.error(
-                    request, 
+                    request,
                     f"❌ Ya existe un aprendiz con el documento {aprendiz.numero_documento} en esta ficha. "
-                    f"Cada documento debe ser único por ficha."
+                    f"Cada documento debe ser único por ficha.",
                 )
         else:
+            for error in errores_archivos:
+                messages.error(request, error)
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, f"❌ {field}: {error}")
@@ -857,7 +1213,8 @@ def editar_aprendiz(request, pk):
     Edita un aprendiz existente y sus documentos.
     """
     correo, _ = get_sesion_instructor(request)
-    aprendiz = get_object_or_404(Aprendiz, pk=pk)
+    owner_user = _obtener_propietario_instructor(request)
+    aprendiz = get_object_or_404(Aprendiz, pk=pk, ficha__creado_por=owner_user)
     ficha = aprendiz.ficha
 
     # Obtener documentos por categoría
@@ -865,42 +1222,48 @@ def editar_aprendiz(request, pk):
 
     if request.method == "POST":
         form = AprendizForm(request.POST, request.FILES, instance=aprendiz, ficha=ficha)
-        if form.is_valid():
+        errores_archivos = validar_archivos_documentos_aprendiz(request.FILES)
+
+        if form.is_valid() and not errores_archivos:
             try:
-                form.save()
-                
-                # Guardar documentos de apoyo subidos (actualizar existentes)
-                for categoria, docs in documentos_por_categoria.items():
-                    if categoria == '👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud':
-                        for doc in docs:
-                            archivo = request.FILES.get(f"documento_{doc.id}")
-                            if archivo:
-                                # Eliminar documento anterior si existe
-                                DocumentoSubidoAprendiz.objects.filter(
-                                    documento_requerido=doc,
-                                    aprendiz=aprendiz
-                                ).delete()
-                                # Crear nuevo registro
-                                DocumentoSubidoAprendiz.objects.create(
-                                    documento_requerido=doc,
-                                    aprendiz=aprendiz,
-                                    archivo=archivo,
-                                    estado='pendiente'
-                                )
-                
+                with transaction.atomic():
+                    form.save()
+
+                    # Guardar documentos de apoyo subidos (actualizar existentes)
+                    for categoria, docs in documentos_por_categoria.items():
+                        if (
+                            categoria
+                            == "👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud"
+                        ):
+                            for doc in docs:
+                                archivo = request.FILES.get(f"documento_{doc.id}")
+                                if archivo:
+                                    DocumentoSubidoAprendiz.objects.filter(
+                                        documento_requerido=doc, aprendiz=aprendiz
+                                    ).delete()
+                                    DocumentoSubidoAprendiz.objects.create(
+                                        documento_requerido=doc,
+                                        aprendiz=aprendiz,
+                                        archivo=archivo,
+                                        estado="pendiente",
+                                    )
+
                 messages.success(
-                    request, f'✅ Aprendiz "{aprendiz.get_nombre_completo()}" actualizado.'
+                    request,
+                    f'✅ Aprendiz "{aprendiz.get_nombre_completo()}" actualizado.',
                 )
                 return redirect(
                     "panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id
                 )
             except IntegrityError:
                 messages.error(
-                    request, 
+                    request,
                     f"❌ Ya existe un aprendiz con el documento {aprendiz.numero_documento} en esta ficha. "
-                    f"Cada documento debe ser único por ficha."
+                    f"Cada documento debe ser único por ficha.",
                 )
         else:
+            for error in errores_archivos:
+                messages.error(request, error)
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, f"❌ {field}: {error}")
@@ -925,7 +1288,8 @@ def eliminar_aprendiz(request, pk):
     Elimina un aprendiz.
     """
     correo, _ = get_sesion_instructor(request)
-    aprendiz = get_object_or_404(Aprendiz, pk=pk)
+    owner_user = _obtener_propietario_instructor(request)
+    aprendiz = get_object_or_404(Aprendiz, pk=pk, ficha__creado_por=owner_user)
     ficha = aprendiz.ficha
 
     if request.method == "POST":
@@ -957,7 +1321,8 @@ def obtener_aprendices_ficha_json(request, ficha_id):
     Usado para prellenar datos en formulario de visitas.
     """
     try:
-        ficha = get_object_or_404(Ficha, pk=ficha_id)
+        owner_user = _obtener_propietario_instructor(request)
+        ficha = get_object_or_404(Ficha, pk=ficha_id, creado_por=owner_user)
         aprendices = ficha.aprendices.filter(estado="activo").values(
             "id",
             "nombre",
@@ -991,13 +1356,14 @@ def registrar_aprendices_visita(request, visita_id):
     Automáticamente trae sus datos y documentos.
     """
     correo, _ = get_sesion_instructor(request)
+    owner_user = _obtener_propietario_instructor(request)
     visita = get_object_or_404(
         VisitaInterna, pk=visita_id, correo_responsable__iexact=correo
     )
 
     # Obtener la ficha de la visita
     try:
-        ficha = Ficha.objects.get(numero=visita.numero_ficha)
+        ficha = Ficha.objects.get(numero=visita.numero_ficha, creado_por=owner_user)
     except Ficha.DoesNotExist:
         messages.error(request, "❌ No se encontró la ficha asociada a esta visita.")
         return redirect("panel_instructor_interno:detalle_visita", pk=visita_id)
@@ -1147,7 +1513,8 @@ def guardar_documentos_aprendiz(aprendiz, archivos_subidos, documentos_por_categ
 @instructor_interno_required
 def crear_aprendiz(request, ficha_id):
     correo, _ = get_sesion_instructor(request)
-    ficha = get_object_or_404(Ficha, pk=ficha_id)
+    owner_user = _obtener_propietario_instructor(request)
+    ficha = get_object_or_404(Ficha, pk=ficha_id, creado_por=owner_user)
 
     # --- INTEGRACIÓN DE DOCUMENTOS ---
     docs_cat = obtener_documentos_por_categoria()
@@ -1169,8 +1536,8 @@ def crear_aprendiz(request, ficha_id):
                 )
             except IntegrityError:
                 messages.error(
-                    request, 
-                    f"❌ Ya existe un aprendiz con el documento {aprendiz.numero_documento} en esta ficha."
+                    request,
+                    f"❌ Ya existe un aprendiz con el documento {aprendiz.numero_documento} en esta ficha.",
                 )
         else:
             for field, errors in form.errors.items():
@@ -1193,7 +1560,8 @@ def crear_aprendiz(request, ficha_id):
 @instructor_interno_required
 def editar_aprendiz(request, pk):
     correo, _ = get_sesion_instructor(request)
-    aprendiz = get_object_or_404(Aprendiz, pk=pk)
+    owner_user = _obtener_propietario_instructor(request)
+    aprendiz = get_object_or_404(Aprendiz, pk=pk, ficha__creado_por=owner_user)
     ficha = aprendiz.ficha
 
     # --- INTEGRACIÓN DE DOCUMENTOS ---
@@ -1206,15 +1574,16 @@ def editar_aprendiz(request, pk):
                 form.save()
                 guardar_documentos_aprendiz(aprendiz, request.FILES, docs_cat)
                 messages.success(
-                    request, f'✅ Aprendiz "{aprendiz.get_nombre_completo()}" actualizado.'
+                    request,
+                    f'✅ Aprendiz "{aprendiz.get_nombre_completo()}" actualizado.',
                 )
                 return redirect(
                     "panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id
                 )
             except IntegrityError:
                 messages.error(
-                    request, 
-                    f"❌ Ya existe un aprendiz con el documento {aprendiz.numero_documento} en esta ficha."
+                    request,
+                    f"❌ Ya existe un aprendiz con el documento {aprendiz.numero_documento} en esta ficha.",
                 )
         else:
             for field, errors in form.errors.items():
