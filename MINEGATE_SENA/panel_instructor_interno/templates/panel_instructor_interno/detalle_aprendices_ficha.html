@@ -114,7 +114,7 @@
     <div class="breadcrumb-nav mb-2">
       <a href="{% url 'panel_instructor_interno:panel' %}"><i class="fas fa-home me-1"></i>Mi Panel</a>
       <span>&rsaquo;</span>
-      <a href="{% url 'panel_instructor_interno:gestionar_fichas' %}">Fichas</a>
+      <a href="{% url 'panel_instructor_interno:gestionar_fichas_programas' %}">Fichas y Programas</a>
       <span>&rsaquo;</span>
       <span style="color:rgba(255,255,255,0.9)">Ficha {{ ficha.numero }}</span>
     </div>
@@ -238,10 +238,10 @@
             <div class="doc-row">
               <div class="doc-name">
                 <i class="fas fa-file-medical" style="color:#0369a1; flex-shrink:0;"></i>
-                <span class="doc-badge-reporte">Reporte</span>
+                <span class="doc-badge-reporte">Formato Auto Reporte Condiciones de Salud</span>
               </div>
               <div class="doc-actions">
-                <button class="btn-doc eye" title="Ver" onclick="verDocumento('{% url 'panel_instructor_interno:ver_documento_aprendiz_inline' aprendiz.id 'documento_adicional' %}', 'Auto Reporte - {{ aprendiz.get_nombre_completo|escapejs }}', '{{ aprendiz.documento_adicional.name|default:'' }}'.split('/').pop().split('.').pop())"><i class="fas fa-eye"></i></button>
+                <button class="btn-doc eye" title="Ver" onclick="verDocumento('{% url 'panel_instructor_interno:ver_documento_aprendiz_inline' aprendiz.id 'documento_adicional' %}', 'Formato Auto Reporte Condiciones de Salud - {{ aprendiz.get_nombre_completo|escapejs }}', '{{ aprendiz.documento_adicional.name|default:'' }}'.split('/').pop().split('.').pop())"><i class="fas fa-eye"></i></button>
                 <a href="{{ aprendiz.documento_adicional.url }}" download class="btn-doc dl" title="Descargar"><i class="fas fa-download"></i></a>
               </div>
             </div>
@@ -291,7 +291,7 @@
   {% endif %}
 
   <div class="mt-4 mb-5">
-    <a href="{% url 'panel_instructor_interno:gestionar_fichas' %}" class="btn-volver">
+    <a href="{% url 'panel_instructor_interno:gestionar_fichas_programas' %}" class="btn-volver">
       <i class="fas fa-arrow-left"></i> Volver a la lista
     </a>
   </div>

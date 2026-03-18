@@ -10,63 +10,6 @@ function addCsrfToFormData(formData) {
   }
 }
 
-function escapeHtml(value) {
-  return String(value || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-function getObservationTheme(observacion) {
-  const texto = String(observacion || '').toLowerCase();
-
-  const tiene = (palabras) => palabras.some((p) => texto.includes(p));
-
-  if (tiene(['urgente', 'riesgo', 'emergencia', 'accidente', 'incumplimiento', 'prohibido'])) {
-    return {
-      label: 'Observaciones del coordinador',
-      icon: 'ri-alarm-warning-line',
-      bg: '#fef2f2',
-      border: '#fca5a5',
-      accent: '#dc2626',
-      text: '#7f1d1d'
-    };
-  }
-
-  if (tiene(['seguridad', 'protocolo', 'importante', 'precaucion', 'precaución', 'requisito', 'obligatorio', 'atencion', 'atención'])) {
-    return {
-      label: 'Observaciones del coordinador',
-      icon: 'ri-error-warning-line',
-      bg: '#fffbeb',
-      border: '#fcd34d',
-      accent: '#d97706',
-      text: '#92400e'
-    };
-  }
-
-  if (tiene(['ok', 'correcto', 'completo', 'aprobado', 'cumple', 'listo', 'autorizado'])) {
-    return {
-      label: 'Observaciones del coordinador',
-      icon: 'ri-checkbox-circle-line',
-      bg: '#ecfdf5',
-      border: '#86efac',
-      accent: '#16a34a',
-      text: '#166534'
-    };
-  }
-
-  return {
-    label: 'Observaciones del coordinador',
-    icon: 'ri-information-line',
-    bg: '#eff6ff',
-    border: '#93c5fd',
-    accent: '#2563eb',
-    text: '#1e3a8a'
-  };
-}
-
 let _docxPreviewLoaderPromiseVisitas = null;
 
 function _loadScriptOnceVisitas(src) {
@@ -259,7 +202,10 @@ function getEstadoBadge(estado) {
     'confirmada': '<span class="gv-estado-pill gv-estado-confirmada"><i class="ri-verified-badge-line"></i> Confirmada</span>',
     'rechazada': '<span class="gv-estado-pill gv-estado-rechazada"><i class="ri-close-circle-line"></i> Rechazada</span>',
   };
-  return badges[estado] || `<span class="gv-estado-pill">${estado}</span>`;
+  const estadoLegible = String(estado || '')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+  return badges[estado] || `<span class="gv-estado-pill">${estadoLegible}</span>`;
 }
 
 function puedeSolicitarReprogramacionAdmin(estado) {
@@ -330,9 +276,6 @@ function getAccionesVisita(v) {
     acciones.push(`<button type="button" onclick="accionVisita('${v.tipo}', ${v.id}, 'aprobar')" class="docs-btn-accion gv-btn-approve">
       <i class="ri-check-line"></i> Aprobar
     </button>`);
-    acciones.push(`<button type="button" onclick="accionVisita('${v.tipo}', ${v.id}, 'rechazar')" class="docs-btn-accion gv-btn-reject" title="Rechazar visita">
-      <i class="ri-close-line"></i>
-    </button>`);
   }
 
   if (puedeSolicitarReprogramacionAdmin(v.estado)) {
@@ -346,7 +289,7 @@ function getAccionesVisita(v) {
       <i class="ri-file-search-line"></i> Revisar docs
     </button>`);
     acciones.push(`<button type="button" onclick="accionVisita('${v.tipo}', ${v.id}, 'iniciar_revision')" class="docs-btn-accion gv-btn-review">
-      <i class="ri-search-line"></i> Iniciar revisión
+      <i class="ri-search-line"></i> Finalizar revisión
     </button>`);
   }
 
@@ -644,8 +587,8 @@ function mostrarDocumentosPorEstado(filtro) {
             aBadge = '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">⚠️ Pendiente corrección</span>';
             borderLeft = '#ef4444';
           } else if (a.estado === 'documentos_rechazados') {
-            aBadge = '<span style="background:#e2e8f0;color:#334155;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">ℹ️ Sin novedad personal</span>';
-            borderLeft = '#94a3b8';
+            aBadge = '<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">⏳ Pendiente</span>';
+            borderLeft = '#f59e0b';
           }
 
           let botonesDoc = '';
@@ -1315,8 +1258,8 @@ function verDetalleVisita(tipo, id) {
             borderColor = '#ef4444';
             estadoBadge = '<span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">⚠️ Pendiente corrección</span>';
           } else if (a.estado === 'documentos_rechazados') {
-            borderColor = '#94a3b8';
-            estadoBadge = '<span style="background:#e2e8f0;color:#334155;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">ℹ️ Sin novedad personal</span>';
+            borderColor = '#f59e0b';
+            estadoBadge = '<span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">⏳ Pendiente</span>';
           }
 
           let accionesDocHtml = '';
@@ -1405,9 +1348,6 @@ function verDetalleVisita(tipo, id) {
         }).join('');
       }
 
-      const observacionesTheme = getObservationTheme(data.observaciones);
-      const puedeMostrarObservacionesCoordinador = !['enviada_coordinacion', 'reprogramacion_solicitada'].includes(data.estado);
-
       let html = `
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;background:linear-gradient(135deg,#f8fafc,#f1f5f9);padding:16px;border-radius:12px;border:1px solid #e2e8f0;">
             <div style="display:flex;align-items:center;gap:8px;">
@@ -1428,18 +1368,13 @@ function verDetalleVisita(tipo, id) {
             </div>
             <div style="display:flex;align-items:center;gap:8px;">
               <span style="background:#22c55e;color:white;border-radius:6px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ri-time-line" style="font-size:13px;"></i></span>
+              <div><span style="font-size:11px;color:#6b7280;display:block;">Horario</span><strong style="font-size:13px;color:#111827;">${data.horario_visita || 'Por definir'}</strong></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="background:#22c55e;color:white;border-radius:6px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ri-history-line" style="font-size:13px;"></i></span>
               <div><span style="font-size:11px;color:#6b7280;display:block;">Registrada</span><strong style="font-size:13px;color:#111827;">${data.fecha_registro || data.fecha_solicitud}</strong></div>
             </div>
           </div>
-          ${data.observaciones && puedeMostrarObservacionesCoordinador
-          ? `<div style="margin-bottom:16px;padding:12px 14px;background:${observacionesTheme.bg};border:1px solid ${observacionesTheme.border};border-left:4px solid ${observacionesTheme.accent};border-radius:10px;color:${observacionesTheme.text};">
-              <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.35px;">
-                <i class="${observacionesTheme.icon}"></i>
-                ${observacionesTheme.label}
-              </div>
-              <div style="font-size:13px;line-height:1.5;white-space:normal;">${escapeHtml(data.observaciones).replace(/\n/g, '<br>')}</div>
-            </div>`
-          : ''}
           
           ${archivosFinalesHtml}
           

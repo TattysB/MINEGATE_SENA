@@ -6,12 +6,18 @@ import uuid
 
 class VisitaExterna(models.Model):
     ESTADO_CHOICES = [
-        ("pendiente", "Pendiente"),
-        ("aprobada_coord", "Aprobada por Coordinador"),
-        ("correccion_docs", "Requiere Corrección de Documentos"),
-        ("reprogramacion_solicitada", "Reprogramación Solicitada"),
+        ("pendiente", "Pendiente de revision"),
+        ("enviada_coordinacion", "Enviada a coordinacion"),
+        ("aprobada", "Aprobada"),
+        ("aprobada_coord", "Aprobada por coordinacion"),
+        ("aprobada_inicial", "Aprobada inicial"),
+        ("documentos_enviados", "Documentos enviados"),
+        ("en_revision_documentos", "En revision de documentos"),
+        ("correccion_docs", "Correccion de documentos"),
+        ("reprogramacion_solicitada", "Reprogramacion solicitada"),
         ("rechazada", "Rechazada"),
-        ("aprobada_final", "Aprobada Final"),
+        ("confirmada", "Confirmada"),
+        ("aprobada_final", "Aprobada final"),
     ]
 
     id = models.AutoField(primary_key=True, verbose_name="ID")

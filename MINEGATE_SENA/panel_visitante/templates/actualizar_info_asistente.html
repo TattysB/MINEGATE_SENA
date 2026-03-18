@@ -9,11 +9,31 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
+            {% if tipo == 'externa' %}
+            --modal-primary: #39a900;
+            --modal-primary-mid: #2f8f00;
+            --modal-primary-dark: #1f6f00;
+            --modal-success: #2f8f00;
+            --modal-success-hover: #236c00;
+            --modal-border: #cfe8b9;
+            --modal-bg: #f1f9e9;
+            --modal-window-start: #fbfef8;
+            --modal-window-end: #eef8e5;
+            --modal-focus: #39a900;
+            --modal-focus-shadow: rgba(57, 169, 0, 0.2);
+            {% else %}
             --modal-primary: #1d4ed8;
+            --modal-primary-mid: #2563eb;
             --modal-primary-dark: #1e3a8a;
             --modal-success: #198754;
+            --modal-success-hover: #157347;
             --modal-border: #dbe4f2;
             --modal-bg: #f6f9ff;
+            --modal-window-start: #f9fbff;
+            --modal-window-end: #f1f6ff;
+            --modal-focus: #3b82f6;
+            --modal-focus-shadow: rgba(59, 130, 246, 0.18);
+            {% endif %}
         }
 
         * {
@@ -27,10 +47,17 @@
             {% if embed_mode %}
             background: transparent;
             {% else %}
+            {% if tipo == 'externa' %}
+            background:
+                radial-gradient(circle at 10% 10%, rgba(57, 169, 0, 0.2), transparent 38%),
+                radial-gradient(circle at 90% 20%, rgba(47, 143, 0, 0.16), transparent 42%),
+                #ecf6e5;
+            {% else %}
             background:
                 radial-gradient(circle at 10% 10%, rgba(37, 99, 235, 0.18), transparent 36%),
                 radial-gradient(circle at 90% 20%, rgba(16, 185, 129, 0.14), transparent 40%),
                 #e8edf5;
+            {% endif %}
             {% endif %}
             display: flex;
             align-items: center;
@@ -87,7 +114,7 @@
         {% endif %}
 
         .floating-window {
-            background: linear-gradient(180deg, #f9fbff 0%, #f1f6ff 100%);
+            background: linear-gradient(180deg, var(--modal-window-start) 0%, var(--modal-window-end) 100%);
             border: 1px solid var(--modal-border);
             border-radius: 20px;
             overflow: hidden;
@@ -97,7 +124,7 @@
         }
 
         .floating-header {
-            background: linear-gradient(135deg, var(--modal-primary) 0%, #2563eb 45%, var(--modal-primary-dark) 100%);
+            background: linear-gradient(135deg, var(--modal-primary) 0%, var(--modal-primary-mid) 45%, var(--modal-primary-dark) 100%);
             color: #fff;
             padding: 16px 20px;
             display: flex;
@@ -162,8 +189,8 @@
 
         .form-control:focus,
         .form-select:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.18);
+            border-color: var(--modal-focus);
+            box-shadow: 0 0 0 0.2rem var(--modal-focus-shadow);
         }
 
         .btn-save {
@@ -175,14 +202,27 @@
         }
 
         .btn-save:hover {
-            background: #157347;
-            border-color: #157347;
+            background: var(--modal-success-hover);
+            border-color: var(--modal-success-hover);
         }
 
         .btn-cancel {
             border-radius: 10px;
             min-width: 130px;
             font-weight: 600;
+        }
+
+        .field-error-msg {
+            display: none;
+            margin-top: 6px;
+            color: #dc2626;
+            font-size: 0.86rem;
+            font-weight: 600;
+        }
+
+        .input-error {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 0 0.2rem rgba(239, 68, 68, 0.16) !important;
         }
 
         @keyframes modalIn {
@@ -227,12 +267,6 @@
     </style>
 </head>
 <body>
-{% if tipo == 'interna' %}
-    {% url 'panel_instructor_interno:detalle_visita' visita.id as volver_url %}
-{% else %}
-    {% url 'panel_instructor_externo:detalle_visita' visita.id as volver_url %}
-{% endif %}
-
 <div class="floating-overlay">
     <div class="floating-window">
         <div class="floating-header">
@@ -264,45 +298,141 @@
                 {% endfor %}
             {% endif %}
 
+            {% if actualizacion_bloqueada %}
+                <div class="alert alert-warning mb-3">
+                    {{ mensaje_bloqueo|default:'La actualización está bloqueada para preservar la integridad de la solicitud ya enviada.' }}
+                </div>
+            {% endif %}
+
             <p class="intro-text">
-                Modifica solo la informacion personal del asistente. Los documentos no se alteran desde esta pantalla.
+                Actualice la informacion del asistente y, si lo necesita, adjunte la correccion del documento de salud en la misma operación.
             </p>
 
-            <form method="post" novalidate>
+            <form method="post" enctype="multipart/form-data" id="formActualizarInfoAsistente">
                 {% csrf_token %}
                 {% if embed_mode %}
                     <input type="hidden" name="embed" value="1">
                 {% endif %}
+                {% if origen %}
+                    <input type="hidden" name="origen" value="{{ origen }}">
+                {% endif %}
+                {% with selected_tipo=form_data.tipo_documento|default:asistente.tipo_documento %}
                 <div class="row g-3">
                     <div class="col-12">
                         <label class="form-label">Nombre Completo *</label>
-                        <input type="text" class="form-control" name="nombre_completo" value="{{ asistente.nombre_completo }}" required>
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="id_nombre_completo"
+                            name="nombre_completo"
+                            value="{{ form_data.nombre_completo|default:asistente.nombre_completo }}"
+                            required
+                            minlength="3"
+                            maxlength="200"
+                            pattern="[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]{3,200}"
+                            title="Ingrese solo letras y espacios (mínimo 3 caracteres)."
+                            autocomplete="name"
+                            {% if actualizacion_bloqueada %}disabled{% endif %}
+                        >
+                        <div id="error_nombre_completo" class="field-error-msg"></div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Tipo de Documento *</label>
-                        <select name="tipo_documento" class="form-select" required>
+                        <select id="id_tipo_documento" name="tipo_documento" class="form-select" required {% if actualizacion_bloqueada %}disabled{% endif %}>
                             {% for value, label in tipo_documento_choices %}
-                                <option value="{{ value }}" {% if asistente.tipo_documento == value %}selected{% endif %}>{{ label }}</option>
+                                <option value="{{ value }}" {% if selected_tipo == value %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
                         </select>
+                        <div id="error_tipo_documento" class="field-error-msg"></div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Numero de Documento *</label>
-                        <input type="text" class="form-control" name="numero_documento" value="{{ asistente.numero_documento }}" required>
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="id_numero_documento"
+                            name="numero_documento"
+                            value="{{ form_data.numero_documento|default:asistente.numero_documento }}"
+                            required
+                            minlength="10"
+                            maxlength="10"
+                            pattern="\d{10}"
+                            title="Ingrese exactamente 10 números."
+                            inputmode="numeric"
+                            autocomplete="off"
+                            {% if actualizacion_bloqueada %}disabled{% endif %}
+                        >
+                        <div id="error_numero_documento" class="field-error-msg"></div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Correo</label>
-                        <input type="email" class="form-control" name="correo" value="{{ asistente.correo|default:'' }}">
+                        <input
+                            type="email"
+                            class="form-control"
+                            id="id_correo"
+                            name="correo"
+                            value="{{ form_data.correo|default:asistente.correo|default:'' }}"
+                            maxlength="254"
+                            autocomplete="email"
+                            {% if actualizacion_bloqueada %}disabled{% endif %}
+                        >
+                        <div id="error_correo" class="field-error-msg"></div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Telefono</label>
-                        <input type="text" class="form-control" name="telefono" value="{{ asistente.telefono|default:'' }}">
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="id_telefono"
+                            name="telefono"
+                            value="{{ form_data.telefono|default:asistente.telefono|default:'' }}"
+                            minlength="7"
+                            maxlength="15"
+                            pattern="\d{7,15}"
+                            title="Ingrese solo números (7 a 15 dígitos)."
+                            inputmode="numeric"
+                            autocomplete="tel"
+                            {% if actualizacion_bloqueada %}disabled{% endif %}
+                        >
+                        <div id="error_telefono" class="field-error-msg"></div>
                     </div>
                 </div>
 
+                <div class="mt-4 p-3" style="border:1px solid var(--modal-border); border-radius:12px; background:var(--modal-bg);">
+                    <h6 style="font-weight:700; color:var(--modal-primary-dark); margin-bottom:10px;">Correccion documental (opcional)</h6>
+                    <p style="margin:0 0 12px; color:#475569; font-size:0.9rem;">Si necesita corregir archivos del asistente, cárguelos aquí junto con la actualización de datos.</p>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Documento de Salud</label>
+                            <input
+                                type="file"
+                                class="form-control"
+                                id="id_archivo_documento_salud"
+                                name="archivo_documento_salud"
+                                accept=".pdf,.doc,.docx"
+                                {% if actualizacion_bloqueada %}disabled{% endif %}
+                            >
+                            <small class="text-muted">Formatos: PDF, DOC o DOCX.</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Autorización de Padres (si aplica)</label>
+                            <input
+                                type="file"
+                                class="form-control"
+                                id="id_archivo_formato_padres"
+                                name="archivo_formato_padres"
+                                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                {% if actualizacion_bloqueada %}disabled{% endif %}
+                            >
+                            <small class="text-muted">Formatos: PDF, DOC, DOCX, JPG o PNG.</small>
+                        </div>
+                    </div>
+                </div>
+                {% endwith %}
+
                 <div class="d-flex flex-column flex-md-row gap-2 mt-4">
-                    <button type="submit" class="btn btn-save text-white">
-                        <i class="fas fa-save me-2"></i>Guardar cambios
+                    <button type="submit" class="btn btn-save text-white" {% if actualizacion_bloqueada %}disabled{% endif %}>
+                        <i class="fas fa-save me-2"></i>{% if actualizacion_bloqueada %}Actualización bloqueada{% else %}Guardar cambios{% endif %}
                     </button>
                     {% if embed_mode %}
                     <button type="button" class="btn btn-outline-secondary btn-cancel" onclick="cerrarVentanaEmbebida()">
@@ -335,6 +465,163 @@
         }, '*');
     }
     {% endif %}
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('formActualizarInfoAsistente');
+        const nombreInput = document.getElementById('id_nombre_completo');
+        const tipoDocSelect = document.getElementById('id_tipo_documento');
+        const numeroDocInput = document.getElementById('id_numero_documento');
+        const correoInput = document.getElementById('id_correo');
+        const telefonoInput = document.getElementById('id_telefono');
+
+        if (!form || !nombreInput || !tipoDocSelect || !numeroDocInput || !correoInput || !telefonoInput) {
+            return;
+        }
+
+        function normalizarNombre(valor) {
+            return String(valor || '').replace(/\s+/g, ' ').trim();
+        }
+
+        function setInlineError(input, errorId, mensaje) {
+            const errorEl = document.getElementById(errorId);
+            if (!input || !errorEl) return;
+
+            if (mensaje) {
+                errorEl.textContent = mensaje;
+                errorEl.style.display = 'block';
+                input.classList.add('input-error');
+                input.setAttribute('aria-invalid', 'true');
+            } else {
+                errorEl.textContent = '';
+                errorEl.style.display = 'none';
+                input.classList.remove('input-error');
+                input.removeAttribute('aria-invalid');
+            }
+        }
+
+        function validarNombre() {
+            const valor = normalizarNombre(nombreInput.value);
+            nombreInput.value = valor;
+            if (!valor) {
+                setInlineError(nombreInput, 'error_nombre_completo', 'El nombre completo es obligatorio.');
+                return false;
+            }
+            if (valor.length < 3) {
+                setInlineError(nombreInput, 'error_nombre_completo', 'El nombre completo debe tener al menos 3 caracteres.');
+                return false;
+            }
+            if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]+$/.test(valor)) {
+                setInlineError(nombreInput, 'error_nombre_completo', 'El nombre completo solo debe contener letras y espacios.');
+                return false;
+            }
+            setInlineError(nombreInput, 'error_nombre_completo', '');
+            return true;
+        }
+
+        function validarTipoDocumento() {
+            if (!tipoDocSelect.value) {
+                setInlineError(tipoDocSelect, 'error_tipo_documento', 'Seleccione un tipo de documento.');
+                return false;
+            }
+            setInlineError(tipoDocSelect, 'error_tipo_documento', '');
+            return true;
+        }
+
+        function validarNumeroDocumento() {
+            const valor = numeroDocInput.value.replace(/\D/g, '').slice(0, 10);
+            numeroDocInput.value = valor;
+            if (!valor) {
+                setInlineError(numeroDocInput, 'error_numero_documento', 'El número de documento es obligatorio.');
+                return false;
+            }
+            if (!/^\d{10}$/.test(valor)) {
+                setInlineError(numeroDocInput, 'error_numero_documento', 'El número de documento debe tener exactamente 10 números.');
+                return false;
+            }
+            setInlineError(numeroDocInput, 'error_numero_documento', '');
+            return true;
+        }
+
+        function validarCorreo() {
+            const valor = String(correoInput.value || '').trim();
+            correoInput.value = valor;
+            if (!valor) {
+                setInlineError(correoInput, 'error_correo', '');
+                return true;
+            }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor)) {
+                setInlineError(correoInput, 'error_correo', 'Ingrese un correo electrónico válido.');
+                return false;
+            }
+            setInlineError(correoInput, 'error_correo', '');
+            return true;
+        }
+
+        function validarTelefono() {
+            const valor = telefonoInput.value.replace(/\D/g, '').slice(0, 15);
+            telefonoInput.value = valor;
+            if (!valor) {
+                setInlineError(telefonoInput, 'error_telefono', '');
+                return true;
+            }
+            if (!/^\d{7,15}$/.test(valor)) {
+                setInlineError(telefonoInput, 'error_telefono', 'El teléfono debe tener entre 7 y 15 números.');
+                return false;
+            }
+            setInlineError(telefonoInput, 'error_telefono', '');
+            return true;
+        }
+
+        function aplicarReglasDocumento() {
+            numeroDocInput.setAttribute('pattern', '\\d{10}');
+            numeroDocInput.setAttribute('title', 'Ingrese exactamente 10 números.');
+            numeroDocInput.setAttribute('inputmode', 'numeric');
+            numeroDocInput.value = numeroDocInput.value.replace(/\D/g, '').slice(0, 10);
+        }
+
+        nombreInput.addEventListener('blur', validarNombre);
+
+        tipoDocSelect.addEventListener('change', function () {
+            aplicarReglasDocumento();
+            validarTipoDocumento();
+        });
+
+        numeroDocInput.addEventListener('input', function () {
+            aplicarReglasDocumento();
+            validarNumeroDocumento();
+        });
+
+        correoInput.addEventListener('blur', validarCorreo);
+
+        telefonoInput.addEventListener('input', function () {
+            this.value = this.value.replace(/\D/g, '').slice(0, 15);
+            validarTelefono();
+        });
+
+        form.addEventListener('submit', function (event) {
+            nombreInput.value = normalizarNombre(nombreInput.value);
+            numeroDocInput.value = numeroDocInput.value.replace(/\D/g, '').slice(0, 10);
+            telefonoInput.value = telefonoInput.value.replace(/\D/g, '');
+
+            const validaciones = [
+                validarNombre(),
+                validarTipoDocumento(),
+                validarNumeroDocumento(),
+                validarCorreo(),
+                validarTelefono()
+            ];
+
+            if (validaciones.includes(false)) {
+                event.preventDefault();
+                const primerError = form.querySelector('.input-error');
+                if (primerError && typeof primerError.focus === 'function') {
+                    primerError.focus();
+                }
+            }
+        });
+
+        aplicarReglasDocumento();
+    });
 </script>
 </body>
 </html>

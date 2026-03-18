@@ -257,7 +257,7 @@
         <div class="breadcrumb-nav mb-2">
             <a href="{% url 'panel_instructor_interno:panel' %}"><i class="fas fa-home me-1"></i>Mi Panel</a>
             <span>&rsaquo;</span>
-            <a href="{% url 'panel_instructor_interno:gestionar_fichas' %}">Fichas</a>
+            <a href="{% url 'panel_instructor_interno:gestionar_fichas_programas' %}">Fichas y Programas</a>
             <span>&rsaquo;</span>
             <a href="{% url 'panel_instructor_interno:detalle_aprendices_ficha' ficha.id %}">Ficha {{ ficha.numero }}</a>
             <span>&rsaquo;</span>
@@ -421,7 +421,7 @@
                                             <label style="font-weight: 600; margin-bottom: 8px; display: block; color: #1f2937;">
                                                 <i class="fas fa-upload me-2" style="color: #667eea;"></i>
                                                 Cargar {{ doc.titulo }}
-                                                {% if categoria == '👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud' %}
+                                                {% if categoria == '👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud' and doc.id not in docs_subidos_ids %}
                                                     <span class="required">*</span>
                                                 {% endif %}
                                                 {% if categoria == '📋 Formato Autorización Padres de Familia' %}
@@ -437,6 +437,7 @@
                                                 class="form-control"
                                                 accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                                                 data-required="{% if categoria == '👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud' and doc.id not in docs_subidos_ids %}true{% else %}false{% endif %}"
+                                                data-reporte-salud="{% if doc.categoria == 'Formato Auto Reporte Condiciones de Salud' %}true{% else %}false{% endif %}"
                                                 data-autorizacion-padres="{% if categoria == '📋 Formato Autorización Padres de Familia' %}true{% else %}false{% endif %}"
                                                 data-ya-cargado="{% if doc.id in docs_subidos_ids %}true{% else %}false{% endif %}"
                                                 data-doc-titulo="{{ doc.titulo }}"
@@ -593,7 +594,13 @@ document.addEventListener('DOMContentLoaded', function() {
     if (formulario && btnGuardar) {
         formulario.addEventListener('submit', function(evento) {
             const camposArchivo = Array.from(document.querySelectorAll('input[type="file"][name^="documento_"]'));
-            const camposRequeridos = Array.from(document.querySelectorAll('input[type="file"][data-required="true"]'));
+            const camposRequeridos = Array.from(
+                document.querySelectorAll('input[type="file"][data-required="true"]')
+            ).filter(campo => {
+                const esReporteSalud = campo.dataset.reporteSalud === 'true';
+                const yaCargado = campo.dataset.yaCargado === 'true';
+                return !(esReporteSalud && yaCargado);
+            });
             const esMenorEdad = tipoDocumentoSelect && tipoDocumentoSelect.value === 'TI';
             const archivosFormatoInvalido = [];
 

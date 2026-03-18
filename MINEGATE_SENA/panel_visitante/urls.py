@@ -6,7 +6,6 @@ app_name = 'panel_visitante'
 urlpatterns = [
     path('login/', views.login_responsable, name='login_responsable'),
     path('registro/', views.registro_visita, name='registro_visita'),
-    path('registro/verificar-codigo/', views.verificar_codigo_registro, name='verificar_codigo_registro'),
     path('logout/', views.logout_responsable, name='logout_responsable'),
     path('panel/', views.panel_responsable, name='panel_responsable'),
     path('actualizar-perfil/', views.actualizar_perfil, name='actualizar_perfil'),

@@ -38,6 +38,30 @@ ESTADOS_APROBADAS = [
     "confirmada",
 ]
 
+CATEGORIAS_ARCHIVOS_FINALES = {
+    "ats",
+    "formato induccion y reinduccion",
+    "charla de seguridad y calestenia",
+    "charla de seguridad y calistenia",
+}
+
+
+def _normalizar_categoria_texto(valor):
+    return (
+        str(valor or "")
+        .strip()
+        .lower()
+        .replace("á", "a")
+        .replace("é", "e")
+        .replace("í", "i")
+        .replace("ó", "o")
+        .replace("ú", "u")
+    )
+
+
+def _es_categoria_archivo_final(categoria):
+    return _normalizar_categoria_texto(categoria) in CATEGORIAS_ARCHIVOS_FINALES
+
 
 def _enviar_qr_asistentes_confirmados(visita, tipo):
     for asistente in visita.asistentes.filter(estado="documentos_aprobados"):
@@ -255,9 +279,21 @@ def _serializar_documento_subido(ds, versiones_envio=1, es_reenvio=False):
     }
 
 
-def _calcular_estado_revision_asistente(asistente):
-    """Calcula estado agregado del asistente en función de sus últimos documentos."""
+def _documentos_personales_actuales(asistente):
+    """Retorna solo documentos personales (excluye archivos finales de visita)."""
     documentos_actuales = _documentos_subidos_actuales(asistente)
+    return [
+        doc_actual
+        for doc_actual in documentos_actuales
+        if not _es_categoria_archivo_final(
+            doc_actual["ds"].documento_requerido.categoria
+        )
+    ]
+
+
+def _calcular_estado_revision_asistente(asistente):
+    """Calcula estado agregado del asistente según documentos personales."""
+    documentos_actuales = _documentos_personales_actuales(asistente)
     tiene_docs = bool(documentos_actuales)
     tiene_rechazos = any(
         doc_actual["ds"].estado == "rechazado" for doc_actual in documentos_actuales
@@ -318,9 +354,19 @@ def _sincronizar_estado_asistente(asistente, observacion_rechazo=""):
     return revision
 
 
-def _marcar_documentos_actuales(asistente, estado, observaciones=""):
+def _marcar_documentos_actuales(
+    asistente, estado, observaciones="", incluir_archivos_finales=False
+):
     """Marca la última versión de cada documento subido por el asistente."""
-    for doc_actual in _documentos_subidos_actuales(asistente):
+    documentos_objetivo = _documentos_subidos_actuales(asistente)
+    if not incluir_archivos_finales:
+        documentos_objetivo = [
+            doc_actual
+            for doc_actual in documentos_objetivo
+            if not _es_categoria_archivo_final(doc_actual["ds"].documento_requerido.categoria)
+        ]
+
+    for doc_actual in documentos_objetivo:
         ds = doc_actual["ds"]
         ds.estado = estado
         ds.observaciones_revision = observaciones if estado == "rechazado" else ""
@@ -683,6 +729,16 @@ def api_detalle_visita(request, tipo, visita_id):
                 visita.fecha_solicitud.strftime("%d/%m/%Y %H:%M")
                 if visita.fecha_solicitud
                 else "N/A"
+                
+            ),
+            "horario_visita": (
+                f"{visita.hora_inicio.strftime('%H:%M')} - {visita.hora_fin.strftime('%H:%M')}"
+                if visita.hora_inicio and visita.hora_fin
+                else (
+                    visita.hora_inicio.strftime("%H:%M")
+                    if visita.hora_inicio
+                    else "Por definir"
+                )
             ),
             "asistentes": asistentes,
             "asistentes_count": len(asistentes),
@@ -809,6 +865,15 @@ def api_detalle_visita(request, tipo, visita_id):
                 visita.fecha_solicitud.strftime("%d/%m/%Y %H:%M")
                 if visita.fecha_solicitud
                 else "N/A"
+            ),
+            "horario_visita": (
+                f"{visita.hora_inicio.strftime('%H:%M')} - {visita.hora_fin.strftime('%H:%M')}"
+                if visita.hora_inicio and visita.hora_fin
+                else (
+                    visita.hora_inicio.strftime("%H:%M")
+                    if visita.hora_inicio
+                    else "Por definir"
+                )
             ),
             "asistentes": asistentes,
             "asistentes_count": len(asistentes),
@@ -1218,7 +1283,7 @@ def api_revisar_documento_asistente(request, tipo, asistente_id, accion):
     observaciones = request.POST.get("observaciones", "")
 
     if accion == "aprobar":
-        documentos_actuales = _documentos_subidos_actuales(asistente)
+        documentos_actuales = _documentos_personales_actuales(asistente)
 
         if not documentos_actuales and not asistente.formato_autorizacion_padres:
             return JsonResponse(
@@ -1281,7 +1346,7 @@ def api_revisar_documento_asistente(request, tipo, asistente_id, accion):
                 }
             )
 
-        documentos_actuales = _documentos_subidos_actuales(asistente)
+        documentos_actuales = _documentos_personales_actuales(asistente)
         if not documentos_actuales and not asistente.formato_autorizacion_padres:
             return JsonResponse(
                 {
@@ -1290,7 +1355,12 @@ def api_revisar_documento_asistente(request, tipo, asistente_id, accion):
                 }
             )
 
-        _marcar_documentos_actuales(asistente, "rechazado", observaciones)
+        _marcar_documentos_actuales(
+            asistente,
+            "rechazado",
+            observaciones,
+            incluir_archivos_finales=False,
+        )
 
         if (
             asistente.formato_autorizacion_padres

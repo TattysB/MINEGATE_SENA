@@ -62,12 +62,14 @@
                             <i class="fas fa-file-upload"></i> Documentos Enviados
                         {% elif visita.estado == 'en_revision_documentos' %}
                             <i class="fas fa-search"></i> En Revisión de Documentos
+                        {% elif visita.estado == 'reprogramacion_solicitada' %}
+                            <i class="fas fa-calendar-day"></i> Reprogramación solicitada
                         {% elif visita.estado == 'confirmada' %}
                             <i class="fas fa-check-double"></i> Confirmada
                         {% elif visita.estado == 'rechazada' %}
                             <i class="fas fa-times-circle"></i> Rechazada
                         {% else %}
-                            <i class="fas fa-question"></i> {{ visita.estado }}
+                            <i class="fas fa-question"></i> {{ visita.get_estado_display }}
                         {% endif %}
                     </span>
                 </div>
@@ -254,12 +256,14 @@
                             <i class="fas fa-file-upload"></i> Documentos Enviados
                         {% elif visita.estado == 'en_revision_documentos' %}
                             <i class="fas fa-search"></i> En Revisión de Documentos
+                        {% elif visita.estado == 'reprogramacion_solicitada' %}
+                            <i class="fas fa-calendar-day"></i> Reprogramación solicitada
                         {% elif visita.estado == 'confirmada' %}
                             <i class="fas fa-check-double"></i> Confirmada
                         {% elif visita.estado == 'rechazada' %}
                             <i class="fas fa-times-circle"></i> Rechazada
                         {% else %}
-                            <i class="fas fa-question"></i> {{ visita.estado }}
+                            <i class="fas fa-question"></i> {{ visita.get_estado_display }}
                         {% endif %}
                     </span>
                 </div>

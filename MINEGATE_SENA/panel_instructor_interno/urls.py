@@ -6,6 +6,12 @@ app_name = "panel_instructor_interno"
 urlpatterns = [
     # Panel principal
     path("", views.panel_instructor_interno, name="panel"),
+    # Módulo unificado: Fichas y Programas
+    path(
+        "fichas-programas/",
+        views.gestionar_fichas_programas,
+        name="gestionar_fichas_programas",
+    ),
     # Módulo: Reservar visita interna
     path("reservar/", views.reservar_visita_interna, name="reservar_visita"),
     path("mis-visitas/<int:pk>/", views.detalle_visita_interna, name="detalle_visita"),

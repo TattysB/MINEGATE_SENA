@@ -9,6 +9,7 @@
   <title>Reservar Visita Interna - MINEGATE</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css">
   <link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}">
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 <style>
@@ -56,6 +57,22 @@
   .btn-submit { background: var(--sena-verde); border: none; color: white; padding: 0.75rem 2.5rem; border-radius: 50px; font-weight: 700; font-size: 1rem; transition: all 0.2s; }
   .btn-submit:hover { background: var(--sena-verde-oscuro); transform: translateY(-1px); }
   .fichas-dropdown { max-height: 200px; overflow-y: auto; }
+  .ts-wrapper.single .ts-control {
+    border-radius: 8px;
+    border: 1.5px solid #d1d5db;
+    font-size: 0.9rem;
+    min-height: 42px;
+    padding: 0.4rem 0.75rem;
+  }
+  .ts-wrapper.focus .ts-control {
+    border-color: var(--sena-verde);
+    box-shadow: 0 0 0 3px rgba(57,169,0,0.12);
+  }
+  .ts-dropdown {
+    border-radius: 8px;
+    border: 1.5px solid #d1d5db;
+    overflow: hidden;
+  }
   
   /* Estilos del calendario embebido */
   #calendarioContainer {
@@ -239,12 +256,12 @@
   <div class="alert alert-warning">
     <i class="fas fa-exclamation-triangle me-2"></i>
     Para reservar una visita debes seleccionar una ficha existente (incluye su programa).
-    <a href="{% url 'panel_instructor_interno:crear_ficha' %}" class="alert-link">Crea una ficha</a>
+    <a href="{% url 'panel_instructor_interno:gestionar_fichas_programas' %}" class="alert-link">Crea una ficha y su programa</a>
     antes de continuar.
   </div>
   {% endif %}
 
-  <form method="POST">
+  <form method="POST" id="formReservaInterna">
     {% csrf_token %}
     
     <!-- Campos ocultos para fecha y hora -->
@@ -344,20 +361,29 @@
       <a href="{% url 'panel_instructor_interno:panel' %}" class="btn btn-outline-secondary">
         <i class="fas fa-arrow-left me-2"></i>Volver al Panel
       </a>
-      <button type="submit" class="btn-submit btn" id="btnEnviar" {% if not fichas %}disabled{% endif %}>
+      <button type="button" class="btn-submit btn" id="btnEnviar" {% if not fichas %}disabled{% endif %}>
         <i class="fas fa-paper-plane me-2"></i>Enviar Solicitud
       </button>
     </div>
   </form>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   const container = document.getElementById('calendarioContainer');
-  const formSolicitud = document.querySelector('form[method="POST"]');
+  const formSolicitud = document.getElementById('formReservaInterna');
   const btnEnviar = document.getElementById('btnEnviar');
+  const btnAceptoModal = document.getElementById('aceptoModalBtn');
+  const modalTerminosEl = document.getElementById('modalTerminos');
   const modalConfirmarEnvioEl = document.getElementById('modalConfirmarEnvio');
   const btnConfirmarEnvioFinal = document.getElementById('btnConfirmarEnvioFinal');
+  const modalConfirmarEnvio = (modalConfirmarEnvioEl && typeof bootstrap !== 'undefined')
+    ? bootstrap.Modal.getOrCreateInstance(modalConfirmarEnvioEl)
+    : null;
+  const modalTerminos = (modalTerminosEl && typeof bootstrap !== 'undefined')
+    ? bootstrap.Modal.getOrCreateInstance(modalTerminosEl)
+    : null;
   let selectedDate = null;
   let selectedHorario = null;
 
@@ -543,45 +569,145 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
   
-  // Validación antes de enviar
-  btnEnviar.addEventListener('click', function(e) {
+  function validarAntesDeEnviar() {
     if (!selectedDate || !selectedHorario) {
-      e.preventDefault();
       alert('Por favor selecciona una fecha y un horario para la visita.');
       container.scrollIntoView({ behavior: 'smooth' });
       return false;
     }
 
-    // Validar aceptación de términos
     const checkbox = document.getElementById('acepto_terminos');
     if (checkbox && !checkbox.checked) {
-      e.preventDefault();
-      const modalEl = document.getElementById('modalTerminos');
-      if (modalEl) {
-        const modal = new bootstrap.Modal(modalEl);
-        modal.show();
+      if (modalTerminos) {
+        modalTerminos.show();
       } else {
         alert('Debe aceptar los Términos y Condiciones antes de enviar la solicitud.');
       }
       return false;
     }
 
-    e.preventDefault();
-    if (modalConfirmarEnvioEl) {
-      const modalConfirmarEnvio = new bootstrap.Modal(modalConfirmarEnvioEl);
-      modalConfirmarEnvio.show();
+    if (!formSolicitud) return false;
+
+    // Asegura que la fecha/hora seleccionada viaje en el POST.
+    updateFormFields();
+
+    if (typeof formSolicitud.reportValidity === 'function' && !formSolicitud.reportValidity()) {
       return false;
     }
 
-    formSolicitud.submit();
-  });
+    return true;
+  }
 
-  if (btnConfirmarEnvioFinal) {
-    btnConfirmarEnvioFinal.addEventListener('click', function() {
-      if (formSolicitud) {
+  if (btnEnviar) {
+    btnEnviar.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (!validarAntesDeEnviar()) return;
+
+      if (modalConfirmarEnvio) {
+        modalConfirmarEnvio.show();
+      } else {
         formSolicitud.submit();
       }
     });
+  }
+
+  if (btnConfirmarEnvioFinal) {
+    btnConfirmarEnvioFinal.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (!validarAntesDeEnviar()) return;
+
+      btnConfirmarEnvioFinal.setAttribute('disabled', 'disabled');
+      formSolicitud.submit();
+    });
+  }
+
+  if (modalConfirmarEnvioEl) {
+    modalConfirmarEnvioEl.addEventListener('hidden.bs.modal', function() {
+      if (btnConfirmarEnvioFinal) {
+        btnConfirmarEnvioFinal.removeAttribute('disabled');
+      }
+    });
+  }
+
+  if (btnAceptoModal) {
+    btnAceptoModal.addEventListener('click', function() {
+      const checkbox = document.getElementById('acepto_terminos');
+      if (checkbox) checkbox.checked = true;
+      if (modalTerminos) {
+        modalTerminos.hide();
+      }
+    });
+  }
+
+  // Actualizar cantidad máxima de aprendices según la ficha seleccionada
+  const fichasData = {
+    {% for ficha in fichas %}
+      '{{ ficha.numero }}': {{ ficha.cantidad_aprendices }},
+    {% endfor %}
+  };
+
+  const selectFicha = document.getElementById('id_numero_ficha');
+  const inputCantidad = document.getElementById('id_cantidad_aprendices');
+  const labelCantidad = document.querySelector('label[for="id_cantidad_aprendices"]');
+  let tomSelectFicha = null;
+
+  if (selectFicha && typeof TomSelect !== 'undefined') {
+    tomSelectFicha = new TomSelect(selectFicha, {
+      create: false,
+      maxOptions: 500,
+      searchField: ['text'],
+      dropdownParent: 'body',
+      placeholder: 'Selecciona o escribe para buscar una ficha',
+      render: {
+        no_results: function(data, escape) {
+          return '<div class="no-results p-2">No se encontraron fichas para "' + escape(data.input) + '"</div>';
+        }
+      }
+    });
+  }
+
+  if (selectFicha && inputCantidad) {
+    function actualizarMaxAprendices() {
+      const fichaSeleccionada = selectFicha.value;
+      const maxAprendices = fichasData[fichaSeleccionada];
+
+      if (maxAprendices) {
+        inputCantidad.setAttribute('max', maxAprendices);
+        inputCantidad.setAttribute('min', '1');
+        
+        // Mostrar el máximo en un helper
+        let helper = document.getElementById('helper_cantidad_aprendices');
+        if (!helper) {
+          helper = document.createElement('small');
+          helper.id = 'helper_cantidad_aprendices';
+          helper.className = 'form-text text-muted d-block mt-1';
+          inputCantidad.parentElement.appendChild(helper);
+        }
+        helper.textContent = `Máximo: ${maxAprendices} aprendices registrados en la ficha`;
+
+        // Validar si el valor actual es 0 o excede el máximo
+        const valor = parseInt(inputCantidad.value);
+        if (isNaN(valor) || valor === 0 || valor < 1) {
+          inputCantidad.value = 1;
+        } else if (valor > maxAprendices) {
+          inputCantidad.value = maxAprendices;
+        }
+      }
+    }
+
+    // Validar cambios en el input de cantidad
+    inputCantidad.addEventListener('change', function() {
+      const valor = parseInt(this.value);
+      if (isNaN(valor) || valor === 0 || valor < 1) {
+        this.value = 1;
+      }
+    });
+
+    selectFicha.addEventListener('change', actualizarMaxAprendices);
+    if (tomSelectFicha) {
+      tomSelectFicha.on('change', actualizarMaxAprendices);
+    }
+    actualizarMaxAprendices(); // Llamar al cargar la página
   }
 });
 </script>
@@ -760,18 +886,3 @@ document.addEventListener('DOMContentLoaded', function() {
 {% accessibility_widget %}
 </body>
 </html>
-
-      <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        const btn = document.getElementById('aceptoModalBtn');
-        if (btn) {
-          btn.addEventListener('click', function() {
-            const checkbox = document.getElementById('acepto_terminos');
-            if (checkbox) checkbox.checked = true;
-            const modalEl = document.getElementById('modalTerminos');
-            const modal = bootstrap.Modal.getInstance(modalEl);
-            if (modal) modal.hide();
-          });
-        }
-      });
-      </script>

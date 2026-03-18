@@ -101,6 +101,11 @@
     color: #2563eb;
 }
 
+.estado-reprogramacion_solicitada {
+    background: #ffedd5;
+    color: #c2410c;
+}
+
 .estado-rechazada {
     background: #fee2e2;
     color: #dc2626;

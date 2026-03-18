@@ -125,7 +125,6 @@
 
 .gv-btn-base,
 .gv-btn-approve,
-.gv-btn-reject,
 .gv-btn-reschedule,
 .gv-btn-docs,
 .gv-btn-review,
@@ -141,15 +140,6 @@
 .gv-btn-approve {
   background: linear-gradient(135deg, #10b981, #059669);
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
-}
-
-.gv-btn-reject {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
-  min-width: 34px;
-  justify-content: center;
-  padding-left: 9px;
-  padding-right: 9px;
 }
 
 .gv-btn-reschedule {

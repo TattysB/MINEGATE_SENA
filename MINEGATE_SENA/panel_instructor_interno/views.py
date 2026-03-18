@@ -23,7 +23,13 @@ from visitaInterna.models import (
     AsistenteVisitaInterna,
 )
 from .models import Ficha, Programa, Aprendiz
-from .forms import VisitaInternaInstructorForm, ProgramaForm, FichaForm, AprendizForm
+from .forms import (
+    VisitaInternaInstructorForm,
+    ProgramaForm,
+    FichaForm,
+    FichaProgramaUnificadoForm,
+    AprendizForm,
+)
 from documentos.models import Documento, DocumentoSubidoAsistente
 from documentos.models import (
     Documento,
@@ -336,9 +342,7 @@ def panel_instructor_interno(request):
         "total_programas": Programa.objects.filter(
             activo=True, creado_por=owner_user
         ).count(),
-        "total_fichas": Ficha.objects.filter(
-            activa=True, creado_por=owner_user
-        ).count(),
+        "total_fichas": Ficha.objects.filter(activa=True, creado_por=owner_user).count(),
         "total_visitas": visitas.count(),
     }
     return render(request, "panel_instructor_interno/panel.html", context)
@@ -378,6 +382,44 @@ def reservar_visita_interna(request):
                 form.add_error(
                     "numero_ficha",
                     "La ficha seleccionada no es válida o está inactiva.",
+                )
+                context = {
+                    "form": form,
+                    "fichas": Ficha.objects.filter(
+                        activa=True, creado_por=owner_user
+                    ).select_related("programa"),
+                    "correo": correo,
+                    "titulo": "Reservar Visita Interna",
+                }
+                return render(
+                    request, "panel_instructor_interno/reservar_visita.html", context
+                )
+
+            # Validar que la cantidad de aprendices no exceda la cantidad en la ficha
+            cantidad_aprendices = form.cleaned_data.get("cantidad_aprendices")
+            
+            # Validar que cantidad sea mayor a 0
+            if cantidad_aprendices is None or cantidad_aprendices == 0:
+                form.add_error(
+                    "cantidad_aprendices",
+                    "La cantidad de aprendices debe ser mayor a 0.",
+                )
+                context = {
+                    "form": form,
+                    "fichas": Ficha.objects.filter(
+                        activa=True, creado_por=owner_user
+                    ).select_related("programa"),
+                    "correo": correo,
+                    "titulo": "Reservar Visita Interna",
+                }
+                return render(
+                    request, "panel_instructor_interno/reservar_visita.html", context
+                )
+            
+            if cantidad_aprendices > ficha.cantidad_aprendices:
+                form.add_error(
+                    "cantidad_aprendices",
+                    f"La cantidad de aprendices no puede exceder {ficha.cantidad_aprendices} (cantidad registrada en la ficha).",
                 )
                 context = {
                     "form": form,
@@ -482,6 +524,11 @@ def reservar_visita_interna(request):
             },
             owner_user=owner_user,
         )
+    if request.method == "POST" and form.errors:
+        messages.error(
+            request,
+            "No fue posible enviar la solicitud. Revisa los campos marcados e intenta nuevamente.",
+        )
     fichas = Ficha.objects.filter(activa=True, creado_por=owner_user).select_related(
         "programa"
     )
@@ -517,36 +564,12 @@ def detalle_visita_interna(request, pk):
             documentos_por_categoria[cat_display] = []
         documentos_por_categoria[cat_display].append(doc)
 
-    # Tomar un unico documento por cada categoria final requerida para descarga.
-    documentos_finales_requeridos = []
-    categorias_finales_agregadas = set()
-    for doc in documentos_disponibles:
-        categoria_norm = _normalizar_categoria_texto(doc.categoria)
-        clave_categoria = None
-        etiqueta = doc.categoria
-
-        if "ats" in categoria_norm:
-            clave_categoria = "ats"
-            etiqueta = "ATS"
-        elif "induccion y reinduccion" in categoria_norm:
-            clave_categoria = "induccion"
-            etiqueta = "Formato Inducción y Reinducción"
-        elif "charla de seguridad" in categoria_norm and (
-            "calestenia" in categoria_norm or "calistenia" in categoria_norm
-        ):
-            clave_categoria = "charla"
-            etiqueta = "Charla de Seguridad y Calistenia"
-
-        if not clave_categoria or clave_categoria in categorias_finales_agregadas:
-            continue
-
-        doc.etiqueta_requerida = etiqueta
-        documentos_finales_requeridos.append(doc)
-        categorias_finales_agregadas.add(clave_categoria)
-
     reporte_documental = construir_reporte_documental_visita(visita, "interna")
     hay_alertas_documentales = bool(reporte_documental.get("hay_alertas"))
     estados_finales = reporte_documental.get("archivos_finales_estado", [])
+    hay_archivos_finales_con_alerta = bool(
+        reporte_documental.get("archivos_finales_con_alerta")
+    )
     archivos_finales_faltantes = sum(
         1 for item in estados_finales if item.get("estado") == "faltante"
     )
@@ -565,6 +588,12 @@ def detalle_visita_interna(request, pk):
         and not archivos_finales_completos
     )
 
+    mostrar_boton_corregir_archivos_finales = (
+        visita.estado in ["documentos_enviados", "en_revision_documentos"]
+        and visita.asistentes.exists()
+        and hay_archivos_finales_con_alerta
+    )
+
     return render(
         request,
         "panel_instructor_interno/detalle_visita.html",
@@ -572,13 +601,172 @@ def detalle_visita_interna(request, pk):
             "visita": visita,
             "correo": correo,
             "documentos_por_categoria": documentos_por_categoria,
-            "documentos_finales_requeridos": documentos_finales_requeridos,
             "reporte_documental": reporte_documental,
             "reprogramacion_pendiente": reprogramacion_pendiente,
             "enviar_final_habilitado": enviar_final_habilitado,
             "mostrar_boton_subir_archivos_finales": mostrar_boton_subir_archivos_finales,
+            "mostrar_boton_corregir_archivos_finales": mostrar_boton_corregir_archivos_finales,
         },
     )
+
+
+# ==================== MÓDULO UNIFICADO: GESTIONAR FICHAS Y PROGRAMAS ====================
+
+
+@instructor_interno_required
+def gestionar_fichas_programas(request):
+    correo, _ = get_sesion_instructor(request)
+    owner_user = _obtener_propietario_instructor(request)
+
+    buscar = (request.GET.get("buscar") or "").strip()
+    editar_id = request.GET.get("editar")
+    ficha_edicion = None
+
+    if editar_id:
+        ficha_edicion = get_object_or_404(
+            Ficha.objects.select_related("programa"), pk=editar_id, creado_por=owner_user
+        )
+
+    if request.method == "POST":
+        ficha_id = request.POST.get("ficha_id")
+        ficha_obj = None
+        if ficha_id:
+            ficha_obj = get_object_or_404(
+                Ficha.objects.select_related("programa"),
+                pk=ficha_id,
+                creado_por=owner_user,
+            )
+
+        form = FichaProgramaUnificadoForm(
+            request.POST,
+            owner_user=owner_user,
+            current_programa_id=ficha_obj.programa_id if ficha_obj else None,
+        )
+
+        if form.is_valid():
+            data = form.cleaned_data
+            try:
+                with transaction.atomic():
+                    programa_nombre = data["programa_nombre"].strip()
+                    programa_existente = (
+                        Programa.objects.filter(
+                            creado_por=owner_user,
+                            nombre__iexact=programa_nombre,
+                        )
+                        .exclude(pk=ficha_obj.programa_id if ficha_obj else None)
+                        .first()
+                    )
+
+                    if ficha_obj:
+                        if programa_existente:
+                            programa = programa_existente
+                            programa.activo = True
+                            programa.save()
+                        else:
+                            programa = ficha_obj.programa
+                            programa.nombre = programa_nombre
+                            programa.activo = True
+                            if not programa.creado_por:
+                                programa.creado_por = owner_user
+                            programa.save()
+                    else:
+                        if programa_existente:
+                            programa = programa_existente
+                            programa.activo = True
+                            programa.save()
+                        else:
+                            programa = Programa.objects.create(
+                                nombre=programa_nombre,
+                                activo=True,
+                                creado_por=owner_user,
+                            )
+
+                    if ficha_obj:
+                        ficha_obj.numero = data["numero_ficha"]
+                        ficha_obj.programa = programa
+                        ficha_obj.jornada = data["jornada"]
+                        ficha_obj.cantidad_aprendices = data["cantidad_aprendices"]
+                        ficha_obj.activa = True
+                        ficha_obj.save()
+                        messages.success(
+                            request,
+                            f"✅ Ficha {ficha_obj.numero} y su programa asociados fueron actualizados.",
+                        )
+                    else:
+                        ficha_obj = Ficha.objects.create(
+                            numero=data["numero_ficha"],
+                            programa=programa,
+                            jornada=data["jornada"],
+                            cantidad_aprendices=data["cantidad_aprendices"],
+                            activa=True,
+                            creado_por=owner_user,
+                        )
+                        messages.success(
+                            request,
+                            f"✅ Registro creado: ficha {ficha_obj.numero} con programa \"{programa.nombre}\".",
+                        )
+
+                return redirect("panel_instructor_interno:gestionar_fichas_programas")
+
+            except IntegrityError:
+                existe_programa_global = Programa.objects.filter(
+                    nombre__iexact=data["programa_nombre"].strip()
+                ).exclude(creado_por=owner_user)
+
+                if existe_programa_global.exists():
+                    form.add_error(
+                        "programa_nombre",
+                        "Ya existe un programa con ese nombre en el sistema. Usa un nombre diferente.",
+                    )
+                else:
+                    form.add_error(
+                        "numero_ficha",
+                        "Ya existe una ficha con ese número. Usa otro número o edita la existente.",
+                    )
+            except ValidationError as exc:
+                form.add_error(None, str(exc))
+            except Exception as exc:
+                form.add_error(None, f"No fue posible guardar el registro: {exc}")
+    else:
+        if ficha_edicion:
+            form = FichaProgramaUnificadoForm(
+                owner_user=owner_user,
+                current_programa_id=ficha_edicion.programa_id,
+                initial={
+                    "programa_nombre": ficha_edicion.programa.nombre,
+                    "numero_ficha": ficha_edicion.numero,
+                    "jornada": ficha_edicion.jornada,
+                    "cantidad_aprendices": ficha_edicion.cantidad_aprendices,
+                }
+            )
+        else:
+            form = FichaProgramaUnificadoForm(
+                owner_user=owner_user,
+                initial={
+                    "cantidad_aprendices": 1,
+                }
+            )
+
+    fichas = Ficha.objects.select_related("programa").filter(creado_por=owner_user)
+    if buscar:
+        fichas = fichas.filter(
+            Q(numero__icontains=buscar) | Q(programa__nombre__icontains=buscar)
+        )
+    fichas = fichas.order_by("-numero")
+
+    programas = Programa.objects.filter(creado_por=owner_user).order_by("nombre")
+
+    context = {
+        "correo": correo,
+        "form": form,
+        "fichas": fichas,
+        "programas": programas,
+        "buscar": buscar,
+        "total_fichas": fichas.count(),
+        "total_programas": programas.count(),
+        "ficha_edicion": ficha_edicion,
+    }
+    return render(request, "panel_instructor_interno/gestionar_fichas_programas.html", context)
 
 
 # ==================== MÓDULO: GESTIONAR PROGRAMAS ====================
@@ -586,22 +774,7 @@ def detalle_visita_interna(request, pk):
 
 @instructor_interno_required
 def gestionar_programas(request):
-    correo, _ = get_sesion_instructor(request)
-    owner_user = _obtener_propietario_instructor(request)
-    programas = Programa.objects.filter(creado_por=owner_user).order_by("nombre")
-    buscar = request.GET.get("buscar", "")
-    if buscar:
-        programas = programas.filter(nombre__icontains=buscar)
-    return render(
-        request,
-        "panel_instructor_interno/gestionar_programas.html",
-        {
-            "programas": programas,
-            "buscar": buscar,
-            "total": programas.count(),
-            "correo": correo,
-        },
-    )
+    return redirect("panel_instructor_interno:gestionar_fichas_programas")
 
 
 @instructor_interno_required
@@ -614,10 +787,11 @@ def crear_programa(request):
     )
 
     if request.method == "POST":
-        form = ProgramaForm(request.POST)
+        form = ProgramaForm(request.POST, owner_user=owner_user)
         if form.is_valid():
             programa = form.save(commit=False)
             programa.creado_por = owner_user
+            programa.activo = True
             programa.save()
             if is_ajax:
                 return JsonResponse(
@@ -630,7 +804,7 @@ def crear_programa(request):
                 messages.success(
                     request, f'✅ Programa "{programa.nombre}" creado correctamente.'
                 )
-                return redirect("panel_instructor_interno:gestionar_programas")
+                return redirect("panel_instructor_interno:gestionar_fichas_programas")
         else:
             if is_ajax:
                 # Retornar formulario con errores para mostrar en el modal
@@ -657,7 +831,7 @@ def crear_programa(request):
                 },
             )
     else:
-        form = ProgramaForm()
+        form = ProgramaForm(owner_user=owner_user)
 
     if is_ajax:
         # Para AJAX GET, retornar solo el formulario sin headers/footers
@@ -697,9 +871,16 @@ def editar_programa(request, pk):
     )
 
     if request.method == "POST":
-        form = ProgramaForm(request.POST, instance=programa)
+        form = ProgramaForm(
+            request.POST,
+            instance=programa,
+            owner_user=owner_user,
+            current_programa_id=programa.pk,
+        )
         if form.is_valid():
-            form.save()
+            programa = form.save(commit=False)
+            programa.activo = True
+            programa.save()
             if is_ajax:
                 return JsonResponse(
                     {
@@ -711,7 +892,7 @@ def editar_programa(request, pk):
                 messages.success(
                     request, f'✅ Programa "{programa.nombre}" actualizado.'
                 )
-                return redirect("panel_instructor_interno:gestionar_programas")
+                return redirect("panel_instructor_interno:gestionar_fichas_programas")
         else:
             if is_ajax:
                 # Retornar formulario con errores para mostrar en el modal
@@ -739,7 +920,11 @@ def editar_programa(request, pk):
                 },
             )
     else:
-        form = ProgramaForm(instance=programa)
+        form = ProgramaForm(
+            instance=programa,
+            owner_user=owner_user,
+            current_programa_id=programa.pk,
+        )
 
     if is_ajax:
         # Para AJAX GET, retornar solo el formulario
@@ -802,7 +987,7 @@ def eliminar_programa(request, pk):
                     request,
                     f'❌ No se puede eliminar "{nombre}" porque tiene fichas asociadas.',
                 )
-        return redirect("panel_instructor_interno:gestionar_programas")
+        return redirect("panel_instructor_interno:gestionar_fichas_programas")
 
     if is_ajax:
         return JsonResponse(
@@ -827,24 +1012,7 @@ def eliminar_programa(request, pk):
 
 @instructor_interno_required
 def gestionar_fichas(request):
-    correo, _ = get_sesion_instructor(request)
-    owner_user = _obtener_propietario_instructor(request)
-    fichas = Ficha.objects.select_related("programa").filter(creado_por=owner_user)
-    buscar = request.GET.get("buscar", "")
-    if buscar:
-        fichas = fichas.filter(
-            Q(numero__icontains=buscar) | Q(programa__nombre__icontains=buscar)
-        )
-    return render(
-        request,
-        "panel_instructor_interno/gestionar_fichas.html",
-        {
-            "fichas": fichas,
-            "buscar": buscar,
-            "total": fichas.count(),
-            "correo": correo,
-        },
-    )
+    return redirect("panel_instructor_interno:gestionar_fichas_programas")
 
 
 @instructor_interno_required
@@ -861,6 +1029,7 @@ def crear_ficha(request):
         if form.is_valid():
             ficha = form.save(commit=False)
             ficha.creado_por = owner_user
+            ficha.activa = True
             ficha.save()
             if is_ajax:
                 return JsonResponse(
@@ -873,7 +1042,7 @@ def crear_ficha(request):
                 messages.success(
                     request, f"✅ Ficha {ficha.numero} creada correctamente."
                 )
-                return redirect("panel_instructor_interno:gestionar_fichas")
+                return redirect("panel_instructor_interno:gestionar_fichas_programas")
         else:
             if is_ajax:
                 # Retornar formulario con errores para mostrar en el modal
@@ -942,7 +1111,9 @@ def editar_ficha(request, pk):
     if request.method == "POST":
         form = FichaForm(request.POST, instance=ficha, owner_user=owner_user)
         if form.is_valid():
-            form.save()
+            ficha = form.save(commit=False)
+            ficha.activa = True
+            ficha.save()
             if is_ajax:
                 return JsonResponse(
                     {
@@ -952,7 +1123,7 @@ def editar_ficha(request, pk):
                 )
             else:
                 messages.success(request, f"✅ Ficha {ficha.numero} actualizada.")
-                return redirect("panel_instructor_interno:gestionar_fichas")
+                return redirect("panel_instructor_interno:gestionar_fichas_programas")
         else:
             if is_ajax:
                 # Retornar formulario con errores para mostrar en el modal
@@ -1040,7 +1211,7 @@ def eliminar_ficha(request, pk):
                 )
             else:
                 messages.error(request, f"❌ No se puede eliminar la ficha.")
-        return redirect("panel_instructor_interno:gestionar_fichas")
+        return redirect("panel_instructor_interno:gestionar_fichas_programas")
 
     if is_ajax:
         return JsonResponse({"numero": ficha.numero, "programa": ficha.programa.nombre})
@@ -1063,7 +1234,7 @@ def listar_fichas_aprendices(request):
     """
     Ruta legacy. Redirige al módulo principal de fichas.
     """
-    return redirect("panel_instructor_interno:gestionar_fichas")
+    return redirect("panel_instructor_interno:gestionar_fichas_programas")
 
 
 from django.views.decorators.clickjacking import xframe_options_exempt
@@ -1371,6 +1542,20 @@ def registrar_aprendices_visita(request, visita_id):
     if request.method == "POST":
         # Obtener lista de IDs de aprendices seleccionados
         aprendices_ids = request.POST.getlist("aprendices[]")
+        
+        # Validar que no se exceda la cantidad de aprendices especificada en la visita
+        aprendices_ya_registrados = AsistenteVisitaInterna.objects.filter(visita=visita).count()
+        cantidad_nueva = len([id for id in aprendices_ids if id])
+        cantidad_total = aprendices_ya_registrados + cantidad_nueva
+        
+        if cantidad_total > visita.cantidad_aprendices:
+            cantidad_restante = visita.cantidad_aprendices - aprendices_ya_registrados
+            messages.error(
+                request,
+                f"❌ No se pueden registrar {cantidad_nueva} aprendices. Solo hay espacio para {cantidad_restante} más (máximo {visita.cantidad_aprendices} registrados en la visita)."
+            )
+            return redirect("panel_instructor_interno:registrar_aprendices_visita", visita_id=visita_id)
+        
         aprendices_registrados = 0
         aprendices_duplicados = 0
 

@@ -94,42 +94,6 @@
             background: #fbfcfd;
         }
 
-        .docs-registro-section h4 {
-            font-size: 1.45rem;
-            margin-bottom: 0.7rem;
-        }
-
-        .docs-registro-intro {
-            font-size: 0.92rem;
-            margin-bottom: 16px !important;
-        }
-
-        .docs-registro-section .docs-categoria-header {
-            padding: 12px 14px;
-        }
-
-        .docs-registro-section .docs-categoria-icono {
-            width: 38px;
-            height: 38px;
-            font-size: 0.95rem;
-        }
-
-        .docs-registro-section .docs-categoria-titulo {
-            font-size: 1rem;
-        }
-
-        .docs-registro-section .docs-categoria-subtitulo {
-            font-size: 0.8rem;
-        }
-
-        .docs-registro-item-title {
-            font-size: 0.95rem;
-        }
-
-        .docs-registro-item-meta {
-            font-size: 0.8rem;
-        }
-
         .docs-warning-box {
             background: #fff7d6;
             border: 1px solid #f4dd95;
@@ -158,11 +122,11 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            font-size: 1.45rem;
+            font-size: 2rem;
             font-weight: 800;
             letter-spacing: 0.2px;
             color: #111827;
-            margin-bottom: 0.9rem;
+            margin-bottom: 1.2rem;
         }
 
         .form-card h4 i {
@@ -239,6 +203,19 @@
             font-weight: 700;
             vertical-align: top;
         }
+
+        .field-error-msg {
+            display: none;
+            margin-top: 6px;
+            color: #dc2626;
+            font-size: 0.86rem;
+            font-weight: 600;
+        }
+
+        .input-error {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.16) !important;
+        }
     </style>
 </head>
 <body>
@@ -307,6 +284,11 @@
     <div class="progress-section">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
             <h4 style="margin: 0;"><i class="fas fa-chart-pie me-2" style="color: #00af00;"></i>Progreso de Registro</h4>
+            {% if mostrar_archivos_finales %}
+            <a href="#seccion-archivos-finales" style="background: linear-gradient(135deg, #228B22 0%, #2ecc40 100%); color: white; padding: 8px 18px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
+                <i class="fas fa-folder-open"></i> Ver Archivos Finales
+            </a>
+            {% endif %}
         </div>
         <div class="progress-bar-custom">
             {% widthratio asistentes_actuales max_asistentes 100 as progress_percent %}
@@ -328,11 +310,11 @@
     {% endif %}
 
     <!-- Documentos para descargar -->
-    {% if documentos_registro_por_categoria %}
-    <div class="form-card docs-registro-section" style="border-left: 4px solid #667eea;">
+    {% if documentos_por_categoria %}
+    <div class="form-card" style="border-left: 4px solid #667eea;">
         <h4><i class="fas fa-download" style="color: #667eea;"></i> Documentos Requeridos para el registro de asistentes</h4>
-        <p class="docs-registro-intro" style="color: #666; margin-bottom: 25px;">Descargue, diligencie y tenga listos los siguientes documentos antes de registrar a los asistentes.</p>
-        {% for categoria, docs in documentos_registro_por_categoria.items %}
+        <p style="color: #666; margin-bottom: 25px;">Descargue, diligencie y tenga listos los siguientes documentos antes de registrar a los asistentes.</p>
+        {% for categoria, docs in documentos_por_categoria.items %}
         <div class="docs-categoria-card">
             <div class="docs-categoria-header">
                 <div class="docs-categoria-icono">
@@ -350,9 +332,9 @@
                         <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% elif doc.extension == '.jpg' or doc.extension == '.jpeg' or doc.extension == '.png' %}file-image{% else %}file-alt{% endif %}"
                            style="font-size: 1.5rem; color: {% if doc.extension == '.pdf' %}#dc2626{% elif doc.extension == '.doc' or doc.extension == '.docx' %}#2563eb{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}#059669{% else %}#667eea{% endif %};"></i>
                         <div>
-                            <strong class="docs-registro-item-title" style="color: #333;">{{ doc.categoria }}</strong><br>
-                            <small class="docs-registro-item-meta" style="color: #888;">{{ doc.nombre_archivo }} &middot; {{ doc.tamaño_legible }}</small>
-                            {% if doc.descripcion %}<br><small class="docs-registro-item-meta" style="color: #666;">{{ doc.descripcion }}</small>{% endif %}
+                            <strong style="color: #333;">{{ doc.categoria }}</strong><br>
+                            <small style="color: #888;">{{ doc.nombre_archivo }} &middot; {{ doc.tamaño_legible }}</small>
+                            {% if doc.descripcion %}<br><small style="color: #666;">{{ doc.descripcion }}</small>{% endif %}
                         </div>
                     </div>
                     <div style="display: flex; gap: 8px; align-items: center;">
@@ -377,16 +359,17 @@
     <div class="form-card">
         <h4><i class="fas fa-plus-circle"></i> Agregar Nuevo Asistente</h4>
         
-        <form method="POST" enctype="multipart/form-data">
+        <form method="POST" enctype="multipart/form-data" id="formAgregarAsistente">
             {% csrf_token %}
             <div class="form-row">
                 <div class="form-group">
                     <label>Nombre Completo <span class="required">*</span></label>
-                    <input type="text" name="nombre_completo" class="form-control" placeholder="Nombre completo del asistente" required {% if not puede_agregar %}disabled{% endif %}>
+                    <input type="text" id="id_nombre_completo_asistente" name="nombre_completo" class="form-control" placeholder="Nombre completo del asistente" required maxlength="200" pattern="[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]{3,200}" title="Ingrese solo letras y espacios (mínimo 3 caracteres)." autocomplete="name" {% if not puede_agregar %}disabled{% endif %}>
+                    <div id="error_nombre_completo_asistente" class="field-error-msg"></div>
                 </div>
                 <div class="form-group">
                     <label>Tipo de Documento <span class="required">*</span></label>
-                    <select name="tipo_documento" class="form-control" required {% if not puede_agregar %}disabled{% endif %}>
+                    <select id="id_tipo_documento_asistente" name="tipo_documento" class="form-control" required {% if not puede_agregar %}disabled{% endif %}>
                         <option value="">Seleccione...</option>
                         <option value="CC">Cédula de Ciudadanía</option>
                         <option value="CE">Cédula de Extranjería</option>
@@ -394,22 +377,26 @@
                         <option value="PPT">Permiso Especial de Permanencia</option>
                         <option value="PP">Pasaporte</option>
                     </select>
+                    <div id="error_tipo_documento_asistente" class="field-error-msg"></div>
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     <label>Número de Documento <span class="required">*</span></label>
-                    <input type="text" name="numero_documento" class="form-control" placeholder="Número de documento" required {% if not puede_agregar %}disabled{% endif %}>
+                    <input type="text" id="id_numero_documento_asistente" name="numero_documento" class="form-control" placeholder="Número de documento" required minlength="10" maxlength="10" pattern="\d{10}" title="Ingrese exactamente 10 números." inputmode="numeric" autocomplete="off" {% if not puede_agregar %}disabled{% endif %}>
+                    <div id="error_numero_documento_asistente" class="field-error-msg"></div>
                 </div>
                 <div class="form-group">
                     <label>Correo Electrónico</label>
-                    <input type="email" name="correo" class="form-control" placeholder="correo@ejemplo.com" {% if not puede_agregar %}disabled{% endif %}>
+                    <input type="email" id="id_correo_asistente" name="correo" class="form-control" placeholder="correo@ejemplo.com" maxlength="254" autocomplete="email" {% if not puede_agregar %}disabled{% endif %}>
+                    <div id="error_correo_asistente" class="field-error-msg"></div>
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     <label>Teléfono</label>
-                    <input type="text" name="telefono" class="form-control" placeholder="Número de teléfono" {% if not puede_agregar %}disabled{% endif %}>
+                    <input type="text" id="id_telefono_asistente" name="telefono" class="form-control" placeholder="Número de teléfono" minlength="7" maxlength="15" pattern="\d{7,15}" title="Ingrese solo números (7 a 15 dígitos)." inputmode="numeric" autocomplete="tel" {% if not puede_agregar %}disabled{% endif %}>
+                    <div id="error_telefono_asistente" class="field-error-msg"></div>
                 </div>
             </div>
             <hr>
@@ -417,7 +404,7 @@
                 <h5 class="titulo-archivos">Subir Archivos Requeridos <span class="required">*</span></h5>
                 
                 <!-- Formato Auto Reporte Condiciones de Salud -->
-                {% for categoria, docs in documentos_registro_por_categoria.items %}
+                {% for categoria, docs in documentos_por_categoria.items %}
                     {% if categoria == 'Formato Auto Reporte Condiciones de Salud' %}
                         <div class="docs-categoria-card" style="margin-bottom: 16px;">
                             <div class="docs-categoria-header">
@@ -444,7 +431,7 @@
                 {% endfor %}
 
                 <!-- Formato Autorización Padres de Familia con advertencia -->
-                {% for categoria, docs in documentos_registro_por_categoria.items %}
+                {% for categoria, docs in documentos_por_categoria.items %}
                     {% if categoria == 'Formato Autorización Padres de Familia' %}
                         <div class="docs-categoria-card" style="margin-bottom: 18px;">
                             <div class="docs-categoria-header">
@@ -491,6 +478,40 @@
         </form>
     </div>
 
+    <!-- Asistentes previos disponibles -->
+    {% if tiene_asistentes_previos %}
+    <div class="form-card" style="border-left: 4px solid #10b981; background: #f0fdf4;">
+        <h4><i class="fas fa-history" style="color: #10b981;"></i> Asistentes de Visitas Anteriores</h4>
+        <p style="color: #666; margin-bottom: 15px;">Puede reutilizar asistentes de visitas anteriores del mismo programa o institución. Haga clic en "Reutilizar" para agregar.</p>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px;">
+            {% for asistente_prev in asistentes_previos %}
+                <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb; display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                        <h6 style="margin: 0 0 8px 0; color: #1f2937; font-weight: 600;">{{ asistente_prev.1 }}</h6>
+                        <p style="margin: 4px 0; font-size: 0.85rem; color: #6b7280;">
+                            <i class="fas fa-id-card me-1"></i>{{ asistente_prev.2 }}: {{ asistente_prev.3 }}
+                        </p>
+                        {% if asistente_prev.4 %}
+                            <p style="margin: 4px 0; font-size: 0.85rem; color: #6b7280;">
+                                <i class="fas fa-envelope me-1"></i>{{ asistente_prev.4 }}
+                            </p>
+                        {% endif %}
+                        {% if asistente_prev.5 %}
+                            <p style="margin: 4px 0; font-size: 0.85rem; color: #6b7280;">
+                                <i class="fas fa-phone me-1"></i>{{ asistente_prev.5 }}
+                            </p>
+                        {% endif %}
+                    </div>
+                    <a href="{% url 'panel_visitante:copiar_asistente_previo' tipo=tipo visita_id=visita.id asistente_previo_id=asistente_prev.0 %}" 
+                       style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; margin-top: 10px; border: none; cursor: pointer; text-align: center; justify-content: center;">
+                        <i class="fas fa-check-circle"></i> Reutilizar
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Lista de asistentes registrados -->
     <div class="asistentes-list">
         <h4><i class="fas fa-users"></i> Asistentes Registrados ({{ asistentes_actuales }})</h4>
@@ -519,11 +540,11 @@
                     </div>
                     <div style="display: flex; gap: 8px;">
                         {% if puede_actualizar_asistentes %}
-                        <button type="button" class="btn-edit" onclick="abrirModalActualizarDoc({{ asistente.id }}, '{{ asistente.nombre_completo }}', '{{ tipo }}')">
+                        <a href="{% url 'panel_visitante:actualizar_info_asistente' tipo=tipo asistente_id=asistente.id %}?origen=registro" class="btn-edit">
                             <i class="fas fa-edit me-1"></i>Actualizar
-                        </button>
+                        </a>
                         {% else %}
-                        <button type="button" class="btn-edit" disabled title="La actualización se bloquea cuando la solicitud final ya fue enviada o cuando ya están cargados los archivos finales del flujo completo.">
+                        <button type="button" class="btn-edit" disabled title="La actualización se bloquea cuando la solicitud final ya fue enviada o cuando la visita ya tuvo correcciones documentales.">
                             <i class="fas fa-lock me-1"></i>Actualizar bloqueado
                         </button>
                         {% endif %}
@@ -540,6 +561,39 @@
             </div>
         {% endif %}
     </div>
+
+    <!-- Sección de Archivos Finales -->
+    {% if mostrar_archivos_finales %}
+    <div id="seccion-archivos-finales" class="form-card" style="border-left: 4px solid #228B22; background: #f0fdf4;">
+        <h4 style="color: #145A32; margin-bottom: 18px;"><i class="fas fa-folder-open me-2"></i> Archivos Finales</h4>
+        <p style="color: #333; margin-bottom: 18px; font-size: 0.95rem;">Suba los archivos requeridos para finalizar el proceso:</p>
+        <form method="post" enctype="multipart/form-data" id="formArchivosFinales">
+            {% csrf_token %}
+            {% for categoria, docs in documentos_por_categoria.items %}
+                {% if categoria == 'ATS' or categoria == 'Formato Inducción y Reinducción' or categoria == 'Charla de Seguridad y Calestenia' %}
+                    <div style="margin-bottom: 20px;">
+                        <h5 style="color: #228B22; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #bbf7d0;"><i class="fas fa-{% if 'ATS' in categoria %}file-alt{% elif 'Inducción' in categoria %}file-pdf{% else %}users{% endif %} me-2"></i>{{ categoria }}</h5>
+                        {% for doc in docs %}
+                            <div style="margin-bottom: 16px; padding: 12px; background: white; border-radius: 8px; border: 1px solid #d1fae5;">
+                                <label style="font-weight: 600; color: #333; display: block; margin-bottom: 8px;">
+                                    <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% else %}file-alt{% endif %}" style="font-size: 1.2rem; color: {% if doc.extension == '.pdf' %}#dc2626{% elif doc.extension == '.doc' or doc.extension == '.docx' %}#2563eb{% else %}#059669{% endif %}; margin-right: 6px;"></i>
+                                    {{ doc.categoria }}
+                                </label>
+                                <input type="file" name="archivo_final_{{ doc.id }}" accept=".pdf,.doc,.docx" class="form-control" style="padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px;">
+                                {% if doc.descripcion %}<small style="color: #666; display: block; margin-top: 4px;">{{ doc.descripcion }}</small>{% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="submit" style="background: linear-gradient(135deg, #228B22 0%, #2ecc40 100%); color: #fff; font-weight: bold; padding: 12px 28px; border: none; border-radius: 8px; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(34,139,34,0.4)'," onmouseout="this.style.transform='none'; this.style.boxShadow='none'">
+                    <i class="fas fa-upload"></i> Subir Archivos Finales
+                </button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
 
     <!-- Botón volver -->
     <div class="text-center mt-4">
@@ -559,63 +613,7 @@
     </div>
 </div>
 
-<!-- Modal Actualizar Documento Asistente -->
-<div id="modalActualizarDoc" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.75); overflow-y:auto;">
-    <div style="background:#fff; margin:5% auto; padding:32px 24px; border-radius:12px; width:92%; max-width:500px; box-shadow:0 8px 40px rgba(0,0,0,0.4);">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:12px; border-bottom:1px solid #e5e7eb;">
-            <h5 style="margin:0; color:#1f2937; font-size:18px;" id="tituloModalDoc">
-                <i class="fas fa-file-upload me-2" style="color:#667eea;"></i>Actualizar Documento de Salud
-            </h5>
-            <button onclick="cerrarModalActualizarDoc()" style="background:none; border:none; font-size:24px; color:#999; cursor:pointer; padding:0; width:32px; height:32px; display:flex; align-items:center; justify-content:center;">&times;</button>
-        </div>
-        <div style="margin-bottom:16px; padding:12px; background:#f0f9ff; border-left:4px solid #3b82f6; border-radius:6px;">
-            <p style="margin:0; color:#333; font-size:14px;">
-                <i class="fas fa-info-circle me-2" style="color:#3b82f6;"></i>
-                <strong>Asistente:</strong> <span id="nombreAsistenteModal" style="color:#1f2937; font-weight:600;"></span>
-            </p>
-        </div>
-        <form method="POST" enctype="multipart/form-data" id="formActualizarDoc">
-            {% csrf_token %}
-            <div style="margin-bottom:18px;">
-                <label style="font-weight:600; color:#333; display:block; margin-bottom:8px;">
-                    <i class="fas fa-file-pdf me-1" style="color:#dc2626;"></i>
-                    Formato Auto Reporte de Condiciones de Salud <span style="color:#dc2626;">*</span>
-                </label>
-                <input type="file" id="inputDocSalud" name="documento_salud_" class="form-control" accept=".pdf,.doc,.docx" required style="padding:10px; border:2px solid #e5e7eb; border-radius:8px; font-size:14px;">
-                <small style="color:#6b7280; display:block; margin-top:6px;">
-                    Formatos aceptados: PDF, DOC, DOCX (Max. 10MB)
-                </small>
-            </div>
-            <div style="margin-bottom:18px;">
-                <label style="font-weight:600; color:#333; display:block; margin-bottom:8px;">
-                    <i class="fas fa-file-signature me-1" style="color:#d97706;"></i>
-                    Formato Autorización de Padres (si aplica)
-                </label>
-                <input type="file" id="inputFormatoPadres" name="formato_padres_" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" style="padding:10px; border:2px solid #e5e7eb; border-radius:8px; font-size:14px;">
-                <small style="color:#6b7280; display:block; margin-top:6px;">
-                    Use este campo cuando el rechazo sea por autorización de padres.
-                </small>
-            </div>
-            <small style="color:#6b7280; display:block; margin-top:-8px; margin-bottom:12px;">
-                Debe adjuntar al menos un archivo para guardar la corrección.
-            </small>
-            <div style="display:flex; gap:10px; margin-top:24px; justify-content:flex-end;">
-                <button type="button" onclick="cerrarModalActualizarDoc()" style="background:#e5e7eb; color:#374151; font-weight:600; padding:10px 24px; border:none; border-radius:8px; cursor:pointer;">
-                    Cancelar
-                </button>
-                <button type="submit" style="background:linear-gradient(90deg,#667eea,#764ba2); color:#fff; font-weight:600; padding:10px 24px; border:none; border-radius:8px; cursor:pointer;">
-                    <i class="fas fa-check me-1"></i>Guardar Documento
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
-
 <script>
-var tipoVisitaGlobal = '{{ tipo }}';
-var visitaIdGlobal = {{ visita.id }};
-var puedeActualizarAsistentes = {{ puede_actualizar_asistentes|yesno:"true,false" }};
-
 function confirmarEliminarAsistente(event, url, nombre) {
     const mensaje = '¿Está seguro de eliminar este asistente?' + (nombre ? ('<br><strong>' + nombre + '</strong>') : '');
 
@@ -658,38 +656,164 @@ function confirmarEliminarAsistente(event, url, nombre) {
     return false;
 }
 
-function abrirModalActualizarDoc(asistenteId, nombreAsistente, tipo) {
-    if (!puedeActualizarAsistentes) {
-        if (typeof window.mAlert === 'function') {
-            window.mAlert('No se puede actualizar: la solicitud final ya fue enviada o ya están cargados los archivos finales del flujo completo.', 'warning');
-        }
+document.addEventListener('DOMContentLoaded', function() {
+    const formAgregar = document.getElementById('formAgregarAsistente');
+    const nombreInput = document.getElementById('id_nombre_completo_asistente');
+    const tipoDocSelect = document.getElementById('id_tipo_documento_asistente');
+    const numeroDocInput = document.getElementById('id_numero_documento_asistente');
+    const correoInput = document.getElementById('id_correo_asistente');
+    const telefonoInput = document.getElementById('id_telefono_asistente');
+
+    if (!formAgregar || !nombreInput || !tipoDocSelect || !numeroDocInput || !correoInput || !telefonoInput) {
         return;
     }
-    document.getElementById('nombreAsistenteModal').textContent = nombreAsistente;
-    document.getElementById('inputDocSalud').name = 'documento_salud_' + asistenteId;
-    document.getElementById('inputFormatoPadres').name = 'formato_padres_' + asistenteId;
-    const baseUrl = '/visitante/actualizar-documento/';
-    const actionUrl = baseUrl + tipo + '/' + asistenteId + '/';
-    document.getElementById('formActualizarDoc').action = actionUrl;
-    document.getElementById('modalActualizarDoc').style.display = 'block';
-    document.body.style.overflow = 'hidden';
-}
 
-function cerrarModalActualizarDoc() {
-    document.getElementById('modalActualizarDoc').style.display = 'none';
-    document.getElementById('inputDocSalud').value = '';
-    document.getElementById('inputFormatoPadres').value = '';
-    document.body.style.overflow = '';
-}
-
-document.getElementById('modalActualizarDoc').addEventListener('click', function(e) {
-    if (e.target === this) cerrarModalActualizarDoc();
-});
-
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && document.getElementById('modalActualizarDoc').style.display === 'block') {
-        cerrarModalActualizarDoc();
+    function normalizarNombre(valor) {
+        return String(valor || '')
+            .replace(/\s+/g, ' ')
+            .trim();
     }
+
+    function setInlineError(input, errorId, mensaje) {
+        const errorEl = document.getElementById(errorId);
+        if (!input || !errorEl) return;
+
+        if (mensaje) {
+            errorEl.textContent = mensaje;
+            errorEl.style.display = 'block';
+            input.classList.add('input-error');
+            input.setAttribute('aria-invalid', 'true');
+        } else {
+            errorEl.textContent = '';
+            errorEl.style.display = 'none';
+            input.classList.remove('input-error');
+            input.removeAttribute('aria-invalid');
+        }
+    }
+
+    function validarNombre() {
+        const valor = normalizarNombre(nombreInput.value);
+        nombreInput.value = valor;
+        if (!valor) {
+            setInlineError(nombreInput, 'error_nombre_completo_asistente', 'El nombre completo es obligatorio.');
+            return false;
+        }
+        if (valor.length < 3) {
+            setInlineError(nombreInput, 'error_nombre_completo_asistente', 'El nombre completo debe tener al menos 3 caracteres.');
+            return false;
+        }
+        if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]+$/.test(valor)) {
+            setInlineError(nombreInput, 'error_nombre_completo_asistente', 'El nombre completo solo debe contener letras y espacios.');
+            return false;
+        }
+        setInlineError(nombreInput, 'error_nombre_completo_asistente', '');
+        return true;
+    }
+
+    function validarTipoDocumento() {
+        if (!tipoDocSelect.value) {
+            setInlineError(tipoDocSelect, 'error_tipo_documento_asistente', 'Seleccione un tipo de documento.');
+            return false;
+        }
+        setInlineError(tipoDocSelect, 'error_tipo_documento_asistente', '');
+        return true;
+    }
+
+    function validarNumeroDocumento() {
+        const valor = numeroDocInput.value.replace(/\D/g, '').slice(0, 10);
+        numeroDocInput.value = valor;
+
+        if (!valor) {
+            setInlineError(numeroDocInput, 'error_numero_documento_asistente', 'El número de documento es obligatorio.');
+            return false;
+        }
+        if (!/^\d{10}$/.test(valor)) {
+            setInlineError(numeroDocInput, 'error_numero_documento_asistente', 'El número de documento debe tener exactamente 10 números.');
+            return false;
+        }
+        setInlineError(numeroDocInput, 'error_numero_documento_asistente', '');
+        return true;
+    }
+
+    function validarCorreo() {
+        const valor = String(correoInput.value || '').trim();
+        correoInput.value = valor;
+        if (!valor) {
+            setInlineError(correoInput, 'error_correo_asistente', '');
+            return true;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor)) {
+            setInlineError(correoInput, 'error_correo_asistente', 'Ingrese un correo electrónico válido.');
+            return false;
+        }
+        setInlineError(correoInput, 'error_correo_asistente', '');
+        return true;
+    }
+
+    function validarTelefono() {
+        const valor = telefonoInput.value.replace(/\D/g, '').slice(0, 15);
+        telefonoInput.value = valor;
+        if (!valor) {
+            setInlineError(telefonoInput, 'error_telefono_asistente', '');
+            return true;
+        }
+        if (!/^\d{7,15}$/.test(valor)) {
+            setInlineError(telefonoInput, 'error_telefono_asistente', 'El teléfono debe tener entre 7 y 15 números.');
+            return false;
+        }
+        setInlineError(telefonoInput, 'error_telefono_asistente', '');
+        return true;
+    }
+
+    function aplicarReglasDocumento() {
+        numeroDocInput.setAttribute('pattern', '\\d{10}');
+        numeroDocInput.setAttribute('title', 'Ingrese exactamente 10 números.');
+        numeroDocInput.setAttribute('inputmode', 'numeric');
+        numeroDocInput.value = numeroDocInput.value.replace(/\D/g, '').slice(0, 10);
+    }
+
+    nombreInput.addEventListener('blur', validarNombre);
+
+    numeroDocInput.addEventListener('input', function() {
+        aplicarReglasDocumento();
+        validarNumeroDocumento();
+    });
+
+    tipoDocSelect.addEventListener('change', function() {
+        aplicarReglasDocumento();
+        validarTipoDocumento();
+    });
+
+    correoInput.addEventListener('blur', validarCorreo);
+
+    telefonoInput.addEventListener('input', function() {
+        this.value = this.value.replace(/\D/g, '').slice(0, 15);
+        validarTelefono();
+    });
+
+    formAgregar.addEventListener('submit', function(event) {
+        nombreInput.value = normalizarNombre(nombreInput.value);
+        numeroDocInput.value = numeroDocInput.value.replace(/\D/g, '').slice(0, 10);
+        telefonoInput.value = telefonoInput.value.replace(/\D/g, '');
+
+        const validaciones = [
+            validarNombre(),
+            validarTipoDocumento(),
+            validarNumeroDocumento(),
+            validarCorreo(),
+            validarTelefono()
+        ];
+
+        if (validaciones.includes(false)) {
+            event.preventDefault();
+            const primerError = formAgregar.querySelector('.input-error');
+            if (primerError && typeof primerError.focus === 'function') {
+                primerError.focus();
+            }
+        }
+    });
+
+    aplicarReglasDocumento();
 });
 </script>
 

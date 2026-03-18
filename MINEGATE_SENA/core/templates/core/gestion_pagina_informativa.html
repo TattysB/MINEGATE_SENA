@@ -468,22 +468,12 @@
         <!-- Lista de elementos de galería -->
         <div id="gpi-galeria-lista" class="gpi-items-header">
           <span><i class="ri-stack-line"></i> Elementos existentes</span>
-          <span id="gpi-galeria-count" class="gpi-items-count">{{ elementos_galeria_admin|length }}</span>
+          <span class="gpi-items-count">{{ elementos_galeria_admin|length }}</span>
         </div>
-        <div id="gpi-galeria-items" class="gpi-items-list">
+        <div class="gpi-items-list">
           {% for item in elementos_galeria_admin %}
           <article class="gpi-item-card {% if not item.activo %}is-disabled{% endif %}">
-            {% if item.tipo == 'video' %}
-            <div class="gpi-item-thumb gpi-item-thumb-video" aria-label="Video">
-              <i class="ri-film-line"></i>
-            </div>
-            {% elif item.archivo %}
             <div class="gpi-item-thumb" style="background-image:url('{{ item.archivo.url }}?v={{ item.actualizado_en|date:'U' }}');"></div>
-            {% else %}
-            <div class="gpi-item-thumb gpi-item-thumb-missing" aria-label="Sin archivo">
-              <i class="ri-image-line"></i>
-            </div>
-            {% endif %}
             <div class="gpi-item-body">
               <h4>{{ item.titulo|default:'Sin título' }}</h4>
               <p>{{ item.descripcion|default:'Sin descripción'|truncatewords:16 }}</p>
@@ -593,17 +583,6 @@
       }
 
       const paramsUrl = new URLSearchParams(window.location.search);
-      const recargarForzada = paramsUrl.get('recargar');
-      if (recargarForzada) {
-        const llaveRecarga = 'gpi-recarga-forzada';
-        const yaRecargo = sessionStorage.getItem(llaveRecarga) === recargarForzada;
-        if (!yaRecargo) {
-          sessionStorage.setItem(llaveRecarga, recargarForzada);
-          window.location.reload();
-          return;
-        }
-        sessionStorage.removeItem(llaveRecarga);
-      }
       const enfocar = paramsUrl.get('enfocar');
       const seccionAbiertaPorUrl = paramsUrl.get('abrir');
       const forzarRefrescoPreview = Boolean(seccionAbiertaPorUrl);
@@ -664,7 +643,7 @@
 
       const galleryData = [
         {% for item in elementos_galeria_admin %}
-          {% if item.activo and item.archivo %}
+          {% if item.activo %}
           {
             tipo: '{{ item.tipo }}',
             mime: '{{ item.mime_type|default_if_none:""|escapejs }}',
@@ -686,7 +665,7 @@
         {% endfor %}
       ];
 
-      let galleryAdminData = [
+      const galleryAdminData = [
         {% for item in elementos_galeria_admin %}
           {
             id: {{ item.id }},
@@ -695,106 +674,6 @@
           },
         {% endfor %}
       ];
-
-      const galeriaItemsContainer = document.getElementById('gpi-galeria-items');
-      const galeriaCountEl = document.getElementById('gpi-galeria-count');
-      const csrfTokenInput = formGallery ? formGallery.querySelector('[name="csrfmiddlewaretoken"]') : null;
-      const csrfToken = csrfTokenInput ? csrfTokenInput.value : '';
-      const editarBaseUrl = '{% url "core:panel_administrativo_seccion" "gestion_pagina_informativa" %}';
-      const galeriaApiUrl = '{% url "core:api_galeria_informativa" %}';
-
-      const escaparHtml = (valor) => {
-        return String(valor || '')
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#39;');
-      };
-
-      const renderizarItemsGaleria = (items) => {
-        if (!galeriaItemsContainer || !galeriaCountEl) return;
-
-        galeriaCountEl.textContent = String(items.length);
-        galleryAdminData = items.map((item) => ({
-          id: Number(item.id),
-          orden: Number(item.orden),
-          titulo: item.titulo || '',
-        }));
-
-        if (!items.length) {
-          galeriaItemsContainer.innerHTML = '<p class="gpi-empty-inline"><i class="ri-gallery-line"></i> No hay elementos en la galería aún.</p>';
-          return;
-        }
-
-        const cards = items.map((item) => {
-          const claseEstado = item.activo ? '' : 'is-disabled';
-          const titulo = escaparHtml(item.titulo || 'Sin título');
-          const descripcion = escaparHtml(item.descripcion || 'Sin descripción');
-          const tipo = escaparHtml(item.tipo_display || 'Elemento');
-          const orden = Number(item.orden || 0);
-          const badgeEstado = item.activo
-            ? '<i class="ri-eye-line"></i> Activo'
-            : '<i class="ri-eye-off-line"></i> Oculto';
-
-          let thumbHtml = '<div class="gpi-item-thumb gpi-item-thumb-missing" aria-label="Sin archivo"><i class="ri-image-line"></i></div>';
-          if (item.tipo === 'video') {
-            thumbHtml = '<div class="gpi-item-thumb gpi-item-thumb-video" aria-label="Video"><i class="ri-film-line"></i></div>';
-          } else if (item.archivo_url) {
-            thumbHtml = `<div class="gpi-item-thumb" style="background-image:url('${escaparHtml(item.archivo_url)}');"></div>`;
-          }
-
-          const editarUrl = `${editarBaseUrl}?editar_galeria=${item.id}#gpi-galeria-body`;
-
-          return `
-            <article class="gpi-item-card ${claseEstado}">
-              ${thumbHtml}
-              <div class="gpi-item-body">
-                <h4>${titulo}</h4>
-                <p>${descripcion}</p>
-                <div class="gpi-meta">
-                  <span><i class="ri-film-line"></i> ${tipo}</span>
-                  <span><i class="ri-sort-asc"></i> ${orden}</span>
-                  <span>${badgeEstado}</span>
-                </div>
-              </div>
-              <div class="gpi-item-actions">
-                <a href="${editarUrl}" class="btn btn-sm btn-warning">
-                  <i class="ri-pencil-line"></i> Editar
-                </a>
-                <form method="post" onsubmit="return confirm('¿Eliminar este elemento de galería?');">
-                  <input type="hidden" name="csrfmiddlewaretoken" value="${escaparHtml(csrfToken)}">
-                  <input type="hidden" name="accion" value="eliminar_elemento">
-                  <input type="hidden" name="elemento_id" value="${item.id}">
-                  <input type="hidden" name="abrir_seccion" value="galeria">
-                  <button type="submit" class="btn btn-sm btn-danger">
-                    <i class="ri-delete-bin-line"></i> Eliminar
-                  </button>
-                </form>
-              </div>
-            </article>
-          `;
-        });
-
-        galeriaItemsContainer.innerHTML = cards.join('');
-      };
-
-      const cargarItemsGaleria = async () => {
-        try {
-          const respuesta = await fetch(galeriaApiUrl, {
-            credentials: 'same-origin',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' },
-          });
-          if (!respuesta.ok) return;
-          const data = await respuesta.json();
-          const items = Array.isArray(data.items) ? data.items : [];
-          renderizarItemsGaleria(items);
-        } catch (error) {
-          console.warn('No se pudo refrescar la lista de galería.', error);
-        }
-      };
-
-      cargarItemsGaleria();
 
       if (!slidesData.length) {
         slidesData.push({

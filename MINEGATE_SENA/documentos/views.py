@@ -15,6 +15,31 @@ from visitaExterna.models import VisitaExterna, AsistenteVisitaExterna
 from .models import Documento, DocumentoSubidoAsistente
 
 
+CATEGORIAS_ARCHIVOS_FINALES = {
+    "ats",
+    "formato induccion y reinduccion",
+    "charla de seguridad y calestenia",
+    "charla de seguridad y calistenia",
+}
+
+
+def _normalizar_categoria_texto(valor):
+    return (
+        str(valor or "")
+        .strip()
+        .lower()
+        .replace("á", "a")
+        .replace("é", "e")
+        .replace("í", "i")
+        .replace("ó", "o")
+        .replace("ú", "u")
+    )
+
+
+def _es_categoria_archivo_final(categoria):
+    return _normalizar_categoria_texto(categoria) in CATEGORIAS_ARCHIVOS_FINALES
+
+
 def _get_docsubido_aprendiz_model():
     from .models import DocumentoSubidoAprendiz
 
@@ -40,9 +65,18 @@ def _documentos_actuales_asistente(asistente):
     return list(latest_por_documento.values())
 
 
-def _sincronizar_estado_asistente(asistente):
-    """Sincroniza estado agregado del asistente según sus documentos actuales."""
-    docs_actuales = _documentos_actuales_asistente(asistente)
+def _documentos_personales_asistente(asistente):
+    """Retorna solo documentos personales (excluye archivos finales de visita)."""
+    return [
+        ds
+        for ds in _documentos_actuales_asistente(asistente)
+        if not _es_categoria_archivo_final(ds.documento_requerido.categoria)
+    ]
+
+
+def _sincronizar_estado_asistente(asistente, observacion_rechazo=""):
+    """Sincroniza estado agregado del asistente según documentos personales."""
+    docs_actuales = _documentos_personales_asistente(asistente)
     tiene_rechazos = any(ds.estado == "rechazado" for ds in docs_actuales)
     todos_aprobados = bool(docs_actuales) and all(
         ds.estado == "aprobado" for ds in docs_actuales
@@ -64,6 +98,14 @@ def _sincronizar_estado_asistente(asistente):
     if asistente.estado != nuevo_estado:
         asistente.estado = nuevo_estado
         update_fields.append("estado")
+
+    if nuevo_estado == "documentos_rechazados":
+        nueva_observacion = (observacion_rechazo or "").strip() or (
+            asistente.observaciones_revision or ""
+        )
+        if nueva_observacion and asistente.observaciones_revision != nueva_observacion:
+            asistente.observaciones_revision = nueva_observacion
+            update_fields.append("observaciones_revision")
 
     if nuevo_estado != "documentos_rechazados" and asistente.observaciones_revision:
         asistente.observaciones_revision = ""
@@ -826,20 +868,21 @@ def revisar_documento_asistente_api(request, documento_subido_id):
 
     asistente = doc.asistente_interna or doc.asistente_externa
 
-    # Sincronizar estado del asistente si hay un rechazo
+    observacion_rechazo = ""
     if estado == "rechazado":
+        observacion_rechazo = (
+            f"Documento '{doc.documento_requerido.titulo}' rechazado: {observaciones}"
+            if observaciones
+            else f"Documento '{doc.documento_requerido.titulo}' rechazado."
+        )
         if asistente:
-            asistente.estado = "documentos_rechazados"
-            asistente.observaciones_revision = (
-                f"Documento '{doc.documento_requerido.titulo}' rechazado: {observaciones}"
-                if observaciones
-                else f"Documento '{doc.documento_requerido.titulo}' rechazado."
-            )
-            asistente.save(update_fields=["estado", "observaciones_revision"])
             _enviar_correo_documento_rechazado(request, doc, asistente, observaciones)
 
     if asistente:
-        nuevo_estado_asistente = _sincronizar_estado_asistente(asistente)
+        nuevo_estado_asistente = _sincronizar_estado_asistente(
+            asistente,
+            observacion_rechazo=observacion_rechazo,
+        )
     else:
         nuevo_estado_asistente = None
 

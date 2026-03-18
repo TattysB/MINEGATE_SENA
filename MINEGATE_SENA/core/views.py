@@ -1,11 +1,9 @@
-from django.shortcuts import render, redirect
-from django.http import JsonResponse
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db.models import Q
 from django.db.utils import OperationalError, ProgrammingError
 from django.urls import reverse
-from django.utils import timezone
 from PIL import Image, ImageOps, UnidentifiedImageError
 from datetime import date, timedelta
 import calendar
@@ -142,10 +140,7 @@ def index(request):
 
     try:
         contenido_pagina = ContenidoPaginaInformativa.obtener()
-        # Evita inconsistencias visuales si existen filas sin archivo asociado.
-        elementos_galeria = ElementoGaleriaInformativa.objects.filter(
-            activo=True
-        ).exclude(archivo="")
+        elementos_galeria = ElementoGaleriaInformativa.objects.filter(activo=True)
         elementos_encabezado = ElementoEncabezadoInformativo.objects.filter(activo=True)
         if not elementos_encabezado.exists():
             elementos_encabezado = _construir_slides_legacy(contenido_pagina)
@@ -422,11 +417,6 @@ def _agregar_contexto_pagina_informativa(request, context):
     form_slide = ElementoEncabezadoInformativoForm(instance=slide_en_edicion)
     form_elemento = ElementoGaleriaInformativaForm(instance=galeria_en_edicion)
 
-    destino_gpi = reverse(
-        "core:panel_administrativo_seccion",
-        kwargs={"seccion": "gestion_pagina_informativa"},
-    )
-
     if request.method == "POST":
         accion = request.POST.get("accion")
 
@@ -444,11 +434,10 @@ def _agregar_contexto_pagina_informativa(request, context):
                     request,
                     "Configuración general actualizada correctamente.",
                 )
-                destino = reverse(
+                return redirect(
                     "core:panel_administrativo_seccion",
-                    kwargs={"seccion": "gestion_pagina_informativa"},
+                    seccion="gestion_pagina_informativa",
                 )
-                return redirect(f"{destino}?recargar={int(timezone.now().timestamp())}")
             errores = []
             for campo, lista in form_contenido.errors.items():
                 nombre = "general" if campo == "__all__" else campo
@@ -462,15 +451,9 @@ def _agregar_contexto_pagina_informativa(request, context):
             slide_id = request.POST.get("slide_id")
             instancia_slide = None
             if slide_id:
-                instancia_slide = ElementoEncabezadoInformativo.objects.filter(
-                    pk=slide_id
-                ).first()
-                if not instancia_slide:
-                    messages.warning(
-                        request,
-                        "La diapositiva que intentas editar ya no existe. Recarga la sección y vuelve a intentar.",
-                    )
-                    return redirect(f"{destino_gpi}?abrir=encabezado")
+                instancia_slide = get_object_or_404(
+                    ElementoEncabezadoInformativo, pk=slide_id
+                )
 
             form_contenido = ContenidoPaginaInformativaForm(instance=contenido)
             form_slide = ElementoEncabezadoInformativoForm(
@@ -527,8 +510,12 @@ def _agregar_contexto_pagina_informativa(request, context):
                     messages.success(
                         request, "Diapositiva del encabezado guardada correctamente."
                     )
+                    destino = reverse(
+                        "core:panel_administrativo_seccion",
+                        kwargs={"seccion": "gestion_pagina_informativa"},
+                    )
                     return redirect(
-                        f"{destino_gpi}?abrir=encabezado&enfocar=gpi-encabezado-lista&recargar={int(timezone.now().timestamp())}"
+                        f"{destino}?abrir=encabezado&enfocar=gpi-encabezado-lista"
                     )
             errores = []
             for campo, lista in form_slide.errors.items():
@@ -542,35 +529,27 @@ def _agregar_contexto_pagina_informativa(request, context):
 
         elif accion == "eliminar_slide":
             slide_id = request.POST.get("slide_id")
-            slide = ElementoEncabezadoInformativo.objects.filter(pk=slide_id).first()
-            if not slide:
-                messages.warning(
-                    request,
-                    "La diapositiva que intentas eliminar ya no existe.",
-                )
-                return redirect(f"{destino_gpi}?abrir=encabezado")
+            slide = get_object_or_404(ElementoEncabezadoInformativo, pk=slide_id)
             slide.delete()
             messages.success(
                 request, "Diapositiva del encabezado eliminada correctamente."
             )
             abrir_destino = request.POST.get("abrir_seccion") or "encabezado"
+            destino = reverse(
+                "core:panel_administrativo_seccion",
+                kwargs={"seccion": "gestion_pagina_informativa"},
+            )
             return redirect(
-                f"{destino_gpi}?abrir={abrir_destino}&enfocar=gpi-encabezado-lista&recargar={int(timezone.now().timestamp())}"
+                f"{destino}?abrir={abrir_destino}&enfocar=gpi-encabezado-lista"
             )
 
         elif accion == "guardar_elemento":
             elemento_id = request.POST.get("elemento_id")
             instancia = None
             if elemento_id:
-                instancia = ElementoGaleriaInformativa.objects.filter(
-                    pk=elemento_id
-                ).first()
-                if not instancia:
-                    messages.warning(
-                        request,
-                        "El elemento de galería que intentas editar ya no existe. Recarga la sección y vuelve a intentar.",
-                    )
-                    return redirect(f"{destino_gpi}?abrir=galeria")
+                instancia = get_object_or_404(
+                    ElementoGaleriaInformativa, pk=elemento_id
+                )
 
             form_contenido = ContenidoPaginaInformativaForm(instance=contenido)
             form_slide = ElementoEncabezadoInformativoForm(instance=slide_en_edicion)
@@ -632,8 +611,12 @@ def _agregar_contexto_pagina_informativa(request, context):
                         request,
                         "Elemento de galería guardado correctamente.",
                     )
+                    destino = reverse(
+                        "core:panel_administrativo_seccion",
+                        kwargs={"seccion": "gestion_pagina_informativa"},
+                    )
                     return redirect(
-                        f"{destino_gpi}?abrir=galeria&enfocar=gpi-galeria-lista&recargar={int(timezone.now().timestamp())}"
+                        f"{destino}?abrir=galeria&enfocar=gpi-galeria-lista"
                     )
             errores = []
             for campo, lista in form_elemento.errors.items():
@@ -646,23 +629,17 @@ def _agregar_contexto_pagina_informativa(request, context):
 
         elif accion == "eliminar_elemento":
             elemento_id = request.POST.get("elemento_id")
-            elemento = ElementoGaleriaInformativa.objects.filter(pk=elemento_id).first()
-            if not elemento:
-                messages.warning(
-                    request,
-                    "El elemento de galería que intentas eliminar ya no existe.",
-                )
-                return redirect(f"{destino_gpi}?abrir=galeria")
+            elemento = get_object_or_404(ElementoGaleriaInformativa, pk=elemento_id)
             elemento.delete()
             messages.success(request, "Elemento de galería eliminado correctamente.")
             abrir_destino = request.POST.get("abrir_seccion") or "galeria"
-            return redirect(
-                f"{destino_gpi}?abrir={abrir_destino}&enfocar=gpi-galeria-lista&recargar={int(timezone.now().timestamp())}"
+            destino = reverse(
+                "core:panel_administrativo_seccion",
+                kwargs={"seccion": "gestion_pagina_informativa"},
             )
-
-    # Refresca listas desde BD para evitar que el render use datos antiguos.
-    elementos_encabezado = list(ElementoEncabezadoInformativo.objects.all())
-    elementos_galeria = list(ElementoGaleriaInformativa.objects.all())
+            return redirect(
+                f"{destino}?abrir={abrir_destino}&enfocar=gpi-galeria-lista"
+            )
 
     context.update(
         {
@@ -732,36 +709,3 @@ def visitas(request):
 def error_404(request, exception=None):
     """Maneja errores 404 - Página no encontrada"""
     return render(request, "404.html", status=404)
-
-
-@login_required(login_url="usuarios:login")
-@user_passes_test(es_superusuario, login_url="core:panel_administrativo")
-def api_galeria_informativa(request):
-    elementos = ElementoGaleriaInformativa.objects.all().order_by("orden", "id")
-    payload = []
-
-    for item in elementos:
-        archivo_url = ""
-        if item.archivo:
-            try:
-                archivo_url = (
-                    f"{item.archivo.url}?v={int(item.actualizado_en.timestamp())}"
-                )
-            except (ValueError, OSError, AttributeError):
-                archivo_url = ""
-
-        payload.append(
-            {
-                "id": item.id,
-                "tipo": item.tipo,
-                "tipo_display": item.get_tipo_display(),
-                "titulo": item.titulo or "",
-                "descripcion": item.descripcion or "",
-                "orden": item.orden,
-                "activo": item.activo,
-                "mime": item.mime_type,
-                "archivo_url": archivo_url,
-            }
-        )
-
-    return JsonResponse({"items": payload})
