@@ -12,10 +12,37 @@ from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer, 
 
 from visitaExterna.models import VisitaExterna
 from visitaInterna.models import VisitaInterna
+from control_acceso_mina.models import RegistroAccesoMina
 
 
 def _es_admin(user):
 	return user.is_authenticated and (user.is_superuser or user.is_staff)
+
+
+def _obtener_horarios_acceso_por_documento(tipo_visita, id_visita):
+	registros = (
+		RegistroAccesoMina.objects.filter(
+			visita_tipo=tipo_visita,
+			visita_id=id_visita,
+		)
+		.order_by("fecha_hora")
+	)
+
+	horarios = {}
+	for registro in registros:
+		documento = str(registro.documento or "").strip()
+		if not documento:
+			continue
+
+		if documento not in horarios:
+			horarios[documento] = {"hora_entrada": None, "hora_salida": None}
+
+		if registro.tipo == "ENTRADA" and horarios[documento]["hora_entrada"] is None:
+			horarios[documento]["hora_entrada"] = timezone.localtime(registro.fecha_hora)
+		elif registro.tipo == "SALIDA":
+			horarios[documento]["hora_salida"] = timezone.localtime(registro.fecha_hora)
+
+	return horarios
 
 
 def _normalizar_filtros(request):
@@ -403,6 +430,7 @@ def descargar_pdf(request):
 def descargar_pdf_individual(request, tipo, id_visita):
 	"""Descarga un reporte en PDF de una visita individual"""
 	from django.shortcuts import get_object_or_404
+	horarios_acceso = _obtener_horarios_acceso_por_documento(tipo, id_visita)
 	
 	if tipo == "interna":
 		visita = get_object_or_404(VisitaInterna.objects.prefetch_related('asistentes'), id=id_visita)
@@ -425,13 +453,17 @@ def descargar_pdf_individual(request, tipo, id_visita):
 		}
 		asistentes = []
 		for asistente in visita.asistentes.all():
+			horarios = horarios_acceso.get(str(asistente.numero_documento).strip(), {})
+			hora_entrada = horarios.get("hora_entrada")
+			hora_salida = horarios.get("hora_salida")
 			asistentes.append({
 				"nombre": asistente.nombre_completo,
 				"tipo_documento": asistente.get_tipo_documento_display(),
 				"numero_documento": asistente.numero_documento,
 				"correo": asistente.correo,
 				"telefono": asistente.telefono,
-				"estado": asistente.get_estado_display(),
+				"hora_entrada": hora_entrada.strftime("%H:%M") if hora_entrada else "-",
+				"hora_salida": hora_salida.strftime("%H:%M") if hora_salida else "-",
 			})
 	elif tipo == "externa":
 		visita = get_object_or_404(VisitaExterna.objects.prefetch_related('asistentes'), id=id_visita)
@@ -454,13 +486,17 @@ def descargar_pdf_individual(request, tipo, id_visita):
 		}
 		asistentes = []
 		for asistente in visita.asistentes.all():
+			horarios = horarios_acceso.get(str(asistente.numero_documento).strip(), {})
+			hora_entrada = horarios.get("hora_entrada")
+			hora_salida = horarios.get("hora_salida")
 			asistentes.append({
 				"nombre": asistente.nombre_completo,
 				"tipo_documento": asistente.get_tipo_documento_display(),
 				"numero_documento": asistente.numero_documento,
 				"correo": asistente.correo,
 				"telefono": asistente.telefono,
-				"estado": asistente.get_estado_display(),
+				"hora_entrada": hora_entrada.strftime("%H:%M") if hora_entrada else "-",
+				"hora_salida": hora_salida.strftime("%H:%M") if hora_salida else "-",
 			})
 	else:
 		from django.http import HttpResponseBadRequest
@@ -562,7 +598,7 @@ def descargar_pdf_individual(request, tipo, id_visita):
 		elementos.append(Spacer(1, 10))
 		
 		data_asistentes = [
-			["Nombre", "Tipo Doc.", "Núm. Doc.", "Correo", "Teléfono", "Estado"]
+			["Nombre", "Tipo Doc.", "Núm. Doc.", "Correo", "Teléfono", "Hora Entrada", "Hora Salida"]
 		]
 		
 		for asistente in asistentes:
@@ -572,10 +608,11 @@ def descargar_pdf_individual(request, tipo, id_visita):
 				asistente["numero_documento"],
 				asistente["correo"][:22],
 				asistente["telefono"],
-				asistente["estado"][:15],
+				asistente["hora_entrada"],
+				asistente["hora_salida"],
 			])
 		
-		tabla_asistentes = Table(data_asistentes, colWidths=[90, 50, 70, 95, 65, 80])
+		tabla_asistentes = Table(data_asistentes, colWidths=[80, 45, 60, 90, 55, 70, 70])
 		tabla_asistentes.setStyle(
 			TableStyle([
 				("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#39a900")),
@@ -601,6 +638,7 @@ def descargar_pdf_individual(request, tipo, id_visita):
 def descargar_excel_individual(request, tipo, id_visita):
 	"""Descarga un reporte en Excel de una visita individual"""
 	from django.shortcuts import get_object_or_404
+	horarios_acceso = _obtener_horarios_acceso_por_documento(tipo, id_visita)
 	
 	if tipo == "interna":
 		visita = get_object_or_404(VisitaInterna.objects.prefetch_related('asistentes'), id=id_visita)
@@ -623,13 +661,17 @@ def descargar_excel_individual(request, tipo, id_visita):
 		}
 		asistentes = []
 		for asistente in visita.asistentes.all():
+			horarios = horarios_acceso.get(str(asistente.numero_documento).strip(), {})
+			hora_entrada = horarios.get("hora_entrada")
+			hora_salida = horarios.get("hora_salida")
 			asistentes.append({
 				"nombre": asistente.nombre_completo,
 				"tipo_documento": asistente.get_tipo_documento_display(),
 				"numero_documento": asistente.numero_documento,
 				"correo": asistente.correo,
 				"telefono": asistente.telefono,
-				"estado": asistente.get_estado_display(),
+				"hora_entrada": hora_entrada.strftime("%H:%M") if hora_entrada else "-",
+				"hora_salida": hora_salida.strftime("%H:%M") if hora_salida else "-",
 			})
 	elif tipo == "externa":
 		visita = get_object_or_404(VisitaExterna.objects.prefetch_related('asistentes'), id=id_visita)
@@ -652,13 +694,17 @@ def descargar_excel_individual(request, tipo, id_visita):
 		}
 		asistentes = []
 		for asistente in visita.asistentes.all():
+			horarios = horarios_acceso.get(str(asistente.numero_documento).strip(), {})
+			hora_entrada = horarios.get("hora_entrada")
+			hora_salida = horarios.get("hora_salida")
 			asistentes.append({
 				"nombre": asistente.nombre_completo,
 				"tipo_documento": asistente.get_tipo_documento_display(),
 				"numero_documento": asistente.numero_documento,
 				"correo": asistente.correo,
 				"telefono": asistente.telefono,
-				"estado": asistente.get_estado_display(),
+				"hora_entrada": hora_entrada.strftime("%H:%M") if hora_entrada else "-",
+				"hora_salida": hora_salida.strftime("%H:%M") if hora_salida else "-",
 			})
 	else:
 		from django.http import HttpResponseBadRequest
@@ -721,7 +767,7 @@ def descargar_excel_individual(request, tipo, id_visita):
 		response.write(
 			"<tr style='background-color: #39a900; color: white; font-weight: bold;'>"
 			"<th>Nombre</th><th>Tipo Doc</th><th>Número Doc</th>"
-			"<th>Correo</th><th>Teléfono</th><th>Estado</th>"
+			"<th>Correo</th><th>Teléfono</th><th>Hora Entrada</th><th>Hora Salida</th>"
 			"</tr>"
 		)
 		
@@ -733,7 +779,8 @@ def descargar_excel_individual(request, tipo, id_visita):
 				f"<td>{escape(asistente['numero_documento'])}</td>"
 				f"<td>{escape(asistente['correo'])}</td>"
 				f"<td>{escape(asistente['telefono'])}</td>"
-				f"<td>{escape(asistente['estado'])}</td>"
+				f"<td>{escape(asistente['hora_entrada'])}</td>"
+				f"<td>{escape(asistente['hora_salida'])}</td>"
 				"</tr>"
 			)
 	else:

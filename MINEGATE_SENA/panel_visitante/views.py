@@ -9,6 +9,7 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.views.decorators.csrf import csrf_protect
 from django.urls import reverse
 from datetime import datetime
+import random
 from visitaInterna.models import VisitaInterna, AsistenteVisitaInterna
 from visitaExterna.models import VisitaExterna, AsistenteVisitaExterna
 from documentos.models import (
@@ -27,12 +28,14 @@ from .forms import (
     PasswordResetConfirmForm,
     ActualizarPerfilForm,
     CambiarContrasenaForm,
+    VerificacionCodigoRegistroForm,
 )
 from .models import RegistroVisitante
 from django.conf import settings
 from django.db import IntegrityError, transaction
 from pathlib import Path
 from django.http import JsonResponse
+from django.utils import timezone
 
 
 CATEGORIAS_ARCHIVOS_FINALES = {
@@ -46,6 +49,35 @@ CATEGORIAS_DOCUMENTOS_REGISTRO = {
     "formato autorizacion padres de familia",
 }
 AUTH_VISITANTE_MESSAGE_TAG = "auth_visitante"
+REGISTRO_VERIFICACION_SESSION_KEY = "registro_verificacion_pendiente"
+REGISTRO_VERIFICACION_TTL_MINUTOS = 10
+
+
+def _generar_codigo_verificacion(longitud=6):
+    generador = random.SystemRandom()
+    return "".join(str(generador.randint(0, 9)) for _ in range(longitud))
+
+
+def _enviar_codigo_verificacion_registro(correo, codigo, nombre):
+    asunto = "Codigo de verificacion de cuenta - MINEGATE"
+    html_content = render_to_string(
+        "emails/codigo_verificacion_registro.html",
+        {
+            "nombre": nombre,
+            "codigo": codigo,
+            "minutos": REGISTRO_VERIFICACION_TTL_MINUTOS,
+        },
+    )
+    text_content = strip_tags(html_content)
+
+    email = EmailMultiAlternatives(
+        subject=asunto,
+        body=text_content,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[correo],
+    )
+    email.attach_alternative(html_content, "text/html")
+    email.send()
 
 
 def _redirect_segun_rol(request, tipo=None, visita_id=None):
@@ -276,23 +308,47 @@ def registro_visita(request):
         form = RegistroVisitanteForm(request.POST)
 
         if form.is_valid():
-            visitante = RegistroVisitante(
-                nombre=form.cleaned_data["nombre"],
-                apellido=form.cleaned_data["apellido"],
-                tipo_documento=form.cleaned_data["tipo_documento"],
-                documento=form.cleaned_data["documento"],
-                telefono=form.cleaned_data["telefono"],
-                correo=form.cleaned_data["correo"],
-                rol=form.cleaned_data["rol"],
-            )
-            visitante.set_password(form.cleaned_data["password1"])
-            visitante.save()
-            messages.success(
+            correo = form.cleaned_data["correo"].strip().lower()
+            codigo = _generar_codigo_verificacion()
+
+            request.session[REGISTRO_VERIFICACION_SESSION_KEY] = {
+                "nombre": form.cleaned_data["nombre"],
+                "apellido": form.cleaned_data["apellido"],
+                "tipo_documento": form.cleaned_data["tipo_documento"],
+                "documento": form.cleaned_data["documento"],
+                "telefono": form.cleaned_data["telefono"],
+                "correo": correo,
+                "rol": form.cleaned_data["rol"],
+                "password1": form.cleaned_data["password1"],
+                "codigo": codigo,
+                "creado_en": timezone.now().isoformat(),
+            }
+            request.session.modified = True
+
+            try:
+                _enviar_codigo_verificacion_registro(
+                    correo=correo,
+                    codigo=codigo,
+                    nombre=form.cleaned_data["nombre"],
+                )
+            except Exception:
+                messages.error(
+                    request,
+                    "No fue posible enviar el codigo de verificacion al correo. Intente nuevamente.",
+                    extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+                )
+                return render(
+                    request,
+                    "registro_visita.html",
+                    {"form": form, "titulo": "Registro de Usuario"},
+                )
+
+            messages.info(
                 request,
-                f"Cuenta creada exitosamente para {visitante.nombre} {visitante.apellido}. Ya puedes iniciar sesion con tus credenciales.",
+                f"Enviamos un codigo de verificacion a {correo}. Ingreselo para finalizar el registro.",
                 extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
             )
-            return redirect("panel_visitante:login_responsable")
+            return redirect("panel_visitante:verificar_codigo_registro")
     else:
         form = RegistroVisitanteForm()
 
@@ -301,6 +357,101 @@ def registro_visita(request):
         "registro_visita.html",
         {"form": form, "titulo": "Registro de Usuario"},
     )
+
+
+def verificar_codigo_registro(request):
+    datos_registro = request.session.get(REGISTRO_VERIFICACION_SESSION_KEY)
+    if not datos_registro:
+        messages.warning(
+            request,
+            "No hay un registro pendiente por verificar.",
+            extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+        )
+        return redirect("panel_visitante:registro_visita")
+
+    try:
+        creado_en = datetime.fromisoformat(datos_registro.get("creado_en", ""))
+    except (TypeError, ValueError):
+        creado_en = None
+
+    expirado = True
+    if creado_en is not None:
+        expirado = (timezone.now() - creado_en).total_seconds() > (
+            REGISTRO_VERIFICACION_TTL_MINUTOS * 60
+        )
+
+    if request.method == "POST" and request.POST.get("accion") == "reenviar":
+        codigo = _generar_codigo_verificacion()
+        datos_registro["codigo"] = codigo
+        datos_registro["creado_en"] = timezone.now().isoformat()
+        request.session[REGISTRO_VERIFICACION_SESSION_KEY] = datos_registro
+        request.session.modified = True
+
+        try:
+            _enviar_codigo_verificacion_registro(
+                correo=datos_registro["correo"],
+                codigo=codigo,
+                nombre=datos_registro["nombre"],
+            )
+            messages.success(
+                request,
+                "Se envio un nuevo codigo de verificacion a su correo.",
+                extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+            )
+        except Exception:
+            messages.error(
+                request,
+                "No fue posible reenviar el codigo. Intente de nuevo.",
+                extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+            )
+        return redirect("panel_visitante:verificar_codigo_registro")
+
+    form = VerificacionCodigoRegistroForm(request.POST or None)
+
+    if request.method == "POST" and request.POST.get("accion") != "reenviar":
+        if expirado:
+            form.add_error("codigo", "El codigo ha expirado. Solicite uno nuevo.")
+        elif form.is_valid():
+            codigo_ingresado = form.cleaned_data["codigo"]
+            codigo_real = str(datos_registro.get("codigo", "")).strip()
+
+            if codigo_ingresado != codigo_real:
+                form.add_error("codigo", "Codigo incorrecto.")
+            else:
+                try:
+                    with transaction.atomic():
+                        visitante = RegistroVisitante(
+                            nombre=datos_registro["nombre"],
+                            apellido=datos_registro["apellido"],
+                            tipo_documento=datos_registro["tipo_documento"],
+                            documento=datos_registro["documento"],
+                            telefono=datos_registro["telefono"],
+                            correo=datos_registro["correo"],
+                            rol=datos_registro["rol"],
+                        )
+                        visitante.set_password(datos_registro["password1"])
+                        visitante.save()
+                except IntegrityError:
+                    form.add_error(
+                        None,
+                        "No fue posible crear la cuenta porque el correo o documento ya existe.",
+                    )
+                else:
+                    request.session.pop(REGISTRO_VERIFICACION_SESSION_KEY, None)
+                    messages.success(
+                        request,
+                        f"Cuenta creada exitosamente para {visitante.nombre} {visitante.apellido}. Ya puedes iniciar sesion con tus credenciales.",
+                        extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+                    )
+                    return redirect("panel_visitante:login_responsable")
+
+    context = {
+        "form": form,
+        "correo": datos_registro.get("correo"),
+        "expirado": expirado,
+        "minutos": REGISTRO_VERIFICACION_TTL_MINUTOS,
+    }
+    return render(request, "verificar_codigo_registro.html", context)
 
 
 def logout_responsable(request):
