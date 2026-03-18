@@ -1,0 +1,354 @@
+{% load static %}
+{% load accesibility_tags %}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aprendices - Ficha {{ ficha.numero }} - MINEGATE</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+  <link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}?v=20260311c">
+<style>
+  :root {
+    --sena-verde: #39a900;
+    --sena-verde-oscuro: #2d8600;
+    --card-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    --card-radius: 16px;
+    --transition: all 0.25s ease;
+  }
+  body { padding-top: 0 !important; margin-top: 0 !important; background: #f4f6f9; }
+
+  /* === HEADER === */
+  .page-header {
+    background: linear-gradient(135deg, #1a5c00 0%, var(--sena-verde) 60%, #5dc72e 100%);
+    color: white; padding: 2.2rem 0 1.8rem; position: relative; overflow: hidden;
+  }
+  .page-header::before { content:""; position:absolute; top:-60px; right:-60px; width:220px; height:220px; background:rgba(255,255,255,0.06); border-radius:50%; }
+  .page-header::after  { content:""; position:absolute; bottom:-80px; left:-40px; width:180px; height:180px; background:rgba(255,255,255,0.04); border-radius:50%; }
+  .breadcrumb-nav a { color:rgba(255,255,255,0.75); text-decoration:none; font-size:0.85rem; }
+  .breadcrumb-nav a:hover { color:white; }
+  .breadcrumb-nav span { color:rgba(255,255,255,0.45); margin:0 6px; }
+  .page-header h2 { font-size:1.85rem; font-weight:800; margin:0.4rem 0 0.2rem; }
+  .page-header .sub { font-size:0.9rem; color:rgba(255,255,255,0.85); }
+  .btn-registrar {
+    background:white; color:var(--sena-verde-oscuro);
+    border:none; padding:10px 22px; border-radius:50px;
+    font-weight:700; font-size:0.9rem; text-decoration:none;
+    display:inline-flex; align-items:center; gap:7px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.15); transition:var(--transition);
+  }
+  .btn-registrar:hover { background:#e8f5e9; color:var(--sena-verde-oscuro); transform:translateY(-1px); }
+
+  /* === STATS === */
+  .stats-wrap { background:white; border-bottom:1px solid #e9ecef; padding:1.1rem 0; }
+  .stat-card { text-align:center; padding:0.7rem 1.5rem; border-right:1px solid #e9ecef; }
+  .stat-card:last-child { border-right:none; }
+  .stat-card .stat-num { font-size:2rem; font-weight:900; line-height:1; }
+  .stat-card .stat-label { font-size:0.75rem; color:#6c757d; text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-top:3px; }
+  .stat-card.total    .stat-num { color:#374151; }
+  .stat-card.activo   .stat-num { color:var(--sena-verde); }
+  .stat-card.inactivo .stat-num { color:#f59e0b; }
+  .stat-card.retirado .stat-num { color:#ef4444; }
+
+  /* === FILTRO === */
+  .filter-bar { background:white; border-radius:12px; padding:1rem 1.5rem; box-shadow:0 2px 10px rgba(0,0,0,0.06); margin-bottom:1.5rem; }
+  .filter-bar .form-select { border-radius:50px; padding-left:1rem; font-size:0.9rem; font-weight:600; color:#374151; border:1.5px solid #d1d5db; }
+  .filter-bar .form-select:focus { border-color:var(--sena-verde); box-shadow:0 0 0 3px rgba(57,169,0,0.15); }
+
+  /* === SECTION TITLE === */
+  .section-title { font-size:1rem; font-weight:700; color:#1a202c; text-transform:uppercase; letter-spacing:0.7px; margin-bottom:1.2rem; display:flex; align-items:center; gap:8px; }
+  .section-title::after { content:""; flex:1; height:2px; background:linear-gradient(to right, #e9ecef, transparent); }
+
+  /* === APRENDIZ CARD === */
+  .aprendiz-card { background:white; border-radius:var(--card-radius); box-shadow:var(--card-shadow); overflow:hidden; transition:var(--transition); height:100%; border:2px solid transparent; display:flex; flex-direction:column; }
+  .aprendiz-card:hover { transform:translateY(-4px); box-shadow:0 12px 32px rgba(0,0,0,0.12); border-color:var(--sena-verde); }
+  .aprendiz-card-header { padding:1rem 1.2rem 0.8rem; border-bottom:1px solid #f0f0f0; display:flex; justify-content:space-between; align-items:flex-start; }
+  .aprendiz-name { font-size:1rem; font-weight:700; color:#1a202c; margin-bottom:2px; }
+  .aprendiz-doc  { font-size:0.8rem; color:#6b7280; }
+  .aprendiz-card-body { padding:1rem 1.2rem; flex:1; }
+  .info-row { display:flex; align-items:center; gap:8px; font-size:0.87rem; color:#374151; margin-bottom:0.55rem; }
+  .info-row i { color:var(--sena-verde); width:16px; flex-shrink:0; }
+  .info-row a { color:#374151; text-decoration:none; }
+  .info-row a:hover { color:var(--sena-verde); text-decoration:underline; }
+  .docs-section { margin-top:0.8rem; padding-top:0.8rem; border-top:1px dashed #e9ecef; }
+  .docs-label { font-size:0.78rem; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:0.5rem; display:flex; align-items:center; gap:5px; }
+  .doc-row { display:flex; justify-content:space-between; align-items:center; background:#f8faf5; border:1px solid #e2f0d9; border-radius:8px; padding:6px 10px; margin-bottom:5px; gap:8px; }
+  .doc-name { font-size:0.8rem; font-weight:600; color:#374151; display:flex; align-items:center; gap:5px; flex:1; min-width:0; }
+  .doc-name > span { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .doc-actions { display:flex; gap:4px; flex-shrink:0; }
+  .btn-doc { width:28px; height:28px; border-radius:6px; border:none; display:flex; align-items:center; justify-content:center; font-size:0.78rem; cursor:pointer; transition:var(--transition); text-decoration:none; }
+  .btn-doc.dl  { background:#e8f5e9; color:var(--sena-verde-oscuro); }
+  .btn-doc.dl:hover  { background:var(--sena-verde); color:white; }
+  .btn-doc.eye { background:#e0f2fe; color:#0369a1; }
+  .btn-doc.eye:hover { background:#0369a1; color:white; }
+  .aprendiz-card-footer { padding:0.75rem 1.2rem; background:#fafafa; border-top:1px solid #f0f0f0; display:flex; gap:8px; }
+  .btn-editar  { flex:1; padding:7px 0; border-radius:50px; font-size:0.82rem; font-weight:700; background:#fff8e1; color:#92400e; border:1.5px solid #fcd34d; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:5px; transition:var(--transition); }
+  .btn-editar:hover  { background:#fcd34d; color:#78350f; }
+  .btn-eliminar { flex:1; padding:7px 0; border-radius:50px; font-size:0.82rem; font-weight:700; background:#fee2e2; color:#991b1b; border:1.5px solid #fca5a5; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:5px; transition:var(--transition); }
+  .btn-eliminar:hover { background:#fca5a5; color:#7f1d1d; }
+
+  /* === BADGES === */
+  .badge-activo   { background:#d1fae5; color:#065f46; padding:3px 12px; border-radius:50px; font-size:0.75rem; font-weight:700; white-space:nowrap; }
+  .badge-inactivo { background:#fef3c7; color:#92400e; padding:3px 12px; border-radius:50px; font-size:0.75rem; font-weight:700; white-space:nowrap; }
+  .badge-retirado { background:#fee2e2; color:#991b1b; padding:3px 12px; border-radius:50px; font-size:0.75rem; font-weight:700; white-space:nowrap; }
+  .doc-badge-reporte   { background:#dcfce7; color:#166534; padding:2px 8px; border-radius:50px; font-size:0.72rem; display:inline-block; }
+  .doc-badge-identidad { background:#dbeafe; color:#1e3a8a; padding:2px 8px; border-radius:50px; font-size:0.72rem; display:inline-block; }
+
+  /* === VOLVER / EMPTY === */
+  .btn-volver { background:white; color:#374151; border:1.5px solid #d1d5db; padding:8px 22px; border-radius:50px; font-weight:600; font-size:0.88rem; text-decoration:none; display:inline-flex; align-items:center; gap:7px; transition:var(--transition); }
+  .btn-volver:hover { background:#f3f4f6; color:#111; border-color:#9ca3af; }
+  .empty-state { text-align:center; padding:3.5rem; color:#9ca3af; }
+  .empty-state i { font-size:3.5rem; opacity:0.3; margin-bottom:1rem; display:block; }
+  .btn-new-empty { background:var(--sena-verde); color:white; border:none; padding:10px 24px; border-radius:50px; font-weight:700; font-size:0.9rem; text-decoration:none; display:inline-flex; align-items:center; gap:7px; transition:var(--transition); }
+  .btn-new-empty:hover { background:var(--sena-verde-oscuro); color:white; }
+</style>
+</head>
+<body>
+
+<!-- ============ HEADER ============ -->
+<div class="page-header">
+  <div class="container">
+    <div class="breadcrumb-nav mb-2">
+      <a href="{% url 'panel_instructor_interno:panel' %}"><i class="fas fa-home me-1"></i>Mi Panel</a>
+      <span>&rsaquo;</span>
+      <a href="{% url 'panel_instructor_interno:gestionar_fichas' %}">Fichas</a>
+      <span>&rsaquo;</span>
+      <span style="color:rgba(255,255,255,0.9)">Ficha {{ ficha.numero }}</span>
+    </div>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div>
+        <h2 class="mb-0"><i class="fas fa-user-graduate me-2"></i>Aprendices &mdash; Ficha {{ ficha.numero }}</h2>
+        <p class="sub mb-0 mt-1">
+          <i class="fas fa-book me-1"></i>{{ ficha.programa.nombre }}&nbsp;&nbsp;|&nbsp;&nbsp;<i class="fas fa-clock me-1"></i>Jornada: {{ ficha.get_jornada_display }}
+        </p>
+      </div>
+      <a href="{% url 'panel_instructor_interno:crear_aprendiz' ficha.id %}" class="btn-registrar">
+        <i class="fas fa-user-plus"></i> Registrar Aprendiz
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ============ STATS BAR ============ -->
+<div class="stats-wrap">
+  <div class="container">
+    <div class="d-flex flex-wrap">
+      <div class="stat-card total">
+        <div class="stat-num">{{ stats.total }}</div>
+        <div class="stat-label"><i class="fas fa-users me-1"></i>Total Aprendices</div>
+      </div>
+      <div class="stat-card activo">
+        <div class="stat-num">{{ stats.activos }}</div>
+        <div class="stat-label"><i class="fas fa-circle me-1" style="font-size:.5rem;"></i>Activos</div>
+      </div>
+      <div class="stat-card inactivo">
+        <div class="stat-num">{{ stats.inactivos }}</div>
+        <div class="stat-label"><i class="fas fa-pause-circle me-1"></i>Inactivos</div>
+      </div>
+      <div class="stat-card retirado">
+        <div class="stat-num">{{ stats.retirados }}</div>
+        <div class="stat-label"><i class="fas fa-user-times me-1"></i>Retirados</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ CONTENIDO ============ -->
+<div class="container py-4">
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{% if 'error' in message.tags %}danger{% else %}success{% endif %} alert-dismissible fade show" role="alert">
+        {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Filtro -->
+  <div class="filter-bar d-flex align-items-center gap-3 flex-wrap">
+    <span style="font-size:.85rem; color:#374151; font-weight:700; white-space:nowrap;">
+      <i class="fas fa-filter me-1" style="color:var(--sena-verde);"></i>Filtrar por estado:
+    </span>
+    <form method="GET" class="flex-grow-1" style="max-width:320px;">
+      <select name="estado" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="">Todos los estados</option>
+        <option value="activo"   {% if estado_filtro == 'activo'   %}selected{% endif %}>Solo Activos</option>
+        <option value="inactivo" {% if estado_filtro == 'inactivo' %}selected{% endif %}>Solo Inactivos</option>
+        <option value="retirado" {% if estado_filtro == 'retirado' %}selected{% endif %}>Solo Retirados</option>
+      </select>
+    </form>
+  </div>
+
+  {% if aprendices %}
+  <div class="section-title">
+    <i class="fas fa-user-graduate" style="color:var(--sena-verde);"></i>
+    Aprendices Registrados ({{ aprendices.count }})
+  </div>
+  <div class="row g-3">
+    {% for aprendiz in aprendices %}
+    <div class="col-md-6">
+      <div class="aprendiz-card">
+
+        <!-- Cabecera de la tarjeta -->
+        <div class="aprendiz-card-header">
+          <div>
+            <div class="aprendiz-name">{{ aprendiz.get_nombre_completo }}</div>
+            <div class="aprendiz-doc">
+              <i class="fas fa-id-card me-1"></i>{{ aprendiz.get_tipo_documento_display }}: {{ aprendiz.numero_documento }}
+            </div>
+          </div>
+          <div class="pt-1">
+            {% if aprendiz.estado == 'activo' %}
+              <span class="badge-activo"><i class="fas fa-circle me-1" style="font-size:.45rem; vertical-align:middle;"></i>Activo</span>
+            {% elif aprendiz.estado == 'inactivo' %}
+              <span class="badge-inactivo"><i class="fas fa-pause-circle me-1"></i>Inactivo</span>
+            {% else %}
+              <span class="badge-retirado"><i class="fas fa-user-times me-1"></i>Retirado</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Cuerpo de la tarjeta -->
+        <div class="aprendiz-card-body">
+          <div class="info-row"><i class="fas fa-envelope"></i><a href="mailto:{{ aprendiz.correo }}">{{ aprendiz.correo }}</a></div>
+          {% if aprendiz.telefono %}
+          <div class="info-row"><i class="fas fa-phone"></i>{{ aprendiz.telefono }}</div>
+          {% endif %}
+
+          {% if aprendiz.documento_identidad or aprendiz.documento_adicional or aprendiz.documentos_subidos.all %}
+          <div class="docs-section">
+            <div class="docs-label"><i class="fas fa-file-alt" style="color:var(--sena-verde);"></i>Documentos</div>
+
+            {% if aprendiz.documento_identidad %}
+            <div class="doc-row">
+              <div class="doc-name">
+                <i class="fas fa-id-card" style="color:#1d4ed8; flex-shrink:0;"></i>
+                <span class="doc-badge-identidad">Identidad</span>
+              </div>
+              <div class="doc-actions">
+                <a href="{{ aprendiz.documento_identidad.url }}" download class="btn-doc dl" title="Descargar"><i class="fas fa-download"></i></a>
+              </div>
+            </div>
+            {% endif %}
+
+            {% if aprendiz.documento_adicional %}
+            <div class="doc-row">
+              <div class="doc-name">
+                <i class="fas fa-file-medical" style="color:#0369a1; flex-shrink:0;"></i>
+                <span class="doc-badge-reporte">Reporte</span>
+              </div>
+              <div class="doc-actions">
+                <button class="btn-doc eye" title="Ver" onclick="verDocumento('{% url 'panel_instructor_interno:ver_documento_aprendiz_inline' aprendiz.id 'documento_adicional' %}', 'Auto Reporte - {{ aprendiz.get_nombre_completo|escapejs }}', '{{ aprendiz.documento_adicional.name|default:'' }}'.split('/').pop().split('.').pop())"><i class="fas fa-eye"></i></button>
+                <a href="{{ aprendiz.documento_adicional.url }}" download class="btn-doc dl" title="Descargar"><i class="fas fa-download"></i></a>
+              </div>
+            </div>
+            {% endif %}
+
+            {% for doc_subido in aprendiz.documentos_subidos.all %}
+            <div class="doc-row">
+              <div class="doc-name">
+                <i class="fas fa-file-upload" style="color:#5b21b6; flex-shrink:0;"></i>
+                <span title="{{ doc_subido.documento_requerido.titulo }}">{{ doc_subido.documento_requerido.titulo }}</span>
+              </div>
+              <div class="doc-actions">
+                <button class="btn-doc eye" title="Ver" onclick="verDocumento('{% url 'documentos:ver_documento_aprendiz_doc_inline' doc_subido.id %}', '{{ doc_subido.documento_requerido.titulo|escapejs }} - {{ aprendiz.get_nombre_completo|escapejs }}', '{{ doc_subido.nombre_archivo }}'.split('.').pop())"><i class="fas fa-eye"></i></button>
+                <a href="{{ doc_subido.archivo.url }}" download class="btn-doc dl" title="Descargar"><i class="fas fa-download"></i></a>
+              </div>
+            </div>
+            {% endfor %}
+
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Footer de la tarjeta -->
+        <div class="aprendiz-card-footer">
+          <a href="{% url 'panel_instructor_interno:editar_aprendiz' aprendiz.id %}" class="btn-editar">
+            <i class="fas fa-pencil-alt"></i> Editar
+          </a>
+          <a href="{% url 'panel_instructor_interno:eliminar_aprendiz' aprendiz.id %}" class="btn-eliminar">
+            <i class="fas fa-trash-alt"></i> Eliminar
+          </a>
+        </div>
+
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="empty-state">
+    <i class="fas fa-user-graduate"></i>
+    <h5 style="color:#374151; font-weight:700; margin-bottom:.5rem;">No hay aprendices registrados</h5>
+    <p class="mb-4" style="font-size:.9rem;">Esta ficha aun no tiene aprendices. Registra el primero.</p>
+    <a href="{% url 'panel_instructor_interno:crear_aprendiz' ficha.id %}" class="btn-new-empty">
+      <i class="fas fa-user-plus"></i> Registrar primer aprendiz
+    </a>
+  </div>
+  {% endif %}
+
+  <div class="mt-4 mb-5">
+    <a href="{% url 'panel_instructor_interno:gestionar_fichas' %}" class="btn-volver">
+      <i class="fas fa-arrow-left"></i> Volver a la lista
+    </a>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function verDocumento(urlDocumento, titulo, extHint) {
+  var imgExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+  var extension;
+  if (extHint && extHint.length > 0) {
+    extension = '.' + extHint.toLowerCase().replace(/^\./, '');
+  } else {
+    extension = urlDocumento.substring(urlDocumento.lastIndexOf('.')).toLowerCase();
+  }
+
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'display:block;position:fixed;z-index:9998;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.75);overflow-y:auto;';
+
+    var box = document.createElement('div');
+    box.style.cssText = 'background:#fff;margin:2% auto;padding:20px;border-radius:12px;width:92%;max-width:960px;height:90vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.4);';
+
+    var hdr = document.createElement('div');
+    hdr.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #e5e7eb;';
+    hdr.innerHTML = '<h5 style="margin:0;color:#1f2937;font-size:16px;"><i class="fas fa-file" style="color:#39a900;"></i> ' + titulo + '</h5>'
+      + '<div style="display:flex;gap:8px;align-items:center;">'
+      + '<a href="' + urlDocumento + '" download style="background:#39a900;color:white;padding:8px 16px;border-radius:6px;text-decoration:none;font-size:13px;display:inline-flex;align-items:center;gap:4px;font-weight:600;"><i class="fas fa-download"></i> Descargar</a>'
+      + '<button id="closeModalBtn" style="background:#ef4444;color:white;border:none;font-size:18px;cursor:pointer;width:36px;height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center;">&times;</button>'
+      + '</div>';
+
+    var body = document.createElement('div');
+    body.style.cssText = 'flex:1;overflow:auto;border:1px solid #e5e7eb;border-radius:8px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;';
+
+    if (extension === '.pdf' || imgExts.indexOf(extension) !== -1) {
+        body.innerHTML = '<iframe src="' + urlDocumento + '" style="width:100%;height:100%;min-height:600px;border:none;"></iframe>';
+    } else {
+        body.innerHTML = '<div style="text-align:center;padding:50px;color:#6b7280;">'
+            + '<i class="fas fa-file-alt" style="font-size:64px;color:#9ca3af;display:block;margin-bottom:20px;"></i>'
+            + '<p style="font-size:16px;margin-bottom:20px;">Vista previa no disponible.</p>'
+            + '<a href="' + urlDocumento + '" download style="background:#39a900;color:white;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:8px;"><i class="fas fa-download"></i> Descargar</a>'
+            + '</div>';
+    }
+
+    box.appendChild(hdr);
+    box.appendChild(body);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    document.getElementById('closeModalBtn').onclick = function() { overlay.remove(); document.body.style.overflow = ''; };
+    overlay.onclick = function(e) { if (e.target === overlay) { overlay.remove(); document.body.style.overflow = ''; } };
+    document.addEventListener('keydown', function esc(e) {
+        if (e.key === 'Escape') { overlay.remove(); document.body.style.overflow = ''; document.removeEventListener('keydown', esc); }
+    });
+    document.body.style.overflow = 'hidden';
+}
+</script>
+{% accessibility_widget %}
+</body>
+</html>

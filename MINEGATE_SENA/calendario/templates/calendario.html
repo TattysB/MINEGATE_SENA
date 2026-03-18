@@ -1,0 +1,205 @@
+{% load static %}
+{% if include_assets %}
+<link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}?v=20260312b">
+{% endif %}
+
+<div class="calendar-page admin-calendar-page">
+
+  <header class="calendar-header">
+    <h1>Sistema de Gestión de Visitas</h1>
+    <p class="subtitle">SENA - CENTRO MINERO</p>
+  </header>
+
+  <section class="calendar-layout" data-summary-base="{% url 'calendario:index' %}day/summary/" data-slots-base="{% url 'calendario:index' %}horarios/" data-gestion-url="{% url 'core:panel_administrativo_seccion' 'gestion_visitas' %}">
+    <main class="calendar-card" data-year="{{ year }}" data-month="{{ month }}">
+      <div class="card-top">
+        <button id="prev" class="nav">‹</button>
+        <h2 id="month-title">{{ month_name }} {{ year }}</h2>
+        <button id="next" class="nav">›</button>
+      </div>
+
+      <table class="calendar-table">
+        <thead>
+          <tr>
+            <th>Dom</th><th>Lun</th><th>Mar</th><th>Mié</th><th>Jue</th><th>Vie</th><th>Sáb</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for week in weeks %}
+            <tr>
+              {% for day in week %}
+                {% with daystr=day.date|date:"Y-m-d" %}
+                  {% if day.is_other_month %}
+                    <td class="other-month" data-date="{{ day.date|date:'Y-m-d' }}">{{ day.date.day }}</td>
+                  {% elif day.is_sunday %}
+                    <td class="disabled" data-date="{{ day.date|date:'Y-m-d' }}">{{ day.date.day }}</td>
+                  {% elif daystr in fechas_confirmadas %}
+                    <td class="occupied{% if day.is_today %} today{% endif %}" data-date="{{ day.date|date:'Y-m-d' }}" title="Día ocupado - Visita confirmada">{{ day.date.day }}</td>
+                  {% elif daystr in fechas_pendientes %}
+                    <td class="pending{% if day.is_today %} today{% endif %}" data-date="{{ day.date|date:'Y-m-d' }}" title="Pendiente por revisión">{{ day.date.day }}</td>
+                  {% elif day.is_past %}
+                    <td class="disabled" data-date="{{ day.date|date:'Y-m-d' }}" title="Fecha pasada">{{ day.date.day }}</td>
+                  {% elif day.is_today %}
+                    <td class="today{% if daystr in available_dates %} available{% else %} no-available{% endif %}" data-date="{{ day.date|date:'Y-m-d' }}">{{ day.date.day }}</td>
+                  {% else %}
+                    <td class="{% if daystr in available_dates %}available{% else %}no-available{% endif %}" data-date="{{ day.date|date:'Y-m-d' }}">{{ day.date.day }}</td>
+                  {% endif %}
+                {% endwith %}
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <div class="legend">
+        <span><span class="dot available"></span>Disponible</span>
+        <span><span class="dot pending"></span>Pendiente por revisar</span>
+        <span><span class="dot occupied"></span>Ocupado</span>
+        <span><span class="dot today-marker"></span>Hoy</span>
+        <span><span class="dot selected"></span>Seleccionado</span>
+      </div>
+    </main>
+
+    <aside id="dayInspector" class="day-inspector">
+      <div class="day-inspector-head">
+        <h3 id="dayInspectorTitle">Resumen del día</h3>
+        <span id="dayInspectorBadge" class="inspector-badge neutral">Sin selección</span>
+      </div>
+      <p id="dayInspectorDate" class="day-inspector-date">Haz clic en un día del calendario para ver su detalle.</p>
+
+      <section class="inspector-block" id="inspectorRangesBlock">
+        <h4>Horarios disponibles</h4>
+        <div id="dayInspectorRanges" class="inspector-chip-list">
+          <span class="empty-day">Selecciona un día verde para ver horarios libres.</span>
+        </div>
+      </section>
+
+      <section class="inspector-block" id="inspectorVisitsBlock">
+        <h4>Información de la visita</h4>
+        <div id="dayInspectorVisits" class="inspector-visit-list">
+          <div class="inspector-empty">Selecciona un día amarillo o rojo para ver la visita.</div>
+        </div>
+      </section>
+    </aside>
+  </section>
+
+  <section class="availability-config">
+    <h3>Configurar Días y Horarios Disponibles</h3>
+    <form method="post" action="{% url 'calendario:save_availability' %}" id="availabilityForm"
+      data-day-fetch-base="{% url 'calendario:index' %}day/"
+      data-day-update-url="{% url 'calendario:update_day_availability' %}"
+      data-day-delete-url="{% url 'calendario:delete_day_availability' %}">
+      {% csrf_token %}
+      <div class="fields">
+        <label>Hora inicio:
+          <input type="time" id="startTime" step="60">
+        </label>
+        <label>Hora fin:
+          <input type="time" id="endTime" step="60">
+        </label>
+        <button type="button" class="btn blue btn-inline" id="addRangeBtn">Agregar horario</button>
+      </div>
+      <div id="selectedDatesSummary" class="selection-box selection-summary">
+        <div class="selection-summary-top">
+          <strong>Días seleccionados</strong>
+          <span id="selectedDatesCount" class="count-badge">0</span>
+        </div>
+        <div id="selectedDatesChips" class="selected-date-chips">
+          <span class="empty-day">Selecciona uno o varios días del calendario (lunes a sábado).</span>
+        </div>
+      </div>
+      <div id="rangesList" class="selection-box">Agrega al menos un horario de inicio y fin.</div>
+
+      <div id="dayEditor" class="selection-box day-editor is-disabled">
+        <h4 id="dayEditorTitle">Edición del día</h4>
+        <p id="dayEditorHint">Selecciona un único día para ver, editar o eliminar su disponibilidad.</p>
+        <div id="daySlotsList" class="day-slots"></div>
+        <div class="day-editor-actions">
+          <button type="button" class="btn blue btn-inline" id="replaceDayBtn">Reemplazar día con horarios agregados</button>
+          <button type="button" class="btn danger btn-inline" id="clearDayBtn">Quitar toda la disponibilidad del día</button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn blue" id="saveAvailBtn">Guardar Disponibilidades</button>
+    </form>
+    <p class="note">Las fechas con disponibilidad se marcan en <span class="dot available"></span> verde y el día de hoy con un punto <span class="dot today-dot"></span>.</p>
+  </section>
+
+</div>
+
+{% if include_assets %}
+<script src="{% static 'calendario/js/calendario.js' %}?v=20260309f" defer></script>
+{% endif %}
+<script>
+  (function () {
+    function syncDayInspectorHeight() {
+      const page = document.querySelector('.admin-calendar-page');
+      if (!page) return;
+
+      const calendarCard = page.querySelector('.calendar-card');
+      const dayInspector = page.querySelector('#dayInspector');
+      const visitsBlock = page.querySelector('#inspectorVisitsBlock');
+      const visitsList = page.querySelector('#dayInspectorVisits');
+
+      if (!calendarCard || !dayInspector || !visitsBlock || !visitsList) return;
+
+      if (window.innerWidth <= 1180) {
+        dayInspector.style.height = '';
+        visitsBlock.style.minHeight = '';
+        visitsList.style.maxHeight = '';
+        return;
+      }
+
+      const calendarHeight = Math.ceil(calendarCard.getBoundingClientRect().height);
+      if (!calendarHeight) return;
+
+      dayInspector.style.height = calendarHeight + 'px';
+
+      const header = page.querySelector('.day-inspector-head');
+      const date = page.querySelector('.day-inspector-date');
+      const ranges = page.querySelector('#inspectorRangesBlock');
+      const styles = window.getComputedStyle(dayInspector);
+      const paddingTop = parseFloat(styles.paddingTop) || 0;
+      const paddingBottom = parseFloat(styles.paddingBottom) || 0;
+      const visitsStyles = window.getComputedStyle(visitsBlock);
+      const visitsPaddingTop = parseFloat(visitsStyles.paddingTop) || 0;
+      const visitsPaddingBottom = parseFloat(visitsStyles.paddingBottom) || 0;
+
+      const reservedHeight =
+        (header ? header.offsetHeight : 0) +
+        (date ? date.offsetHeight : 0) +
+        (ranges ? ranges.offsetHeight : 0) +
+        paddingTop +
+        paddingBottom +
+        visitsPaddingTop +
+        visitsPaddingBottom +
+        36;
+
+      const availableHeight = Math.max(180, calendarHeight - reservedHeight);
+      visitsBlock.style.minHeight = availableHeight + 'px';
+      visitsList.style.maxHeight = availableHeight + 'px';
+    }
+
+    function bindInspectorHeightSync() {
+      const page = document.querySelector('.admin-calendar-page');
+      if (!page || page.dataset.heightSyncBound === '1') return;
+      page.dataset.heightSyncBound = '1';
+
+      const run = () => window.requestAnimationFrame(syncDayInspectorHeight);
+      window.addEventListener('load', run);
+      window.addEventListener('resize', run);
+      document.addEventListener('DOMContentLoaded', run);
+
+      const calendarCard = page.querySelector('.calendar-card');
+      if (calendarCard && 'ResizeObserver' in window) {
+        const observer = new ResizeObserver(run);
+        observer.observe(calendarCard);
+      }
+
+      setTimeout(run, 150);
+      setTimeout(run, 500);
+    }
+
+    bindInspectorHeightSync();
+  })();
+</script>

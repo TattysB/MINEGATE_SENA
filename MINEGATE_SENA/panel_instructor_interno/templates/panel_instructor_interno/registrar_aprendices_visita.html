@@ -1,0 +1,346 @@
+{% load static %}
+{% load accesibility_tags %}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registrar Aprendices — Visita #{{ visita.id }} — MINEGATE</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+<style>
+  :root {
+    --sena-verde: #39a900;
+    --sena-verde-oscuro: #2d8600;
+    --card-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    --card-radius: 16px;
+    --transition: all 0.25s ease;
+  }
+  body { padding-top: 0 !important; margin-top: 0 !important; background: #f4f6f9; }
+
+  /* === HEADER === */
+  .page-header {
+    background: linear-gradient(135deg, #1a5c00 0%, var(--sena-verde) 60%, #5dc72e 100%);
+    color: white; padding: 2.2rem 0 1.8rem; position: relative; overflow: hidden;
+  }
+  .page-header::before { content:""; position:absolute; top:-60px; right:-60px; width:220px; height:220px; background:rgba(255,255,255,0.06); border-radius:50%; }
+  .page-header::after  { content:""; position:absolute; bottom:-80px; left:-40px; width:180px; height:180px; background:rgba(255,255,255,0.04); border-radius:50%; }
+  .breadcrumb-nav a { color:rgba(255,255,255,0.75); text-decoration:none; font-size:0.85rem; }
+  .breadcrumb-nav a:hover { color:white; }
+  .breadcrumb-nav span { color:rgba(255,255,255,0.45); margin:0 6px; }
+  .page-header h2 { font-size:1.85rem; font-weight:800; margin:0.4rem 0 0.2rem; }
+  .page-header .sub { font-size:0.9rem; color:rgba(255,255,255,0.85); }
+
+  /* === STATS === */
+  .stats-wrap { background:white; border-bottom:1px solid #e9ecef; padding:1.1rem 0; }
+  .stat-card { text-align:center; padding:0.7rem 1.5rem; border-right:1px solid #e9ecef; }
+  .stat-card:last-child { border-right:none; }
+  .stat-card .stat-num { font-size:2rem; font-weight:900; line-height:1; }
+  .stat-card .stat-label { font-size:0.75rem; color:#6c757d; text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-top:3px; }
+  .stat-card.total      .stat-num { color:#374151; }
+  .stat-card.registrado .stat-num { color:var(--sena-verde); }
+
+  /* === SECTION TITLE === */
+  .section-title { font-size:1rem; font-weight:700; color:#1a202c; text-transform:uppercase; letter-spacing:0.7px; margin-bottom:1.2rem; display:flex; align-items:center; gap:8px; }
+  .section-title::after { content:""; flex:1; height:2px; background:linear-gradient(to right, #e9ecef, transparent); }
+
+  /* === SELECT ALL BAR === */
+  .select-bar { background:white; border-radius:12px; padding:1rem 1.5rem; box-shadow:0 2px 10px rgba(0,0,0,0.06); margin-bottom:1.5rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; }
+  .select-bar .form-check-label { font-size:0.95rem; font-weight:700; color:#374151; cursor:pointer; }
+  .count-badge { background:#e8f5e9; color:var(--sena-verde-oscuro); padding:5px 14px; border-radius:50px; font-size:0.85rem; font-weight:700; }
+
+  /* === APRENDIZ CARD === */
+  .aprendiz-card { background:white; border-radius:var(--card-radius); box-shadow:var(--card-shadow); overflow:hidden; transition:var(--transition); border:2px solid transparent; display:flex; align-items:stretch; margin-bottom:0.75rem; }
+  .aprendiz-card.selectable-aprendiz { cursor:pointer; }
+  .aprendiz-card.selectable-aprendiz:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.1); border-color:var(--sena-verde); }
+  .aprendiz-card.selected { border-color:var(--sena-verde); background:#f0fdf4; }
+  .aprendiz-card.ya-registrado { border-color:#10b981; background:#f0fdf4; cursor:default; }
+  .card-check-col { background:#f8faf5; display:flex; align-items:center; justify-content:center; padding:1rem 1.2rem; border-right:1px solid #f0f0f0; flex-shrink:0; min-width:56px; }
+  .card-check-col .form-check-input { width:1.25rem; height:1.25rem; cursor:pointer; }
+  .card-check-col .form-check-input:checked { background-color:var(--sena-verde); border-color:var(--sena-verde); }
+  .card-body-col { padding:1rem 1.2rem; flex:1; }
+  .aprendiz-name { font-size:1rem; font-weight:700; color:#1a202c; margin-bottom:2px; }
+  .aprendiz-doc  { font-size:0.8rem; color:#6b7280; margin-bottom:0.4rem; }
+  .info-row { display:flex; align-items:center; gap:8px; font-size:0.87rem; color:#374151; margin-bottom:0.3rem; }
+  .info-row i { color:var(--sena-verde); width:16px; flex-shrink:0; }
+  .doc-chips { display:flex; flex-wrap:wrap; gap:5px; margin-top:0.5rem; }
+  .doc-chip { font-size:0.72rem; padding:2px 9px; border-radius:50px; font-weight:700; }
+  .doc-chip.id    { background:#dbeafe; color:#1e3a8a; }
+  .doc-chip.salud { background:#dcfce7; color:#166534; }
+  .doc-chip.cat   { background:#f3e8ff; color:#5b21b6; }
+  .badge-registrado { background:#d1fae5; color:#065f46; padding:3px 12px; border-radius:50px; font-size:0.75rem; font-weight:700; white-space:nowrap; }
+
+  /* === ACTIONS BAR === */
+  .actions-bar { background:white; border-radius:12px; padding:1.2rem 1.5rem; box-shadow:0 2px 10px rgba(0,0,0,0.06); margin-top:1.5rem; display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
+  .btn-registrar-submit { background:var(--sena-verde); color:white; border:none; padding:11px 28px; border-radius:50px; font-weight:700; font-size:0.95rem; display:inline-flex; align-items:center; gap:8px; transition:var(--transition); cursor:pointer; }
+  .btn-registrar-submit:hover { background:var(--sena-verde-oscuro); transform:translateY(-1px); }
+  .btn-registrar-submit:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+  .btn-volver { background:white; color:#374151; border:1.5px solid #d1d5db; padding:10px 22px; border-radius:50px; font-weight:600; font-size:0.88rem; text-decoration:none; display:inline-flex; align-items:center; gap:7px; transition:var(--transition); }
+  .btn-volver:hover { background:#f3f4f6; color:#111; border-color:#9ca3af; }
+
+  /* === SIDEBAR INFO === */
+  .info-card { background:white; border-radius:var(--card-radius); box-shadow:var(--card-shadow); overflow:hidden; }
+  .info-card-header { background:linear-gradient(135deg, #1a5c00, var(--sena-verde)); color:white; padding:0.9rem 1.2rem; }
+  .info-card-header h6 { font-weight:700; margin:0; font-size:0.9rem; }
+  .info-card-body { padding:1.2rem; font-size:0.88rem; color:#374151; }
+
+  /* === EMPTY STATE === */
+  .empty-state { text-align:center; padding:3.5rem; color:#9ca3af; background:white; border-radius:var(--card-radius); box-shadow:var(--card-shadow); }
+  .empty-state i { font-size:3.5rem; opacity:0.3; margin-bottom:1rem; display:block; }
+
+  /* === SCROLLABLE LIST === */
+  .aprendices-list { max-height:660px; overflow-y:auto; padding-right:2px; }
+  .aprendices-list::-webkit-scrollbar { width:6px; }
+  .aprendices-list::-webkit-scrollbar-track { background:#f1f1f1; border-radius:10px; }
+  .aprendices-list::-webkit-scrollbar-thumb { background:#c1c1c1; border-radius:10px; }
+  .aprendices-list::-webkit-scrollbar-thumb:hover { background:#888; }
+</style>
+</head>
+<body>
+
+<!-- ============ HEADER ============ -->
+<div class="page-header">
+  <div class="container">
+    <div class="breadcrumb-nav mb-2">
+      <a href="{% url 'panel_instructor_interno:panel' %}"><i class="fas fa-home me-1"></i>Mi Panel</a>
+      <span>&rsaquo;</span>
+      <a href="{% url 'panel_instructor_interno:detalle_visita' pk=visita.id %}">Visita #{{ visita.id }}</a>
+      <span>&rsaquo;</span>
+      <span style="color:rgba(255,255,255,0.9)">Registrar Aprendices</span>
+    </div>
+    <div>
+      <h2 class="mb-0"><i class="fas fa-user-check me-2"></i>Registrar Aprendices</h2>
+      <p class="sub mb-0 mt-1">
+        <i class="fas fa-book me-1"></i>{{ visita.nombre_programa }}&nbsp;&nbsp;|&nbsp;&nbsp;<i class="fas fa-layer-group me-1"></i>Ficha {{ ficha.numero }}&nbsp;&nbsp;|&nbsp;&nbsp;<i class="fas fa-calendar me-1"></i>{{ visita.fecha_visita|date:"d/m/Y" }}
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ STATS BAR ============ -->
+<div class="stats-wrap">
+  <div class="container">
+    <div class="d-flex flex-wrap">
+      <div class="stat-card total">
+        <div class="stat-num">{{ total_aprendices }}</div>
+        <div class="stat-label"><i class="fas fa-users me-1"></i>Disponibles</div>
+      </div>
+      <div class="stat-card registrado">
+        <div class="stat-num">{{ aprendices_registrados }}</div>
+        <div class="stat-label"><i class="fas fa-check-circle me-1"></i>Ya Registrados</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ CONTENIDO ============ -->
+<div class="container py-4">
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{% if 'error' in message.tags %}danger{% else %}success{% endif %} alert-dismissible fade show" role="alert">
+        {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="row g-4">
+
+    <!-- COLUMNA PRINCIPAL -->
+    <div class="col-lg-9">
+      {% if aprendices %}
+        <form method="POST" id="form_aprendices">
+          {% csrf_token %}
+
+          <!-- Barra de selección total -->
+          <div class="select-bar">
+            <div class="form-check mb-0">
+              <input class="form-check-input" type="checkbox" id="selectAll">
+              <label class="form-check-label" for="selectAll">
+                <i class="fas fa-check-double me-1" style="color:var(--sena-verde);"></i>Seleccionar todos
+              </label>
+            </div>
+            <span class="count-badge">
+              <span id="cantidad_seleccionados">0</span> seleccionados de {{ total_aprendices }}
+            </span>
+          </div>
+
+          <div class="section-title">
+            <i class="fas fa-user-graduate" style="color:var(--sena-verde);"></i>
+            Aprendices de la Ficha ({{ total_aprendices }})
+          </div>
+
+          <!-- Lista de aprendices -->
+          <div class="aprendices-list">
+            {% for aprendiz in aprendices %}
+
+              {% if aprendiz.numero_documento in ya_registrados %}
+              <!-- Ya registrado — no seleccionable -->
+              <div class="aprendiz-card ya-registrado">
+                <div class="card-check-col">
+                  <i class="fas fa-check-circle" style="color:var(--sena-verde); font-size:1.3rem;"></i>
+                </div>
+                <div class="card-body-col">
+                  <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                    <div>
+                      <div class="aprendiz-name">{{ aprendiz.get_nombre_completo }}</div>
+                      <div class="aprendiz-doc"><i class="fas fa-id-card me-1"></i>{{ aprendiz.get_tipo_documento_display }}: {{ aprendiz.numero_documento }}</div>
+                      {% if aprendiz.correo %}
+                        <div class="info-row">
+                          <i class="fas fa-envelope"></i>{{ aprendiz.correo }}
+                          {% if aprendiz.telefono %}&nbsp;|&nbsp;<i class="fas fa-phone"></i>{{ aprendiz.telefono }}{% endif %}
+                        </div>
+                      {% endif %}
+                      {% if aprendiz.documento_identidad or aprendiz.tiene_doc_salud or aprendiz.tiene_documentos_subidos %}
+                        <div class="doc-chips">
+                          {% if aprendiz.documento_identidad %}<span class="doc-chip id"><i class="fas fa-id-card me-1"></i>Identidad</span>{% endif %}
+                          {% if aprendiz.tiene_doc_salud %}<span class="doc-chip salud"><i class="fas fa-heartbeat me-1"></i>Salud</span>{% endif %}
+                          {% if aprendiz.tiene_documentos_subidos %}<span class="doc-chip cat"><i class="fas fa-paperclip me-1"></i>Docs</span>{% endif %}
+                        </div>
+                      {% endif %}
+                    </div>
+                    <span class="badge-registrado"><i class="fas fa-check me-1"></i>Ya registrado</span>
+                  </div>
+                </div>
+              </div>
+
+              {% else %}
+              <!-- Seleccionable -->
+              <div class="aprendiz-card selectable-aprendiz" data-aprendiz-id="{{ aprendiz.id }}">
+                <div class="card-check-col">
+                  <input
+                    class="form-check-input aprendiz-check"
+                    type="checkbox"
+                    name="aprendices[]"
+                    value="{{ aprendiz.id }}"
+                    id="aprendiz_{{ aprendiz.id }}"
+                  >
+                </div>
+                <div class="card-body-col">
+                  <div class="aprendiz-name">{{ aprendiz.get_nombre_completo }}</div>
+                  <div class="aprendiz-doc"><i class="fas fa-id-card me-1"></i>{{ aprendiz.get_tipo_documento_display }}: {{ aprendiz.numero_documento }}</div>
+                  {% if aprendiz.correo %}
+                    <div class="info-row">
+                      <i class="fas fa-envelope"></i>{{ aprendiz.correo }}
+                      {% if aprendiz.telefono %}&nbsp;|&nbsp;<i class="fas fa-phone"></i>{{ aprendiz.telefono }}{% endif %}
+                    </div>
+                  {% endif %}
+                  {% if aprendiz.documento_identidad or aprendiz.tiene_doc_salud or aprendiz.tiene_documentos_subidos %}
+                    <div class="doc-chips">
+                      {% if aprendiz.documento_identidad %}<span class="doc-chip id"><i class="fas fa-id-card me-1"></i>Identidad</span>{% endif %}
+                      {% if aprendiz.tiene_doc_salud %}<span class="doc-chip salud"><i class="fas fa-heartbeat me-1"></i>Salud</span>{% endif %}
+                      {% if aprendiz.tiene_documentos_subidos %}<span class="doc-chip cat"><i class="fas fa-paperclip me-1"></i>Docs</span>{% endif %}
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+              {% endif %}
+
+            {% endfor %}
+          </div>
+
+          <!-- Barra de acciones -->
+          <div class="actions-bar">
+            <button type="submit" class="btn-registrar-submit" id="btn_submit">
+              <i class="fas fa-user-plus"></i> Registrar Seleccionados
+            </button>
+            <a href="{% url 'panel_instructor_interno:detalle_visita' pk=visita.id %}" class="btn-volver">
+              <i class="fas fa-arrow-left"></i> Cancelar
+            </a>
+          </div>
+
+        </form>
+      {% else %}
+        <div class="empty-state">
+          <i class="fas fa-user-graduate"></i>
+          <h5 style="color:#374151; font-weight:700; margin-bottom:.5rem;">Sin aprendices disponibles</h5>
+          <p style="font-size:.9rem;">No hay aprendices activos sin registrar en esta ficha.</p>
+          <a href="{% url 'panel_instructor_interno:detalle_visita' pk=visita.id %}" class="btn-volver mt-3 d-inline-flex">
+            <i class="fas fa-arrow-left"></i> Volver a la visita
+          </a>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="col-lg-3">
+      <div class="info-card">
+        <div class="info-card-header">
+          <h6><i class="fas fa-info-circle me-2"></i>¿Qué sucede?</h6>
+        </div>
+        <div class="info-card-body">
+          <ul class="mb-3 ps-3" style="line-height:1.8;">
+            <li>Selecciona los aprendices que asistirán</li>
+            <li>Sus datos se traerán automáticamente</li>
+            <li>Se crearán como asistentes en la visita</li>
+          </ul>
+          <hr>
+          <p class="mb-2" style="font-weight:700; color:#1a202c; font-size:0.85rem; text-transform:uppercase; letter-spacing:.5px;">Estados</p>
+          <div class="d-flex align-items-center gap-2 mb-2" style="font-size:.85rem;">
+            <i class="fas fa-circle" style="color:var(--sena-verde); font-size:0.5rem;"></i>
+            <span>Pendiente de registro</span>
+          </div>
+          <div class="d-flex align-items-center gap-2" style="font-size:.85rem;">
+            <span class="badge-registrado" style="font-size:0.7rem; padding:2px 8px;">✓</span>
+            <span>Ya registrado</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  const selectAll = document.getElementById('selectAll');
+  const btnSubmit = document.getElementById('btn_submit');
+
+  function actualizarCantidad() {
+    const seleccionados = document.querySelectorAll('.aprendiz-check:checked').length;
+    document.getElementById('cantidad_seleccionados').textContent = seleccionados;
+    const total = document.querySelectorAll('.aprendiz-check').length;
+    if (selectAll) {
+      selectAll.checked = total > 0 && seleccionados === total;
+      selectAll.indeterminate = seleccionados > 0 && seleccionados < total;
+    }
+    if (btnSubmit) btnSubmit.disabled = seleccionados === 0;
+  }
+
+  if (selectAll) {
+    selectAll.addEventListener('change', function() {
+      document.querySelectorAll('.aprendiz-check').forEach(cb => cb.checked = this.checked);
+      document.querySelectorAll('.selectable-aprendiz').forEach(card => {
+        card.classList.toggle('selected', this.checked);
+      });
+      actualizarCantidad();
+    });
+  }
+
+  document.querySelectorAll('.aprendiz-check').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+      const card = this.closest('.selectable-aprendiz');
+      if (card) card.classList.toggle('selected', this.checked);
+      actualizarCantidad();
+    });
+  });
+
+  document.querySelectorAll('.selectable-aprendiz').forEach(card => {
+    card.addEventListener('click', function(e) {
+      if (e.target.tagName === 'INPUT') return;
+      const checkbox = this.querySelector('.aprendiz-check');
+      if (checkbox) {
+        checkbox.checked = !checkbox.checked;
+        this.classList.toggle('selected', checkbox.checked);
+        actualizarCantidad();
+      }
+    });
+  });
+
+  actualizarCantidad();
+</script>
+{% accessibility_widget %}
+</body>
+</html>

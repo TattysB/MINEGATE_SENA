@@ -1,0 +1,66 @@
+{% extends "master.html" %}
+{% load static %}
+
+{% block title %}Detalle de Visita Externa{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/detalle_visita.css' %}">
+<link rel="stylesheet" href="{% static 'css/ocultar_layout.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h1>{{ visita.nombre }}</h1>
+  
+  <div class="field">
+    <span class="label">ID:</span>
+    <span class="value">{{ visita.id }}</span>
+  </div>
+  
+  <div class="field">
+    <span class="label">Nombre de la Institución:</span>
+    <span class="value">{{ visita.nombre }}</span>
+  </div>
+  
+  <div class="field">
+    <span class="label">Nombre del Responsable:</span>
+    <span class="value">{{ visita.nombre_responsable }}</span>
+  </div>
+
+  <div class="field">
+    <span class="label">Tipo de Documento:</span>
+    <span class="value">{{ visita.get_tipo_documento_responsable_display }}</span>
+  </div>
+
+  <div class="field">
+    <span class="label">Documento del Responsable:</span>
+    <span class="value">{{ visita.documento_responsable }}</span>
+  </div>
+  
+  <div class="field">
+    <span class="label">Correo Electrónico:</span>
+    <span class="value">{{ visita.correo_responsable }}</span>
+  </div>
+  
+  <div class="field">
+    <span class="label">Teléfono:</span>
+    <span class="value">{{ visita.telefono_responsable }}</span>
+  </div>
+  
+  <div class="field">
+    <span class="label">Cantidad de Visitantes:</span>
+    <span class="value">{{ visita.cantidad_visitantes }}</span>
+  </div>
+  
+  <div class="field">
+    <span class="label">Observación:</span>
+    <span class="value">{{ visita.observacion|default:"Sin observación" }}</span>
+  </div>
+
+  <div class="botones">
+    <a href="{% url 'visitaExterna:editar_visita' visita.id %}"><button class="btn-editar">Editar</button></a>
+    <a href="{% url 'visitaExterna:eliminar_visita' visita.id %}"><button class="btn-eliminar">Eliminar</button></a>
+    <p><a href="{% url 'visitaExterna:visita_externa' %}">Volver a Visitas Externas</a></p>
+  </div>
+</div>
+{% endblock %}

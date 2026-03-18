@@ -1,0 +1,196 @@
+{% extends "master.html" %}
+{% load static %}
+
+{% block title %}Registro de Visitas - SICAM{% endblock %}
+
+{% block extra_css %}
+<style>
+    .navbar .d-flex {
+        display: none !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<section class="container py-5 visitas-wrap">
+    <div class="visitas-hero text-center mb-5">
+        <span class="hero-tag">SICAM</span>
+        <h1 class="fw-bold mt-3 mb-3">Registro de Visitas</h1>
+        <p class="lead text-muted mx-auto" style="max-width: 820px;">
+        </p>
+        <p class="hero-message mx-auto mb-0" style="max-width: 760px;">
+            Cada visita es una oportunidad para aprender, inspirar y construir experiencias seguras en nuestra mina didáctica.
+        </p>
+        <hr class="mx-auto hero-divider">
+    </div>
+
+    <!-- Alerta principal de requisitos -->
+    <div class="important-note shadow-sm p-4 rounded-4 mt-4">
+        <div class="d-flex align-items-center flex-column flex-md-row gap-4">
+            <div class="important-icon-box">
+                <i class="fas fa-clipboard-check"></i>
+            </div>
+            <div class="text-center text-md-start">
+                <h4 class="text-dark fw-bold mb-2">Importante para agendar</h4>
+                <p class="text-muted mb-0">
+                    Para agendar su visita, debe completar toda la información solicitada, diligenciar los formularios
+                    requeridos y subir la documentación correspondiente. Entre más completa esté su solicitud,
+                    más ágil será el proceso de validación.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección para crear una nueva visita -->
+    <div class="p-4 p-lg-5 rounded-4 shadow-sm border mt-4 bg-white action-card action-card-primary">
+        <div class="row align-items-center g-3">
+            <div class="col-lg-7">
+                <div class="d-flex align-items-center mb-3">
+                    <i class="fas fa-route fa-2x text-primary me-3"></i>
+                    <div>
+                        <h4 class="fw-bold mb-1">Realizar mi visita</h4>
+                        <p class="text-muted mb-0">Inicie aquí su solicitud y avance paso a paso hasta dejarla lista para revisión.</p>
+                    </div>
+                </div>
+                <ul class="list-unstyled ms-0 ms-md-5 text-muted mb-0">
+                    <li><i class="fas fa-check-circle text-primary me-2"></i>Complete la información del responsable y del grupo visitante</li>
+                    <li><i class="fas fa-check-circle text-primary me-2"></i>Diligencie los formularios solicitados del proceso</li>
+                    <li><i class="fas fa-check-circle text-primary me-2"></i>Suba su documentación para agilizar la aprobación</li>
+                </ul>
+            </div>
+            <div class="col-lg-5 text-center text-lg-end mt-3 mt-lg-0">
+                <a href="{% url 'panel_visitante:registro_visita' %}" class="btn btn-primary btn-lg px-5 shadow-sm">
+                    <i class="fas fa-calendar-plus me-2"></i>Realizar mi visita
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección de acceso para visitas ya agendadas -->
+    <div class="p-4 p-lg-5 rounded-4 shadow-sm border mt-4 bg-white action-card action-card-secondary">
+        <div class="row align-items-center g-3">
+            <div class="col-lg-7">
+                <div class="d-flex align-items-center mb-3">
+                    <i class="fas fa-user-check fa-2x text-success me-3"></i>
+                    <div>
+                        <h4 class="fw-bold mb-1">¿Ya tiene una visita agendada?</h4>
+                        <p class="text-muted mb-0">Acceda a su panel para consultar estado, completar asistentes y continuar el proceso.</p>
+                    </div>
+                </div>
+                <ul class="list-unstyled ms-0 ms-md-5 text-muted mb-0">
+                    <li><i class="fas fa-check text-success me-2"></i>Consulte el estado de su solicitud</li>
+                    <li><i class="fas fa-check text-success me-2"></i>Registre asistentes cuando su visita sea aprobada</li>
+                    <li><i class="fas fa-check text-success me-2"></i>Gestione y actualice sus visitas programadas</li>
+                </ul>
+            </div>
+            <div class="col-lg-5 text-center text-lg-end mt-3 mt-lg-0">
+                <a href="{% url 'panel_visitante:login_responsable' %}" class="btn btn-success btn-lg px-5 shadow-sm">
+                    <i class="fas fa-sign-in-alt me-2"></i>Acceder como Responsable
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    :root {
+        --visitas-primary: #0c63e7;
+        --visitas-primary-soft: #e8f1ff;
+        --visitas-success: #198754;
+        --visitas-success-soft: #eefaf3;
+        --visitas-highlight: #5db700;
+    }
+
+    .visitas-wrap {
+        background:
+            radial-gradient(circle at 8% 10%, rgba(12, 99, 231, 0.08), transparent 34%),
+            radial-gradient(circle at 92% 18%, rgba(25, 135, 84, 0.09), transparent 30%);
+        border-radius: 28px;
+    }
+
+    .hero-tag {
+        display: inline-block;
+        padding: 8px 18px;
+        border-radius: 999px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        font-size: 0.8rem;
+        color: var(--visitas-primary);
+        background: var(--visitas-primary-soft);
+    }
+
+    .hero-message {
+        color: #4d5a6b;
+        font-size: 1.05rem;
+        line-height: 1.7;
+    }
+
+    .hero-divider {
+        width: 100px;
+        height: 4px;
+        background: linear-gradient(90deg, var(--visitas-primary), #28a745);
+        opacity: 1;
+        border: none;
+        border-radius: 999px;
+        margin-top: 18px;
+    }
+
+    .important-note {
+        background: rgba(93, 183, 0, 0.08);
+        border: 1px solid rgba(93, 183, 0, 0.22);
+    }
+
+    .important-icon-box {
+        width: 88px;
+        height: 88px;
+        border-radius: 24px;
+        background: var(--visitas-highlight);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 2rem;
+        flex-shrink: 0;
+        box-shadow: 0 10px 24px rgba(52, 128, 0, 0.28);
+    }
+
+    .action-card {
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .action-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 28px rgba(33, 37, 41, 0.08) !important;
+    }
+
+    .action-card-primary {
+        border-color: rgba(12, 99, 231, 0.2) !important;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%) !important;
+    }
+
+    .action-card-secondary {
+        border-color: rgba(25, 135, 84, 0.18) !important;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fcfa 100%) !important;
+    }
+
+    @media (max-width: 767.98px) {
+        .visitas-wrap {
+            border-radius: 18px;
+        }
+
+        .hero-message {
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        .important-icon-box {
+            width: 76px;
+            height: 76px;
+            border-radius: 20px;
+            font-size: 1.6rem;
+        }
+    }
+</style>
+{% endblock %}

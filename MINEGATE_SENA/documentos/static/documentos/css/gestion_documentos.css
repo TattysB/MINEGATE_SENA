@@ -1,0 +1,987 @@
+/* ================================================
+   Gestión de Documentos — Estilos
+   ================================================ */
+
+/* ---------- Título de sección ---------- */
+.docs-titulo {
+    color: #1f2937;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.docs-titulo i {
+    color: #3b82f6;
+}
+
+/* ---------- Contenedor principal ---------- */
+.docs-contenedor {
+    padding: 20px;
+}
+
+/* ---------- Zona de carga (drag & drop) ---------- */
+.docs-zona-subida {
+    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    border: 2px dashed #3b82f6;
+    border-radius: 12px;
+    padding: 40px 20px;
+    text-align: center;
+    margin-bottom: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.docs-zona-subida:hover {
+    border-color: #2563eb;
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+}
+
+.docs-zona-subida.drag-over {
+    border-color: #1d4ed8;
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+}
+
+.docs-zona-subida-icono {
+    font-size: 48px;
+    color: #3b82f6;
+    margin-bottom: 10px;
+}
+
+.docs-zona-subida h4 {
+    color: #1e40af;
+    margin-bottom: 5px;
+}
+
+.docs-zona-subida p {
+    color: #6b7280;
+    font-size: 13px;
+    margin: 0;
+}
+
+/* ---------- Archivos pendientes ---------- */
+.docs-pendientes {
+    display: none;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.docs-pendientes h5 {
+    color: #374151;
+    margin-bottom: 15px;
+}
+
+.docs-pendientes-info {
+    font-size: 12px;
+    color: #6b7280;
+    margin: 10px 0 5px;
+}
+
+.docs-pendientes-info i {
+    color: #3b82f6;
+}
+
+.docs-acciones-subida {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* ---------- Archivo individual pendiente ---------- */
+.docs-archivo-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: #f9fafb;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    border: 1px solid #e5e7eb;
+    flex-wrap: wrap;
+}
+
+.docs-archivo-info {
+    flex: 1;
+    min-width: 150px;
+}
+
+.docs-archivo-nombre {
+    font-weight: 500;
+    font-size: 13px;
+    color: #1f2937;
+}
+
+.docs-archivo-size {
+    font-size: 11px;
+    color: #9ca3af;
+}
+
+.docs-archivo-cat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.docs-archivo-cat>span {
+    font-size: 11px;
+    color: #6b7280;
+}
+
+.docs-archivo-cat select {
+    padding: 4px 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 11px;
+    max-width: 180px;
+    background: white;
+}
+
+/* ---------- Botón quitar archivo ---------- */
+.docs-btn-quitar {
+    background: none;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.docs-btn-quitar:hover {
+    color: #dc2626;
+    transform: scale(1.15);
+}
+
+/* ---------- Botones principales ---------- */
+.docs-btn {
+    padding: 10px 20px;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s ease;
+}
+
+.docs-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.docs-btn:active {
+    transform: translateY(0) scale(0.97);
+}
+
+.docs-btn-primary {
+    background: #3b82f6;
+}
+
+.docs-btn-primary:hover {
+    background: #2563eb;
+}
+
+.docs-btn-danger {
+    background: #ef4444;
+}
+
+.docs-btn-danger:hover {
+    background: #dc2626;
+}
+
+/* ---------- Progreso de subida ---------- */
+.docs-progreso {
+    display: none;
+    margin-top: 15px;
+}
+
+.docs-progreso-barra-bg {
+    background: #e5e7eb;
+    border-radius: 10px;
+    height: 8px;
+    overflow: hidden;
+}
+
+.docs-progreso-barra {
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    height: 100%;
+    width: 0%;
+    transition: width 0.3s ease;
+    border-radius: 10px;
+}
+
+.docs-progreso-texto {
+    color: #6b7280;
+    font-size: 12px;
+    margin-top: 5px;
+    text-align: center;
+}
+
+/* ---------- Filtros y búsqueda ---------- */
+.docs-filtros {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.docs-categorias-bar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 6px 0;
+}
+
+.docs-cat-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 50px;
+    background: white;
+    color: #4b5563;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    position: relative;
+    overflow: hidden;
+}
+
+.docs-cat-chip i {
+    font-size: 13px;
+    transition: transform 0.2s ease;
+}
+
+.docs-cat-chip:hover {
+    border-color: #93c5fd;
+    background: #eff6ff;
+    color: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(59, 130, 246, 0.12);
+}
+
+.docs-cat-chip:hover i {
+    transform: scale(1.15);
+}
+
+.docs-cat-chip:active {
+    transform: translateY(0) scale(0.97);
+}
+
+.docs-cat-chip.active {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+}
+
+.docs-cat-chip.active:hover {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+    color: white;
+}
+
+.docs-cat-chip.active i {
+    color: white;
+}
+
+/* ---------- Barra de búsqueda ---------- */
+.docs-busqueda-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.docs-busqueda-input-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 220px;
+    max-width: 400px;
+}
+
+.docs-busqueda-icono {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    font-size: 14px;
+    pointer-events: none;
+    transition: color 0.2s;
+}
+
+.docs-busqueda-input-wrap:focus-within .docs-busqueda-icono {
+    color: #3b82f6;
+}
+
+.docs-filtro-select {
+    padding: 0 15px;
+    height: 42px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 220px;
+}
+
+.docs-filtro-select:focus {
+    border-color: #3b82f6;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.docs-filtro-input {
+    height: 42px;
+    padding: 0 15px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    flex: 1;
+    min-width: 200px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.docs-filtro-input:focus {
+    border-color: #3b82f6;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    background: white;
+}
+
+.docs-btn-actualizar {
+    height: 42px;
+    padding: 0 18px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.docs-btn-actualizar:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+}
+
+.docs-contador {
+    margin-left: auto;
+    color: #6b7280;
+    font-size: 13px;
+}
+
+/* ---------- Tabla de documentos ---------- */
+.docs-tabla-contenedor {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(79, 191, 38, 0.2);
+    overflow: hidden;
+    border: 2px solid #4FBF26;
+}
+
+.docs-tabla-refresh {
+    animation: docs-saltico 0.4s ease;
+}
+
+@keyframes docs-saltico {
+    0% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    30% {
+        transform: translateY(-6px);
+        opacity: 0.7;
+    }
+
+    60% {
+        transform: translateY(2px);
+        opacity: 0.9;
+    }
+
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.docs-tabla-scroll {
+    overflow-x: auto;
+}
+
+.docs-tabla {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.docs-tabla thead tr {
+    background: linear-gradient(135deg, #39A900, #4FBF26, #6dd632);
+}
+
+.docs-tabla th {
+    padding: 13px 15px;
+    text-align: left;
+    font-weight: 700;
+    color: #ffffff;
+    font-size: 13px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    border-right: 1px solid rgba(255,255,255,0.2);
+}
+
+.docs-tabla th:last-child {
+    text-align: center;
+}
+
+.docs-tabla td {
+    padding: 12px 15px;
+}
+
+/* ---------- Filas de tabla ---------- */
+.docs-fila {
+    border-bottom: 1px solid #d8f0be;
+    transition: background 0.2s;
+    background: #ffffff;
+}
+
+.docs-fila:nth-child(even) {
+    background: #f5fced;
+}
+
+.docs-fila:hover {
+    background: #d8f0be;
+    box-shadow: inset 4px 0 0 #4FBF26;
+}
+
+.docs-celda-archivo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.docs-archivo-titulo {
+    font-weight: 500;
+    color: #1f2937;
+}
+
+.docs-archivo-subtitulo {
+    font-size: 11px;
+    color: #9ca3af;
+}
+
+.docs-celda-texto {
+    color: #6b7280;
+    font-size: 13px;
+}
+
+.docs-celda-acciones {
+    text-align: center;
+}
+
+/* ---------- Badges de categoría ---------- */
+.docs-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    white-space: nowrap;
+    letter-spacing: 0.2px;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.docs-badge i {
+    font-size: 11px;
+}
+
+.docs-badge:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+.docs-badge-epp {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    color: #92400e;
+    border-color: #f59e0b33;
+}
+
+.docs-badge-induccion {
+    background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+    color: #3730a3;
+    border-color: #6366f133;
+}
+
+.docs-badge-ats {
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+    color: #065f46;
+    border-color: #10b98133;
+}
+
+.docs-badge-salud {
+    background: linear-gradient(135deg, #fce7f3, #fbcfe8);
+    color: #9d174d;
+    border-color: #ec489933;
+}
+
+.docs-badge-charla {
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    color: #1e40af;
+    border-color: #3b82f633;
+}
+
+.docs-badge-padres {
+    background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+    color: #5b21b6;
+    border-color: #8b5cf633;
+}
+
+.docs-badge-otro {
+    background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+    color: #374151;
+    border-color: #9ca3af33;
+}
+
+/* ---------- Botones de acción en tabla ---------- */
+.docs-acciones {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    align-items: center;
+}
+
+.docs-btn-accion {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 14px;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.docs-btn-accion::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.4s ease, height 0.4s ease, opacity 0.4s ease;
+    opacity: 0;
+}
+
+.docs-btn-accion:active::after {
+    width: 200px;
+    height: 200px;
+    opacity: 1;
+    transition: 0s;
+}
+
+.docs-btn-accion:hover {
+    transform: translateY(-2px) scale(1.05);
+}
+
+.docs-btn-accion:active {
+    transform: translateY(0) scale(0.95);
+}
+
+/* Ver */
+.docs-btn-ver {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.docs-btn-ver:hover {
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.45);
+}
+
+.docs-btn-ver:hover i {
+    transform: scale(1.2);
+}
+
+.docs-btn-ver i {
+    transition: transform 0.2s ease;
+}
+
+/* Descargar */
+.docs-btn-descargar {
+    background: linear-gradient(135deg, #10b981, #059669);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.docs-btn-descargar:hover {
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+}
+
+.docs-btn-descargar:hover i {
+    animation: docs-bounce-down 0.5s ease;
+}
+
+/* Eliminar */
+.docs-btn-eliminar {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.docs-btn-eliminar:hover {
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.45);
+}
+
+.docs-btn-eliminar:hover i {
+    animation: docs-shake 0.4s ease;
+}
+
+/* ---------- Iconos de tipo de archivo ---------- */
+.docs-icono-pdf {
+    color: #ef4444;
+    font-size: 20px;
+}
+
+.docs-icono-word {
+    color: #2563eb;
+    font-size: 20px;
+}
+
+.docs-icono-excel {
+    color: #16a34a;
+    font-size: 20px;
+}
+
+.docs-icono-ppt {
+    color: #ea580c;
+    font-size: 20px;
+}
+
+.docs-icono-img {
+    color: #8b5cf6;
+    font-size: 20px;
+}
+
+.docs-icono-txt {
+    color: #6b7280;
+    font-size: 20px;
+}
+
+.docs-icono-default {
+    color: #6b7280;
+    font-size: 20px;
+}
+
+/* ---------- Estado vacío y carga ---------- */
+.docs-vacio {
+    padding: 40px;
+    text-align: center;
+    color: #6b7280;
+}
+
+.docs-vacio i {
+    font-size: 40px;
+    margin-bottom: 10px;
+    color: #d1d5db;
+}
+
+.docs-vacio-sub {
+    font-size: 12px;
+}
+
+.docs-cargando {
+    padding: 40px;
+    text-align: center;
+    color: #6b7280;
+}
+
+.docs-cargando i {
+    font-size: 30px;
+    animation: spin 1s linear infinite;
+}
+
+.docs-error {
+    padding: 20px;
+    text-align: center;
+    color: #ef4444;
+}
+
+/* ---------- Modal personalizado ---------- */
+.docs-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    backdrop-filter: blur(4px);
+}
+
+.docs-modal-overlay.visible {
+    opacity: 1;
+}
+
+.docs-modal-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 32px 28px 24px;
+    width: 420px;
+    max-width: 92vw;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    font-family: 'Inter', sans-serif;
+    transform: scale(0.9) translateY(10px);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
+    opacity: 0;
+}
+
+.docs-modal-card.visible {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+}
+
+.docs-modal-icono {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 18px;
+}
+
+.docs-modal-icono i {
+    font-size: 30px;
+}
+
+.docs-modal-mensaje {
+    font-size: 15px;
+    color: #374151;
+    line-height: 1.6;
+    margin-bottom: 24px;
+    white-space: pre-line;
+    word-break: break-word;
+    text-align: center;
+}
+
+.docs-modal-titulo {
+    margin: 0 0 8px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1f2937;
+    font-family: 'Inter', sans-serif;
+    text-align: center;
+}
+
+.docs-modal-desc {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0 0 28px;
+    line-height: 1.5;
+    text-align: center;
+}
+
+.docs-modal-botones {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.docs-modal-btn {
+    padding: 10px 28px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.15s ease;
+    border: none;
+}
+
+.docs-modal-btn-cancel {
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #e5e7eb;
+    font-weight: 500;
+}
+
+.docs-modal-btn-cancel:hover {
+    background: #e5e7eb;
+}
+
+.docs-modal-btn-confirm {
+    color: white;
+}
+
+.docs-modal-btn-confirm:hover {
+    transform: translateY(-1px);
+}
+
+/* Variantes de color para modal */
+.docs-modal-success {
+    background: #d1fae5;
+}
+
+.docs-modal-success i {
+    color: #10b981;
+}
+
+.docs-modal-error {
+    background: #fee2e2;
+}
+
+.docs-modal-error i {
+    color: #ef4444;
+}
+
+.docs-modal-warning {
+    background: #fef3c7;
+}
+
+.docs-modal-warning i {
+    color: #f59e0b;
+}
+
+.docs-modal-info {
+    background: #dbeafe;
+}
+
+.docs-modal-info i {
+    color: #3b82f6;
+}
+
+.docs-modal-btn-success {
+    background: linear-gradient(135deg, #10b981, #059669);
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+}
+
+.docs-modal-btn-success:hover {
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+}
+
+.docs-modal-btn-error {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+}
+
+.docs-modal-btn-error:hover {
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+}
+
+.docs-modal-btn-warning {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
+}
+
+.docs-modal-btn-warning:hover {
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
+}
+
+.docs-modal-btn-info {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
+}
+
+.docs-modal-btn-info:hover {
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+}
+
+.docs-modal-btn-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+}
+
+.docs-modal-btn-danger:hover {
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+}
+
+/* ---------- Animaciones ---------- */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes docs-shake {
+
+    0%,
+    100% {
+        transform: rotate(0deg);
+    }
+
+    20% {
+        transform: rotate(-12deg);
+    }
+
+    40% {
+        transform: rotate(12deg);
+    }
+
+    60% {
+        transform: rotate(-8deg);
+    }
+
+    80% {
+        transform: rotate(8deg);
+    }
+}
+
+@keyframes docs-bounce-down {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    40% {
+        transform: translateY(4px);
+    }
+
+    60% {
+        transform: translateY(-2px);
+    }
+}

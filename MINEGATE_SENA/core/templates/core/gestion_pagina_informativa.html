@@ -1,0 +1,1368 @@
+{% load static %}
+{% get_media_prefix as MEDIA_PREFIX %}
+<div class="contenido-temporal gpi-wrapper">
+  <div class="gpi-header">
+    <div class="gpi-header-content">
+      <i class="ri-layout-4-line gpi-header-icon"></i>
+      <div>
+        <h2 class="gpi-title">Gestión Página Informativa</h2>
+        <p class="gpi-subtitle">Administra el encabezado y la galería de la página pública del centro.</p>
+      </div>
+    </div>
+  </div>
+
+  {% if messages %}
+  <div class="gpi-alerts">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} gpi-alert">
+      <i class="ri-{% if message.tags == 'success' %}checkbox-circle{% elif message.tags == 'danger' %}error-warning{% elif message.tags == 'warning' %}alert{% else %}information{% endif %}-line"></i>
+      {{ message }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if sin_permiso_gestion_pagina %}
+  <div class="alert alert-warning gpi-alert"><i class="ri-lock-line"></i> No tienes permisos para gestionar esta sección.</div>
+  {% elif error_gestion_pagina %}
+  <div class="alert alert-danger gpi-alert"><i class="ri-error-warning-line"></i> {{ error_gestion_pagina }}</div>
+  {% else %}
+
+  <!-- ═══ VISTA PREVIA INDEX (TIEMPO REAL) ═══ -->
+  <section class="gpi-preview-container">
+    <h3 class="gpi-preview-title"><i class="ri-eye-line"></i> Vista previa del index (tiempo real)</h3>
+
+    <div class="gpi-live-preview-shell">
+      <div class="gpi-live-hero" id="gpi-live-hero">
+        <div
+          id="gpi-live-hero-bg"
+          class="gpi-live-hero-bg"
+          style="background-image:url('{% if slide_base_preview and slide_base_preview.imagen %}{{ slide_base_preview.imagen.url }}?v={{ slide_base_preview.actualizado_en|date:'U' }}{% else %}{{ MEDIA_PREFIX }}img/grupal.jpg{% endif %}');"
+        ></div>
+        <div class="gpi-live-hero-overlay">
+          <h4 id="gpi-live-hero-title">{{ slide_base_preview.titulo|default:'Centro Minero de Morcá' }}</h4>
+          <p id="gpi-live-hero-text">{{ slide_base_preview.texto|default:'Agenda tu experiencia minera de forma fácil, segura y digital.' }}</p>
+        </div>
+        <div class="gpi-live-hero-controls">
+          <button type="button" id="gpi-live-hero-prev" aria-label="Anterior"><i class="ri-arrow-left-s-line"></i></button>
+          <span id="gpi-live-hero-count">1 / 1</span>
+          <button type="button" id="gpi-live-hero-next" aria-label="Siguiente"><i class="ri-arrow-right-s-line"></i></button>
+        </div>
+        <div class="gpi-live-indicators" id="gpi-live-hero-indicators">
+        </div>
+      </div>
+
+      <div class="gpi-live-gallery-block">
+        <div class="gpi-live-gallery-head">
+          <small>Galería Visual</small>
+          <h4 id="gpi-live-gallery-title">{{ form_contenido_pagina.titulo_galeria.value|default:'Explora Nuestras Instalaciones' }}</h4>
+          <p id="gpi-live-gallery-description">{{ form_contenido_pagina.descripcion_galeria.value|default:'Conoce la mina didáctica y las experiencias que viven nuestros aprendices.' }}</p>
+        </div>
+
+        <div class="gpi-live-gallery-media" id="gpi-live-gallery-media">
+          <div class="gpi-live-media-controls">
+            <button type="button" id="gpi-live-gallery-prev" aria-label="Anterior"><i class="ri-arrow-left-s-line"></i></button>
+            <span id="gpi-live-gallery-count">1 / 1</span>
+            <button type="button" id="gpi-live-gallery-next" aria-label="Siguiente"><i class="ri-arrow-right-s-line"></i></button>
+          </div>
+          <img
+            id="gpi-live-gallery-image"
+            {% if galeria_base_preview and galeria_base_preview.tipo == 'video' %}class="is-hidden"{% endif %}
+            src="{% if galeria_base_preview and galeria_base_preview.archivo and galeria_base_preview.tipo == 'imagen' %}{{ galeria_base_preview.archivo.url }}?v={{ galeria_base_preview.actualizado_en|date:'U' }}{% else %}{{ MEDIA_PREFIX }}img/grupal.jpg{% endif %}"
+            alt="Vista previa de galería"
+          >
+          <video
+            id="gpi-live-gallery-video"
+            {% if not galeria_base_preview or galeria_base_preview.tipo != 'video' %}class="is-hidden"{% endif %}
+            autoplay
+            muted
+            loop
+            playsinline
+          >
+            {% if galeria_base_preview and galeria_base_preview.tipo == 'video' and galeria_base_preview.archivo %}
+            <source src="{{ galeria_base_preview.archivo.url }}?v={{ galeria_base_preview.actualizado_en|date:'U' }}" type="{{ galeria_base_preview.mime_type|default:'video/mp4' }}">
+            {% endif %}
+          </video>
+          <div class="gpi-live-gallery-caption">
+            <strong id="gpi-live-gallery-item-title">{{ galeria_base_preview.titulo|default:'Título del elemento' }}</strong>
+            <small id="gpi-live-gallery-item-desc">{{ galeria_base_preview.descripcion|default:'Descripción del elemento de galería.' }}</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ LAYOUT PRINCIPAL ═══ -->
+  <div class="gpi-layout">
+
+    <!-- ── COLUMNA IZQUIERDA ── -->
+    <div class="gpi-col">
+
+      <!-- Paso 1: Configuración general -->
+      <section class="gpi-card">
+        <div class="gpi-section-head">
+          <span class="gpi-step">1</span>
+          <div>
+            <h3 class="gpi-card-title"><i class="ri-settings-3-line"></i> Configuración general</h3>
+            <p class="gpi-section-desc">Textos de la sección de galería en el sitio público.</p>
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-primary gpi-toggle-btn" data-target="gpi-configuracion-body" data-auto-open="{% if form_contenido_pagina.errors %}true{% else %}false{% endif %}" aria-expanded="false">
+          <i class="ri-settings-3-line"></i> Editar configuración
+          <i class="ri-arrow-down-s-line gpi-toggle-icon"></i>
+        </button>
+
+        <div id="gpi-configuracion-body" class="gpi-section-body is-collapsed">
+        <form id="gpi-form-config" method="post" enctype="multipart/form-data" class="gpi-form">
+          {% csrf_token %}
+          <input type="hidden" name="accion" value="actualizar_contenido">
+          <div class="gpi-grid">
+            <div class="gpi-field">
+              <label for="id_titulo_galeria">{{ form_contenido_pagina.titulo_galeria.label }}</label>
+              {{ form_contenido_pagina.titulo_galeria }}
+              <span class="gpi-help">{{ form_contenido_pagina.titulo_galeria.help_text }}</span>
+              {{ form_contenido_pagina.titulo_galeria.errors }}
+            </div>
+            <div class="gpi-field gpi-field-full">
+              <label for="id_descripcion_galeria">{{ form_contenido_pagina.descripcion_galeria.label }}</label>
+              {{ form_contenido_pagina.descripcion_galeria }}
+              <span class="gpi-help">{{ form_contenido_pagina.descripcion_galeria.help_text }}</span>
+              {{ form_contenido_pagina.descripcion_galeria.errors }}
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary gpi-btn-save">
+            <i class="ri-save-line"></i> Guardar cambios de configuración
+          </button>
+        </form>
+        </div>
+      </section>
+
+      <!-- Paso 2: Encabezado principal -->
+      <section class="gpi-card">
+        <div class="gpi-section-head">
+          <span class="gpi-step">2</span>
+          <div>
+            <h3 class="gpi-card-title"><i class="ri-slideshow-3-line"></i> Encabezado principal</h3>
+            <p class="gpi-section-desc">Crea y organiza las diapositivas del carrusel.</p>
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-primary gpi-toggle-btn" data-target="gpi-encabezado-body" data-auto-open="{% if slide_en_edicion or form_elemento_encabezado.errors or abrir_seccion == 'encabezado' %}true{% else %}false{% endif %}" aria-expanded="false">
+          <i class="ri-slideshow-3-line"></i> Editar encabezado
+          <i class="ri-arrow-down-s-line gpi-toggle-icon"></i>
+        </button>
+
+        <div id="gpi-encabezado-body" class="gpi-section-body is-collapsed">
+        <form id="gpi-form-slide" method="post" enctype="multipart/form-data" class="gpi-form">
+          {% csrf_token %}
+          <input type="hidden" name="accion" value="guardar_slide">
+          <input type="hidden" name="confirmar_reemplazo_slide" value="0">
+          <input type="hidden" name="reemplazar_slide_id" value="">
+          {% if slide_en_edicion %}
+          <input type="hidden" name="slide_id" value="{{ slide_en_edicion.id }}">
+          {% endif %}
+
+          {% if form_elemento_encabezado.errors %}
+          <div class="alert alert-danger gpi-alert" role="alert">
+            <i class="ri-error-warning-line"></i>
+            Revisa los campos obligatorios del encabezado antes de guardar.
+          </div>
+          {% endif %}
+
+          <div class="gpi-grid">
+            <div class="gpi-field">
+              <label for="id_titulo">Título de la diapositiva</label>
+              <input
+                type="text"
+                name="titulo"
+                id="id_titulo"
+                class="form-control"
+                autocomplete="off"
+                maxlength="200"
+                placeholder="Ej: Centro Minero de Morcá"
+                value="{{ form_elemento_encabezado.titulo.value|default_if_none:'' }}"
+              >
+              <span class="gpi-help">Opcional. Si lo dejas vacío, se mostrará solo el texto.</span>
+              {{ form_elemento_encabezado.titulo.errors }}
+            </div>
+            <div class="gpi-field">
+              <label for="id_orden">Orden de aparición</label>
+              <input
+                type="number"
+                name="orden"
+                id="id_orden"
+                class="form-control"
+                min="0"
+                style="max-width:120px"
+                required
+                value="{{ form_elemento_encabezado.orden.value|default_if_none:'0' }}"
+              >
+              <span class="gpi-help">Número menor = aparece primero.</span>
+              {{ form_elemento_encabezado.orden.errors }}
+            </div>
+            <div class="gpi-field gpi-field-full">
+              <label for="id_texto">Texto de la diapositiva</label>
+              <textarea
+                name="texto"
+                id="id_texto"
+                class="form-control gpi-textarea-auto"
+                rows="2"
+                data-max-words="50"
+                data-counter-id="gpi-texto-counter"
+                placeholder="Ej: Agenda tu experiencia minera..."
+              >{{ form_elemento_encabezado.texto.value|default_if_none:'' }}</textarea>
+              <small id="gpi-texto-counter" class="gpi-word-counter">0 / 50 palabras</small>
+              <span class="gpi-help">Mensaje principal del encabezado (máximo 50 palabras).</span>
+              {{ form_elemento_encabezado.texto.errors }}
+            </div>
+            <div class="gpi-field gpi-field-full">
+              <label for="id_imagen">Imagen de fondo</label>
+              <input
+                type="file"
+                name="imagen"
+                id="id_imagen"
+                class="form-control"
+                accept="image/*"
+                {% if not slide_en_edicion %}required{% endif %}
+              >
+              <div id="gpi-slide-crop-tools" class="gpi-cropper-panel {% if not slide_en_edicion or not slide_en_edicion.imagen %}is-hidden{% endif %}">
+                <small class="gpi-help gpi-cropper-title"><i class="ri-crop-line"></i> Ajusta la imagen como quieres que se muestre</small>
+                <div class="gpi-cropper-wrapper">
+                  <img
+                    id="slideCropperPreview"
+                    src="{% if slide_en_edicion and slide_en_edicion.imagen %}{{ slide_en_edicion.imagen.url }}?v={{ slide_en_edicion.actualizado_en|date:'U' }}{% else %}{{ MEDIA_PREFIX }}img/grupal.jpg{% endif %}"
+                    alt="Vista previa del recorte para encabezado"
+                  >
+                </div>
+              </div>
+              <input type="hidden" name="slide_crop_x" id="slide_crop_x">
+              <input type="hidden" name="slide_crop_y" id="slide_crop_y">
+              <input type="hidden" name="slide_crop_w" id="slide_crop_w">
+              <input type="hidden" name="slide_crop_h" id="slide_crop_h">
+              <span class="gpi-help">Sube la imagen para esta diapositiva del encabezado principal.</span>
+              {{ form_elemento_encabezado.imagen.errors }}
+            </div>
+            <div class="gpi-field">
+              <label class="gpi-checkbox-label">
+                <input
+                  type="checkbox"
+                  name="activo"
+                  id="id_activo"
+                  class="form-check-input"
+                  {% if slide_en_edicion %}
+                    {% if form_elemento_encabezado.activo.value %}checked{% endif %}
+                  {% else %}
+                    checked
+                  {% endif %}
+                > Mostrar en el encabezado
+              </label>
+              <span class="gpi-help">Si lo desmarcas, la diapositiva no se mostrará en la página pública.</span>
+              {{ form_elemento_encabezado.activo.errors }}
+            </div>
+          </div>
+
+          <div class="gpi-actions-row">
+            <button type="submit" class="btn btn-success">
+              <i class="ri-{% if slide_en_edicion %}refresh{% else %}add{% endif %}-line"></i>
+              {% if slide_en_edicion %}Guardar cambios del encabezado{% else %}Guardar encabezado{% endif %}
+            </button>
+            {% if slide_en_edicion %}
+            <a href="{% url 'core:panel_administrativo_seccion' 'gestion_pagina_informativa' %}" class="btn btn-secondary">
+              <i class="ri-close-line"></i> Cancelar
+            </a>
+            {% endif %}
+          </div>
+        </form>
+
+        <!-- Lista de slides existentes -->
+        <div id="gpi-encabezado-lista" class="gpi-items-header">
+          <span><i class="ri-stack-line"></i> Diapositivas existentes</span>
+          <span class="gpi-items-count">{{ elementos_encabezado_admin|length }}</span>
+        </div>
+        <div class="gpi-items-list">
+          {% for slide in elementos_encabezado_admin %}
+          <article class="gpi-item-card {% if not slide.activo %}is-disabled{% endif %}">
+            <div class="gpi-item-thumb" style="background-image:url('{{ slide.imagen.url }}?v={{ slide.actualizado_en|date:'U' }}');"></div>
+            <div class="gpi-item-body">
+              <h4>{{ slide.titulo|default:'Sin título' }}</h4>
+              <p>{{ slide.texto|default:'Sin descripción'|truncatewords:16 }}</p>
+              <div class="gpi-meta">
+                <span><i class="ri-sort-asc"></i> {{ slide.orden }}</span>
+                <span>{% if slide.activo %}<i class="ri-eye-line"></i> Activo{% else %}<i class="ri-eye-off-line"></i> Oculto{% endif %}</span>
+              </div>
+            </div>
+            <div class="gpi-item-actions">
+              <a href="{% url 'core:panel_administrativo_seccion' 'gestion_pagina_informativa' %}?editar_slide={{ slide.id }}#gpi-encabezado-body" class="btn btn-sm btn-warning">
+                <i class="ri-pencil-line"></i> Editar
+              </a>
+              <form method="post" onsubmit="return confirm('¿Eliminar esta diapositiva del encabezado?');">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="eliminar_slide">
+                <input type="hidden" name="slide_id" value="{{ slide.id }}">
+                <input type="hidden" name="abrir_seccion" value="encabezado">
+                <button type="submit" class="btn btn-sm btn-danger">
+                  <i class="ri-delete-bin-line"></i> Eliminar
+                </button>
+              </form>
+            </div>
+          </article>
+          {% empty %}
+          <p class="gpi-empty-inline"><i class="ri-slideshow-3-line"></i> No hay diapositivas del encabezado aún.</p>
+          {% endfor %}
+        </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ── COLUMNA DERECHA ── -->
+    <div class="gpi-col">
+
+      <!-- Paso 3: Galería -->
+      <section class="gpi-card">
+        <div class="gpi-section-head">
+          <span class="gpi-step">3</span>
+          <div>
+            <h3 class="gpi-card-title"><i class="ri-gallery-line"></i> Galería</h3>
+            <p class="gpi-section-desc">Agrega, edita y ordena imágenes o videos de la galería.</p>
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-primary gpi-toggle-btn" data-target="gpi-galeria-body" data-auto-open="{% if galeria_en_edicion or form_elemento_galeria.errors or abrir_seccion == 'galeria' %}true{% else %}false{% endif %}" aria-expanded="false">
+          <i class="ri-gallery-line"></i> Editar galería
+          <i class="ri-arrow-down-s-line gpi-toggle-icon"></i>
+        </button>
+
+        <div id="gpi-galeria-body" class="gpi-section-body is-collapsed">
+        <form id="gpi-form-gallery" method="post" enctype="multipart/form-data" class="gpi-form">
+          {% csrf_token %}
+          <input type="hidden" name="accion" value="guardar_elemento">
+          <input type="hidden" name="confirmar_reemplazo_galeria" value="0">
+          <input type="hidden" name="reemplazar_galeria_id" value="">
+          {% if galeria_en_edicion %}
+          <input type="hidden" name="elemento_id" value="{{ galeria_en_edicion.id }}">
+          {% endif %}
+
+          {% if form_elemento_galeria.errors %}
+          <div class="alert alert-danger gpi-alert" role="alert">
+            <i class="ri-error-warning-line"></i>
+            Revisa los campos obligatorios de la galería antes de guardar.
+          </div>
+          {% endif %}
+
+          <div class="gpi-grid">
+            <div class="gpi-field">
+              <label for="id_tipo">Tipo de elemento</label>
+              <select name="tipo" id="id_tipo" class="form-control">
+                <option value="imagen" {% if form_elemento_galeria.tipo.value != 'video' %}selected{% endif %}>Imagen</option>
+                <option value="video" {% if form_elemento_galeria.tipo.value == 'video' %}selected{% endif %}>Video</option>
+              </select>
+              <span class="gpi-help">Selecciona si vas a subir una imagen o un video.</span>
+              {{ form_elemento_galeria.tipo.errors }}
+            </div>
+            <div class="gpi-field">
+              <label for="id_orden_galeria">Orden de aparición</label>
+              <input
+                type="number"
+                name="orden"
+                id="id_orden_galeria"
+                class="form-control"
+                min="0"
+                style="max-width:120px"
+                required
+                value="{{ form_elemento_galeria.orden.value|default_if_none:'0' }}"
+              >
+              <span class="gpi-help">Número menor = se muestra primero en la galería.</span>
+              {{ form_elemento_galeria.orden.errors }}
+            </div>
+            <div class="gpi-field gpi-field-full">
+              <label for="id_titulo_galeria">Título visible</label>
+              <input
+                type="text"
+                name="titulo"
+                id="id_titulo_galeria"
+                class="form-control"
+                autocomplete="off"
+                maxlength="120"
+                placeholder="Ej: Recorrido por la mina"
+                required
+                value="{{ form_elemento_galeria.titulo.value|default_if_none:'' }}"
+              >
+              <span class="gpi-help">Título corto que aparece sobre el elemento.</span>
+              {{ form_elemento_galeria.titulo.errors }}
+            </div>
+            <div class="gpi-field gpi-field-full">
+              <label for="id_descripcion">Descripción breve</label>
+              <input
+                type="text"
+                name="descripcion"
+                id="id_descripcion"
+                class="form-control"
+                autocomplete="off"
+                maxlength="255"
+                placeholder="Ej: Actividades prácticas con aprendices"
+                value="{{ form_elemento_galeria.descripcion.value|default_if_none:'' }}"
+              >
+              <span class="gpi-help">Texto opcional que complementa el título.</span>
+              {{ form_elemento_galeria.descripcion.errors }}
+            </div>
+            <div class="gpi-field gpi-field-full">
+              <label for="id_archivo">Archivo (imagen o video)</label>
+              <input
+                type="file"
+                name="archivo"
+                id="id_archivo"
+                class="form-control"
+                accept="image/*,video/*"
+                {% if not galeria_en_edicion %}required{% endif %}
+              >
+              <div id="gpi-galeria-crop-tools" class="gpi-cropper-panel {% if not galeria_en_edicion or galeria_en_edicion.tipo != 'imagen' or not galeria_en_edicion.archivo %}is-hidden{% endif %}">
+                <small class="gpi-help gpi-cropper-title"><i class="ri-crop-line"></i> Ajusta la imagen de galería (solo para tipo Imagen)</small>
+                <div class="gpi-cropper-wrapper">
+                  <img
+                    id="galleryCropperPreview"
+                    src="{% if galeria_en_edicion and galeria_en_edicion.tipo == 'imagen' and galeria_en_edicion.archivo %}{{ galeria_en_edicion.archivo.url }}?v={{ galeria_en_edicion.actualizado_en|date:'U' }}{% else %}{{ MEDIA_PREFIX }}img/grupal.jpg{% endif %}"
+                    alt="Vista previa del recorte para galería"
+                  >
+                </div>
+              </div>
+              <input type="hidden" name="galeria_crop_x" id="galeria_crop_x">
+              <input type="hidden" name="galeria_crop_y" id="galeria_crop_y">
+              <input type="hidden" name="galeria_crop_w" id="galeria_crop_w">
+              <input type="hidden" name="galeria_crop_h" id="galeria_crop_h">
+              <span class="gpi-help">Sube el archivo que quieres mostrar en la galería.</span>
+              {{ form_elemento_galeria.archivo.errors }}
+            </div>
+            <div class="gpi-field">
+              <label class="gpi-checkbox-label">
+                <input
+                  type="checkbox"
+                  name="activo"
+                  id="id_activo_galeria"
+                  class="form-check-input"
+                  {% if galeria_en_edicion %}
+                    {% if form_elemento_galeria.activo.value %}checked{% endif %}
+                  {% else %}
+                    checked
+                  {% endif %}
+                > Mostrar en el sitio
+              </label>
+              <span class="gpi-help">Si lo desmarcas, no se verá en el index.</span>
+              {{ form_elemento_galeria.activo.errors }}
+            </div>
+          </div>
+
+          <div class="gpi-actions-row">
+            <button type="submit" class="btn btn-success">
+              <i class="ri-{% if galeria_en_edicion %}refresh{% else %}add{% endif %}-line"></i>
+              {% if galeria_en_edicion %}Guardar cambios de la galería{% else %}Guardar galería{% endif %}
+            </button>
+            {% if galeria_en_edicion %}
+            <a href="{% url 'core:panel_administrativo_seccion' 'gestion_pagina_informativa' %}" class="btn btn-secondary">
+              <i class="ri-close-line"></i> Cancelar
+            </a>
+            {% endif %}
+          </div>
+        </form>
+
+        <!-- Lista de elementos de galería -->
+        <div id="gpi-galeria-lista" class="gpi-items-header">
+          <span><i class="ri-stack-line"></i> Elementos existentes</span>
+          <span id="gpi-galeria-count" class="gpi-items-count">{{ elementos_galeria_admin|length }}</span>
+        </div>
+        <div id="gpi-galeria-items" class="gpi-items-list">
+          {% for item in elementos_galeria_admin %}
+          <article class="gpi-item-card {% if not item.activo %}is-disabled{% endif %}">
+            {% if item.tipo == 'video' %}
+            <div class="gpi-item-thumb gpi-item-thumb-video" aria-label="Video">
+              <i class="ri-film-line"></i>
+            </div>
+            {% elif item.archivo %}
+            <div class="gpi-item-thumb" style="background-image:url('{{ item.archivo.url }}?v={{ item.actualizado_en|date:'U' }}');"></div>
+            {% else %}
+            <div class="gpi-item-thumb gpi-item-thumb-missing" aria-label="Sin archivo">
+              <i class="ri-image-line"></i>
+            </div>
+            {% endif %}
+            <div class="gpi-item-body">
+              <h4>{{ item.titulo|default:'Sin título' }}</h4>
+              <p>{{ item.descripcion|default:'Sin descripción'|truncatewords:16 }}</p>
+              <div class="gpi-meta">
+                <span><i class="ri-film-line"></i> {{ item.get_tipo_display }}</span>
+                <span><i class="ri-sort-asc"></i> {{ item.orden }}</span>
+                <span>{% if item.activo %}<i class="ri-eye-line"></i> Activo{% else %}<i class="ri-eye-off-line"></i> Oculto{% endif %}</span>
+              </div>
+            </div>
+            <div class="gpi-item-actions">
+              <a href="{% url 'core:panel_administrativo_seccion' 'gestion_pagina_informativa' %}?editar_galeria={{ item.id }}#gpi-galeria-body" class="btn btn-sm btn-warning">
+                <i class="ri-pencil-line"></i> Editar
+              </a>
+              <form method="post" onsubmit="return confirm('¿Eliminar este elemento de galería?');">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="eliminar_elemento">
+                <input type="hidden" name="elemento_id" value="{{ item.id }}">
+                <input type="hidden" name="abrir_seccion" value="galeria">
+                <button type="submit" class="btn btn-sm btn-danger">
+                  <i class="ri-delete-bin-line"></i> Eliminar
+                </button>
+              </form>
+            </div>
+          </article>
+          {% empty %}
+          <p class="gpi-empty-inline"><i class="ri-gallery-line"></i> No hay elementos en la galería aún.</p>
+          {% endfor %}
+        </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const botones = document.querySelectorAll('.gpi-toggle-btn');
+
+      const cerrarTodas = () => {
+        botones.forEach((otroBoton) => {
+          const otroId = otroBoton.getAttribute('data-target');
+          const otroTarget = document.getElementById(otroId);
+          if (!otroTarget) return;
+          otroTarget.classList.add('is-collapsed');
+          otroBoton.setAttribute('aria-expanded', 'false');
+          otroBoton.classList.remove('is-open');
+        });
+      };
+
+      const abrirSeccion = (boton) => {
+        const targetId = boton.getAttribute('data-target');
+        const target = document.getElementById(targetId);
+        if (!target) return;
+
+        cerrarTodas();
+        target.classList.remove('is-collapsed');
+        boton.setAttribute('aria-expanded', 'true');
+        boton.classList.add('is-open');
+
+        // Reinicializar Croppers después de que la transición termine
+        setTimeout(() => {
+          reinicializarCropperSeccion(targetId);
+        }, 300);
+      };
+
+      // Función para reinicializar croppers según la sección
+      const reinicializarCropperSeccion = (targetId) => {
+        const slidePreviewEl = document.getElementById('slideCropperPreview');
+        const galeriaPreviewEl = document.getElementById('galleryCropperPreview');
+        const galeriaTipoEl = document.getElementById('id_tipo');
+        const esImagen = !galeriaTipoEl || galeriaTipoEl.value === 'imagen';
+
+        if (targetId === 'gpi-encabezado-body' && slidePreviewEl && window.Cropper) {
+          // Disparar evento personalizado para reinicializar slide cropper
+          document.dispatchEvent(new CustomEvent('reiniciarSlideCropper'));
+        }
+        if (targetId === 'gpi-galeria-body' && galeriaPreviewEl && window.Cropper && esImagen) {
+          // Disparar evento personalizado para reinicializar galeria cropper
+          document.dispatchEvent(new CustomEvent('reiniciarGaleriaCropper'));
+        }
+      };
+
+      botones.forEach((boton) => {
+        boton.addEventListener('click', function () {
+          const targetId = boton.getAttribute('data-target');
+          const target = document.getElementById(targetId);
+          if (!target) return;
+
+          if (target.classList.contains('is-collapsed')) {
+            abrirSeccion(boton);
+          } else {
+            cerrarTodas();
+          }
+        });
+      });
+
+      const porErroresOEdicion = Array.from(botones).find(
+        (b) => b.getAttribute('data-auto-open') === 'true'
+      );
+
+      if (porErroresOEdicion) {
+        abrirSeccion(porErroresOEdicion);
+      } else if (window.location.hash) {
+        if (window.history && typeof window.history.replaceState === 'function') {
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+      }
+
+      const paramsUrl = new URLSearchParams(window.location.search);
+      const recargarForzada = paramsUrl.get('recargar');
+      if (recargarForzada) {
+        const llaveRecarga = 'gpi-recarga-forzada';
+        const yaRecargo = sessionStorage.getItem(llaveRecarga) === recargarForzada;
+        if (!yaRecargo) {
+          sessionStorage.setItem(llaveRecarga, recargarForzada);
+          window.location.reload();
+          return;
+        }
+        sessionStorage.removeItem(llaveRecarga);
+      }
+      const enfocar = paramsUrl.get('enfocar');
+      const seccionAbiertaPorUrl = paramsUrl.get('abrir');
+      const forzarRefrescoPreview = Boolean(seccionAbiertaPorUrl);
+      if (enfocar) {
+        const destino = document.getElementById(enfocar);
+        if (destino) {
+          window.setTimeout(() => {
+            destino.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 120);
+        }
+      }
+
+      const formConfig = document.getElementById('gpi-form-config');
+      const formSlide = document.getElementById('gpi-form-slide');
+      const formGallery = document.getElementById('gpi-form-gallery');
+
+      const configTituloInput = formConfig ? formConfig.querySelector('[name="titulo_galeria"]') : null;
+      const configDescripcionInput = formConfig ? formConfig.querySelector('[name="descripcion_galeria"]') : null;
+
+      const slideTituloInput = formSlide ? formSlide.querySelector('[name="titulo"]') : null;
+      const slideTextoInput = formSlide ? formSlide.querySelector('[name="texto"]') : null;
+
+      const galeriaTituloInput = formGallery ? formGallery.querySelector('[name="titulo"]') : null;
+      const galeriaDescripcionInput = formGallery ? formGallery.querySelector('[name="descripcion"]') : null;
+
+      const liveHeroBg = document.getElementById('gpi-live-hero-bg');
+      const liveHeroTitle = document.getElementById('gpi-live-hero-title');
+      const liveHeroText = document.getElementById('gpi-live-hero-text');
+      const liveHeroPrev = document.getElementById('gpi-live-hero-prev');
+      const liveHeroNext = document.getElementById('gpi-live-hero-next');
+      const liveHeroCount = document.getElementById('gpi-live-hero-count');
+      const liveHeroIndicators = document.getElementById('gpi-live-hero-indicators');
+
+      const liveGalleryTitle = document.getElementById('gpi-live-gallery-title');
+      const liveGalleryDescription = document.getElementById('gpi-live-gallery-description');
+      const liveGalleryItemTitle = document.getElementById('gpi-live-gallery-item-title');
+      const liveGalleryItemDesc = document.getElementById('gpi-live-gallery-item-desc');
+      const liveGalleryImage = document.getElementById('gpi-live-gallery-image');
+      const liveGalleryVideo = document.getElementById('gpi-live-gallery-video');
+      const liveGalleryPrev = document.getElementById('gpi-live-gallery-prev');
+      const liveGalleryNext = document.getElementById('gpi-live-gallery-next');
+      const liveGalleryCount = document.getElementById('gpi-live-gallery-count');
+
+      const HERO_AUTOPLAY_MS = 4000;
+      const GALLERY_AUTOPLAY_MS = 3000;
+
+      const slidesData = [
+        {% for slide in elementos_encabezado_admin %}
+          {% if slide.activo %}
+          {
+            titulo: '{{ slide.titulo|default_if_none:""|escapejs }}',
+            texto: '{{ slide.texto|default_if_none:""|escapejs }}',
+            imagen: '{{ slide.imagen.url }}?v={{ slide.actualizado_en|date:"U" }}',
+          },
+          {% endif %}
+        {% endfor %}
+      ];
+
+      const galleryData = [
+        {% for item in elementos_galeria_admin %}
+          {% if item.activo and item.archivo %}
+          {
+            tipo: '{{ item.tipo }}',
+            mime: '{{ item.mime_type|default_if_none:""|escapejs }}',
+            titulo: '{{ item.titulo|default_if_none:""|escapejs }}',
+            descripcion: '{{ item.descripcion|default_if_none:""|escapejs }}',
+            src: '{{ item.archivo.url }}?v={{ item.actualizado_en|date:"U" }}',
+          },
+          {% endif %}
+        {% endfor %}
+      ];
+
+      const slidesAdminData = [
+        {% for slide in elementos_encabezado_admin %}
+          {
+            id: {{ slide.id }},
+            orden: {{ slide.orden }},
+            titulo: '{{ slide.titulo|default_if_none:""|escapejs }}',
+          },
+        {% endfor %}
+      ];
+
+      let galleryAdminData = [
+        {% for item in elementos_galeria_admin %}
+          {
+            id: {{ item.id }},
+            orden: {{ item.orden }},
+            titulo: '{{ item.titulo|default_if_none:""|escapejs }}',
+          },
+        {% endfor %}
+      ];
+
+      const galeriaItemsContainer = document.getElementById('gpi-galeria-items');
+      const galeriaCountEl = document.getElementById('gpi-galeria-count');
+      const csrfTokenInput = formGallery ? formGallery.querySelector('[name="csrfmiddlewaretoken"]') : null;
+      const csrfToken = csrfTokenInput ? csrfTokenInput.value : '';
+      const editarBaseUrl = '{% url "core:panel_administrativo_seccion" "gestion_pagina_informativa" %}';
+      const galeriaApiUrl = '{% url "core:api_galeria_informativa" %}';
+
+      const escaparHtml = (valor) => {
+        return String(valor || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      };
+
+      const renderizarItemsGaleria = (items) => {
+        if (!galeriaItemsContainer || !galeriaCountEl) return;
+
+        galeriaCountEl.textContent = String(items.length);
+        galleryAdminData = items.map((item) => ({
+          id: Number(item.id),
+          orden: Number(item.orden),
+          titulo: item.titulo || '',
+        }));
+
+        if (!items.length) {
+          galeriaItemsContainer.innerHTML = '<p class="gpi-empty-inline"><i class="ri-gallery-line"></i> No hay elementos en la galería aún.</p>';
+          return;
+        }
+
+        const cards = items.map((item) => {
+          const claseEstado = item.activo ? '' : 'is-disabled';
+          const titulo = escaparHtml(item.titulo || 'Sin título');
+          const descripcion = escaparHtml(item.descripcion || 'Sin descripción');
+          const tipo = escaparHtml(item.tipo_display || 'Elemento');
+          const orden = Number(item.orden || 0);
+          const badgeEstado = item.activo
+            ? '<i class="ri-eye-line"></i> Activo'
+            : '<i class="ri-eye-off-line"></i> Oculto';
+
+          let thumbHtml = '<div class="gpi-item-thumb gpi-item-thumb-missing" aria-label="Sin archivo"><i class="ri-image-line"></i></div>';
+          if (item.tipo === 'video') {
+            thumbHtml = '<div class="gpi-item-thumb gpi-item-thumb-video" aria-label="Video"><i class="ri-film-line"></i></div>';
+          } else if (item.archivo_url) {
+            thumbHtml = `<div class="gpi-item-thumb" style="background-image:url('${escaparHtml(item.archivo_url)}');"></div>`;
+          }
+
+          const editarUrl = `${editarBaseUrl}?editar_galeria=${item.id}#gpi-galeria-body`;
+
+          return `
+            <article class="gpi-item-card ${claseEstado}">
+              ${thumbHtml}
+              <div class="gpi-item-body">
+                <h4>${titulo}</h4>
+                <p>${descripcion}</p>
+                <div class="gpi-meta">
+                  <span><i class="ri-film-line"></i> ${tipo}</span>
+                  <span><i class="ri-sort-asc"></i> ${orden}</span>
+                  <span>${badgeEstado}</span>
+                </div>
+              </div>
+              <div class="gpi-item-actions">
+                <a href="${editarUrl}" class="btn btn-sm btn-warning">
+                  <i class="ri-pencil-line"></i> Editar
+                </a>
+                <form method="post" onsubmit="return confirm('¿Eliminar este elemento de galería?');">
+                  <input type="hidden" name="csrfmiddlewaretoken" value="${escaparHtml(csrfToken)}">
+                  <input type="hidden" name="accion" value="eliminar_elemento">
+                  <input type="hidden" name="elemento_id" value="${item.id}">
+                  <input type="hidden" name="abrir_seccion" value="galeria">
+                  <button type="submit" class="btn btn-sm btn-danger">
+                    <i class="ri-delete-bin-line"></i> Eliminar
+                  </button>
+                </form>
+              </div>
+            </article>
+          `;
+        });
+
+        galeriaItemsContainer.innerHTML = cards.join('');
+      };
+
+      const cargarItemsGaleria = async () => {
+        try {
+          const respuesta = await fetch(galeriaApiUrl, {
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          });
+          if (!respuesta.ok) return;
+          const data = await respuesta.json();
+          const items = Array.isArray(data.items) ? data.items : [];
+          renderizarItemsGaleria(items);
+        } catch (error) {
+          console.warn('No se pudo refrescar la lista de galería.', error);
+        }
+      };
+
+      cargarItemsGaleria();
+
+      if (!slidesData.length) {
+        slidesData.push({
+          titulo: 'Centro Minero de Morcá',
+          texto: 'Agenda tu experiencia minera de forma fácil, segura y digital.',
+          imagen: '{{ MEDIA_PREFIX }}img/grupal.jpg',
+        });
+      }
+
+      if (!galleryData.length) {
+        galleryData.push({
+          tipo: 'imagen',
+          mime: 'image/jpeg',
+          titulo: 'Título del elemento',
+          descripcion: 'Descripción del elemento de galería.',
+          src: '{{ MEDIA_PREFIX }}img/grupal.jpg',
+        });
+      }
+
+      let heroIndex = 0;
+      let galleryIndex = 0;
+
+      const textoConFallback = (valor, fallback) => {
+        if (!valor) return fallback;
+        const limpio = String(valor).trim();
+        return limpio || fallback;
+      };
+
+      const buscarConflictoPosicion = (registros, orden, idActual) => {
+        return registros.find((registro) => {
+          if (Number(registro.orden) !== Number(orden)) return false;
+          if (!idActual) return true;
+          return Number(registro.id) !== Number(idActual);
+        });
+      };
+
+      if (formSlide) {
+        formSlide.addEventListener('submit', async (event) => {
+          const ordenInput = formSlide.querySelector('[name="orden"]');
+          const slideIdInput = formSlide.querySelector('[name="slide_id"]');
+          const confirmarInput = formSlide.querySelector('[name="confirmar_reemplazo_slide"]');
+          const reemplazarIdInput = formSlide.querySelector('[name="reemplazar_slide_id"]');
+
+          if (!ordenInput || !confirmarInput || !reemplazarIdInput) return;
+
+          confirmarInput.value = '0';
+          reemplazarIdInput.value = '';
+
+          const ordenObjetivo = Number.parseInt(ordenInput.value, 10);
+          const idActual = slideIdInput ? Number.parseInt(slideIdInput.value, 10) : null;
+
+          if (Number.isNaN(ordenObjetivo)) return;
+
+          const conflicto = buscarConflictoPosicion(slidesAdminData, ordenObjetivo, idActual);
+          if (!conflicto) return;
+
+          const nombre = textoConFallback(conflicto.titulo, 'la diapositiva existente');
+          const mensaje = `La posición ${ordenObjetivo} ya está ocupada por "${nombre}". ¿Deseas reemplazarla?`;
+          event.preventDefault();
+          const deseaReemplazar = await (window.mConfirm
+            ? window.mConfirm(mensaje, {
+              title: 'Reemplazar elemento',
+              confirmText: 'Sí, reemplazar',
+              confirmClass: 'cm-btn-danger',
+              confirmIcon: 'fas fa-rotate'
+            })
+            : Promise.resolve(window.confirm(mensaje)));
+
+          if (!deseaReemplazar) {
+            return;
+          }
+
+          confirmarInput.value = '1';
+          reemplazarIdInput.value = String(conflicto.id);
+          formSlide.submit();
+        });
+      }
+
+      if (formGallery) {
+        formGallery.addEventListener('submit', async (event) => {
+          const ordenInput = formGallery.querySelector('[name="orden"]');
+          const elementoIdInput = formGallery.querySelector('[name="elemento_id"]');
+          const confirmarInput = formGallery.querySelector('[name="confirmar_reemplazo_galeria"]');
+          const reemplazarIdInput = formGallery.querySelector('[name="reemplazar_galeria_id"]');
+
+          if (!ordenInput || !confirmarInput || !reemplazarIdInput) return;
+
+          confirmarInput.value = '0';
+          reemplazarIdInput.value = '';
+
+          const ordenObjetivo = Number.parseInt(ordenInput.value, 10);
+          const idActual = elementoIdInput ? Number.parseInt(elementoIdInput.value, 10) : null;
+
+          if (Number.isNaN(ordenObjetivo)) return;
+
+          const conflicto = buscarConflictoPosicion(galleryAdminData, ordenObjetivo, idActual);
+          if (!conflicto) return;
+
+          const nombre = textoConFallback(conflicto.titulo, 'el elemento existente');
+          const mensaje = `La posición ${ordenObjetivo} ya está ocupada por "${nombre}". ¿Deseas reemplazarla?`;
+          event.preventDefault();
+          const deseaReemplazar = await (window.mConfirm
+            ? window.mConfirm(mensaje, {
+              title: 'Reemplazar elemento',
+              confirmText: 'Sí, reemplazar',
+              confirmClass: 'cm-btn-danger',
+              confirmIcon: 'fas fa-rotate'
+            })
+            : Promise.resolve(window.confirm(mensaje)));
+
+          if (!deseaReemplazar) {
+            return;
+          }
+
+          confirmarInput.value = '1';
+          reemplazarIdInput.value = String(conflicto.id);
+          formGallery.submit();
+        });
+      }
+
+      const renderHeroIndicators = () => {
+        if (!liveHeroIndicators) return;
+        liveHeroIndicators.innerHTML = slidesData
+          .map((_, idx) => `<span class="${idx === heroIndex ? 'active' : ''}"></span>`)
+          .join('');
+      };
+
+      const renderHero = () => {
+        const actual = slidesData[heroIndex] || slidesData[0];
+        if (!actual) return;
+
+        if (liveHeroBg) {
+          liveHeroBg.style.backgroundImage = `url('${actual.imagen}')`;
+        }
+        if (liveHeroTitle) {
+          liveHeroTitle.textContent = textoConFallback(actual.titulo, 'Centro Minero de Morcá');
+        }
+        if (liveHeroText) {
+          liveHeroText.textContent = textoConFallback(
+            actual.texto,
+            'Agenda tu experiencia minera de forma fácil, segura y digital.'
+          );
+        }
+        if (liveHeroCount) {
+          liveHeroCount.textContent = `${heroIndex + 1} / ${slidesData.length}`;
+        }
+        renderHeroIndicators();
+      };
+
+      const moverHero = (delta = 1) => {
+        if (!slidesData.length) return;
+        heroIndex = (heroIndex + delta + slidesData.length) % slidesData.length;
+        renderHero();
+      };
+
+      const mostrarMediaGaleria = ({ tipo, src, mime }) => {
+        const actual = galleryData[galleryIndex] || galleryData[0];
+        if (!actual || !src) return;
+
+        actual.tipo = tipo;
+        actual.src = src;
+        actual.mime = mime || actual.mime;
+        renderGallery();
+      };
+
+      const renderGallery = () => {
+        const actual = galleryData[galleryIndex] || galleryData[0];
+        if (!actual) return;
+
+        if (liveGalleryItemTitle) {
+          liveGalleryItemTitle.textContent = textoConFallback(actual.titulo, 'Título del elemento');
+        }
+        if (liveGalleryItemDesc) {
+          liveGalleryItemDesc.textContent = textoConFallback(
+            actual.descripcion,
+            'Descripción del elemento de galería.'
+          );
+        }
+
+        if (liveGalleryCount) {
+          liveGalleryCount.textContent = `${galleryIndex + 1} / ${galleryData.length}`;
+        }
+
+        if (!liveGalleryImage || !liveGalleryVideo) return;
+
+        const mimeActual = actual.mime || (actual.tipo === 'video' ? 'video/mp4' : 'image/jpeg');
+
+        if (actual.tipo === 'video') {
+          liveGalleryVideo.innerHTML = `<source src="${actual.src}" type="${mimeActual}">`;
+          liveGalleryVideo.load();
+          liveGalleryVideo.classList.remove('is-hidden');
+          liveGalleryImage.classList.add('is-hidden');
+        } else {
+          liveGalleryImage.src = actual.src;
+          liveGalleryImage.classList.remove('is-hidden');
+          liveGalleryVideo.classList.add('is-hidden');
+        }
+      };
+
+      const moverGallery = (delta = 1) => {
+        if (!galleryData.length) return;
+        galleryIndex = (galleryIndex + delta + galleryData.length) % galleryData.length;
+        renderGallery();
+      };
+
+      const iniciarAutoplay = () => {
+        if (slidesData.length > 1) {
+          setInterval(() => moverHero(1), HERO_AUTOPLAY_MS);
+        }
+        if (galleryData.length > 1) {
+          setInterval(() => moverGallery(1), GALLERY_AUTOPLAY_MS);
+        }
+      };
+
+      renderHero();
+      renderGallery();
+      iniciarAutoplay();
+
+      if (liveHeroPrev) {
+        liveHeroPrev.addEventListener('click', () => moverHero(-1));
+      }
+      if (liveHeroNext) {
+        liveHeroNext.addEventListener('click', () => moverHero(1));
+      }
+      if (liveGalleryPrev) {
+        liveGalleryPrev.addEventListener('click', () => moverGallery(-1));
+      }
+      if (liveGalleryNext) {
+        liveGalleryNext.addEventListener('click', () => moverGallery(1));
+      }
+
+      const actualizarPreviewConfig = () => {
+        if (liveGalleryTitle && configTituloInput) {
+          liveGalleryTitle.textContent = textoConFallback(
+            configTituloInput.value,
+            'Explora Nuestras Instalaciones'
+          );
+        }
+        if (liveGalleryDescription && configDescripcionInput) {
+          liveGalleryDescription.textContent = textoConFallback(
+            configDescripcionInput.value,
+            'Conoce la mina didáctica y las experiencias que viven nuestros aprendices.'
+          );
+        }
+      };
+
+      const actualizarPreviewSlide = () => {
+        const actual = slidesData[heroIndex] || slidesData[0];
+        if (!actual) return;
+
+        if (slideTituloInput) {
+          actual.titulo = textoConFallback(slideTituloInput.value, 'Centro Minero de Morcá');
+        }
+        if (slideTextoInput) {
+          actual.texto = textoConFallback(
+            slideTextoInput.value,
+            'Agenda tu experiencia minera de forma fácil, segura y digital.'
+          );
+        }
+        renderHero();
+      };
+
+      const actualizarPreviewGaleriaTexto = () => {
+        const actual = galleryData[galleryIndex] || galleryData[0];
+        if (!actual) return;
+
+        if (galeriaTituloInput) {
+          actual.titulo = textoConFallback(galeriaTituloInput.value, 'Título del elemento');
+        }
+        if (galeriaDescripcionInput) {
+          actual.descripcion = textoConFallback(
+            galeriaDescripcionInput.value,
+            'Descripción del elemento de galería.'
+          );
+        }
+        renderGallery();
+      };
+
+      const formSlideTieneContenidoInicial = () => {
+        const titulo = slideTituloInput ? String(slideTituloInput.value || '').trim() : '';
+        const texto = slideTextoInput ? String(slideTextoInput.value || '').trim() : '';
+        return Boolean(titulo || texto);
+      };
+
+      const formGaleriaTieneContenidoInicial = () => {
+        const titulo = galeriaTituloInput ? String(galeriaTituloInput.value || '').trim() : '';
+        const descripcion = galeriaDescripcionInput ? String(galeriaDescripcionInput.value || '').trim() : '';
+        return Boolean(titulo || descripcion);
+      };
+
+      const vincularInput = (input, handler) => {
+        if (!input) return;
+        input.addEventListener('input', handler);
+      };
+
+      vincularInput(configTituloInput, actualizarPreviewConfig);
+      vincularInput(configDescripcionInput, actualizarPreviewConfig);
+      vincularInput(slideTituloInput, actualizarPreviewSlide);
+      vincularInput(slideTextoInput, actualizarPreviewSlide);
+      vincularInput(galeriaTituloInput, actualizarPreviewGaleriaTexto);
+      vincularInput(galeriaDescripcionInput, actualizarPreviewGaleriaTexto);
+
+      actualizarPreviewConfig();
+
+      // Evita pisar la vista previa real con campos vacíos tras un guardado exitoso.
+      if (formSlideTieneContenidoInicial()) {
+        actualizarPreviewSlide();
+      }
+      if (formGaleriaTieneContenidoInicial()) {
+        actualizarPreviewGaleriaTexto();
+      }
+
+      // Si hubo redirección de guardado (?abrir=...), fuerza render con los datos del servidor.
+      if (forzarRefrescoPreview) {
+        renderHero();
+        renderGallery();
+      }
+
+      const textoDiapositiva = document.getElementById('id_texto');
+      const contadorTexto = document.getElementById('gpi-texto-counter');
+
+      const contarPalabras = (texto) => {
+        if (!texto || !texto.trim()) return 0;
+        return texto.trim().split(/\s+/).filter(Boolean).length;
+      };
+
+      const limitarPalabras = (texto, maximo) => {
+        const palabras = (texto || '').trim().split(/\s+/).filter(Boolean);
+        if (palabras.length <= maximo) return texto;
+        return palabras.slice(0, maximo).join(' ');
+      };
+
+      const ajustarAltura = (textarea) => {
+        if (!textarea) return;
+        textarea.style.height = 'auto';
+        textarea.style.height = `${textarea.scrollHeight}px`;
+      };
+
+      const actualizarContador = () => {
+        if (!textoDiapositiva || !contadorTexto) return;
+
+        const maximo = Number(textoDiapositiva.dataset.maxWords || 50);
+        const textoLimitado = limitarPalabras(textoDiapositiva.value, maximo);
+        if (textoLimitado !== textoDiapositiva.value) {
+          textoDiapositiva.value = textoLimitado;
+        }
+
+        const total = contarPalabras(textoDiapositiva.value);
+        contadorTexto.textContent = `${total} / ${maximo} palabras`;
+        contadorTexto.classList.toggle('is-limit', total >= maximo);
+        ajustarAltura(textoDiapositiva);
+      };
+
+      if (textoDiapositiva) {
+        textoDiapositiva.addEventListener('input', actualizarContador);
+        actualizarContador();
+      }
+
+      const setCropData = (prefijo, data) => {
+        const x = document.getElementById(`${prefijo}_crop_x`);
+        const y = document.getElementById(`${prefijo}_crop_y`);
+        const w = document.getElementById(`${prefijo}_crop_w`);
+        const h = document.getElementById(`${prefijo}_crop_h`);
+        if (!x || !y || !w || !h || !data) return;
+
+        x.value = Math.round(data.x || 0);
+        y.value = Math.round(data.y || 0);
+        w.value = Math.round(data.width || 0);
+        h.value = Math.round(data.height || 0);
+      };
+
+      let slideCropper = null;
+      const slideInput = document.getElementById('id_imagen');
+      const slidePreview = document.getElementById('slideCropperPreview');
+      const slideCropTools = document.getElementById('gpi-slide-crop-tools');
+
+      const inicializarSlideCropper = () => {
+        if (!window.Cropper || !slidePreview) return;
+        if (slideCropper) slideCropper.destroy();
+
+        slideCropper = new Cropper(slidePreview, {
+          viewMode: 1,
+          autoCropArea: 1,
+          responsive: true,
+          dragMode: 'move',
+          aspectRatio: 16 / 9,
+          crop(event) {
+            setCropData('slide', event.detail);
+          },
+        });
+      };
+
+      // Escuchar evento personalizado para reinicializar el cropper del slide
+      document.addEventListener('reiniciarSlideCropper', () => {
+        // Solo reinicializar si el panel del cropper está visible
+        if (slidePreview && window.Cropper && slideCropTools && !slideCropTools.classList.contains('is-hidden')) {
+          inicializarSlideCropper();
+        }
+      });
+
+      // Solo inicializar cropper si la sección está visible Y el panel del cropper está visible
+      const encabezadoBody = document.getElementById('gpi-encabezado-body');
+      const seccionEncabezadoVisible = encabezadoBody && !encabezadoBody.classList.contains('is-collapsed');
+      const slideCropperPanelVisible = slideCropTools && !slideCropTools.classList.contains('is-hidden');
+
+      if (slidePreview && window.Cropper && seccionEncabezadoVisible && slideCropperPanelVisible) {
+        if (slidePreview.complete) {
+          inicializarSlideCropper();
+        } else {
+          slidePreview.onload = inicializarSlideCropper;
+        }
+      }
+
+      if (slideInput && slidePreview) {
+        slideInput.addEventListener('change', (event) => {
+          const file = event.target.files && event.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            // Mostrar el panel del cropper cuando se selecciona una imagen
+            if (slideCropTools) {
+              slideCropTools.classList.remove('is-hidden');
+            }
+            slidePreview.src = e.target.result;
+            slidePreview.onload = inicializarSlideCropper;
+            const actual = slidesData[heroIndex] || slidesData[0];
+            if (actual) {
+              actual.imagen = e.target.result;
+              renderHero();
+            }
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      let galleryCropper = null;
+      const galeriaTipo = document.getElementById('id_tipo');
+      const galeriaInput = document.getElementById('id_archivo');
+      const galeriaPreview = document.getElementById('galleryCropperPreview');
+      const galeriaCropTools = document.getElementById('gpi-galeria-crop-tools');
+
+      const esTipoImagen = () => !galeriaTipo || galeriaTipo.value === 'imagen';
+
+      const detectarTipoArchivo = (file) => {
+        if (!file) return null;
+        const tipoMime = String(file.type || '').toLowerCase();
+        const nombre = String(file.name || '').toLowerCase();
+
+        if (tipoMime.startsWith('video/')) return 'video';
+        if (tipoMime.startsWith('image/')) return 'imagen';
+
+        if (/\.(mp4|webm|ogg|mov|m4v)$/i.test(nombre)) return 'video';
+        if (/\.(jpg|jpeg|png|webp|gif|bmp|heic|heif)$/i.test(nombre)) return 'imagen';
+        return null;
+      };
+
+      const actualizarAcceptArchivoGaleria = () => {
+        if (!galeriaInput) return;
+        // Mantener ambos tipos visibles en el explorador para evitar que videos válidos queden ocultos.
+        galeriaInput.setAttribute('accept', 'image/*,video/*');
+      };
+
+      const inicializarGaleriaCropper = () => {
+        if (!window.Cropper || !galeriaPreview || !esTipoImagen()) return;
+        if (galleryCropper) galleryCropper.destroy();
+
+        galleryCropper = new Cropper(galeriaPreview, {
+          viewMode: 1,
+          autoCropArea: 1,
+          responsive: true,
+          dragMode: 'move',
+          aspectRatio: NaN,
+          crop(event) {
+            setCropData('galeria', event.detail);
+          },
+        });
+      };
+
+      const actualizarVisibilidadGaleriaCrop = () => {
+        if (!galeriaCropTools) return;
+        // Solo mostrar cropper si es tipo imagen Y hay un archivo seleccionado o en edición
+        const hayArchivoSeleccionado = galeriaInput && galeriaInput.files && galeriaInput.files.length > 0;
+        const tieneImagenExistente = galeriaPreview && galeriaPreview.src && !galeriaPreview.src.includes('grupal.jpg');
+        
+        if (esTipoImagen() && (hayArchivoSeleccionado || tieneImagenExistente)) {
+          galeriaCropTools.classList.remove('is-hidden');
+        } else {
+          galeriaCropTools.classList.add('is-hidden');
+          if (galleryCropper) {
+            galleryCropper.destroy();
+            galleryCropper = null;
+          }
+        }
+      };
+
+      if (galeriaTipo) {
+        galeriaTipo.addEventListener('change', () => {
+          actualizarAcceptArchivoGaleria();
+          actualizarVisibilidadGaleriaCrop();
+          const actual = galleryData[galleryIndex] || galleryData[0];
+          if (actual) {
+            actual.tipo = galeriaTipo.value === 'video' ? 'video' : 'imagen';
+            renderGallery();
+          }
+          if (esTipoImagen() && galeriaPreview && window.Cropper && galeriaPreview.complete) {
+            inicializarGaleriaCropper();
+          }
+        });
+        actualizarAcceptArchivoGaleria();
+        actualizarVisibilidadGaleriaCrop();
+      }
+
+      // Escuchar evento personalizado para reinicializar el cropper de galería
+      document.addEventListener('reiniciarGaleriaCropper', () => {
+        // Solo reinicializar si el panel del cropper está visible
+        if (galeriaPreview && window.Cropper && esTipoImagen() && galeriaCropTools && !galeriaCropTools.classList.contains('is-hidden')) {
+          inicializarGaleriaCropper();
+        }
+      });
+
+      // Solo inicializar cropper si la sección está visible Y el panel del cropper está visible
+      const galeriaBody = document.getElementById('gpi-galeria-body');
+      const seccionGaleriaVisible = galeriaBody && !galeriaBody.classList.contains('is-collapsed');
+      const galeriaCropperPanelVisible = galeriaCropTools && !galeriaCropTools.classList.contains('is-hidden');
+
+      if (galeriaPreview && window.Cropper && esTipoImagen() && seccionGaleriaVisible && galeriaCropperPanelVisible) {
+        if (galeriaPreview.complete) {
+          inicializarGaleriaCropper();
+        } else {
+          galeriaPreview.onload = inicializarGaleriaCropper;
+        }
+      }
+
+      if (galeriaInput && galeriaPreview) {
+        galeriaInput.addEventListener('change', (event) => {
+          const file = event.target.files && event.target.files[0];
+          if (!file) return;
+
+          const tipoDetectado = detectarTipoArchivo(file);
+          if (galeriaTipo && tipoDetectado) {
+            galeriaTipo.value = tipoDetectado;
+            galeriaTipo.dispatchEvent(new Event('change'));
+          }
+
+          if (tipoDetectado === 'imagen' || file.type.startsWith('image/')) {
+            // Mostrar el panel del cropper cuando se selecciona una imagen
+            if (galeriaCropTools && esTipoImagen()) {
+              galeriaCropTools.classList.remove('is-hidden');
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              galeriaPreview.src = e.target.result;
+              galeriaPreview.onload = inicializarGaleriaCropper;
+              mostrarMediaGaleria({ tipo: 'imagen', src: e.target.result, mime: file.type || 'image/jpeg' });
+            };
+            reader.readAsDataURL(file);
+          } else if (tipoDetectado === 'video' || file.type.startsWith('video/')) {
+            // Ocultar el panel del cropper si se selecciona un video
+            if (galeriaCropTools) {
+              galeriaCropTools.classList.add('is-hidden');
+            }
+            const urlVideo = URL.createObjectURL(file);
+            mostrarMediaGaleria({ tipo: 'video', src: urlVideo, mime: file.type || 'video/mp4' });
+          }
+        });
+      }
+    });
+  </script>
+
+  {% endif %}
+</div>
