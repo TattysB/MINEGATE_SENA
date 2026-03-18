@@ -76,7 +76,7 @@
                     class="profile-img-topbar" />
                   {% endif %}
                 </div>
-                <span class="topbar-role-label">{{ panel_role_label|default:'Administrador' }}</span>
+                <span class="topbar-role-label">{{ panel_role_label|default:'SST' }}</span>
               </button>
 
               <!-- desplegable Menu -->
@@ -87,7 +87,7 @@
                   </div>
                   <div class="header-info">
                     <span class="user-name">{{ request.user.get_full_name|default:request.user.username }}</span>
-                    <span class="user-role-label">{{ panel_role_label|default:'Administrador' }}</span>
+                    <span class="user-role-label">{{ panel_role_label|default:'SST' }}</span>
                     <span class="user-email">{{ request.user.email }}</span>
                   </div>
 
@@ -129,6 +129,7 @@
           </a>
         </li>
         {% else %}
+        {% if not solo_sst %}
         <li data-content="Panel_principal" class="{% if seccion_activa == 'panel_principal' %}active{% endif %}">
           <a href="{% url 'core:panel_administrativo_seccion' 'panel_principal' %}" class="sidebar-link" title="Vista general del sistema y estadísticas principales">
             <i class="ri-dashboard-line icon-dashboard"></i><span>Panel principal</span>
@@ -140,6 +141,7 @@
             <span>Calendario</span>
           </a>
         </li>
+        {% endif %}
 
         <li data-content="gestionvisitas" style="position:relative;" class="{% if seccion_activa == 'gestion_visitas' %}active{% endif %}">
           <a href="{% url 'core:panel_administrativo_seccion' 'gestion_visitas' %}" class="sidebar-link" title="Administra visitas internas y externas">
@@ -153,6 +155,7 @@
             <i class="ri-file-search-line icon-documents"></i><span> Documentos</span>
           </a>
         </li>
+        {% if not solo_sst %}
         <li data-content="controlacceso" class="{% if seccion_activa == 'control_acceso' %}active{% endif %}">
           <a href="{% url 'core:panel_administrativo_seccion' 'control_acceso' %}" class="sidebar-link" title="Controla el acceso a la mina en tiempo real">
             <i class="ri-shield-check-line"></i><span>Control de Acceso</span>
@@ -169,6 +172,7 @@
           data-url="{% url 'usuarios:gestionar_permisos' %}" title="Asigna permisos y roles de usuario">
           <i class="ri-shield-user-line icon-permissions"></i><span>Gestión de Permisos</span>
         </li>
+        {% endif %}
         {% endif %}
         <li data-content="Reportes" class="{% if seccion_activa == 'reportes' %}active{% endif %}">
           <a href="{% url 'core:panel_administrativo_seccion' 'reportes' %}" class="sidebar-link" title="Visualiza reportes y análisis del sistema">
@@ -345,6 +349,9 @@
       seleccionCssUrl: "{% static 'calendario/css/calendario_seleccion.css' %}?v=20260309e",
       calendarioJsUrl: "{% static 'calendario/js/calendario.js' %}?v=20260309c"
     };
+    window.panelPermisos = {
+      soloSst: {{ solo_sst|yesno:"true,false" }}
+    };
   </script>
   <script defer src="{% static 'calendario/js/panel_calendario_loader.js' %}"></script>
 
@@ -500,7 +507,7 @@
       // Get user info from page (you can replace with dynamic data)
       const user = {
         name: "{{ user.username }}" || "Usuario",
-        role: "{{ panel_role_label|default:'Administrador' }}",
+        role: "{{ panel_role_label|default:'SST' }}",
       };
 
       if (userNameEl) userNameEl.textContent = user.name;
@@ -731,7 +738,9 @@
     });
   </script>
   {% if not solo_coordinador %}
+  {% if not solo_sst %}
   <script defer src="{% static 'calendario/js/panel_calendario_nueva_visita.js' %}"></script>
+  {% endif %}
   <script defer src="{% static 'documentos/js/panel_documentos_visitas.js' %}?v=20260311-correccion"></script>
   <script defer src="{% static 'js/panel_visitas.js' %}?v=20260313-quitar-devolver"></script>
   {% endif %}

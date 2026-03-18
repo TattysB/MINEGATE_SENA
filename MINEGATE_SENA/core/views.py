@@ -24,9 +24,44 @@ from visitaInterna.models import VisitaInterna
 from reportes.views import _obtener_filas_reporte
 
 
+SECCIONES_PANEL_SUPERUSUARIO = {
+    "panel_principal",
+    "gestion_calendario",
+    "gestion_visitas",
+    "gestion_documentos",
+    "control_acceso",
+    "escaneo_documentos",
+    "gestion_pagina_informativa",
+    "configuracion",
+    "reportes",
+}
+
+SECCIONES_PANEL_SST = {
+    "gestion_visitas",
+    "gestion_documentos",
+    "reportes",
+}
+
+
 def es_superusuario(user):
     """Verifica si el usuario es superusuario"""
     return user.is_superuser
+
+
+def es_coordinador(user):
+    return user.groups.filter(name="coordinador").exists()
+
+
+def es_usuario_sst(user):
+    return user.is_staff and not user.is_superuser and not es_coordinador(user)
+
+
+def secciones_permitidas_panel(user):
+    if user.is_superuser:
+        return SECCIONES_PANEL_SUPERUSUARIO
+    if es_usuario_sst(user):
+        return SECCIONES_PANEL_SST
+    return set()
 
 
 def _construir_slides_legacy(contenido):
@@ -162,25 +197,21 @@ def index(request):
 
 @login_required(login_url="usuarios:login")
 def panel_administrativo(request):
-    return _render_panel_administrativo(request, seccion_activa="panel_principal")
+    seccion_inicial = "gestion_visitas" if es_usuario_sst(request.user) else "panel_principal"
+    return _render_panel_administrativo(request, seccion_activa=seccion_inicial)
 
 
 @login_required(login_url="usuarios:login")
 def panel_administrativo_seccion(request, seccion):
-    secciones_validas = {
-        "panel_principal",
-        "gestion_calendario",
-        "gestion_visitas",
-        "gestion_documentos",
-        "control_acceso",
-        "escaneo_documentos",
-        "gestion_pagina_informativa",
-        "configuracion",
-        "reportes",
-    }
-
-    if seccion not in secciones_validas:
+    if seccion not in SECCIONES_PANEL_SUPERUSUARIO:
         messages.warning(request, "La sección solicitada no existe.")
+        return redirect("core:panel_administrativo")
+
+    permitidas = secciones_permitidas_panel(request.user)
+    if permitidas and seccion not in permitidas:
+        messages.error(request, "No tienes permisos para acceder a esa sección.")
+        if es_usuario_sst(request.user):
+            return redirect("core:panel_administrativo_seccion", seccion="gestion_visitas")
         return redirect("core:panel_administrativo")
 
     return _render_panel_administrativo(request, seccion_activa=seccion)
@@ -293,10 +324,21 @@ def _render_panel_administrativo(request, seccion_activa="panel_principal"):
         )
         return redirect("core:index")
 
+    usuario_sst = es_usuario_sst(request.user)
+    if usuario_sst and seccion_activa == "panel_principal":
+        seccion_activa = "gestion_visitas"
+
+    permitidas = secciones_permitidas_panel(request.user)
+    if permitidas and seccion_activa not in permitidas:
+        messages.error(request, "No tienes permisos para acceder a esa sección.")
+        return redirect("core:panel_administrativo_seccion", seccion="gestion_visitas")
+
     context = {
         "es_superusuario": request.user.is_superuser,
+        "solo_sst": usuario_sst,
         "perfil": getattr(request.user, "perfil", None),
         "perfil_panel": getattr(request.user, "perfil", None),
+        "panel_role_label": "Superusuario" if request.user.is_superuser else "SST",
         "seccion_activa": seccion_activa,
     }
 

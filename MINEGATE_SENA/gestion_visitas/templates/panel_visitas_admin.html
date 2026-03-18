@@ -7,13 +7,17 @@
         <i class="ri-calendar-check-line" style="color: #10b981;"></i>
         Gestión de Visitas
       </h2>
+      {% if not solo_sst %}
       <button id="btnNuevaVisita" onclick="mostrarCalendarioNuevaVisita()"
         style="padding: 12px 24px; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); transition: all 0.2s;">
         <i class="ri-add-circle-line"></i> Nueva Visita
       </button>
+      {% endif %}
     </div>
 
+    {% if not solo_sst %}
     {% include 'calendario/includes/nueva_visita_panel.html' %}
+    {% endif %}
 
     <!-- Tabs para tipo de visita -->
     <div style="display: flex; gap: 10px; margin-bottom: 20px;">

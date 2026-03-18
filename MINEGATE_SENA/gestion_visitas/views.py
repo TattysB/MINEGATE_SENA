@@ -199,6 +199,10 @@ def es_coordinador(user):
     return user.groups.filter(name="coordinador").exists()
 
 
+def es_usuario_sst(user):
+    return user.is_staff and not user.is_superuser and not es_coordinador(user)
+
+
 def es_administrador_panel(user):
     return user.is_superuser or (user.is_staff and not es_coordinador(user))
 
@@ -821,6 +825,15 @@ def api_detalle_visita(request, tipo, visita_id):
 @login_required(login_url="usuarios:login")
 def api_accion_visita(request, tipo, visita_id, accion):
     """API para ejecutar acciones sobre una visita"""
+
+    if es_usuario_sst(request.user):
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "El rol SST solo puede revisar documentos. No puede aprobar, rechazar, reprogramar ni confirmar visitas.",
+            },
+            status=403,
+        )
 
     if tipo == "interna":
         visita = get_object_or_404(VisitaInterna, pk=visita_id)

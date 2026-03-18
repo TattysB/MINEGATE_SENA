@@ -420,7 +420,16 @@
 
         {% if form.errors %}
         <div class="alerta alerta-error">
-            <span>Falta algún campo en rellenar</span>
+            <div>
+                <strong>Revisa los siguientes errores:</strong>
+                <ul style="margin:0.5rem 0 0 1rem; padding:0;">
+                    {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                    <li style="margin:0.25rem 0;">{{ error }}</li>
+                    {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
             <button type="button" class="btn-cerrar-alerta" onclick="this.parentElement.style.display='none'">×</button>
         </div>
         {% endif %}
@@ -435,42 +444,57 @@
             <div class="campo">
                 <label for="documento">Número de Documento <span class="requerido">*</span></label>
                 <input type="text" name="documento" id="documento" value="{{ form.documento.value|default:'' }}"
-                    placeholder="Ej: 1234567890" required>
+                    placeholder="Ej: 1234567890" class="{% if form.documento.errors %}error{% endif %}" required>
+                {% for error in form.documento.errors %}
+                <span class="error-msg">{{ error }}</span>
+                {% endfor %}
             </div>
 
             <!-- Email -->
             <div class="campo">
                 <label for="email">Correo Electrónico <span class="requerido">*</span></label>
                 <input type="email" name="email" id="email" value="{{ form.email.value|default:'' }}"
-                    placeholder="correo@ejemplo.com" required>
+                    placeholder="correo@ejemplo.com" class="{% if form.email.errors %}error{% endif %}" required>
+                {% for error in form.email.errors %}
+                <span class="error-msg">{{ error }}</span>
+                {% endfor %}
             </div>
 
             <!-- Nombre -->
             <div class="campo">
                 <label for="first_name">Nombre <span class="requerido">*</span></label>
                 <input type="text" name="first_name" id="first_name" value="{{ form.first_name.value|default:'' }}"
-                    placeholder="Nombre" required>
+                    placeholder="Nombre" class="{% if form.first_name.errors %}error{% endif %}" required>
+                {% for error in form.first_name.errors %}
+                <span class="error-msg">{{ error }}</span>
+                {% endfor %}
             </div>
 
             <!-- Apellido -->
             <div class="campo">
                 <label for="last_name">Apellido <span class="requerido">*</span></label>
                 <input type="text" name="last_name" id="last_name" value="{{ form.last_name.value|default:'' }}"
-                    placeholder="Apellido" required>
+                    placeholder="Apellido" class="{% if form.last_name.errors %}error{% endif %}" required>
+                {% for error in form.last_name.errors %}
+                <span class="error-msg">{{ error }}</span>
+                {% endfor %}
             </div>
 
             <!-- Teléfono -->
             <div class="campo">
                 <label for="telefono">Teléfono (opcional)</label>
                 <input type="text" name="telefono" id="telefono" value="{{ form.telefono.value|default:'' }}"
-                    placeholder="Ej: 3001234567">
+                    placeholder="Ej: 3001234567" class="{% if form.telefono.errors %}error{% endif %}">
+                {% for error in form.telefono.errors %}
+                <span class="error-msg">{{ error }}</span>
+                {% endfor %}
             </div>
 
             <!-- Espacio vacío para alineación -->
             <div class="campo">
                 <label for="rol_usuario">Rol del Usuario <span class="requerido">*</span></label>
                 <select name="rol_usuario" id="rol_usuario" required>
-                    <option value="administrador" {% if rol_actual == "administrador" %}selected{% endif %}>Administrador
+                    <option value="sst" {% if rol_actual == "sst" or rol_actual == "administrador" %}selected{% endif %}>SST
                     </option>
                     <option value="coordinador" {% if rol_actual == "coordinador" %}selected{% endif %}>Coordinador
                     </option>
@@ -481,22 +505,28 @@
             <div class="campo">
                 <label for="password1">Contraseña <span class="requerido">*</span></label>
                 <div class="password-field">
-                    <input type="password" name="password1" id="password1" placeholder="Mínimo 8 caracteres" required>
+                    <input type="password" name="password1" id="password1" class="{% if form.password1.errors %}error{% endif %}" placeholder="Mínimo 8 caracteres" required>
                     <button type="button" class="toggle-password" onclick="togglePassword('password1')">
                         <i class="fa-solid fa-eye" id="icon-password1"></i>
                     </button>
                 </div>
+                {% for error in form.password1.errors %}
+                <span class="error-msg">{{ error }}</span>
+                {% endfor %}
             </div>
 
             <!-- Confirmar Password -->
             <div class="campo">
                 <label for="password2">Confirmar Contraseña <span class="requerido">*</span></label>
                 <div class="password-field">
-                    <input type="password" name="password2" id="password2" placeholder="Confirmar contraseña" required>
+                    <input type="password" name="password2" id="password2" class="{% if form.password2.errors %}error{% endif %}" placeholder="Confirmar contraseña" required>
                     <button type="button" class="toggle-password" onclick="togglePassword('password2')">
                         <i class="fa-solid fa-eye" id="icon-password2"></i>
                     </button>
                 </div>
+                {% for error in form.password2.errors %}
+                <span class="error-msg">{{ error }}</span>
+                {% endfor %}
             </div>
         </div>
 
