@@ -1,0 +1,230 @@
+<section class="backup-admin-wrap" data-backup-panel="true">
+  <header class="backup-hero">
+    <div class="backup-hero-icon">
+      <i class="ri-database-2-line"></i>
+    </div>
+    <div class="backup-hero-content">
+      <h2 class="backup-title">Copias de Seguridad PostgreSQL</h2>
+      <p class="backup-subtitle">Gestión exclusiva para superadmin</p>
+    </div>
+  </header>
+
+  <div class="backup-path-box">
+    <span class="backup-path-label">Carpeta protegida</span>
+    <span class="backup-path-value">{{ ruta_backups }}</span>
+  </div>
+
+  {% if messages %}
+    <div class="backup-messages" id="backupMessages">
+      {% for message in messages %}
+        <div class="backup-alert {{ message.tags|default:'info' }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="backup-stack">
+    <article class="backup-card backup-card-generate">
+      <div class="backup-card-head">
+        <h3>Generar copia de seguridad</h3>
+        <span class="backup-chip">Formato seguro</span>
+      </div>
+
+      <div class="backup-stat-row">
+        <div class="backup-stat">
+          <span class="backup-stat-label">Archivos disponibles</span>
+          <strong>{{ backups_disponibles|length }}</strong>
+        </div>
+      </div>
+
+      <form method="post" action="{% url 'core:panel_copias_seguridad' %}" id="formGenerateBackup">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="generar_backup">
+        <input type="hidden" name="confirm_password" id="confirmPasswordGenerate" value="">
+        <button type="submit" class="backup-btn backup-btn-primary" id="btnGenerateBackup">
+          <i class="ri-save-3-line"></i>
+          <span>Generar copia</span>
+        </button>
+      </form>
+
+      <div class="backup-auto-config-wrap">
+        <div class="backup-auto-title-row">
+          <h4>Programación automática</h4>
+          <span class="backup-chip backup-chip-info">Automática</span>
+        </div>
+
+        <form method="post" action="{% url 'core:panel_copias_seguridad' %}" id="formAutoBackupConfig">
+          {% csrf_token %}
+          <input type="hidden" name="accion" value="configurar_backup_automatico">
+
+          <div class="backup-auto-grid">
+            <div class="backup-form-row backup-check-row">
+              <label class="backup-check-label" for="auto_backup_activo">
+                <input
+                  type="checkbox"
+                  id="auto_backup_activo"
+                  name="auto_backup_activo"
+                  {% if config_backup_auto.activo %}checked{% endif %}
+                >
+                <span>Activar backup automático</span>
+              </label>
+            </div>
+
+            <div class="backup-form-row">
+              <label for="auto_backup_frecuencia">Frecuencia</label>
+              <select id="auto_backup_frecuencia" name="auto_backup_frecuencia" required>
+                {% for valor, etiqueta in frecuencias_backup_auto %}
+                  <option value="{{ valor }}" {% if valor == config_backup_auto.frecuencia %}selected{% endif %}>{{ etiqueta }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="backup-auto-meta">
+            <p>
+              <strong>Última ejecución:</strong>
+              {% if config_backup_auto.ultima_ejecucion %}
+                {{ config_backup_auto.ultima_ejecucion|date:"d/m/Y H:i" }}
+              {% else %}
+                Sin registros
+              {% endif %}
+            </p>
+            <p>
+              <strong>Próxima ejecución:</strong>
+              {% if proxima_ejecucion_backup %}
+                {{ proxima_ejecucion_backup|date:"d/m/Y H:i" }}
+              {% else %}
+                No programada
+              {% endif %}
+            </p>
+          </div>
+
+          <button type="submit" class="backup-btn backup-btn-secondary" id="btnSaveAutoBackupConfig">
+            <i class="ri-settings-3-line"></i>
+            <span>Guardar programación</span>
+          </button>
+        </form>
+      </div>
+    </article>
+
+    <article class="backup-card backup-card-restore">
+      <div class="backup-card-head">
+        <h3>Restaurar copia de seguridad</h3>
+        <span class="backup-chip backup-chip-warning">Acción sensible</span>
+      </div>
+
+      <form method="post" action="{% url 'core:panel_copias_seguridad' %}" id="formRestoreBackup">
+        {% csrf_token %}
+        <input type="hidden" name="accion" id="restoreActionInput" value="restaurar_backup">
+        <input type="hidden" name="confirm_password" id="confirmPasswordRestore" value="">
+
+        <div class="backup-form-row">
+          <label>Destino de restauración</label>
+          <div class="backup-destination-lock">
+            <i class="ri-lock-2-line"></i>
+            <span>Base principal</span>
+          </div>
+        </div>
+
+        <div class="backup-table-wrap">
+          <table class="backup-table">
+            <thead>
+              <tr>
+                <th>Elegir</th>
+                <th>Archivo</th>
+                <th>Tamaño</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in backups_disponibles %}
+                <tr data-backup-value="{{ item.nombre }}">
+                  <td>
+                    <label class="backup-radio-wrap" title="Seleccionar {{ item.nombre }}">
+                      <input type="radio" name="backup_file" value="{{ item.nombre }}" {% if forloop.first %}checked{% endif %}>
+                    </label>
+                  </td>
+                  <td class="backup-file-cell">{{ item.nombre }}</td>
+                  <td>{{ item.tamano_mb }} MB</td>
+                  <td>{{ item.modificado|date:"d/m/Y H:i" }}</td>
+                  <td><span class="backup-status-badge">Disponible</span></td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="5" class="backup-empty-row">No hay backups disponibles para restaurar.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="backup-actions-row">
+          <button
+            type="submit"
+            class="backup-btn backup-btn-warning"
+            id="btnRestoreBackup"
+            data-accion="restaurar_backup"
+            {% if not backups_disponibles %}disabled{% endif %}
+          >
+            <i class="ri-refresh-line"></i>
+            <span>Restaurar seleccionada</span>
+          </button>
+
+          <button
+            type="submit"
+            class="backup-btn backup-btn-danger"
+            id="btnDeleteBackup"
+            data-accion="eliminar_backup"
+            {% if not backups_disponibles %}disabled{% endif %}
+          >
+            <i class="ri-delete-bin-6-line"></i>
+            <span>Eliminar seleccionada</span>
+          </button>
+        </div>
+      </form>
+    </article>
+  </div>
+
+  <div class="backup-password-modal" id="backupPasswordModal" aria-hidden="true">
+    <div class="backup-password-dialog" role="dialog" aria-modal="true" aria-labelledby="backupPasswordTitle">
+      <button type="button" class="backup-password-close" data-password-close aria-label="Cerrar">
+        <i class="ri-close-line"></i>
+      </button>
+
+      <div class="backup-password-head">
+        <div class="backup-password-icon">
+          <i id="backupPasswordModalIcon" class="ri-shield-keyhole-line"></i>
+        </div>
+        <h4 id="backupPasswordTitle" data-password-title>Confirmar identidad</h4>
+        <p data-password-subtitle>Ingresa tu contraseña para validar la accion.</p>
+      </div>
+
+      <div class="backup-password-body">
+        <label for="backupPasswordInput">Contraseña</label>
+        <div class="backup-password-field">
+          <input
+            type="password"
+            id="backupPasswordInput"
+            autocomplete="current-password"
+            placeholder="Tu contraseña de acceso"
+          >
+          <button type="button" class="backup-password-toggle" id="backupPasswordToggle" aria-label="Mostrar u ocultar contraseña">
+            <i class="ri-eye-line"></i>
+          </button>
+        </div>
+        <p class="backup-password-error" id="backupPasswordError">Debes ingresar la contraseña para continuar.</p>
+      </div>
+
+      <div class="backup-password-actions">
+        <button type="button" class="backup-btn backup-btn-muted" data-password-cancel>
+          <i class="ri-close-circle-line"></i>
+          <span>Cancelar</span>
+        </button>
+        <button type="button" class="backup-btn backup-btn-primary" data-password-confirm>
+          <i class="ri-check-line"></i>
+          <span>Confirmar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>

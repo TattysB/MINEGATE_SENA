@@ -26,6 +26,8 @@ class RegistroVisitante(models.Model):
 	rol = models.CharField(max_length=10, choices=ROLES, default='interno')
 	created_at = models.DateTimeField(auto_now_add=True)
 	last_login = models.DateTimeField(null=True, blank=True)
+	intentos_fallidos = models.PositiveSmallIntegerField(default=0)
+	bloqueado_hasta = models.DateTimeField(null=True, blank=True)
 
 	def set_password(self, raw_password):
 		self.password_hash = make_password(raw_password)

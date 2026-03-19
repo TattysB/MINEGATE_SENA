@@ -73,6 +73,10 @@ def es_coordinador(user):
     return user.groups.filter(name="coordinador").exists()
 
 
+def es_usuario_sst(user):
+    return user.is_staff and not user.is_superuser and not es_coordinador(user)
+
+
 def es_administrador_panel(user):
     """Verifica si el usuario es administrador del panel"""
     return user.is_superuser or (user.is_staff and not es_coordinador(user))
@@ -122,6 +126,12 @@ def solicitar_reprogramacion(request, tipo, visita_id):
     Crea un historial de reprogramación y cambia el estado a REPROGRAMACION_SOLICITADA.
     """
     try:
+        if es_usuario_sst(request.user):
+            return JsonResponse({
+                "success": False,
+                "message": "El rol SST no tiene permitido solicitar reprogramaciones."
+            }, status=403)
+
         motivo = request.POST.get("motivo", "").strip()
         
         if not motivo:

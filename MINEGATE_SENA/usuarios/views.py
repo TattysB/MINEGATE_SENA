@@ -654,6 +654,7 @@ def gestionar_permisos_view(request):
         "es_superusuario": request.user.is_superuser,
         "perfil": getattr(request.user, "perfil", None),
         "perfil_panel": getattr(request.user, "perfil", None),
+        "panel_role_label": "Superusuario",
     }
 
     return render(request, "usuarios/gestionar_permisos.html", context)
@@ -789,16 +790,24 @@ def crear_usuario_permisos_view(request):
     from .forms import RegistroForm
 
     if request.method == "POST":
-        form = RegistroForm(request.POST)
+        post_data = request.POST.copy()
+        # El formulario usa documento como username internamente.
+        # Lo seteamos desde la vista para evitar errores de validación del campo oculto.
+        if not post_data.get("username"):
+            post_data["username"] = post_data.get("documento", "")
+
+        form = RegistroForm(post_data)
 
         # Obtener si el usuario debe estar activo
         usuario_activo = request.POST.get("usuario_activo", "on") == "on"
-        rol_usuario = request.POST.get("rol_usuario", "administrador")
+        rol_usuario = request.POST.get("rol_usuario", "sst")
+        if rol_usuario == "administrador":
+            rol_usuario = "sst"
 
         if form.is_valid():
             user = form.save(commit=False)
             user.is_active = usuario_activo
-            user.is_staff = rol_usuario == "administrador"
+            user.is_staff = rol_usuario == "sst"
             user.save()
 
             # Obtener o crear el perfil
@@ -814,29 +823,43 @@ def crear_usuario_permisos_view(request):
                 )
 
             # Limpiar grupos de rol y asignar el nuevo
-            user.groups.remove(*Group.objects.filter(name__in=["coordinador"]))
+            user.groups.remove(*Group.objects.filter(name__in=["coordinador", "sst"]))
             if rol_usuario == "coordinador":
                 group_coordinador, _ = Group.objects.get_or_create(name="coordinador")
                 user.groups.add(group_coordinador)
+            elif rol_usuario == "sst":
+                group_sst, _ = Group.objects.get_or_create(name="sst")
+                user.groups.add(group_sst)
+
+            rol_mostrado = "SST" if rol_usuario == "sst" else "Coordinador"
 
             messages.success(
                 request,
-                f"✓ Usuario {user.get_full_name() or user.username} creado exitosamente como {rol_usuario}.",
+                f"✓ Usuario {user.get_full_name() or user.username} creado exitosamente como {rol_mostrado}.",
             )
             return redirect("usuarios:gestionar_permisos")
         else:
-            # Se manejan errores en el template
-            pass
+            # Exponer errores concretos para evitar el mensaje genérico de "campo faltante".
+            for campo, errores in form.errors.items():
+                etiqueta = "General" if campo == "__all__" else campo.replace("_", " ").title()
+                if campo in form.fields and form.fields[campo].label:
+                    etiqueta = form.fields[campo].label
+                for error in errores:
+                    messages.error(request, f"{etiqueta}: {error}")
     else:
         form = RegistroForm()
 
     context = {
         "form": form,
         "titulo": "Crear Nuevo Usuario",
+        "es_superusuario": request.user.is_superuser,
+        "perfil": getattr(request.user, "perfil", None),
+        "perfil_panel": getattr(request.user, "perfil", None),
+        "panel_role_label": "Superusuario",
         "rol_actual": (
-            request.POST.get("rol_usuario", "administrador")
+            request.POST.get("rol_usuario", "sst")
             if request.method == "POST"
-            else "administrador"
+            else "sst"
         ),
     }
     return render(request, "usuarios/crear_usuario_permisos.html", context)
@@ -900,6 +923,8 @@ def detalle_usuario_permisos_view(request, usuario_id):
     context = {
         "usuario": usuario,
         "perfil": perfil,
+        "perfil_panel": getattr(request.user, "perfil", None),
+        "panel_role_label": "Superusuario",
         "titulo": f"Detalles de {usuario.get_full_name() or usuario.username}",
     }
     return render(request, "usuarios/detalle_usuario_permisos.html", context)
