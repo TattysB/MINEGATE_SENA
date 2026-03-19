@@ -26,6 +26,7 @@
   <link rel="stylesheet" href="{% static 'calendario/css/calendario_seleccion.css' %}?v=20260309e" />
   <link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}" />
   <link rel="stylesheet" href="{% static 'core/css/gestion_pagina_informativa.css' %}?v=20260305e" />
+  <link rel="stylesheet" href="{% static 'core/css/panel_backup_db.css' %}?v=20260318a" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css" />
   <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
   <script src="{% static 'core/js/custom_modal.js' %}" defer></script>
@@ -76,7 +77,7 @@
                     class="profile-img-topbar" />
                   {% endif %}
                 </div>
-                <span class="topbar-role-label">{{ panel_role_label|default:'Administrador' }}</span>
+                <span class="topbar-role-label">{{ panel_role_label|default:'SST' }}</span>
               </button>
 
               <!-- desplegable Menu -->
@@ -87,7 +88,7 @@
                   </div>
                   <div class="header-info">
                     <span class="user-name">{{ request.user.get_full_name|default:request.user.username }}</span>
-                    <span class="user-role-label">{{ panel_role_label|default:'Administrador' }}</span>
+                    <span class="user-role-label">{{ panel_role_label|default:'SST' }}</span>
                     <span class="user-email">{{ request.user.email }}</span>
                   </div>
 
@@ -129,6 +130,7 @@
           </a>
         </li>
         {% else %}
+        {% if not solo_sst %}
         <li data-content="Panel_principal" class="{% if seccion_activa == 'panel_principal' %}active{% endif %}">
           <a href="{% url 'core:panel_administrativo_seccion' 'panel_principal' %}" class="sidebar-link" title="Vista general del sistema y estadísticas principales">
             <i class="ri-dashboard-line icon-dashboard"></i><span>Panel principal</span>
@@ -140,6 +142,7 @@
             <span>Calendario</span>
           </a>
         </li>
+        {% endif %}
 
         <li data-content="gestionvisitas" style="position:relative;" class="{% if seccion_activa == 'gestion_visitas' %}active{% endif %}">
           <a href="{% url 'core:panel_administrativo_seccion' 'gestion_visitas' %}" class="sidebar-link" title="Administra visitas internas y externas">
@@ -153,6 +156,7 @@
             <i class="ri-file-search-line icon-documents"></i><span> Documentos</span>
           </a>
         </li>
+        {% if not solo_sst %}
         <li data-content="controlacceso" class="{% if seccion_activa == 'control_acceso' %}active{% endif %}">
           <a href="{% url 'core:panel_administrativo_seccion' 'control_acceso' %}" class="sidebar-link" title="Controla el acceso a la mina en tiempo real">
             <i class="ri-shield-check-line"></i><span>Control de Acceso</span>
@@ -169,6 +173,12 @@
           data-url="{% url 'usuarios:gestionar_permisos' %}" title="Asigna permisos y roles de usuario">
           <i class="ri-shield-user-line icon-permissions"></i><span>Gestión de Permisos</span>
         </li>
+        <li data-content="copiasseguridad" class="{% if seccion_activa == 'copias_seguridad' %}active{% endif %}">
+          <a href="{% url 'core:panel_copias_seguridad' %}" class="sidebar-link" title="Genera y restaura copias de seguridad de PostgreSQL">
+            <i class="ri-database-2-line"></i><span>Copias de Seguridad</span>
+          </a>
+        </li>
+        {% endif %}
         {% endif %}
         <li data-content="Reportes" class="{% if seccion_activa == 'reportes' %}active{% endif %}">
           <a href="{% url 'core:panel_administrativo_seccion' 'reportes' %}" class="sidebar-link" title="Visualiza reportes y análisis del sistema">
@@ -316,6 +326,8 @@
       </div>
       {% elif seccion_activa == 'gestion_pagina_informativa' %}
       {% include 'core/gestion_pagina_informativa.html' %}
+      {% elif seccion_activa == 'copias_seguridad' %}
+      {% include 'core/panel_backup_db.html' %}
       {% elif seccion_activa == 'configuracion' %}
       <div class="contenido-temporal">
         <h2>Configuración</h2>
@@ -344,6 +356,9 @@
       calendarioCssUrl: "{% static 'calendario/css/calendario.css' %}?v=20260309c",
       seleccionCssUrl: "{% static 'calendario/css/calendario_seleccion.css' %}?v=20260309e",
       calendarioJsUrl: "{% static 'calendario/js/calendario.js' %}?v=20260309c"
+    };
+    window.panelPermisos = {
+      soloSst: {{ solo_sst|yesno:"true,false" }}
     };
   </script>
   <script defer src="{% static 'calendario/js/panel_calendario_loader.js' %}"></script>
@@ -500,7 +515,7 @@
       // Get user info from page (you can replace with dynamic data)
       const user = {
         name: "{{ user.username }}" || "Usuario",
-        role: "{{ panel_role_label|default:'Administrador' }}",
+        role: "{{ panel_role_label|default:'SST' }}",
       };
 
       if (userNameEl) userNameEl.textContent = user.name;
@@ -731,9 +746,11 @@
     });
   </script>
   {% if not solo_coordinador %}
-  <script defer src="{% static 'calendario/js/panel_calendario_nueva_visita.js' %}"></script>
   <script defer src="{% static 'documentos/js/panel_documentos_visitas.js' %}?v=20260311-correccion"></script>
   <script defer src="{% static 'js/panel_visitas.js' %}?v=20260313-quitar-devolver"></script>
+  {% endif %}
+  {% if seccion_activa == 'copias_seguridad' %}
+  <script defer src="{% static 'core/js/panel_backup_db.js' %}?v=20260318a"></script>
   {% endif %}
 
   <!-- Modal Personalizado de Alertas/Confirmaciones -->

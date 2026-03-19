@@ -15,6 +15,11 @@ urlpatterns = [
         "panel_administrativo/", views.panel_administrativo, name="panel_administrativo"
     ),
     path(
+        "panel_administrativo/copias-seguridad/",
+        views.panel_copias_seguridad,
+        name="panel_copias_seguridad",
+    ),
+    path(
         "panel_administrativo/<slug:seccion>/",
         views.panel_administrativo_seccion,
         name="panel_administrativo_seccion",

@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -89,11 +90,19 @@ WSGI_APPLICATION = "MINEGATE_SENA.wsgi.application"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'sicam_db',
+        'USER': 'sicam_user',
+        'PASSWORD': 'Sicam123.',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
+
+# Ruta opcional para binarios de PostgreSQL (pg_dump/pg_restore).
+# Si no se define, los comandos intentan resolver por PATH y rutas tipicas de Windows.
+POSTGRES_BIN_DIR = os.getenv("POSTGRES_BIN_DIR", "")
 
 
 # Password validation
