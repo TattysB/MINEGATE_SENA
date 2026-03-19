@@ -48,13 +48,10 @@
                     <label for="documento">
                         <i class="fas fa-id-card"></i> Número de Documento
                     </label>
-                    <input type="text" 
-                           class="form-control" 
-                           id="documento" 
-                           name="documento" 
-                           placeholder="Ingrese su número de documento"
-                           required
-                           autofocus>
+                    {{ form.documento }}
+                    {% if form.documento.errors %}
+                        <span class="field-error">{{ form.documento.errors|striptags }}</span>
+                    {% endif %}
                 </div>
 
                 <div class="form-group">
@@ -62,14 +59,24 @@
                         <i class="fas fa-lock"></i> Contraseña
                     </label>
                     <div class="password-wrapper">
-                        <input type="password" 
-                               class="form-control" 
-                               id="contrasena" 
-                               name="contrasena" 
-                               placeholder="Ingrese su contraseña"
-                               required>
+                        {{ form.contrasena }}
                         <i class="fas fa-eye toggle-password" id="togglePassword"></i>
                     </div>
+                    {% if form.contrasena.errors %}
+                        <span class="field-error">{{ form.contrasena.errors|striptags }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="form-group captcha-group">
+                    <label>
+                        <i class="fas fa-shield-alt"></i> Verificación de seguridad
+                    </label>
+                    <div class="captcha-wrapper">
+                        {{ form.captcha }}
+                    </div>
+                    {% if form.captcha.errors %}
+                        <span class="field-error">{{ form.captcha.errors|striptags }}</span>
+                    {% endif %}
                 </div>
                 
                 <button type="submit" class="btn-login">

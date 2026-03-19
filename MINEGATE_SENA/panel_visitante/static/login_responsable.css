@@ -186,6 +186,35 @@
     text-decoration: underline;
 }
 
+.field-error {
+    display: block;
+    margin-top: 8px;
+    color: #dc2626;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.captcha-group {
+    margin-bottom: 20px;
+}
+
+.captcha-wrapper {
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 12px;
+    background: #fafafa;
+}
+
+.captcha-wrapper .g-recaptcha {
+    transform-origin: left top;
+}
+
+@media (max-width: 420px) {
+    .captcha-wrapper .g-recaptcha {
+        transform: scale(0.88);
+    }
+}
+
 /* Wrapper para campo de contraseña con ícono */
 .password-wrapper {
     position: relative;
