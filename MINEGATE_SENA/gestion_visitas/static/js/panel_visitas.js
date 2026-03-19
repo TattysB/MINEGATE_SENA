@@ -330,9 +330,6 @@ function getAccionesVisita(v) {
     acciones.push(`<button type="button" onclick="accionVisita('${v.tipo}', ${v.id}, 'aprobar')" class="docs-btn-accion gv-btn-approve">
       <i class="ri-check-line"></i> Aprobar
     </button>`);
-    acciones.push(`<button type="button" onclick="accionVisita('${v.tipo}', ${v.id}, 'rechazar')" class="docs-btn-accion gv-btn-reject" title="Rechazar visita">
-      <i class="ri-close-line"></i>
-    </button>`);
   }
 
   if (puedeSolicitarReprogramacionAdmin(v.estado)) {
@@ -1516,22 +1513,13 @@ function cerrarModalDetalle() {
 }
 
 async function accionVisita(tipo, id, accion) {
-  let observaciones = '';
   if (accion === 'rechazar') {
-    observaciones = await mPrompt('Ingrese el motivo del rechazo de esta visita:', {
-      title: 'Rechazar Visita',
-      icon: '<i class="ri-close-circle-line"></i>',
-      iconClass: 'cm-error',
-      confirmText: 'Rechazar',
-      confirmClass: 'cm-btn-danger',
-      placeholder: 'Escriba el motivo aquí...'
-    });
-    if (observaciones === null) return;
-    if (observaciones.trim() === '') {
-      mAlert('Debe proporcionar un motivo para rechazar la visita.', 'warning');
-      return;
-    }
+    mAlert('La acción de rechazar visita no está disponible para el administrador.', 'warning');
+    return;
   }
+
+  let observaciones = '';
+
   if (accion === 'aprobar') {
     const ok = await mConfirm('¿Estás seguro de <strong>aprobar</strong> esta visita?', {
       title: 'Aprobar Visita',

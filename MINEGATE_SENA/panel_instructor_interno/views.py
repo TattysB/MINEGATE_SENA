@@ -38,6 +38,7 @@ CATEGORIAS_ARCHIVOS_FINALES = [
     "Charla de Seguridad y Calestenia",
 ]
 EXTENSIONES_DOCUMENTOS_APRENDIZ = {".pdf", ".doc", ".docx"}
+MAX_TAMANO_DOCUMENTO_APRENDIZ = 10 * 1024 * 1024
 
 
 def validar_archivos_documentos_aprendiz(files):
@@ -243,6 +244,22 @@ def construir_reporte_documental_visita(visita, tipo_visita):
     }
 
 
+def _solicitud_final_historica_interna(visita):
+    """Determina si la visita ya fue enviada a revision al menos una vez."""
+    if visita.estado in ["documentos_enviados", "en_revision_documentos", "confirmada"]:
+        return True
+
+    if visita.asistentes.filter(
+        estado__in=["documentos_aprobados", "documentos_rechazados"]
+    ).exists():
+        return True
+
+    return DocumentoSubidoAsistente.objects.filter(
+        asistente_interna__visita=visita,
+        estado__in=["aprobado", "rechazado"],
+    ).exists()
+
+
 # ==================== AUTENTICACIÓN POR SESIÓN ====================
 
 
@@ -351,6 +368,12 @@ def panel_instructor_interno(request):
 def reservar_visita_interna(request):
     correo, documento = get_sesion_instructor(request)
     owner_user = _obtener_propietario_instructor(request)
+    fichas = (
+        Ficha.objects.filter(activa=True, creado_por=owner_user)
+        .select_related("programa")
+        .order_by("numero")
+    )
+    fichas_data = {str(f.numero): f.cantidad_aprendices for f in fichas}
 
     # Obtener datos adicionales de la sesión
     nombre = request.session.get("responsable_nombre", "")
@@ -381,9 +404,8 @@ def reservar_visita_interna(request):
                 )
                 context = {
                     "form": form,
-                    "fichas": Ficha.objects.filter(
-                        activa=True, creado_por=owner_user
-                    ).select_related("programa"),
+                    "fichas": fichas,
+                    "fichas_data": fichas_data,
                     "correo": correo,
                     "titulo": "Reservar Visita Interna",
                 }
@@ -394,6 +416,24 @@ def reservar_visita_interna(request):
             visita = form.save(commit=False)
             visita.nombre_programa = ficha.programa.nombre
             visita.numero_ficha = ficha.numero
+
+            if ficha.cantidad_aprendices < 1:
+                form.add_error(
+                    "cantidad_aprendices",
+                    "La ficha seleccionada tiene cantidad de aprendices inválida. Actualízala en Fichas y Programas.",
+                )
+                context = {
+                    "form": form,
+                    "fichas": fichas,
+                    "fichas_data": fichas_data,
+                    "correo": correo,
+                    "titulo": "Reservar Visita Interna",
+                }
+                return render(
+                    request, "panel_instructor_interno/reservar_visita.html", context
+                )
+
+            visita.cantidad_aprendices = ficha.cantidad_aprendices
             visita.correo_responsable = correo
             visita.documento_responsable = documento
             visita.estado = "enviada_coordinacion"
@@ -482,12 +522,10 @@ def reservar_visita_interna(request):
             },
             owner_user=owner_user,
         )
-    fichas = Ficha.objects.filter(activa=True, creado_por=owner_user).select_related(
-        "programa"
-    )
     context = {
         "form": form,
         "fichas": fichas,
+        "fichas_data": fichas_data,
         "correo": correo,
         "titulo": "Reservar Visita Interna",
     }
@@ -565,6 +603,11 @@ def detalle_visita_interna(request, pk):
         and not archivos_finales_completos
     )
 
+    solicitud_final_historica = _solicitud_final_historica_interna(visita)
+    permite_editar_asistentes = (
+        visita.estado == "aprobada_inicial" and not solicitud_final_historica
+    )
+
     return render(
         request,
         "panel_instructor_interno/detalle_visita.html",
@@ -577,6 +620,8 @@ def detalle_visita_interna(request, pk):
             "reprogramacion_pendiente": reprogramacion_pendiente,
             "enviar_final_habilitado": enviar_final_habilitado,
             "mostrar_boton_subir_archivos_finales": mostrar_boton_subir_archivos_finales,
+            "solicitud_final_historica": solicitud_final_historica,
+            "permite_editar_asistentes": permite_editar_asistentes,
         },
     )
 
@@ -586,22 +631,7 @@ def detalle_visita_interna(request, pk):
 
 @instructor_interno_required
 def gestionar_programas(request):
-    correo, _ = get_sesion_instructor(request)
-    owner_user = _obtener_propietario_instructor(request)
-    programas = Programa.objects.filter(creado_por=owner_user).order_by("nombre")
-    buscar = request.GET.get("buscar", "")
-    if buscar:
-        programas = programas.filter(nombre__icontains=buscar)
-    return render(
-        request,
-        "panel_instructor_interno/gestionar_programas.html",
-        {
-            "programas": programas,
-            "buscar": buscar,
-            "total": programas.count(),
-            "correo": correo,
-        },
-    )
+    return redirect("panel_instructor_interno:gestionar_fichas")
 
 
 @instructor_interno_required
@@ -630,7 +660,7 @@ def crear_programa(request):
                 messages.success(
                     request, f'✅ Programa "{programa.nombre}" creado correctamente.'
                 )
-                return redirect("panel_instructor_interno:gestionar_programas")
+                return redirect("panel_instructor_interno:gestionar_fichas")
         else:
             if is_ajax:
                 # Retornar formulario con errores para mostrar en el modal
@@ -711,7 +741,7 @@ def editar_programa(request, pk):
                 messages.success(
                     request, f'✅ Programa "{programa.nombre}" actualizado.'
                 )
-                return redirect("panel_instructor_interno:gestionar_programas")
+                return redirect("panel_instructor_interno:gestionar_fichas")
         else:
             if is_ajax:
                 # Retornar formulario con errores para mostrar en el modal
@@ -802,7 +832,7 @@ def eliminar_programa(request, pk):
                     request,
                     f'❌ No se puede eliminar "{nombre}" porque tiene fichas asociadas.',
                 )
-        return redirect("panel_instructor_interno:gestionar_programas")
+        return redirect("panel_instructor_interno:gestionar_fichas")
 
     if is_ajax:
         return JsonResponse(
@@ -866,12 +896,13 @@ def crear_ficha(request):
                 return JsonResponse(
                     {
                         "success": True,
-                        "message": f"✅ Ficha {ficha.numero} creada correctamente.",
+                        "message": f"✅ Registro de ficha y programa ({ficha.numero}) creado correctamente.",
                     }
                 )
             else:
                 messages.success(
-                    request, f"✅ Ficha {ficha.numero} creada correctamente."
+                    request,
+                    f"✅ Registro de ficha y programa ({ficha.numero}) creado correctamente.",
                 )
                 return redirect("panel_instructor_interno:gestionar_fichas")
         else:
@@ -882,7 +913,7 @@ def crear_ficha(request):
                     "panel_instructor_interno/form_ficha_modal.html",
                     {
                         "form": form,
-                        "titulo": "Crear Ficha",
+                        "titulo": "Crear Ficha y Programa",
                         "accion": "Crear",
                         "correo": correo,
                     },
@@ -894,7 +925,7 @@ def crear_ficha(request):
                 "panel_instructor_interno/form_ficha.html",
                 {
                     "form": form,
-                    "titulo": "Crear Ficha",
+                    "titulo": "Crear Ficha y Programa",
                     "accion": "Crear",
                     "correo": correo,
                 },
@@ -909,7 +940,7 @@ def crear_ficha(request):
             "panel_instructor_interno/form_ficha_modal.html",
             {
                 "form": form,
-                "titulo": "Crear Ficha",
+                "titulo": "Crear Ficha y Programa",
                 "accion": "Crear",
                 "correo": correo,
             },
@@ -922,7 +953,7 @@ def crear_ficha(request):
             "panel_instructor_interno/form_ficha.html",
             {
                 "form": form,
-                "titulo": "Crear Ficha",
+                "titulo": "Crear Ficha y Programa",
                 "accion": "Crear",
                 "correo": correo,
             },
@@ -947,11 +978,14 @@ def editar_ficha(request, pk):
                 return JsonResponse(
                     {
                         "success": True,
-                        "message": f"✅ Ficha {ficha.numero} actualizada.",
+                        "message": f"✅ Registro de ficha y programa ({ficha.numero}) actualizado.",
                     }
                 )
             else:
-                messages.success(request, f"✅ Ficha {ficha.numero} actualizada.")
+                messages.success(
+                    request,
+                    f"✅ Registro de ficha y programa ({ficha.numero}) actualizado.",
+                )
                 return redirect("panel_instructor_interno:gestionar_fichas")
         else:
             if is_ajax:
@@ -961,7 +995,7 @@ def editar_ficha(request, pk):
                     "panel_instructor_interno/form_ficha_modal.html",
                     {
                         "form": form,
-                        "titulo": "Editar Ficha",
+                        "titulo": "Editar Ficha y Programa",
                         "accion": "Actualizar",
                         "correo": correo,
                     },
@@ -974,7 +1008,7 @@ def editar_ficha(request, pk):
                 {
                     "form": form,
                     "ficha": ficha,
-                    "titulo": "Editar Ficha",
+                    "titulo": "Editar Ficha y Programa",
                     "accion": "Actualizar",
                     "correo": correo,
                 },
@@ -989,7 +1023,7 @@ def editar_ficha(request, pk):
             "panel_instructor_interno/form_ficha_modal.html",
             {
                 "form": form,
-                "titulo": "Editar Ficha",
+                "titulo": "Editar Ficha y Programa",
                 "accion": "Actualizar",
                 "correo": correo,
             },
@@ -1003,7 +1037,7 @@ def editar_ficha(request, pk):
             {
                 "form": form,
                 "ficha": ficha,
-                "titulo": "Editar Ficha",
+                "titulo": "Editar Ficha y Programa",
                 "accion": "Actualizar",
                 "correo": correo,
             },
@@ -1361,6 +1395,13 @@ def registrar_aprendices_visita(request, visita_id):
         VisitaInterna, pk=visita_id, correo_responsable__iexact=correo
     )
 
+    if _solicitud_final_historica_interna(visita):
+        messages.error(
+            request,
+            "La solicitud final ya fue enviada previamente. No se permite registrar nuevos aprendices.",
+        )
+        return redirect("panel_instructor_interno:detalle_visita", pk=visita_id)
+
     # Obtener la ficha de la visita
     try:
         ficha = Ficha.objects.get(numero=visita.numero_ficha, creado_por=owner_user)
@@ -1507,6 +1548,60 @@ def guardar_documentos_aprendiz(aprendiz, archivos_subidos, documentos_por_categ
             )
 
 
+def validar_carga_documentos_aprendiz(
+    archivos_subidos,
+    documentos_por_categoria,
+    tipo_documento,
+    docs_subidos_ids=None,
+):
+    """Valida extension, peso y obligatoriedad de documentos dinamicos por tipo de documento."""
+    errores = []
+    docs_subidos_ids = set(docs_subidos_ids or [])
+    tipo_doc = str(tipo_documento or "").strip().upper()
+
+    for campo, archivo in archivos_subidos.items():
+        if not campo.startswith("documento_") or not archivo:
+            continue
+
+        extension = os.path.splitext(archivo.name)[1].lower()
+        if extension not in EXTENSIONES_DOCUMENTOS_APRENDIZ:
+            errores.append(
+                f'El archivo "{archivo.name}" no es valido. Solo se permiten PDF o Word (.doc, .docx).'
+            )
+
+        if getattr(archivo, "size", 0) > MAX_TAMANO_DOCUMENTO_APRENDIZ:
+            errores.append(
+                f'El archivo "{archivo.name}" supera el tamano maximo permitido de 10MB.'
+            )
+
+    for categoria, docs in documentos_por_categoria.items():
+        cat_norm = _normalizar_categoria_texto(categoria)
+        es_doc_salud = "auto reporte condiciones de salud" in cat_norm
+        es_doc_padres = "autorizacion padres" in cat_norm
+
+        if not es_doc_salud and not (tipo_doc == "TI" and es_doc_padres):
+            continue
+
+        for doc in docs:
+            nombre_campo = f"documento_{doc.id}"
+            ya_cargado = doc.id in docs_subidos_ids
+            subido_en_post = bool(archivos_subidos.get(nombre_campo))
+
+            if ya_cargado or subido_en_post:
+                continue
+
+            if es_doc_salud:
+                errores.append(
+                    f'Falta cargar el documento obligatorio "{doc.titulo}" (Auto Reporte de Salud).'
+                )
+            elif es_doc_padres:
+                errores.append(
+                    f'Falta cargar "{doc.titulo}". Para Tarjeta de Identidad este documento es obligatorio.'
+                )
+
+    return errores
+
+
 # ==================== MÓDULO: GESTIONAR APRENDICES (ACTUALIZADO) ====================
 
 
@@ -1521,7 +1616,14 @@ def crear_aprendiz(request, ficha_id):
 
     if request.method == "POST":
         form = AprendizForm(request.POST, request.FILES, ficha=ficha)
-        if form.is_valid():
+        errores_docs_dinamicos = validar_carga_documentos_aprendiz(
+            archivos_subidos=request.FILES,
+            documentos_por_categoria=docs_cat,
+            tipo_documento=request.POST.get("tipo_documento"),
+            docs_subidos_ids=[],
+        )
+
+        if form.is_valid() and not errores_docs_dinamicos:
             aprendiz = form.save(commit=False)
             aprendiz.ficha = ficha
             try:
@@ -1540,6 +1642,8 @@ def crear_aprendiz(request, ficha_id):
                     f"❌ Ya existe un aprendiz con el documento {aprendiz.numero_documento} en esta ficha.",
                 )
         else:
+            for error in errores_docs_dinamicos:
+                messages.error(request, f"❌ {error}")
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, f"❌ {field}: {error}")
@@ -1568,8 +1672,18 @@ def editar_aprendiz(request, pk):
     docs_cat = obtener_documentos_por_categoria()
 
     if request.method == "POST":
+        docs_subidos_ids = set(
+            aprendiz.documentos_subidos.values_list("documento_requerido_id", flat=True)
+        )
         form = AprendizForm(request.POST, request.FILES, instance=aprendiz, ficha=ficha)
-        if form.is_valid():
+        errores_docs_dinamicos = validar_carga_documentos_aprendiz(
+            archivos_subidos=request.FILES,
+            documentos_por_categoria=docs_cat,
+            tipo_documento=request.POST.get("tipo_documento"),
+            docs_subidos_ids=docs_subidos_ids,
+        )
+
+        if form.is_valid() and not errores_docs_dinamicos:
             try:
                 form.save()
                 guardar_documentos_aprendiz(aprendiz, request.FILES, docs_cat)
@@ -1586,6 +1700,8 @@ def editar_aprendiz(request, pk):
                     f"❌ Ya existe un aprendiz con el documento {aprendiz.numero_documento} en esta ficha.",
                 )
         else:
+            for error in errores_docs_dinamicos:
+                messages.error(request, f"❌ {error}")
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, f"❌ {field}: {error}")
@@ -1618,6 +1734,13 @@ def eliminar_asistente_visita(request, visita_id, asistente_id, tipo):
     visita = get_object_or_404(
         VisitaInterna, pk=visita_id, correo_responsable__iexact=correo
     )
+
+    if _solicitud_final_historica_interna(visita):
+        messages.error(
+            request,
+            "La solicitud final ya fue enviada previamente. No es posible eliminar aprendices.",
+        )
+        return redirect("panel_instructor_interno:detalle_visita", pk=visita_id)
 
     # Verificar que el asistente pertenece a esta visita
     if tipo == "interna":

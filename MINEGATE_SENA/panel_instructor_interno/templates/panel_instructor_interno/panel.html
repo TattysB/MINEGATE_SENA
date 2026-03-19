@@ -96,8 +96,6 @@
   <div class="container">
     <div class="d-flex flex-wrap justify-content-around">
       <div class="stat-item"><div class="stat-num">{{ total_visitas }}</div><div class="stat-label">Mis Visitas</div></div>
-      <div class="stat-item"><div class="stat-num">{{ total_programas }}</div><div class="stat-label">Programas</div></div>
-      <div class="stat-item"><div class="stat-num">{{ total_fichas }}</div><div class="stat-label">Fichas</div></div>
     </div>
   </div>
 </div>
@@ -113,7 +111,7 @@
 
   <div class="section-title"><i class="fas fa-th-large text-success"></i>Módulos Disponibles</div>
   <div class="row g-4 mb-5">
-    <div class="col-md-4">
+    <div class="col-md-6">
       <a href="{% url 'panel_instructor_interno:reservar_visita' %}" class="module-card">
         <div class="module-card-icon verde"><i class="fas fa-calendar-plus"></i></div>
         <div class="module-card-body">
@@ -123,24 +121,14 @@
         <div class="module-card-footer"><span>Nueva solicitud</span><i class="fas fa-arrow-right"></i></div>
       </a>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-6">
       <a href="{% url 'panel_instructor_interno:gestionar_fichas' %}" class="module-card">
         <div class="module-card-icon azul"><i class="fas fa-id-badge"></i></div>
         <div class="module-card-body">
-          <h5>Gestionar Fichas</h5>
-          <p>Crea, edita y administra las fichas de formación. Crea nuevas fichas si no existen para usar en tus reservas.</p>
+          <h5>Gestionar Fichas y Programas</h5>
+          <p>Registra y administra en una sola vista las fichas y los programas para usarlos en tus reservas.</p>
         </div>
-        <div class="module-card-footer"><span>{{ total_fichas }} ficha{{ total_fichas|pluralize:"s" }}</span><i class="fas fa-arrow-right"></i></div>
-      </a>
-    </div>
-    <div class="col-md-4">
-      <a href="{% url 'panel_instructor_interno:gestionar_programas' %}" class="module-card">
-        <div class="module-card-icon naranja"><i class="fas fa-graduation-cap"></i></div>
-        <div class="module-card-body">
-          <h5>Gestionar Programas</h5>
-          <p>Crea, edita y administra los programas de formación. Agrega nuevos programas para asociarlos a fichas y visitas.</p>
-        </div>
-        <div class="module-card-footer"><span>{{ total_programas }} programa{{ total_programas|pluralize }}</span><i class="fas fa-arrow-right"></i></div>
+        <div class="module-card-footer"><span>Gestionar registros</span><i class="fas fa-arrow-right"></i></div>
       </a>
     </div>
   </div>

@@ -70,11 +70,16 @@ class RegistroForm(UserCreationForm):
         max_length=20,
         required=True,
         widget=forms.TextInput(
-            attrs={"class": "form-control", "placeholder": "Número de documento"}
+            attrs={
+                "class": "form-control",
+                "placeholder": "Número de documento",
+                "inputmode": "numeric",
+                "maxlength": "10",
+            }
         ),
         error_messages={
             "required": "El número de documento es obligatorio.",
-            "max_length": "El documento no puede tener más de 20 caracteres.",
+            "max_length": "El documento no puede tener más de 10 caracteres.",
         },
     )
 
@@ -141,7 +146,12 @@ class RegistroForm(UserCreationForm):
         max_length=15,
         required=False,
         widget=forms.TextInput(
-            attrs={"class": "form-control", "placeholder": "Teléfono (opcional)"}
+            attrs={
+                "class": "form-control",
+                "placeholder": "Teléfono (opcional)",
+                "inputmode": "numeric",
+                "maxlength": "10",
+            }
         ),
     )
 
@@ -209,9 +219,17 @@ class RegistroForm(UserCreationForm):
 
     def clean_documento(self):
         """Valida que el documento no exista en la base de datos"""
-        documento = self.cleaned_data.get("documento")
+        documento = (self.cleaned_data.get("documento") or "").strip()
         if not documento:
             raise forms.ValidationError("El número de documento es obligatorio.")
+        if len(documento) < 5:
+            raise forms.ValidationError(
+                "El documento debe tener al menos 5 dígitos."
+            )
+        if len(documento) > 10:
+            raise forms.ValidationError(
+                "El documento no puede tener más de 10 dígitos."
+            )
         if PerfilUsuario.objects.filter(documento=documento).exists():
             raise forms.ValidationError("Este número de documento ya está registrado.")
         if User.objects.filter(username=documento).exists():
@@ -219,6 +237,24 @@ class RegistroForm(UserCreationForm):
         if not documento.isdigit():
             raise forms.ValidationError("El documento solo debe contener números.")
         return documento
+
+    def clean_telefono(self):
+        """Valida teléfono opcional con solo números y longitud razonable."""
+        telefono = (self.cleaned_data.get("telefono") or "").strip()
+
+        if not telefono:
+            return ""
+
+        if not telefono.isdigit():
+            raise forms.ValidationError("El teléfono solo debe contener números.")
+
+        if len(telefono) < 10:
+            raise forms.ValidationError("El teléfono debe tener al menos 10 dígitos.")
+
+        if len(telefono) > 11:
+            raise forms.ValidationError("El teléfono no puede tener más de 11 dígitos.")
+
+        return telefono
 
     def clean_email(self):
         """Valida que el email no exista en la base de datos"""

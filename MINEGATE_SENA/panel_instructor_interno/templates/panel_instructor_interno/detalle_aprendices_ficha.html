@@ -250,11 +250,11 @@
             {% for doc_subido in aprendiz.documentos_subidos.all %}
             <div class="doc-row">
               <div class="doc-name">
-                <i class="fas fa-file-upload" style="color:#5b21b6; flex-shrink:0;"></i>
-                <span title="{{ doc_subido.documento_requerido.titulo }}">{{ doc_subido.documento_requerido.titulo }}</span>
+                <i class="fas fa-file-medical" style="color:#0369a1; flex-shrink:0;"></i>
+                <span class="doc-badge-reporte" title="{{ doc_subido.documento_requerido.titulo }}">Reporte</span>
               </div>
               <div class="doc-actions">
-                <button class="btn-doc eye" title="Ver" onclick="verDocumento('{% url 'documentos:ver_documento_aprendiz_doc_inline' doc_subido.id %}', '{{ doc_subido.documento_requerido.titulo|escapejs }} - {{ aprendiz.get_nombre_completo|escapejs }}', '{{ doc_subido.nombre_archivo }}'.split('.').pop())"><i class="fas fa-eye"></i></button>
+                <button class="btn-doc eye" title="Ver" onclick="verDocumento('{% url 'documentos:ver_documento_aprendiz_doc_inline' doc_subido.id %}', 'Reporte - {{ aprendiz.get_nombre_completo|escapejs }}', '{{ doc_subido.nombre_archivo }}'.split('.').pop())"><i class="fas fa-eye"></i></button>
                 <a href="{{ doc_subido.archivo.url }}" download class="btn-doc dl" title="Descargar"><i class="fas fa-download"></i></a>
               </div>
             </div>

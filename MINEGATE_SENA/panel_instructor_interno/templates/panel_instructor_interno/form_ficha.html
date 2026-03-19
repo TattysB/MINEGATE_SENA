@@ -34,7 +34,7 @@
     <div class="breadcrumb-nav mb-2">
       <a href="{% url 'panel_instructor_interno:panel' %}">Mi Panel</a>
       <span>›</span>
-      <a href="{% url 'panel_instructor_interno:gestionar_fichas' %}">Fichas</a>
+      <a href="{% url 'panel_instructor_interno:gestionar_fichas' %}">Fichas y Programas</a>
       <span>›</span><span style="color:rgba(255,255,255,0.9)">{{ titulo }}</span>
     </div>
     <h2><i class="fas fa-id-badge me-3"></i>{{ titulo }}</h2>
@@ -44,7 +44,7 @@
 <div class="container">
   <div class="form-card">
     <div class="form-card-header">
-      <i class="fas fa-id-badge me-2"></i>Datos de la Ficha
+      <i class="fas fa-id-badge me-2"></i>Datos de Ficha y Programa
     </div>
     <div class="form-card-body">
       {% if messages %}
@@ -57,35 +57,25 @@
 
       <div class="alert-tip">
         <i class="fas fa-info-circle me-2"></i>
-        Si el programa de la ficha no existe aún, créalo primero en
-        <a href="{% url 'panel_instructor_interno:crear_programa' %}">Gestionar Programas</a>.
+        Registra la ficha y el programa en este mismo formulario.
       </div>
 
       <form method="POST">
         {% csrf_token %}
         <div class="mb-3">
-          <label for="{{ form.numero.id_for_label }}">Número de Ficha <span class="text-danger">*</span></label>
+          <label for="{{ form.numero.id_for_label }}">Ficha <span class="text-danger">*</span></label>
           {{ form.numero }}
           {% if form.numero.errors %}<div class="text-danger small mt-1">{{ form.numero.errors.0 }}</div>{% endif %}
         </div>
         <div class="mb-3">
-          <label for="{{ form.programa.id_for_label }}">Programa <span class="text-danger">*</span></label>
-          {{ form.programa }}
-          {% if form.programa.errors %}<div class="text-danger small mt-1">{{ form.programa.errors.0 }}</div>{% endif %}
+          <label for="{{ form.programa_nombre.id_for_label }}">Programa <span class="text-danger">*</span></label>
+          {{ form.programa_nombre }}
+          {% if form.programa_nombre.errors %}<div class="text-danger small mt-1">{{ form.programa_nombre.errors.0 }}</div>{% endif %}
         </div>
-        <div class="row g-3 mb-3">
-          <div class="col-md-6">
-            <label for="{{ form.jornada.id_for_label }}">Jornada</label>
-            {{ form.jornada }}
-          </div>
-          <div class="col-md-6">
-            <label for="{{ form.cantidad_aprendices.id_for_label }}">Cantidad de Aprendices</label>
-            {{ form.cantidad_aprendices }}
-          </div>
-        </div>
-        <div class="mb-4 form-check">
-          {{ form.activa }}
-          <label class="form-check-label" for="{{ form.activa.id_for_label }}">Ficha activa</label>
+        <div class="mb-3">
+          <label for="{{ form.cantidad_aprendices.id_for_label }}">Cantidad de Aprendices</label>
+          {{ form.cantidad_aprendices }}
+          {% if form.cantidad_aprendices.errors %}<div class="text-danger small mt-1">{{ form.cantidad_aprendices.errors.0 }}</div>{% endif %}
         </div>
         <div class="d-flex justify-content-between">
           <a href="{% url 'panel_instructor_interno:gestionar_fichas' %}" class="btn btn-outline-secondary">

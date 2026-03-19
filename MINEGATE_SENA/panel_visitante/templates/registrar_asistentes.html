@@ -376,17 +376,17 @@
     <!-- Formulario para agregar asistente -->
     <div class="form-card">
         <h4><i class="fas fa-plus-circle"></i> Agregar Nuevo Asistente</h4>
-        
-        <form method="POST" enctype="multipart/form-data">
+
+        <form id="formRegistrarAsistente" method="POST" enctype="multipart/form-data" novalidate>
             {% csrf_token %}
             <div class="form-row">
                 <div class="form-group">
                     <label>Nombre Completo <span class="required">*</span></label>
-                    <input type="text" name="nombre_completo" class="form-control" placeholder="Nombre completo del asistente" required {% if not puede_agregar %}disabled{% endif %}>
+                    <input type="text" id="nombre_completo" name="nombre_completo" class="form-control" placeholder="Nombre completo del asistente" maxlength="200" autocomplete="name" required {% if not puede_agregar %}disabled{% endif %}>
                 </div>
                 <div class="form-group">
                     <label>Tipo de Documento <span class="required">*</span></label>
-                    <select name="tipo_documento" class="form-control" required {% if not puede_agregar %}disabled{% endif %}>
+                    <select id="tipo_documento" name="tipo_documento" class="form-control" required {% if not puede_agregar %}disabled{% endif %}>
                         <option value="">Seleccione...</option>
                         <option value="CC">Cédula de Ciudadanía</option>
                         <option value="CE">Cédula de Extranjería</option>
@@ -399,23 +399,23 @@
             <div class="form-row">
                 <div class="form-group">
                     <label>Número de Documento <span class="required">*</span></label>
-                    <input type="text" name="numero_documento" class="form-control" placeholder="Número de documento" required {% if not puede_agregar %}disabled{% endif %}>
+                    <input type="text" id="numero_documento" name="numero_documento" class="form-control" placeholder="Número de documento" inputmode="numeric" maxlength="10" required {% if not puede_agregar %}disabled{% endif %}>
                 </div>
                 <div class="form-group">
                     <label>Correo Electrónico</label>
-                    <input type="email" name="correo" class="form-control" placeholder="correo@ejemplo.com" {% if not puede_agregar %}disabled{% endif %}>
+                    <input type="email" id="correo" name="correo" class="form-control" placeholder="correo@ejemplo.com" autocomplete="email" {% if not puede_agregar %}disabled{% endif %}>
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     <label>Teléfono</label>
-                    <input type="text" name="telefono" class="form-control" placeholder="Número de teléfono" {% if not puede_agregar %}disabled{% endif %}>
+                    <input type="text" id="telefono" name="telefono" class="form-control" placeholder="Número de teléfono" inputmode="numeric" maxlength="10" autocomplete="tel" {% if not puede_agregar %}disabled{% endif %}>
                 </div>
             </div>
             <hr>
             <div class="form-group">
                 <h5 class="titulo-archivos">Subir Archivos Requeridos <span class="required">*</span></h5>
-                
+
                 <!-- Formato Auto Reporte Condiciones de Salud -->
                 {% for categoria, docs in documentos_registro_por_categoria.items %}
                     {% if categoria == 'Formato Auto Reporte Condiciones de Salud' %}
@@ -527,9 +527,15 @@
                             <i class="fas fa-lock me-1"></i>Actualizar bloqueado
                         </button>
                         {% endif %}
+                        {% if puede_actualizar_asistentes %}
                         <a href="javascript:void(0)" class="btn-delete" onclick="confirmarEliminarAsistente(event, '{% url 'panel_visitante:eliminar_asistente' tipo=tipo asistente_id=asistente.id %}', '{{ asistente.nombre_completo|escapejs }}');">
                             <i class="fas fa-trash-alt me-1"></i>Eliminar
                         </a>
+                        {% else %}
+                        <button type="button" class="btn-edit" disabled title="La eliminación se bloquea después de haber enviado la solicitud final.">
+                            <i class="fas fa-lock me-1"></i>Eliminar bloqueado
+                        </button>
+                        {% endif %}
                     </div>
                 </div>
             {% endfor %}
@@ -690,6 +696,130 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' && document.getElementById('modalActualizarDoc').style.display === 'block') {
         cerrarModalActualizarDoc();
     }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const formRegistro = document.getElementById('formRegistrarAsistente');
+    if (!formRegistro) return;
+
+    const campoNombre = document.getElementById('nombre_completo');
+    const campoTipoDocumento = document.getElementById('tipo_documento');
+    const campoNumeroDocumento = document.getElementById('numero_documento');
+    const campoCorreo = document.getElementById('correo');
+    const campoTelefono = document.getElementById('telefono');
+    const regexNombre = /^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]+$/;
+
+    function limpiarEspacios(valor) {
+        return (valor || '').trim().replace(/\s+/g, ' ');
+    }
+
+    function validarNombre() {
+        if (!campoNombre || campoNombre.disabled) return true;
+        const valor = limpiarEspacios(campoNombre.value);
+        campoNombre.value = valor;
+        if (!valor) {
+            campoNombre.setCustomValidity('El nombre completo es obligatorio.');
+            return false;
+        }
+        if (valor.length < 3 || valor.length > 80) {
+            campoNombre.setCustomValidity('El nombre completo debe tener entre 3 y 80 caracteres.');
+            return false;
+        }
+        if (!regexNombre.test(valor)) {
+            campoNombre.setCustomValidity('El nombre completo solo puede contener letras y espacios.');
+            return false;
+        }
+        campoNombre.setCustomValidity('');
+        return true;
+    }
+
+    function validarTipoDocumento() {
+        if (!campoTipoDocumento || campoTipoDocumento.disabled) return true;
+        if (!campoTipoDocumento.value) {
+            campoTipoDocumento.setCustomValidity('Seleccione un tipo de documento.');
+            return false;
+        }
+        campoTipoDocumento.setCustomValidity('');
+        return true;
+    }
+
+    function validarNumeroDocumento() {
+        if (!campoNumeroDocumento || campoNumeroDocumento.disabled) return true;
+        const valor = (campoNumeroDocumento.value || '').trim();
+        campoNumeroDocumento.value = valor;
+        if (!valor) {
+            campoNumeroDocumento.setCustomValidity('El numero de documento es obligatorio.');
+            return false;
+        }
+        if (!/^\d+$/.test(valor)) {
+            campoNumeroDocumento.setCustomValidity('El numero de documento solo debe contener numeros.');
+            return false;
+        }
+        if (valor.length < 5 || valor.length > 10) {
+            campoNumeroDocumento.setCustomValidity('El numero de documento debe tener entre 5 y 10 digitos.');
+            return false;
+        }
+        campoNumeroDocumento.setCustomValidity('');
+        return true;
+    }
+
+    function validarCorreo() {
+        if (!campoCorreo || campoCorreo.disabled) return true;
+        const valor = (campoCorreo.value || '').trim().toLowerCase();
+        campoCorreo.value = valor;
+        if (!valor) {
+            campoCorreo.setCustomValidity('');
+            return true;
+        }
+        const correoValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor);
+        if (!correoValido) {
+            campoCorreo.setCustomValidity('Ingrese un correo electronico valido.');
+            return false;
+        }
+        campoCorreo.setCustomValidity('');
+        return true;
+    }
+
+    function validarTelefono() {
+        if (!campoTelefono || campoTelefono.disabled) return true;
+        const valor = (campoTelefono.value || '').trim();
+        campoTelefono.value = valor;
+        if (!valor) {
+            campoTelefono.setCustomValidity('');
+            return true;
+        }
+        if (!/^\d+$/.test(valor)) {
+            campoTelefono.setCustomValidity('El telefono solo debe contener numeros.');
+            return false;
+        }
+        if (valor.length < 7 || valor.length > 10) {
+            campoTelefono.setCustomValidity('El telefono debe tener entre 7 y 10 digitos.');
+            return false;
+        }
+        campoTelefono.setCustomValidity('');
+        return true;
+    }
+
+    if (campoNombre) campoNombre.addEventListener('input', validarNombre);
+    if (campoTipoDocumento) campoTipoDocumento.addEventListener('change', validarTipoDocumento);
+    if (campoNumeroDocumento) campoNumeroDocumento.addEventListener('input', validarNumeroDocumento);
+    if (campoCorreo) campoCorreo.addEventListener('input', validarCorreo);
+    if (campoTelefono) campoTelefono.addEventListener('input', validarTelefono);
+
+    formRegistro.addEventListener('submit', function(event) {
+        const validaciones = [
+            validarNombre(),
+            validarTipoDocumento(),
+            validarNumeroDocumento(),
+            validarCorreo(),
+            validarTelefono(),
+        ];
+
+        if (validaciones.some(v => !v)) {
+            event.preventDefault();
+            formRegistro.reportValidity();
+        }
+    });
 });
 </script>
 

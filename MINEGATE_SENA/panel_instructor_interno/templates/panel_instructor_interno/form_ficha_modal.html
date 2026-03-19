@@ -11,7 +11,7 @@
 
 <div class="alert alert-info alert-dismissible fade show" role="alert" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; border-radius: 8px;">
   <i class="fas fa-info-circle me-2"></i>
-  Si el programa no existe aún, créalo primero en <a href="{% url 'panel_instructor_interno:gestionar_programas' %}" style="color: #1e40af; font-weight: 600;">Gestionar Programas</a>.
+  Registra la ficha y el programa en esta misma ventana.
   <button type="button" class="btn-close" data-bs-dismiss="alert" style="color: #1e40af;"></button>
 </div>
 
@@ -20,7 +20,7 @@
   
   <div class="mb-3">
     <label for="{{ form.numero.id_for_label }}" style="font-weight: 600; font-size: 0.9rem; color: #374151; margin-bottom: 4px; display: block;">
-      Número de Ficha <span class="text-danger">*</span>
+      Ficha <span class="text-danger">*</span>
     </label>
     {{ form.numero }}
     {% if form.numero.errors %}
@@ -29,35 +29,23 @@
   </div>
 
   <div class="mb-3">
-    <label for="{{ form.programa.id_for_label }}" style="font-weight: 600; font-size: 0.9rem; color: #374151; margin-bottom: 4px; display: block;">
+    <label for="{{ form.programa_nombre.id_for_label }}" style="font-weight: 600; font-size: 0.9rem; color: #374151; margin-bottom: 4px; display: block;">
       Programa <span class="text-danger">*</span>
     </label>
-    {{ form.programa }}
-    {% if form.programa.errors %}
-      <div class="text-danger small mt-1">{{ form.programa.errors.0 }}</div>
+    {{ form.programa_nombre }}
+    {% if form.programa_nombre.errors %}
+      <div class="text-danger small mt-1">{{ form.programa_nombre.errors.0 }}</div>
     {% endif %}
   </div>
 
-  <div class="row g-3 mb-3">
-    <div class="col-md-6">
-      <label for="{{ form.jornada.id_for_label }}" style="font-weight: 600; font-size: 0.9rem; color: #374151; margin-bottom: 4px; display: block;">
-        Jornada
-      </label>
-      {{ form.jornada }}
-    </div>
-    <div class="col-md-6">
-      <label for="{{ form.cantidad_aprendices.id_for_label }}" style="font-weight: 600; font-size: 0.9rem; color: #374151; margin-bottom: 4px; display: block;">
-        Cantidad de Aprendices
-      </label>
-      {{ form.cantidad_aprendices }}
-    </div>
-  </div>
-
-  <div class="mb-4 form-check">
-    {{ form.activa }}
-    <label class="form-check-label" for="{{ form.activa.id_for_label }}" style="color: #374151; font-weight: 500;">
-      Ficha activa
+  <div class="mb-3">
+    <label for="{{ form.cantidad_aprendices.id_for_label }}" style="font-weight: 600; font-size: 0.9rem; color: #374151; margin-bottom: 4px; display: block;">
+      Cantidad de Aprendices
     </label>
+    {{ form.cantidad_aprendices }}
+    {% if form.cantidad_aprendices.errors %}
+      <div class="text-danger small mt-1">{{ form.cantidad_aprendices.errors.0 }}</div>
+    {% endif %}
   </div>
 
   <div class="d-flex gap-2 justify-content-end pt-3" style="border-top: 1px solid #e5e7eb;">
