@@ -115,3 +115,50 @@ class ElementoGaleriaInformativa(models.Model):
 		if self.tipo == self.TIPO_VIDEO:
 			return "video/mp4"
 		return "image/jpeg"
+
+
+class ConfiguracionBackupAutomatico(models.Model):
+	FRECUENCIA_6H = "6h"
+	FRECUENCIA_12H = "12h"
+	FRECUENCIA_24H = "24h"
+	FRECUENCIA_48H = "48h"
+	FRECUENCIA_72H = "72h"
+	FRECUENCIA_168H = "168h"
+
+	FRECUENCIAS = (
+		(FRECUENCIA_6H, "Cada 6 horas"),
+		(FRECUENCIA_12H, "Cada 12 horas"),
+		(FRECUENCIA_24H, "Cada 24 horas"),
+		(FRECUENCIA_48H, "Cada 48 horas"),
+		(FRECUENCIA_72H, "Cada 72 horas"),
+		(FRECUENCIA_168H, "Cada 7 días"),
+	)
+
+	activo = models.BooleanField(default=False)
+	frecuencia = models.CharField(max_length=5, choices=FRECUENCIAS, default=FRECUENCIA_24H)
+	ultima_ejecucion = models.DateTimeField(null=True, blank=True)
+	actualizado_en = models.DateTimeField(auto_now=True)
+
+	class Meta:
+		verbose_name = "Configuración de backup automático"
+		verbose_name_plural = "Configuración de backups automáticos"
+		db_table = "configuracion_backup_automatico"
+
+	def save(self, *args, **kwargs):
+		self.pk = 1
+		super().save(*args, **kwargs)
+
+	@classmethod
+	def obtener(cls):
+		objeto, _ = cls.objects.get_or_create(pk=1)
+		return objeto
+
+	def horas_frecuencia(self):
+		try:
+			return int(str(self.frecuencia).replace("h", ""))
+		except (TypeError, ValueError):
+			return 24
+
+	def __str__(self):
+		estado = "Activo" if self.activo else "Inactivo"
+		return f"Backup automático ({estado})"

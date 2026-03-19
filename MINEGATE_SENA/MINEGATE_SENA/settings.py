@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -53,6 +54,7 @@ INSTALLED_APPS = [
     'reportes',
     'chatbot',
     'control_acceso_mina',
+    'django_recaptcha',
 ]
 
 MIDDLEWARE = [
@@ -89,11 +91,19 @@ WSGI_APPLICATION = "MINEGATE_SENA.wsgi.application"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'sicam_db',
+        'USER': 'usuario de su base de datos',
+        'PASSWORD': 'su contraseña',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
+
+# Ruta opcional para binarios de PostgreSQL (pg_dump/pg_restore).
+# Si no se define, los comandos intentan resolver por PATH y rutas tipicas de Windows.
+POSTGRES_BIN_DIR = os.getenv("POSTGRES_BIN_DIR", "")
 
 
 # Password validation
@@ -217,3 +227,19 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Configuración de marcos (iframes)
 X_FRAME_OPTIONS = 'SAMEORIGIN'
+
+# reCAPTCHA (usar variables de entorno en produccion)
+RECAPTCHA_PUBLIC_KEY = os.getenv(
+    "RECAPTCHA_PUBLIC_KEY",
+    "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI",
+)
+RECAPTCHA_PRIVATE_KEY = os.getenv(
+    "RECAPTCHA_PRIVATE_KEY",
+    "6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe",
+)
+
+if (
+    RECAPTCHA_PUBLIC_KEY == "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
+    and RECAPTCHA_PRIVATE_KEY == "6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe"
+):
+    SILENCED_SYSTEM_CHECKS = ["django_recaptcha.recaptcha_test_key_error"]

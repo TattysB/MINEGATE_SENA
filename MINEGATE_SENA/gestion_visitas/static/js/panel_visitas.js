@@ -128,6 +128,10 @@ function _inferirExtensionDesdeMimeVisitas(contentType) {
 
 let tipoVisitaActual = 'internas';
 
+function esUsuarioSst() {
+  return Boolean(window.panelPermisos && window.panelPermisos.soloSst);
+}
+
 function cambiarTabVisita(tipo) {
   tipoVisitaActual = tipo;
   document.querySelectorAll('.tab-visita').forEach(tab => {
@@ -320,6 +324,17 @@ function getAccionesVisita(v) {
       <i class="ri-eye-line"></i> Ver
     </button>`
   ];
+
+  if (esUsuarioSst()) {
+    if (v.estado === 'documentos_enviados' || v.estado === 'en_revision_documentos') {
+      acciones.push(`<button type="button" onclick="verDetalleVisita('${v.tipo}', ${v.id})" class="docs-btn-accion gv-btn-docs">
+        <i class="ri-file-search-line"></i> Revisar docs
+      </button>`);
+    } else {
+      acciones.push('<span class="gv-pill-info gv-pill-espera"><i class="ri-lock-line"></i> Solo revisión documental</span>');
+    }
+    return `<div class="docs-acciones gv-acciones">${acciones.join('')}</div>`;
+  }
 
   if (v.estado === 'enviada_coordinacion') {
     acciones.push('<span class="gv-pill-info gv-pill-espera"><i class="ri-time-line"></i> Esperando coordinación</span>');
@@ -1513,6 +1528,12 @@ function cerrarModalDetalle() {
 }
 
 async function accionVisita(tipo, id, accion) {
+  if (esUsuarioSst()) {
+    mAlert('Tu rol SST solo puede revisar documentos.', 'warning');
+    return;
+  }
+
+  let observaciones = '';
   if (accion === 'rechazar') {
     mAlert('La acción de rechazar visita no está disponible para el administrador.', 'warning');
     return;
@@ -1590,6 +1611,11 @@ async function accionVisita(tipo, id, accion) {
 }
 
 async function solicitarReprogramacionVisita(tipo, id) {
+  if (esUsuarioSst()) {
+    mAlert('Tu rol SST no tiene permitido solicitar reprogramaciones.', 'warning');
+    return;
+  }
+
   const motivo = await mPrompt('Indique el motivo para solicitar reprogramación al instructor:', {
     title: 'Solicitar Reprogramación',
     icon: '<i class="ri-calendar-event-line"></i>',

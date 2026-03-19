@@ -1,6 +1,42 @@
 from django import forms
+from django_recaptcha.fields import ReCaptchaField
+from django_recaptcha.widgets import ReCaptchaV2Checkbox
 from .models import RegistroVisitante
 import re
+
+
+class LoginResponsableForm(forms.Form):
+    documento = forms.CharField(
+        label="Numero de Documento",
+        max_length=20,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "documento",
+                "placeholder": "Ingrese su numero de documento",
+                "required": True,
+                "autofocus": True,
+            }
+        ),
+    )
+    contrasena = forms.CharField(
+        label="Contrasena",
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "form-control",
+                "id": "contrasena",
+                "placeholder": "Ingrese su contrasena",
+                "required": True,
+            }
+        ),
+    )
+    captcha = ReCaptchaField(
+        widget=ReCaptchaV2Checkbox,
+        error_messages={"required": "Debe completar el captcha."},
+    )
+
+    def clean_documento(self):
+        return self.cleaned_data.get("documento", "").strip()
 
 
 class RegistroVisitanteForm(forms.Form):
