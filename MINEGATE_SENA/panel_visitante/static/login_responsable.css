@@ -203,10 +203,12 @@
     border-radius: 10px;
     padding: 12px;
     background: #fafafa;
+    display: flex;
+    justify-content: center;
 }
 
 .captcha-wrapper .g-recaptcha {
-    transform-origin: left top;
+    transform-origin: center top;
 }
 
 @media (max-width: 420px) {
