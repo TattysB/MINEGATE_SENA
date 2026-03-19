@@ -1,13 +1,21 @@
+from io import StringIO
+from datetime import date, timedelta, datetime
+import calendar
+from pathlib import Path
+from types import SimpleNamespace
+
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib import messages
+from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.db.models import Q
 from django.db.utils import OperationalError, ProgrammingError
 from django.urls import reverse
+from django.utils import timezone
 from PIL import Image, ImageOps, UnidentifiedImageError
-from datetime import date, timedelta
-import calendar
-from pathlib import Path
 from usuarios.models import PerfilUsuario
 from calendario.models import Availability, ReservaHorario
 from .forms import (
@@ -16,6 +24,7 @@ from .forms import (
     ElementoGaleriaInformativaForm,
 )
 from .models import (
+    ConfiguracionBackupAutomatico,
     ContenidoPaginaInformativa,
     ElementoEncabezadoInformativo,
     ElementoGaleriaInformativa,
@@ -32,6 +41,7 @@ SECCIONES_PANEL_SUPERUSUARIO = {
     "control_acceso",
     "escaneo_documentos",
     "gestion_pagina_informativa",
+    "copias_seguridad",
     "configuracion",
     "reportes",
 }
@@ -41,6 +51,8 @@ SECCIONES_PANEL_SST = {
     "gestion_documentos",
     "reportes",
 }
+
+ALLOWED_BACKUP_EXTENSIONS = {".dump", ".backup"}
 
 
 def es_superusuario(user):
@@ -62,6 +74,255 @@ def secciones_permitidas_panel(user):
     if es_usuario_sst(user):
         return SECCIONES_PANEL_SST
     return set()
+
+
+def _obtener_directorio_backups():
+    """Retorna el directorio fijo de backups y lo crea si no existe."""
+    directorio = Path(settings.BASE_DIR) / "backups"
+    directorio.mkdir(parents=True, exist_ok=True)
+    return directorio
+
+
+def _listar_backups_disponibles():
+    """
+    Lista backups permitidos (.dump/.backup) para mostrarlos en la interfaz.
+    Nunca expone archivos fuera de la carpeta fija backups.
+    """
+    backups = []
+    directorio = _obtener_directorio_backups()
+
+    for archivo in directorio.iterdir():
+        if not archivo.is_file():
+            continue
+        if archivo.suffix.lower() not in ALLOWED_BACKUP_EXTENSIONS:
+            continue
+
+        try:
+            datos = archivo.stat()
+        except OSError:
+            continue
+
+        backups.append(
+            {
+                "nombre": archivo.name,
+                "tamano_mb": f"{datos.st_size / (1024 * 1024):.2f}",
+                "modificado": datetime.fromtimestamp(datos.st_mtime),
+            }
+        )
+
+    backups.sort(key=lambda item: item["modificado"], reverse=True)
+    return backups
+
+
+def _resolver_archivo_backup_seguro(nombre_archivo):
+    """
+    Valida y resuelve un backup dentro de la carpeta protegida.
+    Previene path traversal y bloquea extensiones no permitidas.
+    """
+    nombre_limpio = (nombre_archivo or "").strip()
+    if not nombre_limpio:
+        return None, "Debes seleccionar un archivo de backup."
+
+    if Path(nombre_limpio).name != nombre_limpio:
+        return None, "El nombre del backup es invalido."
+
+    if Path(nombre_limpio).suffix.lower() not in ALLOWED_BACKUP_EXTENSIONS:
+        return None, "La extension del archivo no es valida para restauracion/eliminacion."
+
+    directorio = _obtener_directorio_backups().resolve()
+    ruta_archivo = (directorio / nombre_limpio).resolve()
+
+    if directorio not in ruta_archivo.parents:
+        return None, "Ruta de backup fuera del directorio permitido."
+
+    if not ruta_archivo.exists() or not ruta_archivo.is_file():
+        return None, "El archivo de backup seleccionado no existe."
+
+    return ruta_archivo, None
+
+
+def _validar_password_operacion_sensible(request):
+    """Exige contraseña del usuario autenticado antes de ejecutar acciones críticas."""
+    password_confirmacion = (request.POST.get("confirm_password") or "").strip()
+
+    if not password_confirmacion:
+        messages.error(
+            request,
+            "Debes confirmar tu contraseña para ejecutar esta acción.",
+        )
+        return False
+
+    if not request.user.check_password(password_confirmacion):
+        messages.error(request, "La contraseña ingresada no es correcta.")
+        return False
+
+    return True
+
+
+def _obtener_horas_frecuencia_backup(frecuencia):
+    try:
+        return int(str(frecuencia).replace("h", ""))
+    except (TypeError, ValueError):
+        return 24
+
+
+def _obtener_proxima_ejecucion_backup(config):
+    if not config.activo:
+        return None
+
+    horas = _obtener_horas_frecuencia_backup(config.frecuencia)
+    base = config.ultima_ejecucion or config.actualizado_en
+    if not base:
+        return None
+
+    return base + timedelta(hours=horas)
+
+
+def _guardar_configuracion_backup_automatico(request):
+    config = ConfiguracionBackupAutomatico.obtener()
+
+    activo_anterior = config.activo
+    frecuencia_anterior = config.frecuencia
+
+    activo = request.POST.get("auto_backup_activo") == "on"
+    frecuencia = (request.POST.get("auto_backup_frecuencia") or "").strip()
+
+    frecuencias_validas = {
+        valor for valor, _ in ConfiguracionBackupAutomatico.FRECUENCIAS
+    }
+    if frecuencia not in frecuencias_validas:
+        messages.error(request, "La frecuencia seleccionada no es válida.")
+        return
+
+    config.activo = activo
+    config.frecuencia = frecuencia
+
+    if activo and (
+        not activo_anterior
+        or frecuencia_anterior != frecuencia
+        or config.ultima_ejecucion is None
+    ):
+        config.ultima_ejecucion = timezone.now()
+
+    config.save()
+
+    if config.activo:
+        messages.success(
+            request,
+            "Programación automática guardada correctamente.",
+        )
+    else:
+        messages.info(request, "El backup automático quedó desactivado.")
+
+
+def _ejecutar_backup_automatico_si_corresponde(request, config):
+    if not config.activo:
+        return
+
+    proxima = _obtener_proxima_ejecucion_backup(config)
+    ahora = timezone.now()
+
+    if proxima and ahora < proxima:
+        return
+
+    salida = StringIO()
+    errores = StringIO()
+
+    try:
+        call_command("backupdb", stdout=salida, stderr=errores)
+        config.ultima_ejecucion = ahora
+        config.save()
+        messages.info(
+            request,
+            "Se ejecutó una copia de seguridad automática según la programación.",
+        )
+    except CommandError as exc:
+        detalle = errores.getvalue().strip() or str(exc)
+        # Evita repetir intento en cada recarga inmediata cuando hay error.
+        config.ultima_ejecucion = ahora
+        config.save()
+        messages.warning(
+            request,
+            f"El backup automático no pudo ejecutarse. Detalle: {detalle}",
+        )
+
+
+def _ejecutar_backup_desde_panel(request):
+    """Llama al command backupdb desde la vista protegida."""
+    salida = StringIO()
+    errores = StringIO()
+
+    try:
+        call_command("backupdb", stdout=salida, stderr=errores)
+    except CommandError as exc:
+        detalle = errores.getvalue().strip() or str(exc)
+        messages.error(
+            request,
+            f"No fue posible generar la copia de seguridad. Detalle: {detalle}",
+        )
+        return
+
+    resumen = salida.getvalue().strip()
+    if resumen:
+        messages.success(request, f"Copia generada correctamente. {resumen}")
+    else:
+        messages.success(request, "Copia generada correctamente.")
+
+
+def _ejecutar_restore_desde_panel(request):
+    """Llama al command restoredb desde la vista protegida."""
+    archivo = (request.POST.get("backup_file") or "").strip()
+    archivo_resuelto, error_validacion = _resolver_archivo_backup_seguro(archivo)
+    if error_validacion:
+        messages.error(request, error_validacion)
+        return
+
+    kwargs_restore = {
+        "file": archivo_resuelto.name,
+        "target": "default",
+    }
+
+    salida = StringIO()
+    errores = StringIO()
+
+    try:
+        call_command("restoredb", stdout=salida, stderr=errores, **kwargs_restore)
+    except CommandError as exc:
+        detalle = errores.getvalue().strip() or str(exc)
+        messages.error(
+            request,
+            f"No fue posible restaurar la base de datos. Detalle: {detalle}",
+        )
+        return
+
+    resumen = salida.getvalue().strip()
+    if resumen:
+        messages.success(request, f"Restauracion ejecutada correctamente. {resumen}")
+    else:
+        messages.success(request, "Restauracion ejecutada correctamente.")
+
+
+def _eliminar_backup_desde_panel(request):
+    """Elimina un backup permitido de la carpeta protegida."""
+    archivo = (request.POST.get("backup_file") or "").strip()
+    archivo_resuelto, error_validacion = _resolver_archivo_backup_seguro(archivo)
+    if error_validacion:
+        messages.error(request, error_validacion)
+        return
+
+    try:
+        archivo_resuelto.unlink()
+    except OSError as exc:
+        messages.error(
+            request,
+            f"No fue posible eliminar la copia de seguridad. Detalle: {exc}",
+        )
+        return
+
+    messages.success(
+        request,
+        f"Copia eliminada correctamente: {archivo_resuelto.name}",
+    )
 
 
 def _construir_slides_legacy(contenido):
@@ -217,6 +478,76 @@ def panel_administrativo_seccion(request, seccion):
     return _render_panel_administrativo(request, seccion_activa=seccion)
 
 
+@login_required(login_url="usuarios:login")
+@staff_member_required(login_url="usuarios:login")
+def panel_copias_seguridad(request):
+    """
+    Vista protegida para respaldos/restauraciones.
+    Requisito: solo superadmin puede usar este modulo.
+    """
+    if not request.user.is_superuser:
+        messages.error(request, "Solo el superadmin puede gestionar copias de seguridad.")
+        return redirect("core:panel_administrativo")
+
+    if request.method == "POST":
+        accion = (request.POST.get("accion") or "").strip()
+
+        if accion == "configurar_backup_automatico":
+            try:
+                _guardar_configuracion_backup_automatico(request)
+            except (OperationalError, ProgrammingError):
+                messages.error(
+                    request,
+                    "No se encontró la tabla de configuración automática. Ejecuta migrate para habilitar esta opción.",
+                )
+        elif accion == "generar_backup":
+            if _validar_password_operacion_sensible(request):
+                _ejecutar_backup_desde_panel(request)
+        elif accion == "restaurar_backup":
+            if _validar_password_operacion_sensible(request):
+                _ejecutar_restore_desde_panel(request)
+        elif accion == "eliminar_backup":
+            if _validar_password_operacion_sensible(request):
+                _eliminar_backup_desde_panel(request)
+        else:
+            messages.error(request, "Accion no valida para el modulo de backups.")
+
+        return redirect("core:panel_copias_seguridad")
+
+    try:
+        config_backup_auto = ConfiguracionBackupAutomatico.obtener()
+        _ejecutar_backup_automatico_si_corresponde(request, config_backup_auto)
+        config_backup_auto.refresh_from_db()
+        frecuencias_backup = ConfiguracionBackupAutomatico.FRECUENCIAS
+        proxima_ejecucion = _obtener_proxima_ejecucion_backup(config_backup_auto)
+    except (OperationalError, ProgrammingError):
+        config_backup_auto = SimpleNamespace(
+            activo=False,
+            frecuencia=ConfiguracionBackupAutomatico.FRECUENCIA_24H,
+            ultima_ejecucion=None,
+        )
+        frecuencias_backup = ConfiguracionBackupAutomatico.FRECUENCIAS
+        proxima_ejecucion = None
+        messages.warning(
+            request,
+            "La configuración automática estará disponible después de ejecutar migrate.",
+        )
+
+    contexto_backups = {
+        "backups_disponibles": _listar_backups_disponibles(),
+        "ruta_backups": str(_obtener_directorio_backups()),
+        "config_backup_auto": config_backup_auto,
+        "frecuencias_backup_auto": frecuencias_backup,
+        "proxima_ejecucion_backup": proxima_ejecucion,
+    }
+
+    return _render_panel_administrativo(
+        request,
+        seccion_activa="copias_seguridad",
+        extra_context=contexto_backups,
+    )
+
+
 def _agregar_contexto_calendario(context):
     today = date.today()
     year = today.year
@@ -297,7 +628,11 @@ def _agregar_contexto_calendario(context):
     )
 
 
-def _render_panel_administrativo(request, seccion_activa="panel_principal"):
+def _render_panel_administrativo(
+    request,
+    seccion_activa="panel_principal",
+    extra_context=None,
+):
     """
     Panel administrativo principal
     Incluye gestión de permisos solo para superusuarios
@@ -412,6 +747,9 @@ def _render_panel_administrativo(request, seccion_activa="panel_principal"):
                 "estados_reportes": VisitaInterna.ESTADO_CHOICES,
             }
         )
+
+    if extra_context:
+        context.update(extra_context)
 
     return render(request, "core/panel_administrativo.html", context)
 
