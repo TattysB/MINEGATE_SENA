@@ -343,7 +343,7 @@ function getAccionesVisita(v) {
       <i class="ri-file-search-line"></i> Revisar docs
     </button>`);
     acciones.push(`<button type="button" onclick="accionVisita('${v.tipo}', ${v.id}, 'iniciar_revision')" class="docs-btn-accion gv-btn-review">
-      <i class="ri-search-line"></i> Iniciar revisión
+      <i class="ri-search-line"></i> Finalizar revisión
     </button>`);
   }
 

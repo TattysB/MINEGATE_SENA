@@ -364,9 +364,7 @@
           <button type="button" onclick="abrirModalArchivosFinales(true)" class="btn-registrar" style="background: linear-gradient(135deg, #eae1b2 0%, #fff177 100%); color: #333; border: none; cursor: pointer;">
             <i class="fas fa-upload"></i> Corregir / subir archivo final
           </button>
-          <a href="{% url 'panel_visitante:registrar_asistentes' tipo='interna' visita_id=visita.id %}" class="btn-registrar">
-            <i class="fas fa-eye"></i> Ver registro completo
-          </a>
+          
         </div>
         {% endif %}
 
@@ -542,11 +540,7 @@
           <a href="{% url 'panel_visitante:registrar_asistentes' tipo='interna' visita_id=visita.id %}" class="btn-registrar">
             <i class="fas fa-eye"></i> Ver aprendices registrados
           </a>
-          {% if visita.asistentes.count > 0 %}
-          <button type="button" onclick="abrirModalArchivosFinales(true)" class="btn-registrar" style="background: linear-gradient(135deg, #eae1b2 0%, #fff177 100%); color: #333; border: none; cursor: pointer;">
-            <i class="fas fa-upload"></i> Corregir / subir archivo final
-          </button>
-          {% endif %}
+          
         </div>
       {% elif visita.estado == 'confirmada' %}
         <a href="{% url 'panel_visitante:registrar_asistentes' tipo='interna' visita_id=visita.id %}" class="btn-registrar mb-3">
