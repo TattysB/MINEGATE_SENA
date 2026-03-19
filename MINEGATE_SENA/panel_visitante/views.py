@@ -8,7 +8,7 @@ from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.views.decorators.csrf import csrf_protect
 from django.urls import reverse
-from datetime import datetime
+from datetime import datetime, timedelta
 import random
 from visitaInterna.models import VisitaInterna, AsistenteVisitaInterna
 from visitaExterna.models import VisitaExterna, AsistenteVisitaExterna
@@ -51,6 +51,8 @@ CATEGORIAS_DOCUMENTOS_REGISTRO = {
 AUTH_VISITANTE_MESSAGE_TAG = "auth_visitante"
 REGISTRO_VERIFICACION_SESSION_KEY = "registro_verificacion_pendiente"
 REGISTRO_VERIFICACION_TTL_MINUTOS = 10
+MAX_INTENTOS_LOGIN = 5
+MINUTOS_BLOQUEO_LOGIN = 10
 
 
 def _generar_codigo_verificacion(longitud=6):
@@ -268,7 +270,28 @@ def login_responsable(request):
 
         visitante = RegistroVisitante.objects.filter(documento=documento).first()
 
+        if visitante and visitante.bloqueado_hasta:
+            ahora = timezone.now()
+            if visitante.bloqueado_hasta <= ahora:
+                visitante.bloqueado_hasta = None
+                visitante.intentos_fallidos = 0
+                visitante.save(update_fields=["bloqueado_hasta", "intentos_fallidos"])
+            else:
+                segundos_restantes = int((visitante.bloqueado_hasta - ahora).total_seconds())
+                minutos_restantes = max(1, (segundos_restantes + 59) // 60)
+                messages.error(
+                    request,
+                    f"Usuario bloqueado temporalmente. Intenta de nuevo en {minutos_restantes} minuto(s).",
+                    extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+                )
+                return render(request, "login_responsable.html")
+
         if visitante and visitante.check_password(contrasena):
+            if visitante.intentos_fallidos or visitante.bloqueado_hasta:
+                visitante.intentos_fallidos = 0
+                visitante.bloqueado_hasta = None
+                visitante.save(update_fields=["intentos_fallidos", "bloqueado_hasta"])
+
             # Guardar sesión
             request.session["responsable_correo"] = visitante.correo
             request.session["responsable_documento"] = visitante.documento
@@ -290,6 +313,30 @@ def login_responsable(request):
                 return redirect("panel_instructor_interno:panel")
             else:
                 return redirect("panel_instructor_externo:panel")
+
+        if visitante:
+            visitante.intentos_fallidos += 1
+
+            if visitante.intentos_fallidos >= MAX_INTENTOS_LOGIN:
+                visitante.bloqueado_hasta = timezone.now() + timedelta(
+                    minutes=MINUTOS_BLOQUEO_LOGIN
+                )
+                visitante.save(update_fields=["intentos_fallidos", "bloqueado_hasta"])
+                messages.error(
+                    request,
+                    "Se alcanzaron 5 intentos fallidos. Tu usuario ha sido bloqueado por 10 minutos.",
+                    extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+                )
+                return render(request, "login_responsable.html")
+
+            visitante.save(update_fields=["intentos_fallidos"])
+            intentos_restantes = MAX_INTENTOS_LOGIN - visitante.intentos_fallidos
+            messages.error(
+                request,
+                f"Credenciales invalidas. Verifica tu documento y contrasena. Te quedan {intentos_restantes} intento(s).",
+                extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+            )
+            return render(request, "login_responsable.html")
 
         messages.error(
             request,
