@@ -93,8 +93,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'sicam_db',
-        'USER': 'sicam_user',
-        'PASSWORD': 'Sicam123.',
+        'USER': 'usuario de su base de datos',
+        'PASSWORD': 'su contraseña',
         'HOST': 'localhost',
         'PORT': '5432',
     }
