@@ -26,6 +26,7 @@
   <link rel="stylesheet" href="{% static 'calendario/css/calendario_seleccion.css' %}?v=20260309e" />
   <link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}" />
   <link rel="stylesheet" href="{% static 'core/css/gestion_pagina_informativa.css' %}?v=20260305e" />
+  <link rel="stylesheet" href="{% static 'core/css/panel_backup_db.css' %}?v=20260318a" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css" />
   <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
   <script src="{% static 'core/js/custom_modal.js' %}" defer></script>
@@ -171,6 +172,11 @@
         <li data-content="GestionPermisos" id="sidebarGestionPermisos"
           data-url="{% url 'usuarios:gestionar_permisos' %}" title="Asigna permisos y roles de usuario">
           <i class="ri-shield-user-line icon-permissions"></i><span>Gestión de Permisos</span>
+        </li>
+        <li data-content="copiasseguridad" class="{% if seccion_activa == 'copias_seguridad' %}active{% endif %}">
+          <a href="{% url 'core:panel_copias_seguridad' %}" class="sidebar-link" title="Genera y restaura copias de seguridad de PostgreSQL">
+            <i class="ri-database-2-line"></i><span>Copias de Seguridad</span>
+          </a>
         </li>
         {% endif %}
         {% endif %}
@@ -320,6 +326,8 @@
       </div>
       {% elif seccion_activa == 'gestion_pagina_informativa' %}
       {% include 'core/gestion_pagina_informativa.html' %}
+      {% elif seccion_activa == 'copias_seguridad' %}
+      {% include 'core/panel_backup_db.html' %}
       {% elif seccion_activa == 'configuracion' %}
       <div class="contenido-temporal">
         <h2>Configuración</h2>
@@ -738,11 +746,11 @@
     });
   </script>
   {% if not solo_coordinador %}
-  {% if not solo_sst %}
-  <script defer src="{% static 'calendario/js/panel_calendario_nueva_visita.js' %}"></script>
-  {% endif %}
   <script defer src="{% static 'documentos/js/panel_documentos_visitas.js' %}?v=20260311-correccion"></script>
   <script defer src="{% static 'js/panel_visitas.js' %}?v=20260313-quitar-devolver"></script>
+  {% endif %}
+  {% if seccion_activa == 'copias_seguridad' %}
+  <script defer src="{% static 'core/js/panel_backup_db.js' %}?v=20260318a"></script>
   {% endif %}
 
   <!-- Modal Personalizado de Alertas/Confirmaciones -->
