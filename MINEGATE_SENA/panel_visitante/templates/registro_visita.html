@@ -262,6 +262,35 @@ document.addEventListener('DOMContentLoaded', function() {
 		return selectedRole ? selectedRole.value : '';
 	}
 
+	function normalizeFirstLetterUppercase(field, preserveTrailingSpace) {
+		if (!field) {
+			return;
+		}
+
+		const rawValue = field.value || '';
+		if (!rawValue) {
+			return;
+		}
+
+		const keepTrailingSpace = Boolean(preserveTrailingSpace) && /\s$/.test(rawValue);
+
+		const trimmedStart = rawValue.replace(/^\s+/, '');
+		if (!trimmedStart) {
+			field.value = '';
+			return;
+		}
+
+		const normalizedWords = trimmedStart
+			.split(/\s+/)
+			.filter(function(word) { return word; })
+			.map(function(word) {
+				return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+			})
+			.join(' ');
+
+		field.value = keepTrailingSpace ? normalizedWords + ' ' : normalizedWords;
+	}
+
 	function validateNombreApellido(field, label, onBlur) {
 		if (!field) {
 			return true;
@@ -444,13 +473,27 @@ document.addEventListener('DOMContentLoaded', function() {
 	}
 
 	if (nombreInput) {
-		nombreInput.addEventListener('input', function() { validateNombreApellido(nombreInput, 'nombre', false); });
-		nombreInput.addEventListener('blur', function() { validateNombreApellido(nombreInput, 'nombre', true); });
+		normalizeFirstLetterUppercase(nombreInput);
+		nombreInput.addEventListener('input', function() {
+			normalizeFirstLetterUppercase(nombreInput, true);
+			validateNombreApellido(nombreInput, 'nombre', false);
+		});
+		nombreInput.addEventListener('blur', function() {
+			normalizeFirstLetterUppercase(nombreInput);
+			validateNombreApellido(nombreInput, 'nombre', true);
+		});
 	}
 
 	if (apellidoInput) {
-		apellidoInput.addEventListener('input', function() { validateNombreApellido(apellidoInput, 'apellido', false); });
-		apellidoInput.addEventListener('blur', function() { validateNombreApellido(apellidoInput, 'apellido', true); });
+		normalizeFirstLetterUppercase(apellidoInput);
+		apellidoInput.addEventListener('input', function() {
+			normalizeFirstLetterUppercase(apellidoInput, true);
+			validateNombreApellido(apellidoInput, 'apellido', false);
+		});
+		apellidoInput.addEventListener('blur', function() {
+			normalizeFirstLetterUppercase(apellidoInput);
+			validateNombreApellido(apellidoInput, 'apellido', true);
+		});
 	}
 
 	if (documentoInput) {
@@ -487,6 +530,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	if (form) {
 		form.addEventListener('submit', function(event) {
+			normalizeFirstLetterUppercase(nombreInput);
+			normalizeFirstLetterUppercase(apellidoInput);
+
 			const validaciones = [
 				validateNombreApellido(nombreInput, 'nombre', true),
 				validateNombreApellido(apellidoInput, 'apellido', true),
