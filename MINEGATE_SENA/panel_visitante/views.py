@@ -28,6 +28,7 @@ from .forms import (
     PasswordResetConfirmForm,
     ActualizarPerfilForm,
     CambiarContrasenaForm,
+    LoginResponsableForm,
     VerificacionCodigoRegistroForm,
 )
 from .models import RegistroVisitante
@@ -264,9 +265,14 @@ def login_responsable(request):
     """
     Login para responsables de visitas usando solo documento y contraseña.
     """
+    form = LoginResponsableForm(request.POST or None)
+
     if request.method == "POST":
-        documento = request.POST.get("documento", "").strip()
-        contrasena = request.POST.get("contrasena", "")
+        if not form.is_valid():
+            return render(request, "login_responsable.html", {"form": form})
+
+        documento = form.cleaned_data["documento"]
+        contrasena = form.cleaned_data["contrasena"]
 
         visitante = RegistroVisitante.objects.filter(documento=documento).first()
 
@@ -284,7 +290,7 @@ def login_responsable(request):
                     f"Usuario bloqueado temporalmente. Intenta de nuevo en {minutos_restantes} minuto(s).",
                     extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
                 )
-                return render(request, "login_responsable.html")
+                return render(request, "login_responsable.html", {"form": form})
 
         if visitante and visitante.check_password(contrasena):
             if visitante.intentos_fallidos or visitante.bloqueado_hasta:
@@ -327,7 +333,7 @@ def login_responsable(request):
                     "Se alcanzaron 5 intentos fallidos. Tu usuario ha sido bloqueado por 10 minutos.",
                     extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
                 )
-                return render(request, "login_responsable.html")
+                return render(request, "login_responsable.html", {"form": form})
 
             visitante.save(update_fields=["intentos_fallidos"])
             intentos_restantes = MAX_INTENTOS_LOGIN - visitante.intentos_fallidos
@@ -336,7 +342,7 @@ def login_responsable(request):
                 f"Credenciales invalidas. Verifica tu documento y contrasena. Te quedan {intentos_restantes} intento(s).",
                 extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
             )
-            return render(request, "login_responsable.html")
+            return render(request, "login_responsable.html", {"form": form})
 
         messages.error(
             request,
@@ -344,7 +350,7 @@ def login_responsable(request):
             extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
         )
 
-    return render(request, "login_responsable.html")
+    return render(request, "login_responsable.html", {"form": form})
 
 
 def registro_visita(request):
