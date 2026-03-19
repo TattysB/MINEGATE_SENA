@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -7,6 +7,8 @@ from django.db.models import Q
 from django.db import IntegrityError
 from django.db import transaction
 import os
+import csv
+import io
 from visitaInterna.models import VisitaInterna
 from .models import Ficha, Programa
 from .forms import VisitaInternaInstructorForm, ProgramaForm, FichaForm
@@ -39,6 +41,36 @@ CATEGORIAS_ARCHIVOS_FINALES = [
 ]
 EXTENSIONES_DOCUMENTOS_APRENDIZ = {".pdf", ".doc", ".docx"}
 MAX_TAMANO_DOCUMENTO_APRENDIZ = 10 * 1024 * 1024
+FORMATOS_CARGA_MASIVA_APRENDICES = {".csv", ".xlsx", ".xls", ".pdf"}
+COLUMNAS_CARGA_MASIVA_APRENDICES = [
+    "nombre",
+    "apellido",
+    "tipo_documento",
+    "numero_documento",
+    "correo",
+    "telefono",
+    "estado",
+]
+EJEMPLOS_CARGA_MASIVA_APRENDICES = [
+    {
+        "nombre": "Laura",
+        "apellido": "Gomez",
+        "tipo_documento": "CC",
+        "numero_documento": "1022334455",
+        "correo": "laura.gomez@example.com",
+        "telefono": "3001234567",
+        "estado": "activo",
+    },
+    {
+        "nombre": "Mateo",
+        "apellido": "Rodriguez",
+        "tipo_documento": "TI",
+        "numero_documento": "1099988877",
+        "correo": "mateo.rodriguez@example.com",
+        "telefono": "3017654321",
+        "estado": "activo",
+    },
+]
 
 
 def validar_archivos_documentos_aprendiz(files):
@@ -56,6 +88,230 @@ def validar_archivos_documentos_aprendiz(files):
             )
 
     return errores
+
+
+def _normalizar_encabezado_importacion(valor):
+    return (
+        str(valor or "")
+        .strip()
+        .lower()
+        .replace(" ", "_")
+        .replace("á", "a")
+        .replace("é", "e")
+        .replace("í", "i")
+        .replace("ó", "o")
+        .replace("ú", "u")
+    )
+
+
+def _mapear_tipo_documento_importacion(valor):
+    tipo = str(valor or "").strip().upper()
+    equivalencias = {
+        "CEDULA": "CC",
+        "CEDULA_DE_CIUDADANIA": "CC",
+        "TARJETA_DE_IDENTIDAD": "TI",
+        "PASAPORTE": "PP",
+    }
+    return equivalencias.get(tipo, tipo)
+
+
+def _mapear_estado_aprendiz_importacion(valor):
+    estado = _normalizar_encabezado_importacion(valor).replace("_", "")
+    equivalencias = {
+        "": "activo",
+        "activo": "activo",
+        "inactivo": "inactivo",
+        "retirado": "retirado",
+    }
+    return equivalencias.get(estado, "activo")
+
+
+def _extraer_filas_csv_aprendices(archivo):
+    contenido = archivo.read()
+    if isinstance(contenido, bytes):
+        try:
+            texto = contenido.decode("utf-8-sig")
+        except UnicodeDecodeError:
+            texto = contenido.decode("latin-1")
+    else:
+        texto = str(contenido)
+
+    lector = csv.DictReader(io.StringIO(texto))
+    if not lector.fieldnames:
+        return [], ["El CSV no contiene encabezados."]
+
+    headers = [_normalizar_encabezado_importacion(h) for h in lector.fieldnames]
+    faltantes = [c for c in COLUMNAS_CARGA_MASIVA_APRENDICES if c not in headers]
+    if faltantes:
+        return [], [
+            "La plantilla no coincide. Faltan columnas: " + ", ".join(faltantes)
+        ]
+
+    filas = []
+    errores = []
+    for idx, row in enumerate(lector, start=2):
+        fila = {}
+        for key, value in row.items():
+            fila[_normalizar_encabezado_importacion(key)] = (value or "").strip()
+        if not any(fila.values()):
+            continue
+        filas.append((idx, fila))
+
+    if not filas and not errores:
+        errores.append("No se encontraron filas de aprendices para importar.")
+
+    return filas, errores
+
+
+def _extraer_filas_excel_aprendices(archivo):
+    try:
+        from openpyxl import load_workbook
+    except Exception:
+        return [], [
+            "No se pudo procesar Excel. Instale openpyxl para habilitar este formato."
+        ]
+
+    try:
+        wb = load_workbook(filename=archivo, data_only=True)
+        ws = wb.active
+    except Exception:
+        return [], ["No fue posible leer el archivo Excel. Verifique la plantilla."]
+
+    encabezados = []
+    for cell in ws[1]:
+        encabezados.append(_normalizar_encabezado_importacion(cell.value))
+
+    faltantes = [c for c in COLUMNAS_CARGA_MASIVA_APRENDICES if c not in encabezados]
+    if faltantes:
+        return [], [
+            "La plantilla no coincide. Faltan columnas: " + ", ".join(faltantes)
+        ]
+
+    filas = []
+    for idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+        fila = {}
+        for col_idx, valor in enumerate(row):
+            if col_idx >= len(encabezados):
+                continue
+            clave = encabezados[col_idx]
+            fila[clave] = "" if valor is None else str(valor).strip()
+
+        if not any(fila.values()):
+            continue
+        filas.append((idx, fila))
+
+    if not filas:
+        return [], ["No se encontraron filas de aprendices para importar."]
+
+    return filas, []
+
+
+def _extraer_filas_pdf_aprendices(archivo):
+    try:
+        from pypdf import PdfReader
+    except Exception:
+        return [], ["No se pudo procesar PDF. Instale pypdf para habilitar este formato."]
+
+    try:
+        reader = PdfReader(archivo)
+        texto = "\n".join((p.extract_text() or "") for p in reader.pages)
+    except Exception:
+        return [], ["No fue posible leer el archivo PDF. Use la plantilla descargable."]
+
+    filas = []
+    for idx, linea in enumerate(texto.splitlines(), start=1):
+        normalizada = linea.strip()
+        if not normalizada or ";" not in normalizada:
+            continue
+        partes = [p.strip() for p in normalizada.split(";")]
+        if len(partes) < 7:
+            continue
+        if _normalizar_encabezado_importacion(partes[0]) == "nombre":
+            continue
+
+        fila = {
+            "nombre": partes[0],
+            "apellido": partes[1],
+            "tipo_documento": partes[2],
+            "numero_documento": partes[3],
+            "correo": partes[4],
+            "telefono": partes[5],
+            "estado": partes[6],
+        }
+        filas.append((idx, fila))
+
+    if not filas:
+        return [], [
+            "No se detectaron filas válidas en el PDF. Use la plantilla y mantenga el formato con ';'."
+        ]
+
+    return filas, []
+
+
+def _extraer_filas_importacion_aprendices(archivo):
+    extension = os.path.splitext(getattr(archivo, "name", ""))[1].lower()
+
+    if extension not in FORMATOS_CARGA_MASIVA_APRENDICES:
+        return [], ["Formato no permitido. Use CSV, Excel (.xlsx/.xls) o PDF."]
+
+    if extension == ".csv":
+        return _extraer_filas_csv_aprendices(archivo)
+
+    if extension in {".xlsx", ".xls"}:
+        return _extraer_filas_excel_aprendices(archivo)
+
+    return _extraer_filas_pdf_aprendices(archivo)
+
+
+def _procesar_carga_masiva_aprendices(ficha, filas):
+    creados = 0
+    duplicados = 0
+    errores = []
+
+    for fila_numero, fila in filas:
+        datos_form = {
+            "nombre": fila.get("nombre", ""),
+            "apellido": fila.get("apellido", ""),
+            "tipo_documento": _mapear_tipo_documento_importacion(
+                fila.get("tipo_documento")
+            ),
+            "numero_documento": str(fila.get("numero_documento", "")).strip(),
+            "correo": str(fila.get("correo", "")).strip().lower(),
+            "telefono": str(fila.get("telefono", "")).strip(),
+            "estado": _mapear_estado_aprendiz_importacion(fila.get("estado")),
+        }
+
+        if not datos_form["numero_documento"]:
+            errores.append(f"Fila {fila_numero}: el numero de documento es obligatorio.")
+            continue
+
+        existe = Aprendiz.objects.filter(
+            ficha=ficha,
+            numero_documento=datos_form["numero_documento"],
+        ).exists()
+        if existe:
+            duplicados += 1
+            continue
+
+        form = AprendizForm(data=datos_form, ficha=ficha)
+        if not form.is_valid():
+            errores_fila = []
+            for campo, errs in form.errors.items():
+                nombre_campo = "general" if campo == "__all__" else campo
+                errores_fila.append(f"{nombre_campo}: {', '.join(errs)}")
+            errores.append(f"Fila {fila_numero}: {' | '.join(errores_fila)}")
+            continue
+
+        aprendiz = form.save(commit=False)
+        aprendiz.ficha = ficha
+        aprendiz.save()
+        creados += 1
+
+    return {
+        "creados": creados,
+        "duplicados": duplicados,
+        "errores": errores,
+    }
 
 
 def _normalizar_categoria_texto(value):
@@ -603,6 +859,14 @@ def detalle_visita_interna(request, pk):
         and not archivos_finales_completos
     )
 
+    mostrar_reporte_diligenciamiento = (
+        visita.estado in ["documentos_enviados", "en_revision_documentos", "confirmada"]
+        or DocumentoSubidoAsistente.objects.filter(
+            asistente_interna__visita=visita,
+            documento_requerido__categoria__in=CATEGORIAS_ARCHIVOS_FINALES,
+        ).exists()
+    )
+
     solicitud_final_historica = _solicitud_final_historica_interna(visita)
     permite_editar_asistentes = (
         visita.estado == "aprobada_inicial" and not solicitud_final_historica
@@ -617,6 +881,7 @@ def detalle_visita_interna(request, pk):
             "documentos_por_categoria": documentos_por_categoria,
             "documentos_finales_requeridos": documentos_finales_requeridos,
             "reporte_documental": reporte_documental,
+            "mostrar_reporte_diligenciamiento": mostrar_reporte_diligenciamiento,
             "reprogramacion_pendiente": reprogramacion_pendiente,
             "enviar_final_habilitado": enviar_final_habilitado,
             "mostrar_boton_subir_archivos_finales": mostrar_boton_subir_archivos_finales,
@@ -1142,6 +1407,79 @@ def detalle_aprendices_ficha(request, pk):
     owner_user = _obtener_propietario_instructor(request)
     ficha = get_object_or_404(Ficha, pk=pk, creado_por=owner_user)
 
+    if request.method == "POST" and request.POST.get("accion") == "carga_masiva_aprendices":
+        archivo = request.FILES.get("archivo_carga_masiva")
+        if not archivo:
+            messages.error(request, "Seleccione un archivo para realizar la carga masiva.")
+            return redirect("panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id)
+
+        filas, errores_lectura = _extraer_filas_importacion_aprendices(archivo)
+        if errores_lectura:
+            for error in errores_lectura:
+                messages.error(request, error)
+            return redirect("panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id)
+
+        resumen = _procesar_carga_masiva_aprendices(ficha, filas)
+        if resumen["creados"]:
+            messages.success(
+                request,
+                f"Carga masiva completada. Se crearon {resumen['creados']} aprendices.",
+            )
+
+        if resumen["duplicados"]:
+            messages.warning(
+                request,
+                f"Se omitieron {resumen['duplicados']} filas por documento repetido en la ficha.",
+            )
+
+        for error in resumen["errores"][:10]:
+            messages.error(request, error)
+
+        if len(resumen["errores"]) > 10:
+            messages.error(
+                request,
+                f"Se ocultaron {len(resumen['errores']) - 10} errores adicionales para mantener legible el resultado.",
+            )
+
+        return redirect("panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id)
+
+    if request.method == "POST" and request.POST.get("accion") == "subir_reporte_salud_pendiente":
+        aprendiz_id = request.POST.get("aprendiz_id")
+        archivo_salud = request.FILES.get("documento_salud")
+
+        aprendiz = get_object_or_404(Aprendiz, pk=aprendiz_id, ficha=ficha)
+
+        if not archivo_salud:
+            messages.error(
+                request,
+                "Seleccione el archivo del reporte de salud para continuar.",
+            )
+            return redirect("panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id)
+
+        extension = os.path.splitext(archivo_salud.name)[1].lower()
+        if extension not in EXTENSIONES_DOCUMENTOS_APRENDIZ:
+            messages.error(
+                request,
+                "Formato no permitido. Solo se admiten archivos PDF o Word (.doc, .docx).",
+            )
+            return redirect("panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id)
+
+        if getattr(archivo_salud, "size", 0) > MAX_TAMANO_DOCUMENTO_APRENDIZ:
+            messages.error(
+                request,
+                "El archivo supera el tamaño máximo permitido de 10MB.",
+            )
+            return redirect("panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id)
+
+        aprendiz.documento_adicional = archivo_salud
+        aprendiz.save(update_fields=["documento_adicional"])
+
+        messages.success(
+            request,
+            f'Reporte de salud cargado correctamente para "{aprendiz.get_nombre_completo()}".',
+        )
+        return redirect("panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id)
+
     aprendices = ficha.aprendices.all().order_by("apellido", "nombre")
     estado_filtro = request.GET.get("estado", "")
 
@@ -1156,17 +1494,141 @@ def detalle_aprendices_ficha(request, pk):
         "retirados": ficha.aprendices.filter(estado="retirado").count(),
     }
 
+    aprendices_faltantes_docs = []
+    aprendices_para_revision = ficha.aprendices.prefetch_related(
+        "documentos_subidos__documento_requerido"
+    )
+    for aprendiz in aprendices_para_revision:
+        faltantes = []
+
+        tiene_doc_salud = bool(aprendiz.documento_adicional) or aprendiz.documentos_subidos.filter(
+            documento_requerido__categoria="Formato Auto Reporte Condiciones de Salud"
+        ).exists()
+        if not tiene_doc_salud:
+            faltantes.append("Reporte de condiciones de salud")
+
+        if faltantes:
+            aprendices_faltantes_docs.append(
+                {
+                    "id": aprendiz.id,
+                    "nombre": aprendiz.get_nombre_completo(),
+                    "documento": f"{aprendiz.get_tipo_documento_display()} {aprendiz.numero_documento}",
+                    "faltantes": faltantes,
+                }
+            )
+
     context = {
         "ficha": ficha,
         "aprendices": aprendices,
         "stats": stats,
         "estado_filtro": estado_filtro,
         "correo": correo,
+        "aprendices_faltantes_docs": aprendices_faltantes_docs,
+        "total_faltantes_docs": len(aprendices_faltantes_docs),
     }
 
     return render(
         request, "panel_instructor_interno/detalle_aprendices_ficha.html", context
     )
+
+
+@instructor_interno_required
+def descargar_plantilla_carga_masiva_aprendices(request, formato):
+    formato = str(formato or "").lower()
+
+    if formato == "csv":
+        response = HttpResponse(content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = (
+            'attachment; filename="plantilla_carga_masiva_aprendices.csv"'
+        )
+        writer = csv.DictWriter(response, fieldnames=COLUMNAS_CARGA_MASIVA_APRENDICES)
+        writer.writeheader()
+        writer.writerows(EJEMPLOS_CARGA_MASIVA_APRENDICES)
+        return response
+
+    if formato == "xlsx":
+        try:
+            from openpyxl import Workbook
+        except Exception:
+            messages.error(
+                request,
+                "No fue posible generar la plantilla Excel. Instale openpyxl.",
+            )
+            return redirect("panel_instructor_interno:gestionar_fichas")
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Plantilla"
+        ws.append(COLUMNAS_CARGA_MASIVA_APRENDICES)
+        for ejemplo in EJEMPLOS_CARGA_MASIVA_APRENDICES:
+            ws.append([ejemplo.get(col, "") for col in COLUMNAS_CARGA_MASIVA_APRENDICES])
+
+        salida = io.BytesIO()
+        wb.save(salida)
+        salida.seek(0)
+
+        response = HttpResponse(
+            salida.getvalue(),
+            content_type=(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            ),
+        )
+        response["Content-Disposition"] = (
+            'attachment; filename="plantilla_carga_masiva_aprendices.xlsx"'
+        )
+        return response
+
+    if formato == "pdf":
+        from reportlab.lib.pagesizes import letter
+        from reportlab.pdfgen import canvas
+
+        output = io.BytesIO()
+        pdf = canvas.Canvas(output, pagesize=letter)
+
+        y = 760
+        pdf.setFont("Helvetica-Bold", 12)
+        pdf.drawString(40, y, "Plantilla carga masiva de aprendices")
+        y -= 22
+        pdf.setFont("Helvetica", 9)
+        pdf.drawString(
+            40,
+            y,
+            "Cada fila debe conservar este orden y usar ';' como separador:",
+        )
+        y -= 14
+        pdf.drawString(40, y, "; ".join(COLUMNAS_CARGA_MASIVA_APRENDICES))
+        y -= 22
+        pdf.setFont("Helvetica-Bold", 10)
+        pdf.drawString(40, y, "Ejemplos:")
+        y -= 16
+        pdf.setFont("Helvetica", 9)
+
+        for ejemplo in EJEMPLOS_CARGA_MASIVA_APRENDICES:
+            linea = ";".join(
+                [str(ejemplo.get(col, "")) for col in COLUMNAS_CARGA_MASIVA_APRENDICES]
+            )
+            pdf.drawString(40, y, linea)
+            y -= 14
+
+        y -= 6
+        pdf.drawString(
+            40,
+            y,
+            "Nota: si usas PDF para importar, mantén una fila por línea con ese formato.",
+        )
+
+        pdf.showPage()
+        pdf.save()
+        output.seek(0)
+
+        response = HttpResponse(output.getvalue(), content_type="application/pdf")
+        response["Content-Disposition"] = (
+            'attachment; filename="plantilla_carga_masiva_aprendices.pdf"'
+        )
+        return response
+
+    messages.error(request, "Formato de plantilla no válido.")
+    return redirect("panel_instructor_interno:gestionar_fichas")
 
 
 @instructor_interno_required
@@ -1414,10 +1876,22 @@ def registrar_aprendices_visita(request, visita_id):
         aprendices_ids = request.POST.getlist("aprendices[]")
         aprendices_registrados = 0
         aprendices_duplicados = 0
+        aprendices_sin_doc_salud = 0
 
         for aprendiz_id in aprendices_ids:
             try:
                 aprendiz = get_object_or_404(Aprendiz, pk=aprendiz_id, ficha=ficha)
+
+                docs_aprendiz = DocumentoSubidoAprendiz.objects.filter(
+                    aprendiz=aprendiz
+                ).select_related("documento_requerido")
+
+                tiene_doc_salud = bool(aprendiz.documento_adicional) or docs_aprendiz.filter(
+                    documento_requerido__categoria=CATEGORIA_DOC_SALUD
+                ).exists()
+                if not tiene_doc_salud:
+                    aprendices_sin_doc_salud += 1
+                    continue
 
                 # Verificar si ya está registrado en esta visita
                 if AsistenteVisitaInterna.objects.filter(
@@ -1438,10 +1912,6 @@ def registrar_aprendices_visita(request, visita_id):
                 )
 
                 # Cargar documentos del aprendiz automaticamente por categoria
-                docs_aprendiz = DocumentoSubidoAprendiz.objects.filter(
-                    aprendiz=aprendiz
-                ).select_related("documento_requerido")
-
                 for doc_subido in docs_aprendiz:
                     DocumentoSubidoAsistente.objects.update_or_create(
                         documento_requerido=doc_subido.documento_requerido,
@@ -1475,6 +1945,11 @@ def registrar_aprendices_visita(request, visita_id):
                 request,
                 f"⚠️ {aprendices_duplicados} aprendiz(ces) ya estaban registrados.",
             )
+        if aprendices_sin_doc_salud > 0:
+            messages.warning(
+                request,
+                f"⚠️ {aprendices_sin_doc_salud} aprendiz(ces) no se registraron porque no tienen cargado el reporte de salud.",
+            )
 
         return redirect("panel_instructor_interno:detalle_visita", pk=visita_id)
 
@@ -1485,7 +1960,7 @@ def registrar_aprendices_visita(request, visita_id):
     for aprendiz in aprendices:
         docs_qs = aprendiz.documentos_subidos.select_related("documento_requerido")
         aprendiz.tiene_documentos_subidos = docs_qs.exists()
-        aprendiz.tiene_doc_salud = docs_qs.filter(
+        aprendiz.tiene_doc_salud = bool(aprendiz.documento_adicional) or docs_qs.filter(
             documento_requerido__categoria="Formato Auto Reporte Condiciones de Salud"
         ).exists()
 
@@ -1557,7 +2032,7 @@ def validar_carga_documentos_aprendiz(
     """Valida extension, peso y obligatoriedad de documentos dinamicos por tipo de documento."""
     errores = []
     docs_subidos_ids = set(docs_subidos_ids or [])
-    tipo_doc = str(tipo_documento or "").strip().upper()
+    _tipo_doc = str(tipo_documento or "").strip().upper()
 
     for campo, archivo in archivos_subidos.items():
         if not campo.startswith("documento_") or not archivo:
@@ -1577,9 +2052,8 @@ def validar_carga_documentos_aprendiz(
     for categoria, docs in documentos_por_categoria.items():
         cat_norm = _normalizar_categoria_texto(categoria)
         es_doc_salud = "auto reporte condiciones de salud" in cat_norm
-        es_doc_padres = "autorizacion padres" in cat_norm
 
-        if not es_doc_salud and not (tipo_doc == "TI" and es_doc_padres):
+        if not es_doc_salud:
             continue
 
         for doc in docs:
@@ -1593,10 +2067,6 @@ def validar_carga_documentos_aprendiz(
             if es_doc_salud:
                 errores.append(
                     f'Falta cargar el documento obligatorio "{doc.titulo}" (Auto Reporte de Salud).'
-                )
-            elif es_doc_padres:
-                errores.append(
-                    f'Falta cargar "{doc.titulo}". Para Tarjeta de Identidad este documento es obligatorio.'
                 )
 
     return errores

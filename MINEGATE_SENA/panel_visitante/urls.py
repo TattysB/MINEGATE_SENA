@@ -11,6 +11,7 @@ urlpatterns = [
     path('panel/', views.panel_responsable, name='panel_responsable'),
     path('actualizar-perfil/', views.actualizar_perfil, name='actualizar_perfil'),
     path('registrar/<str:tipo>/<int:visita_id>/', views.registrar_asistentes, name='registrar_asistentes'),
+    path('registrar/<str:tipo>/<int:visita_id>/plantilla-carga/<str:formato>/', views.descargar_plantilla_carga_masiva_asistentes, name='descargar_plantilla_carga_masiva_asistentes'),
     path('eliminar/<str:tipo>/<int:asistente_id>/', views.eliminar_asistente, name='eliminar_asistente'),
     path('actualizar-documento/<str:tipo>/<int:asistente_id>/', views.actualizar_documento_asistente, name='actualizar_documento_asistente'),
     path('actualizar-info/<str:tipo>/<int:asistente_id>/', views.actualizar_info_asistente, name='actualizar_info_asistente'),

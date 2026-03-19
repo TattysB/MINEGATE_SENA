@@ -286,7 +286,7 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Tipo de Documento *</label>
-                        <select name="tipo_documento" class="form-select" required>
+                        <select name="tipo_documento" id="tipo_documento_asistente" class="form-select" required>
                             {% for value, label in tipo_documento_choices %}
                                 <option value="{{ value }}" {% if asistente.tipo_documento == value %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
@@ -309,7 +309,7 @@
                         <input type="file" class="form-control" name="archivo_salud" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
                         <small class="text-muted">Formatos permitidos: PDF, DOC, DOCX, JPG, JPEG, PNG.</small>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-6" id="grupo_autorizacion_padres" {% if asistente.tipo_documento != 'TI' %}style="display:none;"{% endif %}>
                         <label class="form-label">Autorización de Padres (Opcional)</label>
                         <input type="file" class="form-control" name="archivo_autorizacion_padres" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
                         <small class="text-muted">Solo si necesitas reemplazar este soporte.</small>
@@ -344,6 +344,32 @@
         }
         window.location.href = '{{ volver_url }}';
     }
+
+    function alternarAutorizacionPadresActualizar() {
+        const tipoDocumento = document.getElementById('tipo_documento_asistente');
+        const grupoAutorizacion = document.getElementById('grupo_autorizacion_padres');
+        if (!tipoDocumento || !grupoAutorizacion) {
+            return;
+        }
+
+        const mostrar = tipoDocumento.value === 'TI';
+        grupoAutorizacion.style.display = mostrar ? '' : 'none';
+        const inputAutorizacion = grupoAutorizacion.querySelector('input[name="archivo_autorizacion_padres"]');
+        if (inputAutorizacion) {
+            inputAutorizacion.disabled = !mostrar;
+            if (!mostrar) {
+                inputAutorizacion.value = '';
+            }
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        alternarAutorizacionPadresActualizar();
+        const tipoDocumento = document.getElementById('tipo_documento_asistente');
+        if (tipoDocumento) {
+            tipoDocumento.addEventListener('change', alternarAutorizacionPadresActualizar);
+        }
+    });
 
     {% if embed_mode and actualizacion_exitosa %}
     if (window.parent && window.parent !== window) {

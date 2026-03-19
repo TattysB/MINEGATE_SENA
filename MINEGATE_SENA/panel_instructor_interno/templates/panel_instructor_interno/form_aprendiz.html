@@ -404,7 +404,7 @@
                     <!-- Nota importante -->
                     <div class="alert alert-info alert-dismissible fade show" role="alert" style="margin-bottom: 20px;">
                         <i class="fas fa-info-circle me-2"></i>
-                        <strong>Importante:</strong> Para aprendices internos se solicitan estos documentos: Auto Reporte de Salud (obligatorio) y Autorizacion de Padres (solo si aplica), este ultimo es en caso de ser menor de edad.
+                        <strong>Importante:</strong> El reporte de condiciones de salud es obligatorio. La autorización de padres solo aplica para Tarjeta de Identidad (TI).
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
 
@@ -412,7 +412,7 @@
                     <div class="mb-4">
                         {% if documentos_por_categoria %}
                             {% for categoria, docs in documentos_por_categoria.items %}
-                                {% if categoria == '👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud' or categoria == '📋 Formato Autorización Padres de Familia' %}
+                                {% if categoria == '👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud' %}
                                     <div class="mb-2 mt-3">
                                         <span class="doc-required-category">{{ categoria }}</span>
                                     </div>
@@ -421,12 +421,7 @@
                                             <label style="font-weight: 600; margin-bottom: 8px; display: block; color: #1f2937;">
                                                 <i class="fas fa-upload me-2" style="color: #667eea;"></i>
                                                 Cargar {{ doc.titulo }}
-                                                {% if categoria == '👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud' %}
-                                                    <span class="required">*</span>
-                                                {% endif %}
-                                                {% if categoria == '📋 Formato Autorización Padres de Familia' %}
-                                                    <span class="badge bg-warning text-dark ms-2">Solo si aplica</span>
-                                                {% endif %}
+                                                <span class="required">*</span>
                                                 {% if doc.id in docs_subidos_ids %}
                                                     <span class="badge bg-success ms-2">Ya cargado</span>
                                                 {% endif %}
@@ -436,8 +431,7 @@
                                                 name="documento_{{ doc.id }}"
                                                 class="form-control"
                                                 accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                                                data-required="{% if categoria == '👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud' and doc.id not in docs_subidos_ids %}true{% else %}false{% endif %}"
-                                                data-autorizacion-padres="{% if categoria == '📋 Formato Autorización Padres de Familia' %}true{% else %}false{% endif %}"
+                                                data-required="{% if doc.id not in docs_subidos_ids %}true{% else %}false{% endif %}"
                                                 data-ya-cargado="{% if doc.id in docs_subidos_ids %}true{% else %}false{% endif %}"
                                                 data-doc-titulo="{{ doc.titulo }}"
                                                 style="padding: 10px; border-radius: 6px; border: 1px solid #d1d5db;"
@@ -448,6 +442,37 @@
                                             <small style="color: #6b7280; display: block; margin-top: 6px;"><i class="fas fa-info-circle me-1"></i>Formatos aceptados: PDF, DOC, DOCX (Max. 10MB)</small>
                                         </div>
                                     {% endfor %}
+                                {% endif %}
+                            {% endfor %}
+
+                            {% for categoria, docs in documentos_por_categoria.items %}
+                                {% if categoria == '📋 Formato Autorización Padres de Familia' %}
+                                    <div id="bloqueAutorizacionPadresAprendiz" style="display:none;">
+                                        <div class="mb-2 mt-3">
+                                            <span class="doc-required-category">{{ categoria }}</span>
+                                        </div>
+                                        {% for doc in docs %}
+                                            <div style="padding: 15px; background: #f3f4f6; border: 2px solid #d1d5db; border-radius: 8px; margin-bottom: 12px;">
+                                                <label style="font-weight: 600; margin-bottom: 8px; display: block; color: #1f2937;">
+                                                    <i class="fas fa-upload me-2" style="color: #667eea;"></i>
+                                                    Cargar {{ doc.titulo }}
+                                                    {% if doc.id in docs_subidos_ids %}
+                                                        <span class="badge bg-success ms-2">Ya cargado</span>
+                                                    {% endif %}
+                                                </label>
+                                                <input
+                                                    type="file"
+                                                    name="documento_{{ doc.id }}"
+                                                    class="form-control input-autorizacion-padres-aprendiz"
+                                                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                                    data-ya-cargado="{% if doc.id in docs_subidos_ids %}true{% else %}false{% endif %}"
+                                                    data-doc-titulo="{{ doc.titulo }}"
+                                                    style="padding: 10px; border-radius: 6px; border: 1px solid #d1d5db;"
+                                                >
+                                                <small style="color: #6b7280; display: block; margin-top: 6px;"><i class="fas fa-info-circle me-1"></i>Se muestra únicamente cuando el tipo de documento es TI.</small>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
                                 {% endif %}
                             {% endfor %}
                         {% else %}
@@ -559,6 +584,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const campoDocumento = document.querySelector('input[name="numero_documento"]');
     const campoCorreo = document.querySelector('input[name="correo"]');
     const campoTelefono = document.querySelector('input[name="telefono"]');
+    const bloqueAutorizacionPadresAprendiz = document.getElementById('bloqueAutorizacionPadresAprendiz');
+    const inputsAutorizacionPadresAprendiz = Array.from(document.querySelectorAll('.input-autorizacion-padres-aprendiz'));
 
     function obtenerExtension(nombreArchivo) {
         const punto = nombreArchivo.lastIndexOf('.');
@@ -589,6 +616,21 @@ document.addEventListener('DOMContentLoaded', function() {
         return (valor || '').trim().replace(/\s+/g, ' ');
     }
 
+    function alternarAutorizacionPadresAprendiz() {
+        if (!tipoDocumentoSelect || !bloqueAutorizacionPadresAprendiz) {
+            return;
+        }
+
+        const mostrar = tipoDocumentoSelect.value === 'TI';
+        bloqueAutorizacionPadresAprendiz.style.display = mostrar ? 'block' : 'none';
+        inputsAutorizacionPadresAprendiz.forEach((input) => {
+            input.disabled = !mostrar;
+            if (!mostrar) {
+                input.value = '';
+            }
+        });
+    }
+
     document.querySelectorAll('input[type="file"][name^="documento_"]').forEach(campo => {
         campo.addEventListener('change', function() {
             if (!this.files || !this.files.length) {
@@ -614,10 +656,14 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     if (formulario && btnGuardar) {
+        alternarAutorizacionPadresAprendiz();
+        if (tipoDocumentoSelect) {
+            tipoDocumentoSelect.addEventListener('change', alternarAutorizacionPadresAprendiz);
+        }
+
         formulario.addEventListener('submit', function(evento) {
             const camposArchivo = Array.from(document.querySelectorAll('input[type="file"][name^="documento_"]'));
             const camposRequeridos = Array.from(document.querySelectorAll('input[type="file"][data-required="true"]'));
-            const esMenorEdad = tipoDocumentoSelect && tipoDocumentoSelect.value === 'TI';
             const archivosFormatoInvalido = [];
             const archivosTamanoInvalido = [];
             const erroresDatos = [];
@@ -716,15 +762,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     + detalleErroresArchivos
                 );
                 return;
-            }
-
-            if (esMenorEdad) {
-                const camposAutorizacion = document.querySelectorAll('input[type="file"][data-autorizacion-padres="true"]');
-                camposAutorizacion.forEach(campo => {
-                    if (campo.dataset.yaCargado !== 'true' && !camposRequeridos.includes(campo)) {
-                        camposRequeridos.push(campo);
-                    }
-                });
             }
 
             let todosLosArchivosCompletos = true;

@@ -343,7 +343,7 @@
   </div>
   {% endif %}
 
-  {% if visita.estado == 'documentos_enviados' or visita.estado == 'en_revision_documentos' or visita.estado == 'confirmada' or visita.estado == 'aprobada_inicial' and visita.asistentes.count > 0 %}
+  {% if mostrar_reporte_diligenciamiento %}
   <!-- ===== REPORTE DE DILIGENCIAMIENTO DOCUMENTAL ===== -->
   <div class="detail-card">
     <div class="detail-card-header {% if reporte_documental.hay_alertas %}morado{% else %}verde{% endif %}">

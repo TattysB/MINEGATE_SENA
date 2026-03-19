@@ -34,11 +34,14 @@ from .models import RegistroVisitante
 from django.conf import settings
 from django.db import IntegrityError, transaction
 from pathlib import Path
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 import re
+import os
+import csv
+import io
 
 
 CATEGORIAS_ARCHIVOS_FINALES = {
@@ -54,11 +57,320 @@ CATEGORIAS_DOCUMENTOS_REGISTRO = {
 AUTH_VISITANTE_MESSAGE_TAG = "auth_visitante"
 REGISTRO_VERIFICACION_SESSION_KEY = "registro_verificacion_pendiente"
 REGISTRO_VERIFICACION_TTL_MINUTOS = 10
+FORMATOS_CARGA_MASIVA_ASISTENTES = {".csv", ".xlsx", ".xls", ".pdf"}
+COLUMNAS_CARGA_MASIVA_ASISTENTES = [
+    "nombre_completo",
+    "tipo_documento",
+    "numero_documento",
+    "correo",
+    "telefono",
+]
+EJEMPLOS_CARGA_MASIVA_ASISTENTES = [
+    {
+        "nombre_completo": "Laura Gomez",
+        "tipo_documento": "CC",
+        "numero_documento": "1022334455",
+        "correo": "laura.gomez@example.com",
+        "telefono": "3001234567",
+    },
+    {
+        "nombre_completo": "Mateo Rodriguez",
+        "tipo_documento": "TI",
+        "numero_documento": "1099988877",
+        "correo": "mateo.rodriguez@example.com",
+        "telefono": "3017654321",
+    },
+]
 
 
 def _generar_codigo_verificacion(longitud=6):
     generador = random.SystemRandom()
     return "".join(str(generador.randint(0, 9)) for _ in range(longitud))
+
+
+def _normalizar_encabezado_importacion(valor):
+    return (
+        str(valor or "")
+        .strip()
+        .lower()
+        .replace(" ", "_")
+        .replace("á", "a")
+        .replace("é", "e")
+        .replace("í", "i")
+        .replace("ó", "o")
+        .replace("ú", "u")
+    )
+
+
+def _mapear_tipo_documento_importacion(valor):
+    tipo = str(valor or "").strip().upper()
+    equivalencias = {
+        "CEDULA": "CC",
+        "CEDULA_DE_CIUDADANIA": "CC",
+        "TARJETA_DE_IDENTIDAD": "TI",
+        "PASAPORTE": "PP",
+    }
+    return equivalencias.get(tipo, tipo)
+
+
+def _extraer_filas_csv_asistentes(archivo):
+    contenido = archivo.read()
+    if isinstance(contenido, bytes):
+        try:
+            texto = contenido.decode("utf-8-sig")
+        except UnicodeDecodeError:
+            texto = contenido.decode("latin-1")
+    else:
+        texto = str(contenido)
+
+    lector = csv.DictReader(io.StringIO(texto))
+    if not lector.fieldnames:
+        return [], ["El CSV no contiene encabezados."]
+
+    headers = [_normalizar_encabezado_importacion(h) for h in lector.fieldnames]
+    faltantes = [c for c in COLUMNAS_CARGA_MASIVA_ASISTENTES if c not in headers]
+    if faltantes:
+        return [], [
+            "La plantilla no coincide. Faltan columnas: " + ", ".join(faltantes)
+        ]
+
+    filas = []
+    for idx, row in enumerate(lector, start=2):
+        fila = {}
+        for key, value in row.items():
+            fila[_normalizar_encabezado_importacion(key)] = (value or "").strip()
+        if not any(fila.values()):
+            continue
+        filas.append((idx, fila))
+
+    if not filas:
+        return [], ["No se encontraron filas de asistentes para importar."]
+
+    return filas, []
+
+
+def _extraer_filas_excel_asistentes(archivo):
+    try:
+        from openpyxl import load_workbook
+    except Exception:
+        return [], [
+            "No se pudo procesar Excel. Instale openpyxl para habilitar este formato."
+        ]
+
+    try:
+        wb = load_workbook(filename=archivo, data_only=True)
+        ws = wb.active
+    except Exception:
+        return [], ["No fue posible leer el archivo Excel. Verifique la plantilla."]
+
+    encabezados = []
+    for cell in ws[1]:
+        encabezados.append(_normalizar_encabezado_importacion(cell.value))
+
+    faltantes = [c for c in COLUMNAS_CARGA_MASIVA_ASISTENTES if c not in encabezados]
+    if faltantes:
+        return [], [
+            "La plantilla no coincide. Faltan columnas: " + ", ".join(faltantes)
+        ]
+
+    filas = []
+    for idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+        fila = {}
+        for col_idx, valor in enumerate(row):
+            if col_idx >= len(encabezados):
+                continue
+            clave = encabezados[col_idx]
+            fila[clave] = "" if valor is None else str(valor).strip()
+
+        if not any(fila.values()):
+            continue
+        filas.append((idx, fila))
+
+    if not filas:
+        return [], ["No se encontraron filas de asistentes para importar."]
+
+    return filas, []
+
+
+def _extraer_filas_pdf_asistentes(archivo):
+    try:
+        from pypdf import PdfReader
+    except Exception:
+        return [], ["No se pudo procesar PDF. Instale pypdf para habilitar este formato."]
+
+    try:
+        reader = PdfReader(archivo)
+        texto = "\n".join((p.extract_text() or "") for p in reader.pages)
+    except Exception:
+        return [], ["No fue posible leer el archivo PDF. Use la plantilla descargable."]
+
+    filas = []
+    for idx, linea in enumerate(texto.splitlines(), start=1):
+        normalizada = linea.strip()
+        if not normalizada or ";" not in normalizada:
+            continue
+        partes = [p.strip() for p in normalizada.split(";")]
+        if len(partes) < 5:
+            continue
+        if _normalizar_encabezado_importacion(partes[0]) == "nombre_completo":
+            continue
+
+        filas.append(
+            (
+                idx,
+                {
+                    "nombre_completo": partes[0],
+                    "tipo_documento": partes[1],
+                    "numero_documento": partes[2],
+                    "correo": partes[3],
+                    "telefono": partes[4],
+                },
+            )
+        )
+
+    if not filas:
+        return [], [
+            "No se detectaron filas válidas en el PDF. Mantenga el formato con ';'."
+        ]
+
+    return filas, []
+
+
+def _extraer_filas_importacion_asistentes(archivo):
+    extension = os.path.splitext(getattr(archivo, "name", ""))[1].lower()
+
+    if extension not in FORMATOS_CARGA_MASIVA_ASISTENTES:
+        return [], ["Formato no permitido. Use CSV, Excel (.xlsx/.xls) o PDF."]
+
+    if extension == ".csv":
+        return _extraer_filas_csv_asistentes(archivo)
+
+    if extension in {".xlsx", ".xls"}:
+        return _extraer_filas_excel_asistentes(archivo)
+
+    return _extraer_filas_pdf_asistentes(archivo)
+
+
+def _validar_fila_asistente_importacion(fila):
+    errores = []
+    tipos_documento_validos = {"CC", "CE", "TI", "PPT", "PP"}
+
+    nombre = " ".join(str(fila.get("nombre_completo", "")).split())
+    tipo_doc = _mapear_tipo_documento_importacion(fila.get("tipo_documento"))
+    num_doc = str(fila.get("numero_documento", "")).strip()
+    correo = str(fila.get("correo", "")).strip().lower()
+    telefono = str(fila.get("telefono", "")).strip()
+
+    if not nombre or len(nombre) < 3 or len(nombre) > 80:
+        errores.append("nombre_completo invalido (3 a 80 caracteres).")
+    elif not re.fullmatch(r"[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]+", nombre):
+        errores.append("nombre_completo solo puede contener letras y espacios.")
+
+    if tipo_doc not in tipos_documento_validos:
+        errores.append("tipo_documento no valido.")
+
+    if not num_doc or not num_doc.isdigit() or not 5 <= len(num_doc) <= 10:
+        errores.append("numero_documento debe tener entre 5 y 10 digitos.")
+
+    if correo:
+        try:
+            validate_email(correo)
+        except ValidationError:
+            errores.append("correo invalido.")
+
+    if telefono:
+        if not telefono.isdigit() or not 7 <= len(telefono) <= 10:
+            errores.append("telefono debe tener entre 7 y 10 digitos.")
+
+    return {
+        "nombre_completo": nombre,
+        "tipo_documento": tipo_doc,
+        "numero_documento": num_doc,
+        "correo": correo,
+        "telefono": telefono,
+    }, errores
+
+
+def _sincronizar_asistente_con_ficha_interna(visita, datos_asistente):
+    try:
+        from panel_instructor_interno.models import Ficha, Aprendiz
+    except Exception:
+        return
+
+    ficha = Ficha.objects.filter(numero=visita.numero_ficha).first()
+    if not ficha:
+        return
+
+    existe = Aprendiz.objects.filter(
+        ficha=ficha,
+        numero_documento=datos_asistente["numero_documento"],
+    ).exists()
+    if existe:
+        return
+
+    partes_nombre = datos_asistente["nombre_completo"].split()
+    nombre = partes_nombre[0] if partes_nombre else ""
+    apellido = " ".join(partes_nombre[1:]) if len(partes_nombre) > 1 else ""
+
+    Aprendiz.objects.create(
+        ficha=ficha,
+        nombre=nombre,
+        apellido=apellido,
+        tipo_documento=datos_asistente["tipo_documento"],
+        numero_documento=datos_asistente["numero_documento"],
+        correo=datos_asistente["correo"],
+        telefono=datos_asistente["telefono"],
+        estado="activo",
+    )
+
+
+def _procesar_carga_masiva_asistentes(visita, tipo, filas, max_asistentes):
+    creados = 0
+    duplicados = 0
+    omitidos_limite = 0
+    errores = []
+
+    modelo_asistente = AsistenteVisitaInterna if tipo == "interna" else AsistenteVisitaExterna
+    total_actual = visita.asistentes.count()
+
+    for fila_numero, fila in filas:
+        if total_actual + creados >= max_asistentes:
+            omitidos_limite += 1
+            continue
+
+        datos, errores_validacion = _validar_fila_asistente_importacion(fila)
+        if errores_validacion:
+            errores.append(f"Fila {fila_numero}: {' | '.join(errores_validacion)}")
+            continue
+
+        if modelo_asistente.objects.filter(
+            visita=visita,
+            numero_documento=datos["numero_documento"],
+        ).exists():
+            duplicados += 1
+            continue
+
+        asistente = modelo_asistente.objects.create(
+            visita=visita,
+            nombre_completo=datos["nombre_completo"],
+            tipo_documento=datos["tipo_documento"],
+            numero_documento=datos["numero_documento"],
+            correo=datos["correo"],
+            telefono=datos["telefono"],
+        )
+
+        if tipo == "interna":
+            _sincronizar_asistente_con_ficha_interna(visita, datos)
+
+        asistente.tiene_doc_salud = False
+        creados += 1
+
+    return {
+        "creados": creados,
+        "duplicados": duplicados,
+        "omitidos_limite": omitidos_limite,
+        "errores": errores,
+    }
 
 
 def _enviar_codigo_verificacion_registro(correo, codigo, nombre):
@@ -542,6 +854,123 @@ def panel_responsable(request):
         return redirect("panel_visitante:login_responsable")
 
 
+def descargar_plantilla_carga_masiva_asistentes(request, tipo, visita_id, formato):
+    if not request.session.get("responsable_autenticado"):
+        messages.warning(
+            request,
+            "Debe iniciar sesión para acceder.",
+            extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+        )
+        return redirect("panel_visitante:login_responsable")
+
+    correo = request.session.get("responsable_correo")
+    if tipo == "interna":
+        get_object_or_404(VisitaInterna, id=visita_id, correo_responsable__iexact=correo)
+    elif tipo == "externa":
+        get_object_or_404(VisitaExterna, id=visita_id, correo_responsable__iexact=correo)
+    else:
+        messages.error(request, "Tipo de visita no válido.")
+        return _redirect_segun_rol(request)
+
+    formato = str(formato or "").lower()
+
+    if formato == "csv":
+        response = HttpResponse(content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = (
+            'attachment; filename="plantilla_carga_masiva_asistentes.csv"'
+        )
+        writer = csv.DictWriter(response, fieldnames=COLUMNAS_CARGA_MASIVA_ASISTENTES)
+        writer.writeheader()
+        writer.writerows(EJEMPLOS_CARGA_MASIVA_ASISTENTES)
+        return response
+
+    if formato == "xlsx":
+        try:
+            from openpyxl import Workbook
+        except Exception:
+            messages.error(
+                request,
+                "No fue posible generar la plantilla Excel. Instale openpyxl.",
+            )
+            return redirect(
+                "panel_visitante:registrar_asistentes", tipo=tipo, visita_id=visita_id
+            )
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Plantilla"
+        ws.append(COLUMNAS_CARGA_MASIVA_ASISTENTES)
+        for ejemplo in EJEMPLOS_CARGA_MASIVA_ASISTENTES:
+            ws.append([ejemplo.get(col, "") for col in COLUMNAS_CARGA_MASIVA_ASISTENTES])
+
+        salida = io.BytesIO()
+        wb.save(salida)
+        salida.seek(0)
+
+        response = HttpResponse(
+            salida.getvalue(),
+            content_type=(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            ),
+        )
+        response["Content-Disposition"] = (
+            'attachment; filename="plantilla_carga_masiva_asistentes.xlsx"'
+        )
+        return response
+
+    if formato == "pdf":
+        from reportlab.lib.pagesizes import letter
+        from reportlab.pdfgen import canvas
+
+        output = io.BytesIO()
+        pdf = canvas.Canvas(output, pagesize=letter)
+
+        y = 760
+        pdf.setFont("Helvetica-Bold", 12)
+        pdf.drawString(40, y, "Plantilla carga masiva de asistentes")
+        y -= 22
+        pdf.setFont("Helvetica", 9)
+        pdf.drawString(
+            40,
+            y,
+            "Cada fila debe conservar este orden y usar ';' como separador:",
+        )
+        y -= 14
+        pdf.drawString(40, y, "; ".join(COLUMNAS_CARGA_MASIVA_ASISTENTES))
+        y -= 22
+        pdf.setFont("Helvetica-Bold", 10)
+        pdf.drawString(40, y, "Ejemplos:")
+        y -= 16
+        pdf.setFont("Helvetica", 9)
+
+        for ejemplo in EJEMPLOS_CARGA_MASIVA_ASISTENTES:
+            linea = ";".join(
+                [str(ejemplo.get(col, "")) for col in COLUMNAS_CARGA_MASIVA_ASISTENTES]
+            )
+            pdf.drawString(40, y, linea)
+            y -= 14
+
+        y -= 6
+        pdf.drawString(
+            40,
+            y,
+            "Nota: si usas PDF para importar, mantén una fila por línea con ese formato.",
+        )
+
+        pdf.showPage()
+        pdf.save()
+        output.seek(0)
+
+        response = HttpResponse(output.getvalue(), content_type="application/pdf")
+        response["Content-Disposition"] = (
+            'attachment; filename="plantilla_carga_masiva_asistentes.pdf"'
+        )
+        return response
+
+    messages.error(request, "Formato de plantilla no válido.")
+    return redirect("panel_visitante:registrar_asistentes", tipo=tipo, visita_id=visita_id)
+
+
 def registrar_asistentes(request, tipo, visita_id):
     """
     Formulario para registrar asistentes a una visita aprobada.
@@ -733,6 +1162,23 @@ def registrar_asistentes(request, tipo, visita_id):
         solicitud_final_historica or flujo_completo_con_finales
     )
 
+    asistentes_documentos_pendientes = []
+    for asistente in asistentes:
+        faltantes = []
+        if not getattr(asistente, "tiene_doc_salud", False):
+            faltantes.append("Reporte de condiciones de salud")
+
+        if faltantes:
+            asistentes_documentos_pendientes.append(
+                {
+                    "id": asistente.id,
+                    "nombre": asistente.nombre_completo,
+                    "tipo_documento": asistente.tipo_documento,
+                    "documento": f"{asistente.get_tipo_documento_display()} {asistente.numero_documento}",
+                    "faltantes": faltantes,
+                }
+            )
+
     context = {
         "visita": visita,
         "tipo": tipo,
@@ -747,7 +1193,80 @@ def registrar_asistentes(request, tipo, visita_id):
         "mostrar_archivos_finales": mostrar_archivos_finales,
         "puede_actualizar_asistentes": puede_actualizar_asistentes,
         "solicitud_final_historica": solicitud_final_historica,
+        "asistentes_documentos_pendientes": asistentes_documentos_pendientes,
+        "total_asistentes_pendientes": len(asistentes_documentos_pendientes),
     }
+
+    if request.method == "POST" and request.POST.get("accion") == "carga_masiva_asistentes":
+        if solicitud_final_historica:
+            messages.error(
+                request,
+                "La solicitud final ya fue enviada previamente. No es posible modificar los datos de asistentes.",
+            )
+            return redirect(
+                "panel_visitante:registrar_asistentes",
+                tipo=tipo,
+                visita_id=visita_id,
+            )
+
+        archivo = request.FILES.get("archivo_carga_masiva")
+        if not archivo:
+            messages.error(request, "Seleccione un archivo para realizar la carga masiva.")
+            return redirect(
+                "panel_visitante:registrar_asistentes",
+                tipo=tipo,
+                visita_id=visita_id,
+            )
+
+        filas, errores_lectura = _extraer_filas_importacion_asistentes(archivo)
+        if errores_lectura:
+            for error in errores_lectura:
+                messages.error(request, error)
+            return redirect(
+                "panel_visitante:registrar_asistentes",
+                tipo=tipo,
+                visita_id=visita_id,
+            )
+
+        resumen_importacion = _procesar_carga_masiva_asistentes(
+            visita=visita,
+            tipo=tipo,
+            filas=filas,
+            max_asistentes=max_asistentes,
+        )
+
+        if resumen_importacion["creados"]:
+            messages.success(
+                request,
+                f"Carga masiva completada. Se registraron {resumen_importacion['creados']} asistentes.",
+            )
+
+        if resumen_importacion["duplicados"]:
+            messages.warning(
+                request,
+                f"Se omitieron {resumen_importacion['duplicados']} filas por documento repetido en esta visita.",
+            )
+
+        if resumen_importacion["omitidos_limite"]:
+            messages.warning(
+                request,
+                f"Se omitieron {resumen_importacion['omitidos_limite']} filas por límite máximo de asistentes.",
+            )
+
+        for error in resumen_importacion["errores"][:10]:
+            messages.error(request, error)
+
+        if len(resumen_importacion["errores"]) > 10:
+            messages.error(
+                request,
+                f"Se ocultaron {len(resumen_importacion['errores']) - 10} errores adicionales para mantener legible el resultado.",
+            )
+
+        return redirect(
+            "panel_visitante:registrar_asistentes",
+            tipo=tipo,
+            visita_id=visita_id,
+        )
 
     # Procesar archivos finales si se envía el formulario del modal
     if (
@@ -1119,6 +1638,8 @@ def registrar_asistentes(request, tipo, visita_id):
         "mostrar_archivos_finales": mostrar_archivos_finales,
         "puede_actualizar_asistentes": puede_actualizar_asistentes,
         "solicitud_final_historica": solicitud_final_historica,
+        "asistentes_documentos_pendientes": asistentes_documentos_pendientes,
+        "total_asistentes_pendientes": len(asistentes_documentos_pendientes),
     }
 
     return render(request, "registrar_asistentes.html", context)
