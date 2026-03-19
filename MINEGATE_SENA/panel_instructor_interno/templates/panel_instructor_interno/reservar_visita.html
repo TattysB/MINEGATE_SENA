@@ -351,15 +351,49 @@
   </form>
 </div>
 
+{{ fichas_data|json_script:"fichas-data" }}
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   const container = document.getElementById('calendarioContainer');
   const formSolicitud = document.querySelector('form[method="POST"]');
   const btnEnviar = document.getElementById('btnEnviar');
+  const selectFicha = document.getElementById('id_numero_ficha');
+  const inputCantidad = document.getElementById('id_cantidad_aprendices');
+  const fichasDataEl = document.getElementById('fichas-data');
   const modalConfirmarEnvioEl = document.getElementById('modalConfirmarEnvio');
   const btnConfirmarEnvioFinal = document.getElementById('btnConfirmarEnvioFinal');
   let selectedDate = null;
   let selectedHorario = null;
+  let fichasData = {};
+
+  if (fichasDataEl) {
+    try {
+      fichasData = JSON.parse(fichasDataEl.textContent || '{}');
+    } catch (_) {
+      fichasData = {};
+    }
+  }
+
+  function syncCantidadFromFicha() {
+    if (!selectFicha || !inputCantidad) return;
+
+    const numeroFicha = selectFicha.value;
+    if (!numeroFicha || !Object.prototype.hasOwnProperty.call(fichasData, numeroFicha)) {
+      inputCantidad.value = '';
+      return;
+    }
+
+    inputCantidad.value = String(fichasData[numeroFicha]);
+  }
+
+  if (inputCantidad) {
+    inputCantidad.setAttribute('readonly', 'readonly');
+  }
+  if (selectFicha) {
+    selectFicha.addEventListener('change', syncCantidadFromFicha);
+  }
+  syncCantidadFromFicha();
 
   // Cargar calendario inicial
   loadCalendario();
@@ -545,6 +579,18 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Validación antes de enviar
   btnEnviar.addEventListener('click', function(e) {
+    syncCantidadFromFicha();
+
+    const cantidadSeleccionada = parseInt((inputCantidad && inputCantidad.value) ? inputCantidad.value : '0', 10);
+    if (!cantidadSeleccionada || cantidadSeleccionada < 1) {
+      e.preventDefault();
+      alert('La visita no puede enviarse con 0 aprendices. Selecciona una ficha con cantidad válida.');
+      if (selectFicha) {
+        selectFicha.focus();
+      }
+      return false;
+    }
+
     if (!selectedDate || !selectedHorario) {
       e.preventDefault();
       alert('Por favor selecciona una fecha y un horario para la visita.');

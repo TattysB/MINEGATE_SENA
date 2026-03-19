@@ -53,8 +53,8 @@
   .btn-registrar:hover { background:var(--sena-verde-oscuro); color:white; transform:translateY(-1px); }
   .btn-enviar { background:#6366f1; color:white; border:none; padding:10px 22px; border-radius:50px; font-weight:700; font-size:0.9rem; text-decoration:none; display:inline-flex; align-items:center; gap:7px; transition:all 0.2s; }
   .btn-enviar:hover { background:#4f46e5; color:white; }
-  .btn-actualizar-asi { background:transparent; color:#2563eb; border:1px solid #2563eb; padding:4px 12px; border-radius:50px; font-size:0.78rem; font-weight:600; text-decoration:none; transition:all 0.2s; }
-  .btn-actualizar-asi:hover { background:#dbeafe; color:#1d4ed8; }
+  .btn-actualizar-asi { background:transparent; color:var(--sena-verde); border:1px solid var(--sena-verde); padding:4px 12px; border-radius:50px; font-size:0.78rem; font-weight:700; text-decoration:none; transition:all 0.2s; }
+  .btn-actualizar-asi:hover { background:#dcfce7; color:var(--sena-verde-oscuro); border-color:var(--sena-verde-oscuro); }
   .btn-eliminar-asi { background:transparent; color:#ef4444; border:1px solid #ef4444; padding:4px 12px; border-radius:50px; font-size:0.78rem; font-weight:600; text-decoration:none; transition:all 0.2s; }
   .btn-eliminar-asi:hover { background:#fee2e2; color:#991b1b; }
   .progress-wrap { background:#e9ecef; border-radius:50px; height:12px; overflow:hidden; margin:0.5rem 0; }
@@ -343,7 +343,7 @@
   </div>
   {% endif %}
 
-  {% if visita.estado == 'documentos_enviados' or visita.estado == 'en_revision_documentos' or visita.estado == 'confirmada' or visita.estado == 'aprobada_inicial' and visita.asistentes.count > 0 %}
+  {% if mostrar_reporte_diligenciamiento %}
   <!-- ===== REPORTE DE DILIGENCIAMIENTO DOCUMENTAL ===== -->
   <div class="detail-card">
     <div class="detail-card-header {% if reporte_documental.hay_alertas %}morado{% else %}verde{% endif %}">
@@ -364,9 +364,7 @@
           <button type="button" onclick="abrirModalArchivosFinales(true)" class="btn-registrar" style="background: linear-gradient(135deg, #eae1b2 0%, #fff177 100%); color: #333; border: none; cursor: pointer;">
             <i class="fas fa-upload"></i> Corregir / subir archivo final
           </button>
-          <a href="{% url 'panel_visitante:registrar_asistentes' tipo='interna' visita_id=visita.id %}" class="btn-registrar">
-            <i class="fas fa-eye"></i> Ver registro completo
-          </a>
+          
         </div>
         {% endif %}
 
@@ -500,12 +498,20 @@
           <i class="fas fa-check-circle me-2"></i>
           <strong>¡Visita aprobada!</strong> Ya puedes registrar los aprendices y luego enviar la solicitud final.
         </div>
+        {% if solicitud_final_historica %}
+        <div class="doc-resumen-box mb-3" style="background:#fef3c7;border-color:#fcd34d;color:#92400e;">
+          <i class="fas fa-lock me-2"></i>
+          Esta visita ya fue enviada previamente a revisión. Los datos de aprendices quedaron bloqueados y solo se permiten correcciones documentales.
+        </div>
+        {% endif %}
         <div class="d-flex flex-wrap gap-2 mb-4">
+          {% if not solicitud_final_historica %}
           <a href="{% url 'panel_instructor_interno:registrar_aprendices_visita' visita_id=visita.id %}" class="btn-registrar" title="Registrar aprendices de la ficha rápidamente">
             <i class="fas fa-graduation-cap"></i> Registrar aprendices de la ficha
           </a>
+          {% endif %}
           <a href="{% url 'panel_visitante:registrar_asistentes' tipo='interna' visita_id=visita.id %}" class="btn-registrar">
-            <i class="fas fa-user-plus"></i> Registrar / Ver aprendices
+            <i class="fas fa-user-plus"></i> {% if solicitud_final_historica %}Ver aprendices{% else %}Registrar / Ver aprendices{% endif %}
           </a>
           {% if mostrar_boton_subir_archivos_finales %}
           <button type="button" onclick="abrirModalArchivosFinales(false)" class="btn-registrar" style="background: linear-gradient(135deg, #eae1b2 0%, #fff177 100%); color: #333; border: none; cursor: pointer;">
@@ -513,7 +519,7 @@
           </button>
           {% elif visita.asistentes.count > 0 %}
           <span class="btn-registrar" style="background:#ecfdf3;color:#166534;border:1px solid #86efac;cursor:default;">
-            <i class="fas fa-check-circle"></i> Archivos cargados en revisión
+            <i class="fas fa-check-circle"></i> Archivos enviados para revisión
           </span>
           {% endif %}
           {% if visita.asistentes.count > 0 %}
@@ -534,11 +540,7 @@
           <a href="{% url 'panel_visitante:registrar_asistentes' tipo='interna' visita_id=visita.id %}" class="btn-registrar">
             <i class="fas fa-eye"></i> Ver aprendices registrados
           </a>
-          {% if visita.asistentes.count > 0 %}
-          <button type="button" onclick="abrirModalArchivosFinales(true)" class="btn-registrar" style="background: linear-gradient(135deg, #eae1b2 0%, #fff177 100%); color: #333; border: none; cursor: pointer;">
-            <i class="fas fa-upload"></i> Corregir / subir archivo final
-          </button>
-          {% endif %}
+          
         </div>
       {% elif visita.estado == 'confirmada' %}
         <a href="{% url 'panel_visitante:registrar_asistentes' tipo='interna' visita_id=visita.id %}" class="btn-registrar mb-3">
@@ -554,12 +556,12 @@
             <h6><i class="fas fa-user me-2" style="color:#6b21a8;"></i>{{ asistente.nombre_completo }}</h6>
             <small>{{ asistente.get_tipo_documento_display }}: {{ asistente.numero_documento }}</small>
           </div>
-          {% if visita.estado == 'aprobada_inicial' %}
+          {% if permite_editar_asistentes %}
           <div class="d-flex gap-2">
             <a href="{% url 'panel_visitante:actualizar_info_asistente' tipo='interna' asistente_id=asistente.id %}"
                class="btn-actualizar-asi"
                onclick="return abrirModalActualizarAsistente(this.href);">
-              <i class="fas fa-pen me-1"></i>Actualizar
+              <i class="fas fa-pen me-1"></i>Actualizar datos/documento
             </a>
             <a href="{% url 'panel_instructor_interno:eliminar_asistente_visita' visita_id=visita.id asistente_id=asistente.id tipo='interna' %}"
                class="btn-eliminar-asi"

@@ -530,6 +530,12 @@
             </div>
         </div>
 
+        {% if form.non_field_errors %}
+        <div class="campo campo-completo">
+            <div class="error-msg">{{ form.non_field_errors.0 }}</div>
+        </div>
+        {% endif %}
+
         <!-- Opciones adicionales -->
         <div class="opciones-adicionales">
             <h3>⚙️ Opciones de Cuenta</h3>
@@ -555,6 +561,25 @@
 </div>
 
 <script>
+    function setFieldError(input, message) {
+        let error = input.parentElement.querySelector('.error-msg-client');
+        if (!error) {
+            error = document.createElement('div');
+            error.className = 'error-msg error-msg-client';
+            input.parentElement.appendChild(error);
+        }
+        error.textContent = message;
+        input.classList.add('error');
+    }
+
+    function clearFieldError(input) {
+        const error = input.parentElement.querySelector('.error-msg-client');
+        if (error) {
+            error.remove();
+        }
+        input.classList.remove('error');
+    }
+
     function togglePassword(inputId) {
         const input = document.getElementById(inputId);
         const icon = document.getElementById('icon-' + inputId);
@@ -572,6 +597,61 @@
 
     // Auto-cerrar alertas después de 5 segundos
     document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('formCrearUsuario');
+        const documento = document.getElementById('documento');
+        const firstName = document.getElementById('first_name');
+        const lastName = document.getElementById('last_name');
+        const telefono = document.getElementById('telefono');
+
+        const soloLetras = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/;
+
+        if (form) {
+            form.addEventListener('submit', function (event) {
+                let valido = true;
+
+                clearFieldError(documento);
+                clearFieldError(firstName);
+                clearFieldError(lastName);
+                clearFieldError(telefono);
+
+                const docValue = (documento.value || '').trim();
+                if (!/^\d+$/.test(docValue)) {
+                    setFieldError(documento, 'El documento solo debe contener números.');
+                    valido = false;
+                } else if (docValue.length < 5 || docValue.length > 20) {
+                    setFieldError(documento, 'El documento debe tener entre 5 y 20 dígitos.');
+                    valido = false;
+                }
+
+                const firstNameValue = (firstName.value || '').trim();
+                if (!soloLetras.test(firstNameValue)) {
+                    setFieldError(firstName, 'El nombre solo debe contener letras.');
+                    valido = false;
+                }
+
+                const lastNameValue = (lastName.value || '').trim();
+                if (!soloLetras.test(lastNameValue)) {
+                    setFieldError(lastName, 'El apellido solo debe contener letras.');
+                    valido = false;
+                }
+
+                const telValue = (telefono.value || '').trim();
+                if (telValue) {
+                    if (!/^\d+$/.test(telValue)) {
+                        setFieldError(telefono, 'El teléfono solo debe contener números.');
+                        valido = false;
+                    } else if (telValue.length < 7 || telValue.length > 15) {
+                        setFieldError(telefono, 'El teléfono debe tener entre 7 y 15 dígitos.');
+                        valido = false;
+                    }
+                }
+
+                if (!valido) {
+                    event.preventDefault();
+                }
+            });
+        }
+
         const alertas = document.querySelectorAll('.alerta');
         alertas.forEach(alerta => {
             setTimeout(() => {

@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}">
 <style>
-  :root { --ext-azul: #0ea5e9; --ext-oscuro: #0c4a6e; }
+  :root { --ext-azul: #39a900; --ext-oscuro: #2d8600; }
   body { padding-top: 0 !important; margin-top: 0 !important; }
   .page-header { background: linear-gradient(135deg, var(--ext-oscuro), var(--ext-azul)); color: white; padding: 2rem 0; }
   .page-header h2 { font-weight: 800; }
@@ -20,9 +20,9 @@
 
   .detail-card { background: white; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden; margin-bottom: 1.5rem; }
   .detail-card-header { padding: 1rem 1.5rem; display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1rem; border-bottom: 1px solid #f0f0f0; }
-  .detail-card-header.azul { background: #f0f9ff; color: var(--ext-oscuro); border-bottom-color: #bae6fd; }
+  .detail-card-header.azul { background: #eef9e8; color: var(--ext-oscuro); border-bottom-color: #c7e6a8; }
   .detail-card-header.verde { background: #f0fdf4; color: #166534; border-bottom-color: #bbf7d0; }
-  .detail-card-header.morado { background: #faf5ff; color: #6b21a8; border-bottom-color: #e9d5ff; }
+  .detail-card-header.morado { background: #eef9e8; color: var(--ext-oscuro); border-bottom-color: #c7e6a8; }
   .detail-card-body { padding: 1.5rem; }
   .info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.2rem; }
   .info-item label { display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #9ca3af; margin-bottom: 3px; }
@@ -48,18 +48,18 @@
   .asistente-info small { color:#6b7280; font-size:0.8rem; }
   .btn-registrar { background:var(--ext-azul); color:white; border:none; padding:10px 22px; border-radius:50px; font-weight:700; font-size:0.9rem; text-decoration:none; display:inline-flex; align-items:center; gap:7px; transition:all 0.2s; }
   .btn-registrar:hover { background:var(--ext-oscuro); color:white; transform:translateY(-1px); }
-  .btn-enviar { background:#6366f1; color:white; border:none; padding:10px 22px; border-radius:50px; font-weight:700; font-size:0.9rem; text-decoration:none; cursor:pointer; display:inline-flex; align-items:center; gap:7px; transition:all 0.2s; }
-  .btn-enviar:hover { background:#4f46e5; color:white; }
-  .btn-actualizar-asi { background:transparent; color:#2563eb; border:1px solid #2563eb; padding:4px 12px; border-radius:50px; font-size:0.78rem; font-weight:600; text-decoration:none; transition:all 0.2s; }
-  .btn-actualizar-asi:hover { background:#dbeafe; color:#1d4ed8; }
+  .btn-enviar { background:var(--ext-azul); color:white; border:none; padding:10px 22px; border-radius:50px; font-weight:700; font-size:0.9rem; text-decoration:none; cursor:pointer; display:inline-flex; align-items:center; gap:7px; transition:all 0.2s; }
+  .btn-enviar:hover { background:var(--ext-oscuro); color:white; }
+  .btn-actualizar-asi { background:transparent; color:var(--ext-oscuro); border:1px solid var(--ext-oscuro); padding:4px 12px; border-radius:50px; font-size:0.78rem; font-weight:600; text-decoration:none; transition:all 0.2s; }
+  .btn-actualizar-asi:hover { background:#eef9e8; color:#14532d; }
   .btn-eliminar-asi { background:transparent; color:#ef4444; border:1px solid #ef4444; padding:4px 12px; border-radius:50px; font-size:0.78rem; font-weight:600; text-decoration:none; transition:all 0.2s; }
   .btn-eliminar-asi:hover { background:#fee2e2; color:#991b1b; }
   .progress-wrap { background:#e9ecef; border-radius:50px; height:12px; overflow:hidden; margin:0.5rem 0; }
-  .progress-fill { background:linear-gradient(90deg, var(--ext-azul), #38bdf8); height:100%; border-radius:50px; transition:width 0.5s; }
+  .progress-fill { background:linear-gradient(90deg, var(--ext-azul), #2d8600); height:100%; border-radius:50px; transition:width 0.5s; }
   .empty-asistentes { text-align:center; padding:2rem; color:#9ca3af; }
   .empty-asistentes i { font-size:2rem; opacity:0.4; }
   .info-box-aprobada { background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:1rem 1.3rem; font-size:0.88rem; color:#166534; }
-  .info-box-enviado { background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; padding:1rem 1.3rem; font-size:0.88rem; color:#1e40af; }
+  .info-box-enviado { background:#eef9e8; border:1px solid #c7e6a8; border-radius:10px; padding:1rem 1.3rem; font-size:0.88rem; color:#14532d; }
 
   .doc-resumen-box { background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:1rem 1.2rem; margin-bottom:1rem; color:#92400e; }
   .doc-ok-box { background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:1rem 1.2rem; margin-bottom:1rem; color:#166534; }
@@ -89,24 +89,24 @@
   .final-modal-subtitle { color: #4b5563; margin: 0 0 16px; font-size: 0.95rem; font-weight: 500; }
 
   .mensaje-confirmacion-final {
-    background: linear-gradient(135deg, #e8f7ff 0%, #f3fbff 50%, #ffffff 100%);
-    border: 1px solid #b6e3fa;
+    background: linear-gradient(135deg, #eef9e8 0%, #f4fbef 50%, #ffffff 100%);
+    border: 1px solid #c7e6a8;
     border-left: 8px solid var(--ext-azul);
     border-radius: 16px;
     padding: 1.25rem 1.35rem;
-    box-shadow: 0 8px 20px rgba(14, 165, 233, 0.14);
+    box-shadow: 0 8px 20px rgba(57, 169, 0, 0.18);
     margin-bottom: 1.3rem;
   }
   .mensaje-confirmacion-final h4 {
     margin: 0 0 0.45rem;
     font-weight: 900;
-    color: #0c4a6e;
+    color: #1f5f16;
     font-size: 1.35rem;
     line-height: 1.2;
   }
   .mensaje-confirmacion-final p {
     margin: 0 0 0.6rem;
-    color: #075985;
+    color: #2d6a1f;
     font-size: 0.98rem;
     line-height: 1.5;
     font-weight: 600;
@@ -116,7 +116,7 @@
     padding-left: 1.1rem;
   }
   .mensaje-confirmacion-final li {
-    color: #0c4a6e;
+    color: #2d6a1f;
     margin-bottom: 0.25rem;
     font-size: 0.92rem;
     font-weight: 600;
@@ -301,7 +301,7 @@
 
         {% if visita.estado != 'confirmada' and visita.asistentes.count > 0 %}
         <div class="d-flex flex-wrap gap-2 mb-3">
-          <button type="button" onclick="abrirModalArchivosFinales(true)" class="btn-registrar" style="background: linear-gradient(135deg, #eae1b2 0%, #fff177 100%); color: #333; border: none; cursor: pointer;">
+          <button type="button" onclick="abrirModalArchivosFinales(true)" class="btn-registrar" style="background: linear-gradient(135deg, #39a900 0%, #2d8600 100%); color: #fff; border: none; cursor: pointer;">
             <i class="fas fa-upload"></i> Corregir / subir archivo final
           </button>
           <a href="{% url 'panel_visitante:registrar_asistentes' tipo='externa' visita_id=visita.id %}" class="btn-registrar">
@@ -316,7 +316,7 @@
             <div class="doc-issue-item">
               <div class="doc-issue-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
                 <div>
-                  <i class="fas fa-user me-2" style="color:#6b21a8;"></i>{{ asistente_alerta.nombre }}
+                  <i class="fas fa-user me-2" style="color:#2d8600;"></i>{{ asistente_alerta.nombre }}
                   <span class="doc-issue-sub">{{ asistente_alerta.documento }}</span>
                 </div>
                 {% for incidencia in asistente_alerta.incidencias %}
@@ -384,7 +384,7 @@
       </div>
 
       {% if documentos_finales_requeridos %}
-      <div class="mb-3" style="border-left: 4px solid #667eea; background: #fff; border-radius: 16px; padding: 16px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);">
+      <div class="mb-3" style="border-left: 4px solid #39a900; background: #fff; border-radius: 16px; padding: 16px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);">
         <h4 style="margin: 0 0 8px; font-weight: 800; color: #0f172a; font-size: 1.45rem; line-height: 1.25;">
           <i class="fas fa-download" style="color: #22c55e; margin-right: 10px;"></i>Documentos Requeridos para realizar la visita
         </h4>
@@ -404,7 +404,7 @@
 
           <div style="padding: 12px 14px; background: #f8f9fa; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
             <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 230px;">
-              <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% elif doc.extension == '.jpg' or doc.extension == '.jpeg' or doc.extension == '.png' %}file-image{% else %}file-alt{% endif %}" style="font-size: 1.5rem; color: {% if doc.extension == '.pdf' %}#dc2626{% elif doc.extension == '.doc' or doc.extension == '.docx' %}#2563eb{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}#059669{% else %}#667eea{% endif %};"></i>
+              <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% elif doc.extension == '.jpg' or doc.extension == '.jpeg' or doc.extension == '.png' %}file-image{% else %}file-alt{% endif %}" style="font-size: 1.5rem; color: {% if doc.extension == '.pdf' %}#dc2626{% elif doc.extension == '.doc' or doc.extension == '.docx' %}#2d8600{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}#059669{% else %}#39a900{% endif %};"></i>
               <div>
                 <strong style="color: #333; font-size: 0.95rem;">{{ doc.etiqueta_requerida }}</strong><br>
                 <small style="color: #888; font-size: 0.83rem;">{{ doc.nombre_archivo }} &middot; {{ doc.tamaño_legible }}</small>
@@ -414,7 +414,7 @@
               <button type="button" onclick="verDocumentoFinalExterno('{% url 'documentos:ver_documento_inline' doc.id %}', '{{ doc.etiqueta_requerida|escapejs }}', '{{ doc.extension|default:'' }}', '{% url 'documentos:descargar_documento' doc.id %}')" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 8px 18px; border-radius: 8px; border: none; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; cursor: pointer;">
                 <i class="fas fa-eye"></i> Ver
               </button>
-              <a href="{% url 'documentos:descargar_documento' doc.id %}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 8px 18px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
+              <a href="{% url 'documentos:descargar_documento' doc.id %}" style="background: linear-gradient(135deg, #39a900 0%, #2d8600 100%); color: white; padding: 8px 18px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
                 <i class="fas fa-download"></i> Descargar
               </a>
             </div>
@@ -434,7 +434,7 @@
             <i class="fas fa-user-plus"></i> Registrar / Ver visitantes
           </a>
           {% if visita.asistentes.count > 0 %}
-          <button type="button" onclick="abrirModalArchivosFinales(false)" class="btn-registrar" style="background: linear-gradient(135deg, #eae1b2 0%, #fff177 100%); color: #333; border: none; cursor: pointer;">
+          <button type="button" onclick="abrirModalArchivosFinales(false)" class="btn-registrar" style="background: linear-gradient(135deg, #39a900 0%, #2d8600 100%); color: #fff; border: none; cursor: pointer;">
             <i class="fas fa-folder-open"></i> Subir archivos finales
           </button>
           <form method="post" action="{% url 'panel_visitante:enviar_solicitud_final' tipo='externa' visita_id=visita.id %}" style="display:inline;">
@@ -455,7 +455,7 @@
             <i class="fas fa-eye"></i> Ver visitantes registrados
           </a>
           {% if visita.asistentes.count > 0 %}
-          <button type="button" onclick="abrirModalArchivosFinales(true)" class="btn-registrar" style="background: linear-gradient(135deg, #eae1b2 0%, #fff177 100%); color: #333; border: none; cursor: pointer;">
+          <button type="button" onclick="abrirModalArchivosFinales(true)" class="btn-registrar" style="background: linear-gradient(135deg, #39a900 0%, #2d8600 100%); color: #fff; border: none; cursor: pointer;">
             <i class="fas fa-upload"></i> Corregir / subir archivo final
           </button>
           {% endif %}
@@ -470,7 +470,7 @@
         {% for asistente in visita.asistentes.all|slice:":5" %}
         <div class="asistente-item">
           <div class="asistente-info">
-            <h6><i class="fas fa-user me-2" style="color:#6b21a8;"></i>{{ asistente.nombre_completo }}</h6>
+            <h6><i class="fas fa-user me-2" style="color:#2d8600;"></i>{{ asistente.nombre_completo }}</h6>
             <small>{{ asistente.get_tipo_documento_display }}: {{ asistente.numero_documento }}</small>
           </div>
           {% if visita.estado == 'aprobada_inicial' %}
@@ -592,7 +592,7 @@
         <button type="button" id="btnCancelarModal" onclick="cerrarModalArchivosFinales()" style="background: #e5e7eb; color: #374151; font-weight: 600; padding: 10px 24px; border: none; border-radius: 8px; cursor: pointer;">
           Cancelar
         </button>
-        <button type="submit" id="btnEnviarCompleto" style="background: linear-gradient(90deg, #eae1b2, #fff177); color: #333; font-weight: bold; padding: 10px 28px; border: none; border-radius: 8px; cursor: pointer;">
+        <button type="submit" id="btnEnviarCompleto" style="background: linear-gradient(90deg, #39a900, #2d8600); color: #fff; font-weight: bold; padding: 10px 28px; border: none; border-radius: 8px; cursor: pointer;">
           <i class="fas fa-upload me-2"></i>Subir Archivos Finales
         </button>
       </div>
@@ -628,7 +628,7 @@
         <button type="button" onclick="cerrarModalSubirPorAsistente()" style="background: #e5e7eb; color: #374151; font-weight: 600; padding: 10px 24px; border: none; border-radius: 8px; cursor: pointer;">
           Cancelar
         </button>
-        <button type="submit" style="background: linear-gradient(90deg, #228B22, #2ecc40); color: #fff; font-weight: bold; padding: 10px 28px; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;" id="btnEnviarAsistente">
+        <button type="submit" style="background: linear-gradient(90deg, #39a900, #2d8600); color: #fff; font-weight: bold; padding: 10px 28px; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;" id="btnEnviarAsistente">
           <i class="fas fa-upload me-2"></i>Subir Corrección
         </button>
       </div>
@@ -1029,9 +1029,9 @@
     const header = document.createElement('div');
     header.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid #e5e7eb;';
     header.innerHTML = `
-      <h5 style="margin:0; color:#1f2937; font-size:16px;"><i class="fas fa-file me-2" style="color:#667eea;"></i>${titulo}</h5>
+      <h5 style="margin:0; color:#1f2937; font-size:16px;"><i class="fas fa-file me-2" style="color:#39a900;"></i>${titulo}</h5>
       <div style="display:flex; gap:8px; align-items:center;">
-        <a href="${urlDescarga}" download style="background:#667eea; color:white; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:13px; display:inline-flex; align-items:center; gap:4px; font-weight:600;"><i class="fas fa-download"></i> Descargar</a>
+        <a href="${urlDescarga}" download style="background:#39a900; color:white; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:13px; display:inline-flex; align-items:center; gap:4px; font-weight:600;"><i class="fas fa-download"></i> Descargar</a>
         <button type="button" style="background:#ef4444; color:white; border:none; font-size:18px; cursor:pointer; width:36px; height:36px; border-radius:6px; display:flex; align-items:center; justify-content:center;">&times;</button>
       </div>`;
 
@@ -1055,10 +1055,10 @@
         .catch(err => {
           const c = document.getElementById('docxPreviewContainerExterno');
           if (!c) return;
-          c.innerHTML = '<div style="text-align:center; padding:50px; color:#6b7280;"><i class="fas fa-file-word" style="font-size:64px; color:#9ca3af; display:block; margin-bottom:20px;"></i><p style="font-size:16px; margin-bottom:20px;">No se pudo mostrar el archivo Word.</p><a href="' + urlDescarga + '" download style="background:#667eea; color:white; padding:12px 28px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:8px;"><i class="fas fa-download"></i> Descargar</a></div>';
+          c.innerHTML = '<div style="text-align:center; padding:50px; color:#6b7280;"><i class="fas fa-file-word" style="font-size:64px; color:#9ca3af; display:block; margin-bottom:20px;"></i><p style="font-size:16px; margin-bottom:20px;">No se pudo mostrar el archivo Word.</p><a href="' + urlDescarga + '" download style="background:#39a900; color:white; padding:12px 28px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:8px;"><i class="fas fa-download"></i> Descargar</a></div>';
         });
     } else {
-      cuerpo.innerHTML = '<div style="text-align:center; padding:50px; color:#6b7280;"><i class="fas fa-file-alt" style="font-size:64px; color:#9ca3af; display:block; margin-bottom:20px;"></i><p style="font-size:16px; margin-bottom:20px;">Vista previa no disponible para este tipo de archivo.</p><a href="' + urlDescarga + '" download style="background:#667eea; color:white; padding:12px 28px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:8px;"><i class="fas fa-download"></i> Descargar</a></div>';
+      cuerpo.innerHTML = '<div style="text-align:center; padding:50px; color:#6b7280;"><i class="fas fa-file-alt" style="font-size:64px; color:#9ca3af; display:block; margin-bottom:20px;"></i><p style="font-size:16px; margin-bottom:20px;">Vista previa no disponible para este tipo de archivo.</p><a href="' + urlDescarga + '" download style="background:#39a900; color:white; padding:12px 28px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:8px;"><i class="fas fa-download"></i> Descargar</a></div>';
     }
 
     contenido.appendChild(header);
@@ -1098,8 +1098,8 @@
       const fileInputs = form.querySelectorAll('input[type="file"]');
       fileInputs.forEach(input => input.style.borderColor = '#e5e7eb');
       const btn = document.getElementById('btnEnviarCompleto');
-      btn.style.background = 'linear-gradient(90deg, #eae1b2, #fff177)';
-      btn.style.color = '#333';
+      btn.style.background = 'linear-gradient(90deg, #39a900, #2d8600)';
+      btn.style.color = '#fff';
       btn.innerHTML = '<i class="fas fa-upload me-2"></i>Subir Archivos Finales';
       btn.disabled = false;
     }
@@ -1163,7 +1163,7 @@
     
     if (statusMensaje) {
       statusMensaje.style.display = 'block';
-      statusContenido.innerHTML = '<div style="background: #e0f2fe; border-left: 4px solid #0284c7; padding: 12px; border-radius: 6px; color: #075985;"><i class="fas fa-spinner fa-spin me-2"></i>Enviando solicitud...</div>';
+      statusContenido.innerHTML = '<div style="background: #eef9e8; border-left: 4px solid #39a900; padding: 12px; border-radius: 6px; color: #1f5f16;"><i class="fas fa-spinner fa-spin me-2"></i>Enviando solicitud...</div>';
     }
 
     try {
@@ -1398,7 +1398,7 @@
                 }
                 statusDiv.style.display = 'block';
                 statusContenido.innerHTML = `
-                  <div style="background: #e0f2fe; border: 1px solid #93c5fd; border-radius: 8px; padding: 12px; color: #075985;">
+                  <div style="background: #eef9e8; border: 1px solid #c7e6a8; border-radius: 8px; padding: 12px; color: #1f5f16;">
                     <i class="fas fa-info-circle me-2"></i><strong>Archivo(s) guardado(s).</strong> Aún faltan ${pendientesCorreccion} archivo(s)/corrección(es) para completar el envío final.
                   </div>
                 `;
@@ -1417,7 +1417,7 @@
             // SI es corrección y aún faltan pendientes, mantener flujo abierto.
             if (!listoParaConfirmar) {
               statusDiv.style.display = 'block';
-              statusContenido.innerHTML = `<div style="background: #e0f2fe; border: 1px solid #93c5fd; border-radius: 8px; padding: 12px; color: #075985;"><i class="fas fa-info-circle me-2"></i>Corrección cargada. Aún faltan ${pendientesCorreccion} corrección(es).</div>`;
+              statusContenido.innerHTML = `<div style="background: #eef9e8; border: 1px solid #c7e6a8; border-radius: 8px; padding: 12px; color: #1f5f16;"><i class="fas fa-info-circle me-2"></i>Corrección cargada. Aún faltan ${pendientesCorreccion} corrección(es).</div>`;
               btn.style.background = 'linear-gradient(90deg, #10b981, #059669)';
               btn.style.color = '#fff';
               btn.innerHTML = '<i class="fas fa-check me-2"></i>Guardado';
@@ -1503,7 +1503,7 @@
         btnEnviarAsistente.disabled = true;
         btnEnviarAsistente.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Procesando...';
         statusMensaje.style.display = 'block';
-        statusContenido.innerHTML = '<div style="background: #e0f2fe; border-left: 4px solid #0284c7; padding: 12px; border-radius: 6px; color: #075985;"><i class="fas fa-spinner fa-spin me-2"></i>Subiendo corrección...</div>';
+        statusContenido.innerHTML = '<div style="background: #eef9e8; border-left: 4px solid #39a900; padding: 12px; border-radius: 6px; color: #1f5f16;"><i class="fas fa-spinner fa-spin me-2"></i>Subiendo corrección...</div>';
 
         try {
           if (!this.action || this.action.includes('/interna//') || this.action.includes('/externa//')) {

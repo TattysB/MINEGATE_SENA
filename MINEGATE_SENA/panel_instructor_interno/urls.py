@@ -35,6 +35,11 @@ urlpatterns = [
     path(
         "aprendices/crear/<int:ficha_id>/", views.crear_aprendiz, name="crear_aprendiz"
     ),
+    path(
+        "aprendices/plantilla-carga/<str:formato>/",
+        views.descargar_plantilla_carga_masiva_aprendices,
+        name="descargar_plantilla_carga_masiva_aprendices",
+    ),
     path("aprendices/<int:pk>/editar/", views.editar_aprendiz, name="editar_aprendiz"),
     path(
         "aprendices/<int:pk>/eliminar/",
