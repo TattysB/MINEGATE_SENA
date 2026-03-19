@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponse
+from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -20,6 +21,7 @@ from calendario.models import ReservaHorario
 
 from django.http import JsonResponse
 from visitaInterna.models import (
+    HistorialAccionVisitaInterna,
     HistorialReprogramacion,
     VisitaInterna,
     AsistenteVisitaInterna,
@@ -39,6 +41,7 @@ CATEGORIAS_ARCHIVOS_FINALES = [
     "Formato Inducción y Reinducción",
     "Charla de Seguridad y Calestenia",
 ]
+MARCADOR_SOLICITUD_FINAL_ENVIADA = "[SOLICITUD_FINAL_ENVIADA]"
 EXTENSIONES_DOCUMENTOS_APRENDIZ = {".pdf", ".doc", ".docx"}
 MAX_TAMANO_DOCUMENTO_APRENDIZ = 10 * 1024 * 1024
 FORMATOS_CARGA_MASIVA_APRENDICES = {".csv", ".xlsx", ".xls", ".pdf"}
@@ -505,6 +508,18 @@ def _solicitud_final_historica_interna(visita):
     if visita.estado in ["documentos_enviados", "en_revision_documentos", "confirmada"]:
         return True
 
+    if HistorialAccionVisitaInterna.objects.filter(
+        visita=visita,
+        descripcion__icontains=MARCADOR_SOLICITUD_FINAL_ENVIADA,
+    ).exists():
+        return True
+
+    if HistorialAccionVisitaInterna.objects.filter(
+        visita=visita,
+        tipo_accion__in=["inicio_revision", "devolucion_correccion", "confirmacion"],
+    ).exists():
+        return True
+
     if visita.asistentes.filter(
         estado__in=["documentos_aprobados", "documentos_rechazados"]
     ).exists():
@@ -845,6 +860,9 @@ def detalle_visita_interna(request, pk):
         1 for item in estados_finales if item.get("estado") == "faltante"
     )
     archivos_finales_completos = archivos_finales_faltantes == 0
+    mostrar_boton_corregir_archivos_finales = any(
+        item.get("estado") == "rechazado" for item in estados_finales
+    )
 
     enviar_final_habilitado = (
         visita.estado == "aprobada_inicial"
@@ -885,6 +903,7 @@ def detalle_visita_interna(request, pk):
             "reprogramacion_pendiente": reprogramacion_pendiente,
             "enviar_final_habilitado": enviar_final_habilitado,
             "mostrar_boton_subir_archivos_finales": mostrar_boton_subir_archivos_finales,
+            "mostrar_boton_corregir_archivos_finales": mostrar_boton_corregir_archivos_finales,
             "solicitud_final_historica": solicitud_final_historica,
             "permite_editar_asistentes": permite_editar_asistentes,
         },
@@ -2080,6 +2099,7 @@ def crear_aprendiz(request, ficha_id):
     correo, _ = get_sesion_instructor(request)
     owner_user = _obtener_propietario_instructor(request)
     ficha = get_object_or_404(Ficha, pk=ficha_id, creado_por=owner_user)
+    es_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
 
     # --- INTEGRACIÓN DE DOCUMENTOS ---
     docs_cat = obtener_documentos_por_categoria()
@@ -2099,24 +2119,84 @@ def crear_aprendiz(request, ficha_id):
             try:
                 aprendiz.save()
                 guardar_documentos_aprendiz(aprendiz, request.FILES, docs_cat)
+                mensaje_ok = (
+                    f'✅ Aprendiz "{aprendiz.get_nombre_completo()}" registrado correctamente.'
+                )
+
+                if es_ajax:
+                    return JsonResponse(
+                        {
+                            "success": True,
+                            "message": mensaje_ok,
+                            "redirect_url": reverse(
+                                "panel_instructor_interno:detalle_aprendices_ficha",
+                                kwargs={"pk": ficha.id},
+                            ),
+                            "aprendiz": {
+                                "id": aprendiz.id,
+                                "nombre_completo": aprendiz.get_nombre_completo(),
+                                "tipo_documento": aprendiz.tipo_documento,
+                                "tipo_documento_display": aprendiz.get_tipo_documento_display(),
+                                "numero_documento": aprendiz.numero_documento,
+                                "correo": aprendiz.correo,
+                                "telefono": aprendiz.telefono or "",
+                                "estado": aprendiz.estado,
+                                "estado_display": aprendiz.get_estado_display(),
+                                "edit_url": reverse(
+                                    "panel_instructor_interno:editar_aprendiz",
+                                    kwargs={"pk": aprendiz.id},
+                                ),
+                                "delete_url": reverse(
+                                    "panel_instructor_interno:eliminar_aprendiz",
+                                    kwargs={"pk": aprendiz.id},
+                                ),
+                            },
+                        }
+                    )
+
                 messages.success(
                     request,
-                    f'✅ Aprendiz "{aprendiz.get_nombre_completo()}" registrado correctamente.',
+                    mensaje_ok,
                 )
                 return redirect(
                     "panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id
                 )
             except IntegrityError:
+                mensaje_error = (
+                    f"❌ Ya existe un aprendiz con el documento {aprendiz.numero_documento} en esta ficha."
+                )
+                if es_ajax:
+                    return JsonResponse(
+                        {
+                            "success": False,
+                            "error": mensaje_error,
+                        },
+                        status=400,
+                    )
                 messages.error(
                     request,
-                    f"❌ Ya existe un aprendiz con el documento {aprendiz.numero_documento} en esta ficha.",
+                    mensaje_error,
                 )
         else:
+            errores_validacion = []
             for error in errores_docs_dinamicos:
-                messages.error(request, f"❌ {error}")
+                errores_validacion.append(str(error))
             for field, errors in form.errors.items():
                 for error in errors:
-                    messages.error(request, f"❌ {field}: {error}")
+                    errores_validacion.append(f"{field}: {error}")
+
+            if es_ajax:
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "error": "No fue posible registrar el aprendiz. Revisa los campos e intenta nuevamente.",
+                        "errores": errores_validacion,
+                    },
+                    status=400,
+                )
+
+            for error in errores_validacion:
+                messages.error(request, f"❌ {error}")
     else:
         form = AprendizForm(ficha=ficha)
 
@@ -2127,6 +2207,7 @@ def crear_aprendiz(request, ficha_id):
         "titulo": "Registrar Aprendiz",
         "documentos_por_categoria": docs_cat,  # <-- ESTO ACTIVA LAS SECCIONES EN EL HTML
         "docs_subidos_ids": [],
+        "es_embed": request.GET.get("embed") == "1",
     }
     return render(request, "panel_instructor_interno/form_aprendiz.html", context)
 

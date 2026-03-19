@@ -10,8 +10,16 @@ from django.views.decorators.csrf import csrf_protect
 from django.urls import reverse
 from datetime import datetime
 import random
-from visitaInterna.models import VisitaInterna, AsistenteVisitaInterna
-from visitaExterna.models import VisitaExterna, AsistenteVisitaExterna
+from visitaInterna.models import (
+    VisitaInterna,
+    AsistenteVisitaInterna,
+    HistorialAccionVisitaInterna,
+)
+from visitaExterna.models import (
+    VisitaExterna,
+    AsistenteVisitaExterna,
+    HistorialAccionVisitaExterna,
+)
 from documentos.models import (
     Documento,
     DocumentoSubidoAsistente,
@@ -58,6 +66,7 @@ AUTH_VISITANTE_MESSAGE_TAG = "auth_visitante"
 REGISTRO_VERIFICACION_SESSION_KEY = "registro_verificacion_pendiente"
 REGISTRO_VERIFICACION_TTL_MINUTOS = 10
 FORMATOS_CARGA_MASIVA_ASISTENTES = {".csv", ".xlsx", ".xls", ".pdf"}
+MARCADOR_SOLICITUD_FINAL_ENVIADA = "[SOLICITUD_FINAL_ENVIADA]"
 COLUMNAS_CARGA_MASIVA_ASISTENTES = [
     "nombre_completo",
     "tipo_documento",
@@ -439,6 +448,29 @@ def _solicitud_final_ya_enviada(visita, tipo):
     """
     if visita.estado in ["documentos_enviados", "en_revision_documentos", "confirmada"]:
         return True
+
+    if tipo == "interna":
+        if HistorialAccionVisitaInterna.objects.filter(
+            visita=visita,
+            descripcion__icontains=MARCADOR_SOLICITUD_FINAL_ENVIADA,
+        ).exists():
+            return True
+        if HistorialAccionVisitaInterna.objects.filter(
+            visita=visita,
+            tipo_accion__in=["inicio_revision", "devolucion_correccion", "confirmacion"],
+        ).exists():
+            return True
+    else:
+        if HistorialAccionVisitaExterna.objects.filter(
+            visita=visita,
+            descripcion__icontains=MARCADOR_SOLICITUD_FINAL_ENVIADA,
+        ).exists():
+            return True
+        if HistorialAccionVisitaExterna.objects.filter(
+            visita=visita,
+            tipo_accion__in=["inicio_revision", "devolucion_correccion", "confirmacion"],
+        ).exists():
+            return True
 
     if visita.asistentes.filter(
         estado__in=["documentos_aprobados", "documentos_rechazados"]
@@ -866,6 +898,13 @@ def descargar_plantilla_carga_masiva_asistentes(request, tipo, visita_id, format
     correo = request.session.get("responsable_correo")
     if tipo == "interna":
         get_object_or_404(VisitaInterna, id=visita_id, correo_responsable__iexact=correo)
+        messages.error(
+            request,
+            "La plantilla de carga masiva de asistentes aplica solo para visitas externas.",
+        )
+        return redirect(
+            "panel_visitante:registrar_asistentes", tipo=tipo, visita_id=visita_id
+        )
     elif tipo == "externa":
         get_object_or_404(VisitaExterna, id=visita_id, correo_responsable__iexact=correo)
     else:
@@ -1198,6 +1237,17 @@ def registrar_asistentes(request, tipo, visita_id):
     }
 
     if request.method == "POST" and request.POST.get("accion") == "carga_masiva_asistentes":
+        if tipo != "externa":
+            messages.error(
+                request,
+                "La carga masiva de asistentes solo está disponible para visitas externas.",
+            )
+            return redirect(
+                "panel_visitante:registrar_asistentes",
+                tipo=tipo,
+                visita_id=visita_id,
+            )
+
         if solicitud_final_historica:
             messages.error(
                 request,
@@ -1812,6 +1862,38 @@ def enviar_solicitud_final(request, tipo, visita_id):
     # Cambiar el estado a documentos_enviados
     visita.estado = "documentos_enviados"
     visita.save()
+
+    # Guardar una marca historica para bloquear futuras ediciones de asistentes,
+    # incluso si la visita vuelve temporalmente a aprobada_inicial por correcciones.
+    try:
+        usuario_historial = (
+            request.user
+            if getattr(request, "user", None)
+            and getattr(request.user, "is_authenticated", False)
+            else None
+        )
+        descripcion_historial = (
+            f"{MARCADOR_SOLICITUD_FINAL_ENVIADA} Envio final realizado por el responsable {correo}."
+        )
+
+        if tipo == "interna":
+            HistorialAccionVisitaInterna.objects.create(
+                visita=visita,
+                usuario=usuario_historial,
+                tipo_accion="modificacion",
+                descripcion=descripcion_historial,
+                ip_address=request.META.get("REMOTE_ADDR"),
+            )
+        else:
+            HistorialAccionVisitaExterna.objects.create(
+                visita=visita,
+                usuario=usuario_historial,
+                tipo_accion="modificacion",
+                descripcion=descripcion_historial,
+                ip_address=request.META.get("REMOTE_ADDR"),
+            )
+    except Exception:
+        pass
 
     # Enviar correo al responsable informando que la solicitud final fue enviada
     try:

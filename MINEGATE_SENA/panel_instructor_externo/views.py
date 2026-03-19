@@ -2,7 +2,11 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Q
 from django.db import transaction
-from visitaExterna.models import HistorialReprogramacion, VisitaExterna
+from visitaExterna.models import (
+    HistorialReprogramacion,
+    HistorialAccionVisitaExterna,
+    VisitaExterna,
+)
 from .forms import VisitaExternaInstructorForm
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
@@ -18,6 +22,7 @@ CATEGORIAS_ARCHIVOS_FINALES = [
     "Formato Inducción y Reinducción",
     "Charla de Seguridad y Calestenia",
 ]
+MARCADOR_SOLICITUD_FINAL_ENVIADA = "[SOLICITUD_FINAL_ENVIADA]"
 
 
 def _normalizar_categoria_texto(value):
@@ -179,6 +184,9 @@ def construir_reporte_documental_visita(visita, tipo_visita):
         if a["estado"] == "rechazado"
         or (a["estado"] == "faltante" and mostrar_faltantes_finales_como_alerta)
     ]
+    archivos_finales_rechazados = [
+        a for a in archivos_finales_estado if a["estado"] == "rechazado"
+    ]
     total_incidencias_asistentes = sum(
         len(item["incidencias"]) for item in asistentes_con_alertas
     )
@@ -187,10 +195,39 @@ def construir_reporte_documental_visita(visita, tipo_visita):
         "asistentes_con_alertas": asistentes_con_alertas,
         "archivos_finales_estado": archivos_finales_estado,
         "archivos_finales_con_alerta": archivos_finales_con_alerta,
+        "archivos_finales_rechazados": archivos_finales_rechazados,
         "total_alertas": total_incidencias_asistentes
         + len(archivos_finales_con_alerta),
         "hay_alertas": bool(asistentes_con_alertas or archivos_finales_con_alerta),
     }
+
+
+def _solicitud_final_historica_externa(visita):
+    """Indica si la visita ya fue enviada al menos una vez para revision final."""
+    if visita.estado in ["documentos_enviados", "en_revision_documentos", "confirmada"]:
+        return True
+
+    if HistorialAccionVisitaExterna.objects.filter(
+        visita=visita,
+        descripcion__icontains=MARCADOR_SOLICITUD_FINAL_ENVIADA,
+    ).exists():
+        return True
+
+    if HistorialAccionVisitaExterna.objects.filter(
+        visita=visita,
+        tipo_accion__in=["inicio_revision", "devolucion_correccion", "confirmacion"],
+    ).exists():
+        return True
+
+    if visita.asistentes.filter(
+        estado__in=["documentos_aprobados", "documentos_rechazados"]
+    ).exists():
+        return True
+
+    return DocumentoSubidoAsistente.objects.filter(
+        asistente_externa__visita=visita,
+        estado__in=["aprobado", "rechazado"],
+    ).exists()
 
 
 # ==================== AUTENTICACIÓN POR SESIÓN ====================
@@ -387,12 +424,26 @@ def detalle_visita_externa(request, pk):
         1 for item in estados_finales if item.get("estado") == "faltante"
     )
     archivos_finales_completos = archivos_finales_faltantes == 0
+    mostrar_boton_corregir_archivos_finales = any(
+        item.get("estado") == "rechazado" for item in estados_finales
+    )
 
     enviar_final_habilitado = (
         visita.estado == "aprobada_inicial"
         and visita.asistentes.exists()
         and archivos_finales_completos
         and not hay_alertas_documentales
+    )
+
+    mostrar_boton_subir_archivos_finales = (
+        visita.estado == "aprobada_inicial"
+        and visita.asistentes.exists()
+        and not archivos_finales_completos
+    )
+
+    solicitud_final_historica = _solicitud_final_historica_externa(visita)
+    permite_editar_asistentes = (
+        visita.estado == "aprobada_inicial" and not solicitud_final_historica
     )
 
     return render(
@@ -406,5 +457,9 @@ def detalle_visita_externa(request, pk):
             "reporte_documental": reporte_documental,
             "reprogramacion_pendiente": reprogramacion_pendiente,
             "enviar_final_habilitado": enviar_final_habilitado,
+            "mostrar_boton_subir_archivos_finales": mostrar_boton_subir_archivos_finales,
+            "mostrar_boton_corregir_archivos_finales": mostrar_boton_corregir_archivos_finales,
+            "solicitud_final_historica": solicitud_final_historica,
+            "permite_editar_asistentes": permite_editar_asistentes,
         },
     )
