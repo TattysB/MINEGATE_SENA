@@ -11,10 +11,10 @@
   <title>MineGate</title>
 
   <!-- ESTILOS ANTIGUOS (Comentados para pruebas) -->
-  <link rel="stylesheet" href="{% static 'core/css/nuevos_estilos.css' %}?v=19" />
+  <link rel="stylesheet" href="{% static 'core/css/nuevos_estilos.css' %}?v=20" />
   <!-- Estilos del Dropdown de Usuario -->
   <link rel="stylesheet" href="{% static 'core/css/user_dropdown.css' %}" />
-  <link rel="stylesheet" href="{% static 'css/configuracion_perfil.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/configuracion_perfil.css' %}?v=20260320a" />
   <!-- Iconos y Fuentes -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet" />
@@ -24,12 +24,12 @@
   <link rel="stylesheet" href="{% static 'gestion_visitas/css/panel_visitas_admin.css' %}?v=20260314" />
   <link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}?v=20260309f" />
   <link rel="stylesheet" href="{% static 'calendario/css/calendario_seleccion.css' %}?v=20260309e" />
-  <link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}" />
+  <link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}?v=20260320a" />
   <link rel="stylesheet" href="{% static 'core/css/gestion_pagina_informativa.css' %}?v=20260305e" />
   <link rel="stylesheet" href="{% static 'core/css/panel_backup_db.css' %}?v=20260318a" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css" />
   <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
-  <script src="{% static 'core/js/custom_modal.js' %}" defer></script>
+  <script src="{% static 'core/js/custom_modal.js' %}?v=20260320a" defer></script>
   <script src="{% static 'documentos/js/gestion_documentos.js' %}" defer></script>
 </head>
 
@@ -366,12 +366,26 @@
   <!-- Script para Gestión de Permisos -->
   {% if es_superusuario %}
   <script>
+    function cerrarAlertaSuave(alertaEl) {
+      if (!alertaEl) return;
+      alertaEl.style.transition = 'opacity 0.28s ease, transform 0.28s ease, max-height 0.28s ease, margin 0.28s ease, padding 0.28s ease';
+      alertaEl.style.opacity = '0';
+      alertaEl.style.transform = 'translateY(-8px)';
+      alertaEl.style.maxHeight = '0px';
+      alertaEl.style.margin = '0';
+      alertaEl.style.paddingTop = '0';
+      alertaEl.style.paddingBottom = '0';
+      setTimeout(() => {
+        alertaEl.style.display = 'none';
+      }, 280);
+    }
+
     // Auto-cerrar alertas después de 5 segundos
     document.addEventListener('DOMContentLoaded', function () {
       const alertas = document.querySelectorAll('.alerta');
       alertas.forEach(alerta => {
         setTimeout(() => {
-          alerta.style.display = 'none';
+          cerrarAlertaSuave(alerta);
         }, 5000);
       });
 
@@ -410,6 +424,25 @@
          FUNCIONES GLOBALES PARA CERRAR SESIÓN
          ========================================== -->
   <script>
+    function abrirModalAnimado(modal) {
+      if (!modal) return;
+      modal.classList.remove('modal-closing');
+      modal.style.display = 'flex';
+      requestAnimationFrame(() => {
+        modal.classList.add('modal-visible');
+      });
+    }
+
+    function cerrarModalAnimado(modal) {
+      if (!modal) return;
+      modal.classList.remove('modal-visible');
+      modal.classList.add('modal-closing');
+      setTimeout(() => {
+        modal.style.display = 'none';
+        modal.classList.remove('modal-closing');
+      }, 220);
+    }
+
     // Función para abrir modal de cerrar sesión (GLOBAL)
     function abrirModalCerrarSesion(event) {
       event.preventDefault();
@@ -432,7 +465,7 @@
         // Fallback: usar modal antiguo si mConfirm no está disponible
         const modal = document.getElementById("modalCerrarSesion");
         if (modal) {
-          modal.style.display = "flex";
+          abrirModalAnimado(modal);
         }
       }
     }
@@ -441,7 +474,7 @@
     function cerrarModal(modalId) {
       const modal = document.getElementById(modalId);
       if (modal) {
-        modal.style.display = "none";
+        cerrarModalAnimado(modal);
       }
     }
 
@@ -451,7 +484,7 @@
       event.stopPropagation();
       const modal = document.getElementById("modalPerfil");
       if (modal) {
-        modal.style.display = "flex";
+        abrirModalAnimado(modal);
       }
       // Cerrar el dropdown para que no se sobreponga
       const dropdown = document.getElementById("userDropdownMenu");
@@ -461,14 +494,14 @@
     function cerrarModalPerfil() {
       const modal = document.getElementById("modalPerfil");
       if (modal) {
-        modal.style.display = "none";
+        cerrarModalAnimado(modal);
       }
     }
 
     // Cerrar el modal de perfil dando click afuera (ya que el overlay cubre toda la pantalla)
     document.addEventListener("click", function (e) {
       const modal = document.getElementById("modalPerfil");
-      if (modal && modal.style.display === "flex") {
+      if (modal && modal.classList.contains("modal-visible")) {
         if (e.target === modal) {
           cerrarModalPerfil();
         }

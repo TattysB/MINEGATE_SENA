@@ -33,11 +33,17 @@
 
   function closeModal(overlay, value) {
     overlay.classList.remove('active');
-    if (resolveModal) {
-      var resolver = resolveModal;
-      resolveModal = null;
-      resolver(value);
-    }
+    overlay.classList.add('closing');
+
+    var resolver = resolveModal;
+    resolveModal = null;
+
+    setTimeout(function () {
+      overlay.classList.remove('closing');
+      if (resolver) {
+        resolver(value);
+      }
+    }, 180);
   }
 
   function showModal(opts) {
@@ -85,6 +91,7 @@
         buttons.appendChild(button);
       });
 
+      overlay.classList.remove('closing');
       overlay.classList.add('active');
 
       if (opts.showInput) {

@@ -1,5 +1,5 @@
 .cm-overlay {
-  display: none;
+  display: flex;
   position: fixed;
   z-index: 120000;
   left: 0;
@@ -7,15 +7,27 @@
   width: 100%;
   height: 100%;
   background: rgba(15, 23, 42, 0.42);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   align-items: center;
   justify-content: center;
-  animation: cmFadeIn 0.18s ease;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  will-change: opacity;
 }
 
 .cm-overlay.active {
-  display: flex;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.cm-overlay.closing {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 @keyframes cmFadeIn {
@@ -48,8 +60,21 @@
   max-width: 94vw;
   text-align: center;
   box-shadow: 0 28px 64px rgba(0, 0, 0, 0.24);
-  animation: cmSlideIn 0.24s ease;
   position: relative;
+  transform: scale(0.97) translateY(12px);
+  opacity: 0;
+  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease;
+  will-change: transform, opacity;
+}
+
+.cm-overlay.active .cm-box {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+
+.cm-overlay.closing .cm-box {
+  transform: scale(0.985) translateY(8px);
+  opacity: 0;
 }
 
 .cm-icon {

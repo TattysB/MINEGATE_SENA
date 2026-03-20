@@ -12,9 +12,9 @@
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
   <link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}?v=20260311c">
 <style>
-  :root { --sena-azul: #1d4ed8; }
+  :root { --sena-verde: #39a900; --sena-verde-oscuro: #2d8600; }
   body { padding-top: 0 !important; margin-top: 0 !important; }
-  .page-header { background: linear-gradient(135deg, #1e3a8a, var(--sena-azul)); color: white; padding: 2rem 0; }
+  .page-header { background: linear-gradient(135deg, #1a5c00, var(--sena-verde)); color: white; padding: 2rem 0; }
   .page-header h2 { font-weight: 800; }
   .breadcrumb-nav a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.85rem; }
   .breadcrumb-nav span { color: rgba(255,255,255,0.5); margin: 0 6px; }
@@ -28,9 +28,9 @@
   .btn-accion { padding: 4px 12px; border-radius: 50px; font-size: 0.78rem; font-weight: 600; }
   .empty-state { text-align: center; padding: 3rem; color: #9ca3af; }
   .empty-state i { font-size: 3rem; margin-bottom: 1rem; opacity: 0.4; }
-  .btn-new { background: var(--sena-azul); color: white; border: none; padding: 8px 22px; border-radius: 50px; font-weight: 700; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; }
-  .btn-new:hover { background: #1e3a8a; color: white; }
-  .ficha-num { font-size: 1.1rem; font-weight: 900; color: var(--sena-azul); }
+  .btn-new { background: var(--sena-verde); color: white; border: none; padding: 8px 22px; border-radius: 50px; font-weight: 700; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; }
+  .btn-new:hover { background: var(--sena-verde-oscuro); color: white; }
+  .ficha-num { font-size: 1.1rem; font-weight: 900; color: var(--sena-verde); }
 </style>
 </head>
 <body>
@@ -66,7 +66,7 @@
         <input type="text" name="buscar" class="form-control form-control-sm" placeholder="Número de ficha o nombre de programa..." value="{{ buscar }}">
       </div>
       <div class="col-md-5 d-flex gap-2">
-        <button type="submit" class="btn btn-primary btn-sm flex-fill"><i class="fas fa-search me-1"></i>Buscar</button>
+        <button type="submit" class="btn btn-success btn-sm flex-fill"><i class="fas fa-search me-1"></i>Buscar</button>
         <a href="{% url 'panel_instructor_interno:gestionar_fichas' %}" class="btn btn-outline-secondary btn-sm">Limpiar</a>
       </div>
     </form>
@@ -158,14 +158,14 @@
 <div class="modal fade" id="modalCrearFicha" tabindex="-1" aria-labelledby="modalCrearFichaLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
-      <div class="modal-header" style="background: linear-gradient(135deg, #1e3a8a, #1d4ed8); color: white; border: none;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1a5c00, #39a900); color: white; border: none;">
         <h5 class="modal-title" id="modalCrearFichaLabel">
           <i class="fas fa-id-badge me-2"></i>Crear Nueva Ficha y Programa
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body" id="modalCrearFichaBody" style="padding: 2rem;">
-        <div class="spinner-border text-primary" role="status">
+        <div class="spinner-border text-success" role="status">
           <span class="visually-hidden">Cargando...</span>
         </div>
       </div>
