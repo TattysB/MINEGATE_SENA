@@ -359,7 +359,7 @@
           Hay archivos con inconsistencias, faltantes o rechazo. Revise el detalle por persona y por archivos finales.
         </div>
 
-        {% if visita.estado != 'confirmada' and visita.asistentes.count > 0 %}
+        {% if visita.estado != 'confirmada' and visita.asistentes.count > 0 and mostrar_boton_corregir_archivos_finales %}
         <div class="d-flex flex-wrap gap-2 mb-3">
           <button type="button" onclick="abrirModalArchivosFinales(true)" class="btn-registrar" style="background: linear-gradient(135deg, #eae1b2 0%, #fff177 100%); color: #333; border: none; cursor: pointer;">
             <i class="fas fa-upload"></i> Corregir / subir archivo final
@@ -425,7 +425,7 @@
       {% else %}
         <div class="doc-ok-box">
           <i class="fas fa-circle-check me-2"></i>
-          Todos los documentos cargados en esta visita se encuentran completos y sin observaciones de rechazo.
+          Todos los documentos cargados en esta visita se encuentran completos y sin observaciones de rechazo. Recuerde que debe volver a enviar la solicitud para que el administrador revise los documentos cargados y pueda confirmar la visita.
         </div>
       {% endif %}
     </div>
@@ -525,7 +525,7 @@
           {% if visita.asistentes.count > 0 %}
           <form method="post" action="{% url 'panel_visitante:enviar_solicitud_final' tipo='interna' visita_id=visita.id %}" style="display:inline;">
             {% csrf_token %}
-            <button type="submit" id="btnEnviarSolicitudFinal" class="btn-enviar" {% if not enviar_final_habilitado %}disabled{% endif %} style="{% if not enviar_final_habilitado %}opacity: 0.5; cursor: not-allowed;{% endif %}" onclick="return confirmarEnvioSolicitudFinal(event, this, 'aprendices');">
+            <button type="submit" id="btnEnviarSolicitudFinal" class="btn-enviar" {% if not enviar_final_habilitado %}disabled{% endif %} style="{% if not enviar_final_habilitado %}opacity: 0.5; cursor: not-allowed;{% endif %}">
               <i class="fas fa-paper-plane"></i> Enviar solicitud final
             </button>
           </form>
@@ -779,8 +779,7 @@
 </div>
 
 <script>
-  function confirmarEnvioSolicitudFinal(event, boton, tipoPersona) {
-    const mensaje = '¿Enviar la solicitud final? Asegúrate de haber registrado todos los ' + tipoPersona + '.';
+  function confirmarEnvioSolicitudFinal(event, boton) {
     const form = boton && boton.form ? boton.form : null;
 
     if (event) {
@@ -788,23 +787,10 @@
       event.stopPropagation();
     }
 
-    if (typeof window.mConfirm === 'function') {
-      window.mConfirm(mensaje, {
-        title: 'Enviar solicitud final',
-        icon: '<i class="fas fa-paper-plane"></i>',
-        iconClass: 'cm-info',
-        confirmText: 'Sí, enviar',
-        confirmClass: 'cm-btn-success',
-        confirmIcon: 'fas fa-paper-plane'
-      }).then(function (ok) {
-        if (ok && form) {
-          form.submit();
-        }
-      });
-      return false;
+    if (form) {
+      form.submit();
     }
-
-    return confirm(mensaje);
+    return false;
   }
 
   function abrirModalActualizarAsistente(url) {
@@ -1616,7 +1602,7 @@
           // Mostrar modal de confirmación
           setTimeout(function() {
             cerrarModalArchivosFinales();
-            abrirModalConfirmacion();
+            ejecutarEnvioFinal();
           }, 1200);
 
         } catch (error) {
@@ -1703,7 +1689,7 @@
           if (listoParaConfirmar) {
             setTimeout(function() {
               cerrarModalSubirPorAsistente();
-              abrirModalConfirmacion();
+              ejecutarEnvioFinal();
             }, 1200);
           } else {
             setTimeout(function() {

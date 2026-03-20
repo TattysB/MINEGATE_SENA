@@ -40,12 +40,41 @@ def _documentos_actuales_asistente(asistente):
     return list(latest_por_documento.values())
 
 
+def _normalizar_categoria_documento(categoria):
+    return (
+        str(categoria or "")
+        .strip()
+        .lower()
+        .replace("á", "a")
+        .replace("é", "e")
+        .replace("í", "i")
+        .replace("ó", "o")
+        .replace("ú", "u")
+    )
+
+
+def _es_categoria_archivo_final(categoria):
+    categoria_normalizada = _normalizar_categoria_documento(categoria)
+    return categoria_normalizada in {
+        "ats",
+        "formato induccion y reinduccion",
+        "charla de seguridad y calestenia",
+        "charla de seguridad y calistenia",
+    }
+
+
 def _sincronizar_estado_asistente(asistente):
     """Sincroniza estado agregado del asistente según sus documentos actuales."""
     docs_actuales = _documentos_actuales_asistente(asistente)
-    tiene_rechazos = any(ds.estado == "rechazado" for ds in docs_actuales)
-    todos_aprobados = bool(docs_actuales) and all(
-        ds.estado == "aprobado" for ds in docs_actuales
+    docs_personales = [
+        ds
+        for ds in docs_actuales
+        if not _es_categoria_archivo_final(ds.documento_requerido.categoria)
+    ]
+
+    tiene_rechazos = any(ds.estado == "rechazado" for ds in docs_personales)
+    todos_aprobados = bool(docs_personales) and all(
+        ds.estado == "aprobado" for ds in docs_personales
     )
 
     if asistente.formato_autorizacion_padres:
@@ -829,13 +858,13 @@ def revisar_documento_asistente_api(request, documento_subido_id):
     # Sincronizar estado del asistente si hay un rechazo
     if estado == "rechazado":
         if asistente:
-            asistente.estado = "documentos_rechazados"
-            asistente.observaciones_revision = (
-                f"Documento '{doc.documento_requerido.titulo}' rechazado: {observaciones}"
-                if observaciones
-                else f"Documento '{doc.documento_requerido.titulo}' rechazado."
-            )
-            asistente.save(update_fields=["estado", "observaciones_revision"])
+            if not _es_categoria_archivo_final(doc.documento_requerido.categoria):
+                asistente.observaciones_revision = (
+                    f"Documento '{doc.documento_requerido.titulo}' rechazado: {observaciones}"
+                    if observaciones
+                    else f"Documento '{doc.documento_requerido.titulo}' rechazado."
+                )
+                asistente.save(update_fields=["observaciones_revision"])
             _enviar_correo_documento_rechazado(request, doc, asistente, observaciones)
 
     if asistente:

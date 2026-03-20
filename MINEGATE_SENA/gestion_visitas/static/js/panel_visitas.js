@@ -278,7 +278,7 @@ function getEstadoDocumentoBadge(estado) {
   const badges = {
     'pendiente_documentos': '<span style="background:#fef3c7;color:#92400e;padding:3px 8px;border-radius:15px;font-size:10px;">⏳ Pendiente</span>',
     'documentos_aprobados': '<span style="background:#d1fae5;color:#065f46;padding:3px 8px;border-radius:15px;font-size:10px;">✅ Aprobados</span>',
-    'documentos_rechazados': '<span style="background:#fee2e2;color:#991b1b;padding:3px 8px;border-radius:15px;font-size:10px;">⚠️ Pendiente corrección</span>',
+    'documentos_rechazados': '<span style="background:#fee2e2;color:#991b1b;padding:3px 8px;border-radius:15px;font-size:10px;">❌ Rechazado</span>',
   };
   return badges[estado] || estado;
 }
@@ -290,7 +290,9 @@ function getBadgeRevisionDocumento(ds, opts = {}) {
   const marginLeft = opts.marginLeft || '4px';
   const badges = [];
 
-  if (ds.estado === 'aprobado') {
+  if (ds.estado === 'pendiente') {
+    badges.push(`<span style="background:#fef3c7;color:#92400e;font-size:${fontSize};padding:${padding};border-radius:${borderRadius};margin-left:${marginLeft};">Pendiente</span>`);
+  } else if (ds.estado === 'aprobado') {
     badges.push(`<span style="background:#d1fae5;color:#065f46;font-size:${fontSize};padding:${padding};border-radius:${borderRadius};margin-left:${marginLeft};">Aprobado</span>`);
   } else if (ds.estado === 'rechazado') {
     badges.push(`<span style="background:#fee2e2;color:#991b1b;font-size:${fontSize};padding:${padding};border-radius:${borderRadius};margin-left:${marginLeft};">Rechazado</span>`);
@@ -372,7 +374,7 @@ function getAccionesVisita(v) {
         <i class="ri-verified-badge-line"></i> Confirmar
       </button>`);
     } else if (v.tiene_rechazos) {
-      acciones.push('<span class="gv-pill-info gv-pill-warning"><i class="ri-error-warning-line"></i> Pendiente corrección</span>');
+      acciones.push('<span class="gv-pill-info gv-pill-warning"><i class="ri-error-warning-line"></i> Rechazos detectados</span>');
     } else {
       acciones.push(`<button type="button" onclick="mAlert('No se puede confirmar la visita aún. Asegúrese de que todos los asistentes tengan sus documentos aprobados.', 'warning')" class="docs-btn-accion gv-btn-confirm gv-btn-disabled" title="Documentos pendientes de aprobación">
         <i class="ri-alert-line"></i> Confirmar
@@ -653,11 +655,11 @@ function mostrarDocumentosPorEstado(filtro) {
             aBadge = '<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">✅ Aprobado</span>';
             borderLeft = '#10b981';
           } else if (tieneRechazosPersonales) {
-            aBadge = '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">⚠️ Pendiente corrección</span>';
+            aBadge = '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">❌ Rechazado</span>';
             borderLeft = '#ef4444';
           } else if (a.estado === 'documentos_rechazados') {
-            aBadge = '<span style="background:#e2e8f0;color:#334155;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">ℹ️ Sin novedad personal</span>';
-            borderLeft = '#94a3b8';
+            aBadge = '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">❌ Rechazado</span>';
+            borderLeft = '#ef4444';
           }
 
           let botonesDoc = '';
@@ -673,7 +675,7 @@ function mostrarDocumentosPorEstado(filtro) {
                         <i class="ri-download-2-line"></i>
                       </a>
                     </div>
-                    ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (tieneRechazosPersonales ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Pendiente corrección</span>' : '')}
+                    ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (tieneRechazosPersonales ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Rechazado</span>' : '')}
                   </div>`;
           }
           if (a.documentos_subidos && a.documentos_subidos.length > 0) {
@@ -1231,7 +1233,7 @@ function verDetalleVisita(tipo, id) {
                         <i class="ri-download-2-line"></i>
                       </a>
                     </div>
-                    ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (tieneRechazosPersonales ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Pendiente corrección</span>' : '')}
+                    ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (tieneRechazosPersonales ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Rechazado</span>' : '')}
                   </div>`;
           }
           if (a.documento_adicional) {
@@ -1247,7 +1249,7 @@ function verDetalleVisita(tipo, id) {
                         <i class="ri-download-2-line"></i>
                       </a>
                     </div>
-                    ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (tieneRechazosPersonales ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Pendiente corrección</span>' : '')}
+                    ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (tieneRechazosPersonales ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Rechazado</span>' : '')}
                   </div>`;
           }
           if (a.formato_autorizacion_padres) {
@@ -1325,62 +1327,14 @@ function verDetalleVisita(tipo, id) {
             estadoBadge = '<span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">✅ Aprobado</span>';
           } else if (tieneRechazosPersonales) {
             borderColor = '#ef4444';
-            estadoBadge = '<span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">⚠️ Pendiente corrección</span>';
+            estadoBadge = '<span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">❌ Rechazado</span>';
           } else if (a.estado === 'documentos_rechazados') {
-            borderColor = '#94a3b8';
-            estadoBadge = '<span style="background:#e2e8f0;color:#334155;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">ℹ️ Sin novedad personal</span>';
+            borderColor = '#ef4444';
+            estadoBadge = '<span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">❌ Rechazado</span>';
           }
 
           let accionesDocHtml = '';
-          if (a.estado === 'pendiente_documentos' && tieneDocs) {
-            let btnAprobarMask = '';
-
-            // Verificar rechazos (incluyendo autorización de padres si existe)
-            let hasRechazos = a.tiene_rechazos || a.documentos_subidos.some(ds => ds.estado === 'rechazado');
-            if (a.formato_autorizacion_padres && a.estado_autorizacion_padres === 'rechazado') {
-              hasRechazos = true;
-            }
-
-            // Verificar si todos están aprobados
-            let allAprobados = a.todos_aprobados || (tieneDocs && a.documentos_subidos.every(ds => ds.estado === 'aprobado'));
-
-            // Si tiene autorización de padres, debe estar aprobada también
-            if (a.formato_autorizacion_padres) {
-              if (a.estado_autorizacion_padres !== 'aprobado') {
-                allAprobados = false;
-              }
-            }
-
-            if (hasRechazos) {
-              btnAprobarMask = `
-                <button onclick="mAlert('No se puede aprobar masivamente porque existen documentos rechazados. El asistente debe corregir los archivos o debe marcarlos todos individualmente.', 'warning')" 
-                        style="background:#9ca3af;color:white;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px;opacity:0.7;">
-                  <i class="ri-forbid-line"></i> Rechazos detectados
-                </button>`;
-            } else if (!allAprobados) {
-              btnAprobarMask = `
-                <button onclick="mAlert('Debe aprobar individualmente todos los archivos antes de realizar la aprobación final.', 'info')" 
-                        style="background:#6b7280;color:white;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px;opacity:0.7;">
-                  <i class="ri-information-line"></i> Pendiente aprobar todo
-                </button>`;
-            } else {
-              btnAprobarMask = `
-                <button onclick="event.stopPropagation();aprobarDocRevision('${tipo}', ${a.id})" 
-                        style="background:linear-gradient(135deg,#22c55e,#16a34a);color:white;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px;transition:all .2s;box-shadow:0 2px 6px rgba(34,197,94,0.32);">
-                  <i class="ri-check-double-line"></i> Aprobación Final
-                </button>`;
-            }
-
-            accionesDocHtml = `
-                <div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px dashed #d1d5db;align-items:center;">
-                  <span style="font-size:12px;font-weight:600;color:#374151;">Acción:</span>
-                  ${btnAprobarMask}
-                  <button onclick="event.stopPropagation();rechazarDocRevision('${tipo}', ${a.id}, '${a.nombre_completo.replace(/'/g, "\\'")}')" 
-                          style="background:linear-gradient(135deg,#ef4444,#dc2626);color:white;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px;transition:all .2s;box-shadow:0 2px 6px rgba(239,68,68,0.3);">
-                    <i class="ri-close-line"></i> Rechazar Todo
-                  </button>
-                </div>`;
-          } else if (tieneRechazosPersonales) {
+          if (tieneRechazosPersonales) {
             accionesDocHtml = `
                 <div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px dashed #d1d5db;align-items:center;flex-wrap:wrap;">
                   <span style="font-size:12px;font-weight:600;color:#9a3412;background:#fff7ed;border:1px solid #fdba74;border-radius:6px;padding:6px 10px;display:inline-flex;align-items:center;gap:6px;"><i class="ri-alert-fill"></i> Requiere actualización de documentos</span>
@@ -1538,8 +1492,6 @@ async function accionVisita(tipo, id, accion) {
     mAlert('La acción de rechazar visita no está disponible para el administrador.', 'warning');
     return;
   }
-
-  let observaciones = '';
 
   if (accion === 'aprobar') {
     const ok = await mConfirm('¿Estás seguro de <strong>aprobar</strong> esta visita?', {

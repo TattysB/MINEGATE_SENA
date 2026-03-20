@@ -20,9 +20,9 @@
 
   .detail-card { background: white; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden; margin-bottom: 1.5rem; }
   .detail-card-header { padding: 1rem 1.5rem; display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1rem; border-bottom: 1px solid #f0f0f0; }
-  .detail-card-header.azul { background: #eef9e8; color: var(--ext-oscuro); border-bottom-color: #c7e6a8; }
+  .detail-card-header.azul { background: #eff6ff; color: #1e40af; border-bottom-color: #bfdbfe; }
   .detail-card-header.verde { background: #f0fdf4; color: #166534; border-bottom-color: #bbf7d0; }
-  .detail-card-header.morado { background: #eef9e8; color: var(--ext-oscuro); border-bottom-color: #c7e6a8; }
+  .detail-card-header.morado { background: #faf5ff; color: #6b21a8; border-bottom-color: #e9d5ff; }
   .detail-card-body { padding: 1.5rem; }
   .info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.2rem; }
   .info-item label { display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #9ca3af; margin-bottom: 3px; }
@@ -48,10 +48,10 @@
   .asistente-info small { color:#6b7280; font-size:0.8rem; }
   .btn-registrar { background:var(--ext-azul); color:white; border:none; padding:10px 22px; border-radius:50px; font-weight:700; font-size:0.9rem; text-decoration:none; display:inline-flex; align-items:center; gap:7px; transition:all 0.2s; }
   .btn-registrar:hover { background:var(--ext-oscuro); color:white; transform:translateY(-1px); }
-  .btn-enviar { background:var(--ext-azul); color:white; border:none; padding:10px 22px; border-radius:50px; font-weight:700; font-size:0.9rem; text-decoration:none; cursor:pointer; display:inline-flex; align-items:center; gap:7px; transition:all 0.2s; }
-  .btn-enviar:hover { background:var(--ext-oscuro); color:white; }
-  .btn-actualizar-asi { background:transparent; color:var(--ext-oscuro); border:1px solid var(--ext-oscuro); padding:4px 12px; border-radius:50px; font-size:0.78rem; font-weight:600; text-decoration:none; transition:all 0.2s; }
-  .btn-actualizar-asi:hover { background:#eef9e8; color:#14532d; }
+  .btn-enviar { background:#6366f1; color:white; border:none; padding:10px 22px; border-radius:50px; font-weight:700; font-size:0.9rem; text-decoration:none; cursor:pointer; display:inline-flex; align-items:center; gap:7px; transition:all 0.2s; }
+  .btn-enviar:hover { background:#4f46e5; color:white; }
+  .btn-actualizar-asi { background:transparent; color:var(--ext-azul); border:1px solid var(--ext-azul); padding:4px 12px; border-radius:50px; font-size:0.78rem; font-weight:700; text-decoration:none; transition:all 0.2s; }
+  .btn-actualizar-asi:hover { background:#dcfce7; color:var(--ext-oscuro); border-color:var(--ext-oscuro); }
   .btn-eliminar-asi { background:transparent; color:#ef4444; border:1px solid #ef4444; padding:4px 12px; border-radius:50px; font-size:0.78rem; font-weight:600; text-decoration:none; transition:all 0.2s; }
   .btn-eliminar-asi:hover { background:#fee2e2; color:#991b1b; }
   .progress-wrap { background:#e9ecef; border-radius:50px; height:12px; overflow:hidden; margin:0.5rem 0; }
@@ -59,7 +59,7 @@
   .empty-asistentes { text-align:center; padding:2rem; color:#9ca3af; }
   .empty-asistentes i { font-size:2rem; opacity:0.4; }
   .info-box-aprobada { background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:1rem 1.3rem; font-size:0.88rem; color:#166534; }
-  .info-box-enviado { background:#eef9e8; border:1px solid #c7e6a8; border-radius:10px; padding:1rem 1.3rem; font-size:0.88rem; color:#14532d; }
+  .info-box-enviado { background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; padding:1rem 1.3rem; font-size:0.88rem; color:#1e40af; }
 
   .doc-resumen-box { background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:1rem 1.2rem; margin-bottom:1rem; color:#92400e; }
   .doc-ok-box { background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:1rem 1.2rem; margin-bottom:1rem; color:#166534; }
@@ -299,7 +299,7 @@
           Hay archivos con inconsistencias, faltantes o rechazo. Revise el detalle por persona y por archivos finales.
         </div>
 
-        {% if visita.estado != 'confirmada' and visita.asistentes.count > 0 %}
+        {% if visita.estado != 'confirmada' and visita.asistentes.count > 0 and mostrar_boton_corregir_archivos_finales %}
         <div class="d-flex flex-wrap gap-2 mb-3">
           <button type="button" onclick="abrirModalArchivosFinales(true)" class="btn-registrar" style="background: linear-gradient(135deg, #39a900 0%, #2d8600 100%); color: #fff; border: none; cursor: pointer;">
             <i class="fas fa-upload"></i> Corregir / subir archivo final
@@ -357,7 +357,7 @@
       {% else %}
         <div class="doc-ok-box">
           <i class="fas fa-circle-check me-2"></i>
-          Todos los documentos cargados en esta visita se encuentran completos y sin observaciones de rechazo.
+          Todos los documentos cargados en esta visita se encuentran completos y sin observaciones de rechazo. Recuerde que debe volver a enviar la solicitud para que el administrador revise los documentos cargados y pueda confirmar la visita.
         </div>
       {% endif %}
     </div>
@@ -414,7 +414,7 @@
               <button type="button" onclick="verDocumentoFinalExterno('{% url 'documentos:ver_documento_inline' doc.id %}', '{{ doc.etiqueta_requerida|escapejs }}', '{{ doc.extension|default:'' }}', '{% url 'documentos:descargar_documento' doc.id %}')" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 8px 18px; border-radius: 8px; border: none; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; cursor: pointer;">
                 <i class="fas fa-eye"></i> Ver
               </button>
-              <a href="{% url 'documentos:descargar_documento' doc.id %}" style="background: linear-gradient(135deg, #39a900 0%, #2d8600 100%); color: white; padding: 8px 18px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
+              <a href="{% url 'documentos:descargar_documento' doc.id %}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 8px 18px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
                 <i class="fas fa-download"></i> Descargar
               </a>
             </div>
@@ -434,12 +434,18 @@
             <i class="fas fa-user-plus"></i> Registrar / Ver visitantes
           </a>
           {% if visita.asistentes.count > 0 %}
-          <button type="button" onclick="abrirModalArchivosFinales(false)" class="btn-registrar" style="background: linear-gradient(135deg, #39a900 0%, #2d8600 100%); color: #fff; border: none; cursor: pointer;">
+          {% if mostrar_boton_subir_archivos_finales %}
+          <button type="button" onclick="abrirModalArchivosFinales(false)" class="btn-registrar" style="background: linear-gradient(135deg, #eae1b2 0%, #fff177 100%); color: #333; border: none; cursor: pointer;">
             <i class="fas fa-folder-open"></i> Subir archivos finales
           </button>
+          {% else %}
+          <span class="btn-registrar" style="background:#ecfdf3;color:#166534;border:1px solid #86efac;cursor:default;">
+            <i class="fas fa-check-circle"></i> Archivos cargados para revisión
+          </span>
+          {% endif %}
           <form method="post" action="{% url 'panel_visitante:enviar_solicitud_final' tipo='externa' visita_id=visita.id %}" style="display:inline;">
             {% csrf_token %}
-            <button type="submit" id="btnEnviarSolicitudFinal" class="btn-enviar" {% if not enviar_final_habilitado %}disabled{% endif %} style="{% if not enviar_final_habilitado %}opacity: 0.5; cursor: not-allowed;{% endif %}" onclick="return confirmarEnvioSolicitudFinal(event, this, 'visitantes');">
+            <button type="submit" id="btnEnviarSolicitudFinal" class="btn-enviar" {% if not enviar_final_habilitado %}disabled{% endif %} style="{% if not enviar_final_habilitado %}opacity: 0.5; cursor: not-allowed;{% endif %}">
               <i class="fas fa-paper-plane"></i> Enviar solicitud final
             </button>
           </form>
@@ -455,9 +461,7 @@
             <i class="fas fa-eye"></i> Ver visitantes registrados
           </a>
           {% if visita.asistentes.count > 0 %}
-          <button type="button" onclick="abrirModalArchivosFinales(true)" class="btn-registrar" style="background: linear-gradient(135deg, #39a900 0%, #2d8600 100%); color: #fff; border: none; cursor: pointer;">
-            <i class="fas fa-upload"></i> Corregir / subir archivo final
-          </button>
+          
           {% endif %}
         </div>
       {% elif visita.estado == 'confirmada' %}
@@ -470,10 +474,10 @@
         {% for asistente in visita.asistentes.all|slice:":5" %}
         <div class="asistente-item">
           <div class="asistente-info">
-            <h6><i class="fas fa-user me-2" style="color:#2d8600;"></i>{{ asistente.nombre_completo }}</h6>
+            <h6><i class="fas fa-user me-2" style="color:#6b21a8;"></i>{{ asistente.nombre_completo }}</h6>
             <small>{{ asistente.get_tipo_documento_display }}: {{ asistente.numero_documento }}</small>
           </div>
-          {% if visita.estado == 'aprobada_inicial' %}
+          {% if permite_editar_asistentes %}
           <div class="d-flex gap-2">
             <a href="{% url 'panel_visitante:actualizar_info_asistente' tipo='externa' asistente_id=asistente.id %}"
                class="btn-actualizar-asi"
@@ -699,8 +703,7 @@
 </div>
 
 <script>
-  function confirmarEnvioSolicitudFinal(event, boton, tipoPersona) {
-    const mensaje = '¿Enviar la solicitud final? Asegúrate de haber registrado todos los ' + tipoPersona + '.';
+  function confirmarEnvioSolicitudFinal(event, boton) {
     const form = boton && boton.form ? boton.form : null;
 
     if (event) {
@@ -708,23 +711,10 @@
       event.stopPropagation();
     }
 
-    if (typeof window.mConfirm === 'function') {
-      window.mConfirm(mensaje, {
-        title: 'Enviar solicitud final',
-        icon: '<i class="fas fa-paper-plane"></i>',
-        iconClass: 'cm-info',
-        confirmText: 'Sí, enviar',
-        confirmClass: 'cm-btn-success',
-        confirmIcon: 'fas fa-paper-plane'
-      }).then(function (ok) {
-        if (ok && form) {
-          form.submit();
-        }
-      });
-      return false;
+    if (form) {
+      form.submit();
     }
-
-    return confirm(mensaje);
+    return false;
   }
 
   function abrirModalActualizarAsistente(url) {
@@ -1440,7 +1430,7 @@
             // Mostrar modal de confirmación
             setTimeout(function() {
               cerrarModalArchivosFinales();
-              abrirModalConfirmacion();
+              ejecutarEnvioFinal();
             }, 1200);
 
           } else {
