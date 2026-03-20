@@ -402,10 +402,14 @@
         </div>
     {% endif %}
 
+    {% if tipo == 'externa' %}
     <div class="bulk-upload-box">
         <h5 style="margin:0 0 6px; font-size:1.02rem; font-weight:800; color:#1f2937;"><i class="fas fa-file-import me-2" style="color:#2f8f00;"></i>Carga masiva de asistentes</h5>
         <p style="margin:0 0 10px; color:#6b7280; font-size:0.86rem;">
-            Cargue asistentes de forma masiva para visitas internas o externas usando plantillas predeterminadas en CSV, Excel o PDF (con dos ejemplos incluidos).
+            Cargue visitantes externos de forma masiva usando plantillas predeterminadas en CSV, Excel o PDF (con dos ejemplos incluidos).
+        </p>
+        <p style="margin:0 0 10px; color:#374151; font-size:0.82rem;">
+            Campos de plantilla externa: <strong>Nombre completo</strong>, <strong>Tipo de documento</strong>, <strong>Número de documento</strong>, <strong>Correo electrónico</strong>, <strong>Teléfono</strong>.
         </p>
         <div class="d-flex flex-wrap gap-2 mb-3">
             <a href="{% url 'panel_visitante:descargar_plantilla_carga_masiva_asistentes' tipo=tipo visita_id=visita.id formato='csv' %}" class="bulk-template-btn"><i class="fas fa-file-csv"></i> Plantilla CSV</a>
@@ -424,6 +428,7 @@
             </div>
         </form>
     </div>
+    {% endif %}
 
     <!-- Documentos para descargar -->
     {% if documentos_registro_por_categoria %}
@@ -583,17 +588,20 @@
                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePendientesDocs" aria-expanded="false" aria-controls="collapsePendientesDocs">
                     <i class="fas fa-folder-open me-2" style="color:#b45309;"></i>
                     Asistentes con documentos pendientes
-                    <span class="ms-auto badge rounded-pill" style="background:#fde68a; color:#78350f;">{{ total_asistentes_pendientes }}</span>
+                    <span id="badgePendientesDocsCount" class="ms-auto badge rounded-pill" style="background:#fde68a; color:#78350f;">{{ total_asistentes_pendientes }}</span>
                 </button>
             </h2>
             <div id="collapsePendientesDocs" class="accordion-collapse collapse" aria-labelledby="headingPendientesDocs" data-bs-parent="#acordeonPendientesDocs">
                 <div class="accordion-body">
+                    <div id="pendientesVaciosMsg" style="padding:0.8rem; border-radius:10px; background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; font-weight:600; {% if asistentes_documentos_pendientes %}display:none;{% endif %}">
+                        <i class="fas fa-check-circle me-1"></i> No hay asistentes con documentos pendientes.
+                    </div>
                     <p class="mb-3" style="font-size:0.86rem; color:#6b7280;">
                         Para subir archivos faltantes, use <strong>Actualizar</strong> en cada asistente y adjunte los documentos pendientes.
                     </p>
                     {% if asistentes_documentos_pendientes %}
                         {% for pendiente in asistentes_documentos_pendientes %}
-                            <div class="pending-doc-item">
+                            <div class="pending-doc-item" data-asistente-id="{{ pendiente.id }}">
                                 <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
                                     <div>
                                         <strong style="color:#1f2937;">{{ pendiente.nombre }}</strong>
@@ -608,10 +616,6 @@
                                 {% endfor %}
                             </div>
                         {% endfor %}
-                    {% else %}
-                        <div style="padding:0.8rem; border-radius:10px; background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; font-weight:600;">
-                            <i class="fas fa-check-circle me-1"></i> No hay asistentes con documentos pendientes.
-                        </div>
                     {% endif %}
                 </div>
             </div>
@@ -623,7 +627,7 @@
         
         {% if asistentes %}
             {% for asistente in asistentes %}
-                <div class="asistente-item">
+                <div class="asistente-item" data-asistente-id="{{ asistente.id }}">
                     <div class="asistente-info">
                         <h5><i class="fas fa-user me-2" style="color: #00af00;"></i>{{ asistente.nombre_completo }}</h5>
                         <p>
@@ -631,7 +635,7 @@
                             {% if asistente.correo %} | <i class="fas fa-envelope me-1"></i>{{ asistente.correo }}{% endif %}
                             {% if asistente.telefono %} | <i class="fas fa-phone me-1"></i>{{ asistente.telefono }}{% endif %}
                         </p>
-                        <div style="margin-top: 8px;">
+                        <div class="doc-salud-status" data-asistente-id="{{ asistente.id }}" style="margin-top: 8px;">
                             {% if asistente.tiene_doc_salud %}
                                 <span style="display: inline-block; background: #d1fae5; color: #065f46; padding: 4px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600;">
                                     <i class="fas fa-check-circle me-1"></i>Documento de salud cargado
@@ -747,6 +751,7 @@
 var tipoVisitaGlobal = '{{ tipo }}';
 var visitaIdGlobal = {{ visita.id }};
 var puedeActualizarAsistentes = {{ puede_actualizar_asistentes|yesno:"true,false" }};
+var asistenteActualizandoId = null;
 
 function confirmarEliminarAsistente(event, url, nombre) {
     const mensaje = '¿Está seguro de eliminar este asistente?' + (nombre ? ('<br><strong>' + nombre + '</strong>') : '');
@@ -811,6 +816,7 @@ function abrirModalActualizarDoc(asistenteId, nombreAsistente, tipo, tipoDocumen
     }
     const baseUrl = '/visitante/actualizar-documento/';
     const actionUrl = baseUrl + tipo + '/' + asistenteId + '/';
+    asistenteActualizandoId = String(asistenteId);
     document.getElementById('formActualizarDoc').action = actionUrl;
     document.getElementById('modalActualizarDoc').style.display = 'block';
     document.body.style.overflow = 'hidden';
@@ -820,7 +826,52 @@ function cerrarModalActualizarDoc() {
     document.getElementById('modalActualizarDoc').style.display = 'none';
     document.getElementById('inputDocSalud').value = '';
     document.getElementById('inputFormatoPadres').value = '';
+    asistenteActualizandoId = null;
     document.body.style.overflow = '';
+}
+
+function mostrarMensajeActualizacionDocumento(mensaje, tipo) {
+    if (typeof window.mAlert === 'function') {
+        window.mAlert(mensaje, tipo || 'success');
+        return;
+    }
+
+    const alerta = document.createElement('div');
+    alerta.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:120001;padding:10px 14px;border-radius:10px;font-weight:700;color:#fff;box-shadow:0 10px 24px rgba(0,0,0,.2);max-width:360px;background:'
+        + (tipo === 'error' ? '#dc2626' : '#059669') + ';';
+    alerta.textContent = mensaje;
+    document.body.appendChild(alerta);
+    setTimeout(function() {
+        if (alerta.parentNode) alerta.parentNode.removeChild(alerta);
+    }, 2800);
+}
+
+function actualizarUITrasCorreccionAsistente(asistenteId) {
+    const id = String(asistenteId || '');
+    if (!id) return;
+
+    const pendienteItem = document.querySelector('.pending-doc-item[data-asistente-id="' + id + '"]');
+    if (pendienteItem && pendienteItem.parentNode) {
+        pendienteItem.parentNode.removeChild(pendienteItem);
+    }
+
+    const badgePendientes = document.getElementById('badgePendientesDocsCount');
+    if (badgePendientes) {
+        const valorActual = parseInt((badgePendientes.textContent || '0').trim(), 10) || 0;
+        const nuevoValor = Math.max(0, valorActual - (pendienteItem ? 1 : 0));
+        badgePendientes.textContent = String(nuevoValor);
+
+        const vacio = document.getElementById('pendientesVaciosMsg');
+        if (vacio) {
+            vacio.style.display = nuevoValor === 0 ? 'block' : 'none';
+        }
+    }
+
+    const estadoSalud = document.querySelector('.doc-salud-status[data-asistente-id="' + id + '"]');
+    if (estadoSalud) {
+        estadoSalud.innerHTML = '<span style="display: inline-block; background: #d1fae5; color: #065f46; padding: 4px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600;">'
+            + '<i class="fas fa-check-circle me-1"></i>Documento de salud cargado</span>';
+    }
 }
 
 document.getElementById('modalActualizarDoc').addEventListener('click', function(e) {
@@ -831,6 +882,60 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' && document.getElementById('modalActualizarDoc').style.display === 'block') {
         cerrarModalActualizarDoc();
     }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const formActualizarDoc = document.getElementById('formActualizarDoc');
+    if (!formActualizarDoc) return;
+
+    formActualizarDoc.addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const inputDocSalud = document.getElementById('inputDocSalud');
+        const inputFormatoPadres = document.getElementById('inputFormatoPadres');
+        const btnSubmit = formActualizarDoc.querySelector('button[type="submit"]');
+        const tieneArchivoSalud = inputDocSalud && inputDocSalud.files && inputDocSalud.files.length > 0;
+        const tieneArchivoPadres = inputFormatoPadres && !inputFormatoPadres.disabled && inputFormatoPadres.files && inputFormatoPadres.files.length > 0;
+
+        if (!tieneArchivoSalud && !tieneArchivoPadres) {
+            mostrarMensajeActualizacionDocumento('Debe adjuntar al menos un archivo para guardar la corrección.', 'error');
+            return;
+        }
+
+        if (btnSubmit) {
+            btnSubmit.disabled = true;
+            btnSubmit.dataset.originalText = btnSubmit.innerHTML;
+            btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Guardando...';
+        }
+
+        const formData = new FormData(formActualizarDoc);
+        fetch(formActualizarDoc.action, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        })
+        .then(async function(response) {
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || data.success === false) {
+                throw new Error(data.error || 'No se pudo actualizar el documento.');
+            }
+
+            actualizarUITrasCorreccionAsistente(asistenteActualizandoId);
+            cerrarModalActualizarDoc();
+            mostrarMensajeActualizacionDocumento(data.message || 'Documento actualizado correctamente.', 'success');
+        })
+        .catch(function(error) {
+            mostrarMensajeActualizacionDocumento(error.message || 'Error de conexión al actualizar el documento.', 'error');
+        })
+        .finally(function() {
+            if (btnSubmit) {
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = btnSubmit.dataset.originalText || '<i class="fas fa-check me-1"></i>Guardar Documento';
+            }
+        });
+    });
 });
 
 document.addEventListener('DOMContentLoaded', function() {

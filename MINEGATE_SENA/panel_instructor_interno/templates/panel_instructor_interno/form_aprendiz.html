@@ -292,7 +292,7 @@
         </div>
     {% endif %}
 
-    <form method="POST" enctype="multipart/form-data">
+    <form id="formAprendiz" method="POST" enctype="multipart/form-data">
         {% csrf_token %}
         <div class="row">
             <div class="col-xl-5">
@@ -569,8 +569,9 @@ function verDocumento(urlViewer, titulo, extension, urlDescarga) {
 <!-- Validación de Documentos Requeridos -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const formulario = document.querySelector('form');
+    const formulario = document.getElementById('formAprendiz') || document.querySelector('form');
     const btnGuardar = document.getElementById('btnGuardar');
+    const modoEmbed = new URLSearchParams(window.location.search).get('embed') === '1';
     const tipoDocumentoSelect = document.querySelector('select[name="tipo_documento"]');
     const extensionesPermitidas = ['.pdf', '.doc', '.docx'];
     const tamanoMaximoBytes = 10 * 1024 * 1024;
@@ -792,7 +793,62 @@ document.addEventListener('DOMContentLoaded', function() {
                         ${archivosNoSubidos.map(archivo => `<li>${archivo}</li>`).join('')}
                     </ul>
                 `);
+                return;
             }
+
+            if (!modoEmbed) {
+                return;
+            }
+
+            evento.preventDefault();
+            btnGuardar.disabled = true;
+            btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Guardando...';
+
+            const formData = new FormData(formulario);
+            fetch(formulario.action || window.location.href, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(async function(response) {
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || data.success === false) {
+                    const errores = Array.isArray(data.errores) ? data.errores : [];
+                    const detalle = errores.length
+                        ? '<ul class="mb-0 mt-2">' + errores.map(error => `<li>${error}</li>`).join('') + '</ul>'
+                        : '';
+                    mostrarAlertaError(
+                        '<i class="fas fa-exclamation-circle me-2"></i><strong>No se pudo registrar el aprendiz.</strong>'
+                        + (data.error ? ('<br>' + data.error) : '')
+                        + detalle
+                    );
+                    btnGuardar.disabled = false;
+                    btnGuardar.innerHTML = '<i class="fas fa-plus-circle me-2"></i>Guardar Registro';
+                    return;
+                }
+
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'aprendizCreado',
+                        message: data.message || 'Aprendiz registrado correctamente.',
+                        aprendiz: data.aprendiz || null
+                    }, '*');
+                    return;
+                }
+
+                if (data.redirect_url) {
+                    window.location.href = data.redirect_url;
+                }
+            })
+            .catch(function() {
+                mostrarAlertaError(
+                    '<i class="fas fa-exclamation-circle me-2"></i><strong>Error de conexión.</strong><br>Intenta nuevamente en unos segundos.'
+                );
+                btnGuardar.disabled = false;
+                btnGuardar.innerHTML = '<i class="fas fa-plus-circle me-2"></i>Guardar Registro';
+            });
         });
     }
 });
