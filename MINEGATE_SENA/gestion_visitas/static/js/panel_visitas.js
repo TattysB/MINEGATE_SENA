@@ -1539,8 +1539,6 @@ async function accionVisita(tipo, id, accion) {
     return;
   }
 
-  let observaciones = '';
-
   if (accion === 'aprobar') {
     const ok = await mConfirm('¿Estás seguro de <strong>aprobar</strong> esta visita?', {
       title: 'Aprobar Visita',
