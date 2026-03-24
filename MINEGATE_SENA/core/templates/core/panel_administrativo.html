@@ -51,7 +51,7 @@
           <div class="topbar-brand">
             <span class="brand-main">SICAM</span>
             <span class="brand-divider">|</span>
-            <span class="brand-sub">Sistema Informactivo del Control y Acceso a la Mina </span>
+            <span class="brand-sub">Sistema Informativo del Control y Acceso a la Mina </span>
           </div>
         </div>
       </div>
@@ -299,7 +299,9 @@
     <main id="mainContent">
       {% block content %}
       {% if not solo_coordinador %}
-      {% if seccion_activa == 'gestion_calendario' %}
+      {% if seccion_activa == 'panel_principal' %}
+      {% include 'core/panel_principal_admin.html' %}
+      {% elif seccion_activa == 'gestion_calendario' %}
       {% include 'calendario.html' %}
       <script>
         document.addEventListener('DOMContentLoaded', function () {

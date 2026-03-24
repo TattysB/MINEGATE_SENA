@@ -31,7 +31,9 @@ from .models import (
     ElementoEncabezadoInformativo,
     ElementoGaleriaInformativa,
 )
-from visitaInterna.models import VisitaInterna
+from visitaInterna.models import VisitaInterna, AsistenteVisitaInterna
+from visitaExterna.models import VisitaExterna, AsistenteVisitaExterna
+from control_acceso_mina.models import RegistroAccesoMina
 from reportes.views import _obtener_filas_reporte
 
 
@@ -633,6 +635,172 @@ def _agregar_contexto_calendario(context):
     )
 
 
+def _agregar_contexto_panel_principal(context):
+    hoy = date.today()
+    inicio_mes_actual = hoy.replace(day=1)
+    fin_mes_anterior = inicio_mes_actual - timedelta(days=1)
+    inicio_mes_anterior = fin_mes_anterior.replace(day=1)
+
+    def _variacion_porcentual(actual, anterior):
+        if anterior <= 0:
+            return 100.0 if actual > 0 else 0.0
+        return round(((actual - anterior) / anterior) * 100.0, 1)
+
+    try:
+        visitas_int_qs = VisitaInterna.objects.all()
+        visitas_ext_qs = VisitaExterna.objects.all()
+
+        total_internas = visitas_int_qs.count()
+        total_externas = visitas_ext_qs.count()
+        total_visitas = total_internas + total_externas
+
+        pendientes_total = (
+            visitas_int_qs.filter(estado="pendiente").count()
+            + visitas_ext_qs.filter(estado="pendiente").count()
+        )
+        confirmadas_total = (
+            visitas_int_qs.filter(estado="aprobada_final").count()
+            + visitas_ext_qs.filter(estado="aprobada_final").count()
+        )
+        rechazadas_total = (
+            visitas_int_qs.filter(estado="rechazada").count()
+            + visitas_ext_qs.filter(estado="rechazada").count()
+        )
+        reprogramaciones_total = (
+            visitas_int_qs.filter(estado="reprogramacion_solicitada").count()
+            + visitas_ext_qs.filter(estado="reprogramacion_solicitada").count()
+        )
+
+        asistentes_total = (
+            AsistenteVisitaInterna.objects.count()
+            + AsistenteVisitaExterna.objects.count()
+        )
+
+        accesos_hoy_entradas = RegistroAccesoMina.objects.filter(
+            fecha_hora__date=hoy, tipo="ENTRADA"
+        ).count()
+        accesos_hoy_salidas = RegistroAccesoMina.objects.filter(
+            fecha_hora__date=hoy, tipo="SALIDA"
+        ).count()
+
+        visitas_mes_actual = (
+            visitas_int_qs.filter(fecha_solicitud__date__gte=inicio_mes_actual).count()
+            + visitas_ext_qs.filter(fecha_solicitud__date__gte=inicio_mes_actual).count()
+        )
+        visitas_mes_anterior = (
+            visitas_int_qs.filter(
+                fecha_solicitud__date__gte=inicio_mes_anterior,
+                fecha_solicitud__date__lte=fin_mes_anterior,
+            ).count()
+            + visitas_ext_qs.filter(
+                fecha_solicitud__date__gte=inicio_mes_anterior,
+                fecha_solicitud__date__lte=fin_mes_anterior,
+            ).count()
+        )
+
+        variacion_mes_pct = _variacion_porcentual(
+            visitas_mes_actual,
+            visitas_mes_anterior,
+        )
+
+        tendencia_7_dias = []
+        max_tendencia = 1
+        for offset in range(6, -1, -1):
+            dia = hoy - timedelta(days=offset)
+            internas_dia = visitas_int_qs.filter(fecha_solicitud__date=dia).count()
+            externas_dia = visitas_ext_qs.filter(fecha_solicitud__date=dia).count()
+            total_dia = internas_dia + externas_dia
+
+            tendencia_7_dias.append(
+                {
+                    "fecha": dia,
+                    "label": dia.strftime("%d/%m"),
+                    "internas": internas_dia,
+                    "externas": externas_dia,
+                    "total": total_dia,
+                }
+            )
+            max_tendencia = max(max_tendencia, total_dia)
+
+        for item in tendencia_7_dias:
+            item["pct"] = round((item["total"] / max_tendencia) * 100, 1)
+
+        visitas_recientes = []
+        for visita in visitas_int_qs.order_by("-fecha_solicitud")[:6]:
+            visitas_recientes.append(
+                {
+                    "id": visita.id,
+                    "tipo": "Interna",
+                    "responsable": visita.responsable,
+                    "entidad": visita.nombre_programa,
+                    "estado": visita.estado,
+                    "fecha_solicitud": visita.fecha_solicitud,
+                }
+            )
+
+        for visita in visitas_ext_qs.order_by("-fecha_solicitud")[:6]:
+            visitas_recientes.append(
+                {
+                    "id": visita.id,
+                    "tipo": "Externa",
+                    "responsable": visita.nombre_responsable,
+                    "entidad": visita.nombre,
+                    "estado": visita.estado,
+                    "fecha_solicitud": visita.fecha_solicitud,
+                }
+            )
+
+        visitas_recientes.sort(
+            key=lambda item: item.get("fecha_solicitud") or timezone.now() - timedelta(days=36500),
+            reverse=True,
+        )
+
+        context.update(
+            {
+                "dashboard": {
+                    "total_visitas": total_visitas,
+                    "total_internas": total_internas,
+                    "total_externas": total_externas,
+                    "pendientes_total": pendientes_total,
+                    "confirmadas_total": confirmadas_total,
+                    "rechazadas_total": rechazadas_total,
+                    "reprogramaciones_total": reprogramaciones_total,
+                    "asistentes_total": asistentes_total,
+                    "accesos_hoy_entradas": accesos_hoy_entradas,
+                    "accesos_hoy_salidas": accesos_hoy_salidas,
+                    "visitas_mes_actual": visitas_mes_actual,
+                    "visitas_mes_anterior": visitas_mes_anterior,
+                    "variacion_mes_pct": variacion_mes_pct,
+                    "tendencia_7_dias": tendencia_7_dias,
+                    "visitas_recientes": visitas_recientes[:8],
+                }
+            }
+        )
+    except (OperationalError, ProgrammingError):
+        context.update(
+            {
+                "dashboard": {
+                    "total_visitas": 0,
+                    "total_internas": 0,
+                    "total_externas": 0,
+                    "pendientes_total": 0,
+                    "confirmadas_total": 0,
+                    "rechazadas_total": 0,
+                    "reprogramaciones_total": 0,
+                    "asistentes_total": 0,
+                    "accesos_hoy_entradas": 0,
+                    "accesos_hoy_salidas": 0,
+                    "visitas_mes_actual": 0,
+                    "visitas_mes_anterior": 0,
+                    "variacion_mes_pct": 0,
+                    "tendencia_7_dias": [],
+                    "visitas_recientes": [],
+                },
+                "dashboard_error": "Faltan migraciones o tablas para cargar las estadísticas del panel principal.",
+            }
+        )
+
+
 def _render_panel_administrativo(
     request,
     seccion_activa="panel_principal",
@@ -736,7 +904,9 @@ def _render_panel_administrativo(
             }
         )
 
-    if seccion_activa == "gestion_calendario":
+    if seccion_activa == "panel_principal":
+        _agregar_contexto_panel_principal(context)
+    elif seccion_activa == "gestion_calendario":
         _agregar_contexto_calendario(context)
     elif seccion_activa == "gestion_pagina_informativa":
         _agregar_contexto_pagina_informativa(request, context)

@@ -193,6 +193,11 @@
   .empty-state i { font-size:3.5rem; opacity:0.3; margin-bottom:1rem; display:block; }
   .btn-new-empty { background:var(--sena-verde); color:white; border:none; padding:10px 24px; border-radius:50px; font-weight:700; font-size:0.9rem; text-decoration:none; display:inline-flex; align-items:center; gap:7px; transition:var(--transition); }
   .btn-new-empty:hover { background:var(--sena-verde-oscuro); color:white; }
+
+  /* === ANIMACIONES === */
+  @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+  @keyframes slideUp { from { transform:translateY(20px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+  @keyframes fadeOut { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(-10px); } }
 </style>
 </head>
 <body>
@@ -705,6 +710,132 @@ function verDocumento(urlDocumento, titulo, extHint) {
     });
     document.body.style.overflow = 'hidden';
 }
+
+// Modal para eliminar aprendiz
+function abrirModalEliminarAprendiz(deleteUrl, btnElement) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:2001;animation:fadeIn 0.2s ease;';
+  
+  const box = document.createElement('div');
+  box.style.cssText = 'background:white;border-radius:16px;padding:32px;max-width:420px;width:90%;box-shadow:0 25px 50px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto;position:relative;animation:slideUp 0.3s ease;';
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.innerHTML = '&times;';
+  closeBtn.style.cssText = 'position:absolute;top:12px;right:12px;background:none;border:none;font-size:28px;cursor:pointer;color:#9ca3af;hover:color:#ef4444;transition:0.2s;';
+  closeBtn.onclick = () => overlay.remove();
+  
+  box.appendChild(closeBtn);
+  
+  const content = document.createElement('div');
+  content.innerHTML = `
+    <div style="text-align:center;margin-bottom:24px;">
+      <i class="fas fa-exclamation-circle" style="font-size:48px;color:#ef4444;display:block;margin-bottom:16px;"></i>
+      <h5 style="margin:0;color:#1f2937;font-weight:800;font-size:18px;margin-bottom:8px;">Confirmar eliminación</h5>
+      <p style="margin:0;color:#6b7280;font-size:14px;">Esta acción no se puede deshacer</p>
+    </div>
+    <div id="modalEliminarContent" style="margin-bottom:24px;"></div>
+    <div style="display:flex;gap:12px;justify-content:center;">
+      <button id="modalEliminarCancel" class="btn btn-outline-secondary" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid #d1d5db;background:white;color:#374151;font-weight:600;cursor:pointer;transition:0.2s;">
+        Cancelar
+      </button>
+      <button id="modalEliminarConfirm" class="btn btn-danger" style="flex:1;padding:10px;border-radius:8px;border:none;background:#ef4444;color:white;font-weight:600;cursor:pointer;transition:0.2s;">
+        Eliminar
+      </button>
+    </div>
+  `;
+  
+  box.appendChild(content);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  
+  // Cargar datos del aprendiz
+  fetch(deleteUrl, {
+    headers: {'X-Requested-With': 'XMLHttpRequest'}
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.nombre_completo) {
+      document.getElementById('modalEliminarContent').innerHTML = `
+        <div style="background:#fef2f2;border:1px solid #fecdd3;border-radius:12px;padding:16px;margin-bottom:16px;">
+          <p style="margin:0;color:#991b1b;font-weight:600;font-size:15px;margin-bottom:4px;">¿Está seguro de eliminar a <strong>${data.nombre_completo}</strong>?</p>
+          <p style="margin:2px 0 0;color:#7f1d1d;font-size:13px;"><i class="fas fa-id-card me-1"></i>${data.numero_documento}</p>
+        </div>
+      `;
+    }
+  })
+  .catch(e => {
+    document.getElementById('modalEliminarContent').innerHTML = `
+      <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:16px;color:#c2410c;font-size:14px;">
+        <i class="fas fa-warning me-1"></i>Error al cargar los datos
+      </div>
+    `;
+  });
+  
+  // Cancelar
+  document.getElementById('modalEliminarCancel').onclick = () => overlay.remove();
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+  
+  // Confirmar eliminación
+  document.getElementById('modalEliminarConfirm').onclick = () => {
+    document.getElementById('modalEliminarConfirm').disabled = true;
+    document.getElementById('modalEliminarConfirm').innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Eliminando...';
+    
+    fetch(deleteUrl, {
+      method: 'POST',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+      }
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        overlay.remove();
+        
+        // Buscar y remover la tarjeta del aprendiz
+        const aprendizCard = btnElement && btnElement.closest('[data-aprendiz-id]') ? btnElement.closest('[data-aprendiz-id]') : null;
+        if (aprendizCard) {
+          aprendizCard.style.animation = 'fadeOut 0.3s ease';
+          setTimeout(() => aprendizCard.remove(), 300);
+        }
+        
+        // Mostrar alerta de éxito
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-success alert-dismissible fade show';
+        alertDiv.innerHTML = `${data.message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+        const containerPy4 = document.querySelector('.container.py-4');
+        if (containerPy4) {
+          containerPy4.insertAdjacentElement('afterbegin', alertDiv);
+          setTimeout(() => alertDiv.remove(), 5000);
+        }
+      } else {
+        alert('Error: ' + (data.error || 'No se pudo eliminar'));
+        document.getElementById('modalEliminarConfirm').disabled = false;
+        document.getElementById('modalEliminarConfirm').innerHTML = 'Eliminar';
+      }
+    })
+    .catch(e => {
+      alert('Error de conexión');
+      document.getElementById('modalEliminarConfirm').disabled = false;
+      document.getElementById('modalEliminarConfirm').innerHTML = 'Eliminar';
+    });
+  };
+  
+  document.addEventListener('keydown', function esc(e) {
+    if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', esc); }
+  });
+}
+
+// Interceptar clicks en botones de eliminar
+document.addEventListener('click', function(e) {
+  const btnEliminar = e.target.closest('.btn-eliminar');
+  if (btnEliminar) {
+    e.preventDefault();
+    const href = btnEliminar.getAttribute('href') || btnEliminar.dataset.href;
+    if (href) abrirModalEliminarAprendiz(href, btnEliminar);
+    return false;
+  }
+});
 </script>
 {% accessibility_widget %}
 </body>

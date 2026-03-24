@@ -472,6 +472,7 @@ def construir_reporte_documental_visita(visita, tipo_visita):
 
         archivos_finales_estado.append(
             {
+                "documento_requerido_id": doc_final.id,
                 "titulo": doc_final.titulo,
                 "categoria": doc_final.get_categoria_display(),
                 "estado": estado,
@@ -488,6 +489,9 @@ def construir_reporte_documental_visita(visita, tipo_visita):
     archivos_finales_rechazados = [
         a for a in archivos_finales_estado if a["estado"] == "rechazado"
     ]
+    mostrar_estado_archivos_finales = any(
+        a["estado"] != "aprobado" for a in archivos_finales_estado
+    )
     total_incidencias_asistentes = sum(
         len(item["incidencias"]) for item in asistentes_con_alertas
     )
@@ -497,6 +501,7 @@ def construir_reporte_documental_visita(visita, tipo_visita):
         "archivos_finales_estado": archivos_finales_estado,
         "archivos_finales_con_alerta": archivos_finales_con_alerta,
         "archivos_finales_rechazados": archivos_finales_rechazados,
+        "mostrar_estado_archivos_finales": mostrar_estado_archivos_finales,
         "total_alertas": total_incidencias_asistentes
         + len(archivos_finales_con_alerta),
         "hay_alertas": bool(asistentes_con_alertas or archivos_finales_con_alerta),
@@ -854,6 +859,16 @@ def detalle_visita_interna(request, pk):
         categorias_finales_agregadas.add(clave_categoria)
 
     reporte_documental = construir_reporte_documental_visita(visita, "interna")
+    documentos_finales_rechazados_ids = [
+        item.get("documento_requerido_id")
+        for item in reporte_documental.get("archivos_finales_rechazados", [])
+        if item.get("documento_requerido_id") is not None
+    ]
+    categorias_finales_rechazadas = [
+        item.get("categoria")
+        for item in reporte_documental.get("archivos_finales_rechazados", [])
+        if item.get("categoria")
+    ]
     hay_alertas_documentales = bool(reporte_documental.get("hay_alertas"))
     estados_finales = reporte_documental.get("archivos_finales_estado", [])
     archivos_finales_faltantes = sum(
@@ -898,6 +913,8 @@ def detalle_visita_interna(request, pk):
             "correo": correo,
             "documentos_por_categoria": documentos_por_categoria,
             "documentos_finales_requeridos": documentos_finales_requeridos,
+            "documentos_finales_rechazados_ids": documentos_finales_rechazados_ids,
+            "categorias_finales_rechazadas": categorias_finales_rechazadas,
             "reporte_documental": reporte_documental,
             "mostrar_reporte_diligenciamiento": mostrar_reporte_diligenciamiento,
             "reprogramacion_pendiente": reprogramacion_pendiente,
@@ -1801,18 +1818,83 @@ def editar_aprendiz(request, pk):
 def eliminar_aprendiz(request, pk):
     """
     Elimina un aprendiz.
+    Si el aprendiz fue registrado en alguna visita, también se elimina de la visita.
+    Soporta GET para obtener los datos para confirmar en modal, y POST para ejecutar eliminación.
     """
     correo, _ = get_sesion_instructor(request)
     owner_user = _obtener_propietario_instructor(request)
     aprendiz = get_object_or_404(Aprendiz, pk=pk, ficha__creado_por=owner_user)
     ficha = aprendiz.ficha
+    es_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
 
     if request.method == "POST":
         nombre_completo = aprendiz.get_nombre_completo()
+        numero_documento = aprendiz.numero_documento
+        asistentes_eliminados = 0
+        
+        # Eliminar al aprendiz de cualquier visita donde esté registrado
+        # por número de documento en la misma ficha
+        try:
+            from visitaInterna.models import VisitaInterna, AsistenteVisitaInterna
+            
+            # Encontrar visitas de esta ficha
+            visitas_ficha = VisitaInterna.objects.filter(
+                numero_ficha=ficha.numero,
+                correo_responsable__iexact=correo
+            )
+            
+            # Eliminar asistentes que coincidan con el número de documento en estas visitas
+            for visita in visitas_ficha:
+                asistentes = AsistenteVisitaInterna.objects.filter(
+                    visita=visita,
+                    numero_documento=numero_documento
+                )
+                asistentes_eliminados += asistentes.count()
+                asistentes.delete()
+        except Exception as e:
+            if es_ajax:
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "error": f"⚠️ Hubo un problema al sincronizar las visitas: {str(e)}"
+                    },
+                    status=400
+                )
+            messages.warning(
+                request,
+                f"⚠️ Aprendiz eliminado pero hubo un problema al sincronizar las visitas: {str(e)}"
+            )
+        
+        # Eliminar el aprendiz de la ficha
         aprendiz.delete()
-        messages.success(request, f'🗑️ Aprendiz "{nombre_completo}" eliminado.')
+        
+        mensaje = (
+            f'🗑️ Aprendiz "{nombre_completo}" eliminado de la ficha'
+            + (f' y de {asistentes_eliminados} visita(s).' if asistentes_eliminados > 0 else '.')
+        )
+        
+        if es_ajax:
+            return JsonResponse(
+                {
+                    "success": True,
+                    "message": mensaje,
+                    "ficha_id": ficha.id
+                }
+            )
+        
+        messages.success(request, mensaje)
         return redirect(
             "panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id
+        )
+
+    # GET - retorna datos para confirmar en modal o página clásica
+    if es_ajax:
+        return JsonResponse(
+            {
+                "id": aprendiz.id,
+                "nombre_completo": aprendiz.get_nombre_completo(),
+                "numero_documento": f"{aprendiz.get_tipo_documento_display()} {aprendiz.numero_documento}",
+            }
         )
 
     context = {

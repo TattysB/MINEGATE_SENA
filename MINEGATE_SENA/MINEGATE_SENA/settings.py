@@ -94,8 +94,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'sicam_db',
-        'USER': 'usuario de su base de datos',
-        'PASSWORD': 'su contraseña',
+        'USER': 'sicam_user',
+        'PASSWORD': 'Sicam123.',
         'HOST': 'localhost',
         'PORT': '5432',
     }
@@ -183,23 +183,15 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # EMAIL_HOST_PASSWORD = 'tu-contraseña-aplicación'
 # DEFAULT_FROM_EMAIL = 'tu-correo@gmail.com'
 
-# Configuración de correo electrónico
-""" EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-EMAIL_HOST = 'localhost'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = ''
-EMAIL_HOST_PASSWORD = ''
-DEFAULT_FROM_EMAIL = 'noreply@minegate.com' """
 
 # Para producción, descomentar y configurar:
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"  # O tu servidor SMTP
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = "minegate123@gmail.com"
-EMAIL_HOST_PASSWORD = "zcvq ifep jxtz kyxy"
-DEFAULT_FROM_EMAIL = "MineGate <minegate123@gmail.com>"
+EMAIL_HOST_USER = "sicamsenacentrominero@gmail.com"
+EMAIL_HOST_PASSWORD = "otui dscc tneu mgqc"
+DEFAULT_FROM_EMAIL = "SICAM SENA CENTRO MINERO <sicamsenacentrominero@gmail.com>"
 
 # Configuración de sesiones
 SESSION_COOKIE_AGE = 3600  # 1 hora en segundos
