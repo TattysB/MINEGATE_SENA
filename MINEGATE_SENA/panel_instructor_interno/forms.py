@@ -9,6 +9,7 @@ from django.core.exceptions import ValidationError
 # ==================== VALIDADORES PERSONALIZADOS ====================
 
 EXTENSIONES_DOCUMENTO_APRENDIZ_PERMITIDAS = {'.pdf', '.doc', '.docx'}
+MAX_TAMANO_ARCHIVO_APRENDIZ = 10 * 1024 * 1024
 
 
 def validar_archivo_pdf_word(archivo, nombre_campo='archivo'):
@@ -20,6 +21,11 @@ def validar_archivo_pdf_word(archivo, nombre_campo='archivo'):
     if extension not in EXTENSIONES_DOCUMENTO_APRENDIZ_PERMITIDAS:
         raise ValidationError(
             f'El {nombre_campo} debe estar en formato PDF o Word (.doc, .docx).'
+        )
+
+    if getattr(archivo, 'size', 0) > MAX_TAMANO_ARCHIVO_APRENDIZ:
+        raise ValidationError(
+            f'El {nombre_campo} supera el tamaño máximo permitido de 10MB.'
         )
 
     return archivo
@@ -97,11 +103,14 @@ def validar_nombre_alfabetico(nombre, campo='nombre'):
     return nombre
 
 
-def validar_telefono(telefono):
+def validar_telefono(telefono, requerido=False):
     """
     Valida que el teléfono sea solo numérico (7-15 dígitos, con + opcional).
+    Si requerido=True, el teléfono no puede estar vacío.
     """
     if not telefono:
+        if requerido:
+            raise ValidationError('El teléfono es obligatorio.')
         return None  # Opcional
     
     telefono = str(telefono).strip()
@@ -231,9 +240,10 @@ class VisitaInternaInstructorForm(forms.ModelForm):
             }),
             'cantidad_aprendices': forms.NumberInput(attrs={
                 'class': 'form-control',
-                'placeholder': '0',
+                'placeholder': 'Se completa automáticamente según la ficha',
                 'min': '1',
                 'max': '1000',
+                'readonly': 'readonly',
             }),
             'fecha_visita': forms.HiddenInput(attrs={
                 'id': 'id_fecha_visita',
@@ -306,6 +316,20 @@ class VisitaInternaInstructorForm(forms.ModelForm):
     
     def clean_cantidad_aprendices(self):
         """Validación de cantidad."""
+        numero_ficha = self.cleaned_data.get('numero_ficha')
+        if numero_ficha is not None and numero_ficha != '':
+            filtros = {'numero': numero_ficha, 'activa': True}
+            if self.owner_user is not None:
+                filtros['creado_por'] = self.owner_user
+
+            ficha = Ficha.objects.filter(**filtros).only('cantidad_aprendices').first()
+            if ficha:
+                if ficha.cantidad_aprendices < 1:
+                    raise ValidationError(
+                        'La ficha seleccionada tiene cantidad de aprendices inválida. Actualízala en Fichas y Programas.'
+                    )
+                return ficha.cantidad_aprendices
+
         cantidad = self.cleaned_data.get('cantidad_aprendices')
         if cantidad is None or cantidad == '':
             raise ValidationError('La cantidad de aprendices es obligatoria.')
@@ -350,19 +374,31 @@ class ProgramaForm(forms.ModelForm):
 
 
 class FichaForm(forms.ModelForm):
+    programa_nombre = forms.CharField(
+        label='Programa',
+        max_length=200,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Nombre del programa',
+            'maxlength': '200',
+        }),
+    )
+
     def __init__(self, *args, **kwargs):
         self.owner_user = kwargs.pop('owner_user', None)
         super().__init__(*args, **kwargs)
 
-        programas_qs = Programa.objects.filter(activo=True)
-        if self.owner_user is not None:
-            programas_qs = programas_qs.filter(creado_por=self.owner_user)
-
-        self.fields['programa'].queryset = programas_qs.order_by('nombre')
+        if self.instance and self.instance.pk and self.instance.programa_id:
+            self.fields['programa_nombre'].initial = self.instance.programa.nombre
 
     class Meta:
         model = Ficha
-        fields = ['numero', 'programa', 'jornada', 'cantidad_aprendices', 'activa']
+        fields = ['numero', 'cantidad_aprendices']
+        labels = {
+            'numero': 'Ficha',
+            'cantidad_aprendices': 'Cantidad de Aprendices',
+        }
         widgets = {
             'numero': forms.NumberInput(attrs={
                 'class': 'form-control',
@@ -370,20 +406,11 @@ class FichaForm(forms.ModelForm):
                 'min': '1',
                 'max': '9999999999',
             }),
-            'programa': forms.Select(attrs={
-                'class': 'form-select',
-            }),
-            'jornada': forms.Select(attrs={
-                'class': 'form-select',
-            }),
             'cantidad_aprendices': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'placeholder': '1',
                 'min': '1',
                 'max': '100',
-            }),
-            'activa': forms.CheckboxInput(attrs={
-                'class': 'form-check-input',
             }),
         }
     
@@ -393,6 +420,24 @@ class FichaForm(forms.ModelForm):
         if numero is None or numero == '':
             raise ValidationError('El número de ficha es obligatorio.')
         return validar_numero_ficha(numero)
+
+    def clean_programa_nombre(self):
+        nombre = validar_nombre_alfabetico(
+            self.cleaned_data.get('programa_nombre', ''),
+            'nombre del programa'
+        )
+
+        # Evita enlazar fichas a programas de otro instructor.
+        existente = Programa.objects.filter(nombre__iexact=nombre).first()
+        if (
+            existente
+            and self.owner_user is not None
+            and existente.creado_por is not None
+            and existente.creado_por != self.owner_user
+        ):
+            raise ValidationError('Ya existe un programa con ese nombre. Usa un nombre diferente.')
+
+        return nombre
     
     def clean_cantidad_aprendices(self):
         """Validación de cantidad."""
@@ -412,6 +457,26 @@ class FichaForm(forms.ModelForm):
             raise ValidationError('La cantidad de aprendices por ficha no puede ser mayor a 100.')
 
         return cantidad
+
+    def save(self, commit=True):
+        ficha = super().save(commit=False)
+        programa_nombre = self.cleaned_data['programa_nombre']
+
+        programa = Programa.objects.filter(nombre__iexact=programa_nombre).first()
+        if programa is None:
+            programa = Programa.objects.create(
+                nombre=programa_nombre,
+                descripcion=None,
+                activo=True,
+                creado_por=self.owner_user,
+            )
+
+        ficha.programa = programa
+
+        if commit:
+            ficha.save()
+
+        return ficha
 
 
 class AprendizForm(forms.ModelForm):
@@ -464,11 +529,12 @@ class AprendizForm(forms.ModelForm):
             }),
             'telefono': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Teléfono (opcional)',
+                'placeholder': 'Teléfono ★ (Requerido)',
                 'inputmode': 'tel',
                 'maxlength': '20',
                 'pattern': r'^[\+]?[0-9\s\-]{7,20}$',
                 'title': 'Teléfono válido: 7 a 15 dígitos (puede incluir +, espacios y guiones).',
+                'required': True,
             }),
             'documento_identidad': forms.FileInput(attrs={
                 'class': 'form-control',
@@ -529,8 +595,8 @@ class AprendizForm(forms.ModelForm):
         return correo
     
     def clean_telefono(self):
-        """Validación de teléfono."""
-        return validar_telefono(self.cleaned_data.get('telefono', ''))
+        """Validación de teléfono (OBLIGATORIO)."""
+        return validar_telefono(self.cleaned_data.get('telefono', ''), requerido=True)
 
     def clean_documento_identidad(self):
         """Valida formato permitido para documento de identidad."""

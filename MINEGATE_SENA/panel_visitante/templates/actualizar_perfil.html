@@ -333,6 +333,23 @@
 		color: var(--sena-verde);
 	}
 
+	.realtime-invalid {
+		border-color: #dc2626 !important;
+		box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15) !important;
+	}
+
+	.realtime-valid {
+		border-color: #16a34a !important;
+		box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15) !important;
+	}
+
+	.realtime-error {
+		display: block;
+		margin-top: 0.4rem;
+		color: #dc2626;
+		font-size: 0.85rem;
+	}
+
 	@keyframes emergerPerfil {
 		from {
 			opacity: 0;
@@ -629,7 +646,131 @@ function cerrarPerfilEmbebido() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+	const rolVisitante = '{{ visitante.rol|default:"" }}';
+	const allowedInternalDomains = ['@sena.edu.co'];
+
+	const formPerfil = document.querySelector('form input[name="action"][value="actualizar_datos"]')?.closest('form');
+	const nombreInput = document.querySelector('input[name="nombre"]');
+	const apellidoInput = document.querySelector('input[name="apellido"]');
+	const telefonoInput = document.querySelector('input[name="telefono"]');
+	const correoInput = document.querySelector('input[name="correo"]');
+
+	function getRealtimeErrorElement(field) {
+		if (!field) {
+			return null;
+		}
+
+		const formGroup = field.closest('.form-group');
+		if (!formGroup) {
+			return null;
+		}
+
+		let errorEl = formGroup.querySelector('.realtime-error');
+		if (!errorEl) {
+			errorEl = document.createElement('span');
+			errorEl.className = 'realtime-error';
+			errorEl.style.display = 'none';
+			formGroup.appendChild(errorEl);
+		}
+
+		return errorEl;
+	}
+
+	function setFieldError(field, message) {
+		if (!field) {
+			return false;
+		}
+
+		const errorEl = getRealtimeErrorElement(field);
+		field.setCustomValidity(message || '');
+
+		if (message) {
+			field.classList.add('realtime-invalid');
+			field.classList.remove('realtime-valid');
+			if (errorEl) {
+				errorEl.textContent = message;
+				errorEl.style.display = 'block';
+			}
+			return false;
+		}
+
+		field.classList.remove('realtime-invalid');
+		if ((field.value || '').trim()) {
+			field.classList.add('realtime-valid');
+		} else {
+			field.classList.remove('realtime-valid');
+		}
+
+		if (errorEl) {
+			errorEl.textContent = '';
+			errorEl.style.display = 'none';
+		}
+
+		return true;
+	}
+
+	function validateNombreApellido(field, label, onBlur) {
+		if (!field) {
+			return true;
+		}
+
+		const value = (field.value || '').trim();
+		if (!value) {
+			return onBlur ? setFieldError(field, 'El ' + label + ' es obligatorio.') : setFieldError(field, '');
+		}
+
+		if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(value)) {
+			return setFieldError(field, 'El ' + label + ' solo debe contener letras.');
+		}
+
+		return setFieldError(field, '');
+	}
+
+	function validateTelefono(onBlur) {
+		if (!telefonoInput) {
+			return true;
+		}
+
+		const value = (telefonoInput.value || '').trim();
+		if (!value) {
+			return onBlur ? setFieldError(telefonoInput, 'El telefono es obligatorio.') : setFieldError(telefonoInput, '');
+		}
+
+		if (!/^\d{10}$/.test(value)) {
+			return setFieldError(telefonoInput, 'El telefono debe tener exactamente 10 numeros.');
+		}
+
+		return setFieldError(telefonoInput, '');
+	}
+
+	function validateCorreo(onBlur) {
+		if (!correoInput) {
+			return true;
+		}
+
+		const value = (correoInput.value || '').trim().toLowerCase();
+		if (!value) {
+			return onBlur ? setFieldError(correoInput, 'El correo es obligatorio.') : setFieldError(correoInput, '');
+		}
+
+		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+			return setFieldError(correoInput, 'Ingrese un correo electronico valido.');
+		}
+
+		if (rolVisitante === 'interno') {
+			const isValidDomain = allowedInternalDomains.some(function(domain) {
+				return value.endsWith(domain);
+			});
+			if (!isValidDomain) {
+				return setFieldError(correoInput, 'Para usuario interno, use un correo @sena.edu.co.');
+			}
+		}
+
+		return setFieldError(correoInput, '');
+	}
+
 	const passwordInput = document.querySelector('input[name="nueva_contrasena"]');
+	const passwordConfirmarInput = document.querySelector('input[name="confirmar_contrasena"]');
 	const requirementsDiv = document.getElementById('password-requirements-perfil');
 	
 	if (passwordInput && requirementsDiv) {
@@ -643,19 +784,36 @@ document.addEventListener('DOMContentLoaded', function() {
 			const password = this.value;
 			
 			// Validar longitud mínima
-			validateRequirement('req-length-perfil', password.length >= 8);
+			const lengthValid = password.length >= 8;
+			validateRequirement('req-length-perfil', lengthValid);
 			
 			// Validar mayúscula
-			validateRequirement('req-uppercase-perfil', /[A-Z]/.test(password));
+			const uppercaseValid = /[A-Z]/.test(password);
+			validateRequirement('req-uppercase-perfil', uppercaseValid);
 			
 			// Validar minúscula
-			validateRequirement('req-lowercase-perfil', /[a-z]/.test(password));
+			const lowercaseValid = /[a-z]/.test(password);
+			validateRequirement('req-lowercase-perfil', lowercaseValid);
 			
 			// Validar número
-			validateRequirement('req-number-perfil', /\d/.test(password));
+			const numberValid = /\d/.test(password);
+			validateRequirement('req-number-perfil', numberValid);
 			
 			// Validar carácter especial
-			validateRequirement('req-special-perfil', /[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\;'`~]/.test(password));
+			const specialValid = /[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\;'`~]/.test(password);
+			validateRequirement('req-special-perfil', specialValid);
+
+			const allValid = lengthValid && uppercaseValid && lowercaseValid && numberValid && specialValid;
+			if (!password) {
+				setFieldError(passwordInput, '');
+			} else if (!allValid) {
+				setFieldError(passwordInput, 'La contrasena no cumple los requisitos de seguridad.');
+			} else {
+				setFieldError(passwordInput, '');
+			}
+
+			validateConfirmarContrasena(false);
+			validarContrasenaDistinta();
 		});
 	}
 	
@@ -693,7 +851,6 @@ document.addEventListener('DOMContentLoaded', function() {
 	
 	// Toggle mostrar/ocultar contraseña - Confirmar Contraseña
 	const togglePasswordConfirmar = document.getElementById('togglePasswordConfirmar');
-	const passwordConfirmarInput = document.querySelector('input[name="confirmar_contrasena"]');
 	
 	if (togglePasswordConfirmar && passwordConfirmarInput) {
 		togglePasswordConfirmar.addEventListener('click', function() {
@@ -717,7 +874,33 @@ document.addEventListener('DOMContentLoaded', function() {
 			passwordActualInput.value === passwordNuevaInput.value;
 
 		alertaContrasenaIgual.style.display = esIgual ? 'block' : 'none';
+		if (esIgual) {
+			setFieldError(passwordNuevaInput, 'La nueva contrasena no puede ser igual a la actual.');
+		} else if (passwordNuevaInput && (passwordNuevaInput.value || '').trim()) {
+			if (!passwordNuevaInput.validationMessage || passwordNuevaInput.validationMessage === 'La nueva contrasena no puede ser igual a la actual.') {
+				setFieldError(passwordNuevaInput, '');
+			}
+		}
 		return !esIgual;
+	}
+
+	function validateConfirmarContrasena(onBlur) {
+		if (!passwordConfirmarInput) {
+			return true;
+		}
+
+		const nueva = (passwordNuevaInput && passwordNuevaInput.value) ? passwordNuevaInput.value : '';
+		const confirmar = (passwordConfirmarInput.value || '').trim();
+
+		if (!confirmar) {
+			return onBlur ? setFieldError(passwordConfirmarInput, 'Debe confirmar la nueva contrasena.') : setFieldError(passwordConfirmarInput, '');
+		}
+
+		if (nueva && nueva !== confirmar) {
+			return setFieldError(passwordConfirmarInput, 'Las contrasenas no coinciden.');
+		}
+
+		return setFieldError(passwordConfirmarInput, '');
 	}
 
 	if (passwordActualInput && passwordNuevaInput) {
@@ -725,10 +908,59 @@ document.addEventListener('DOMContentLoaded', function() {
 		passwordNuevaInput.addEventListener('input', validarContrasenaDistinta);
 	}
 
+	if (passwordConfirmarInput) {
+		passwordConfirmarInput.addEventListener('input', function() {
+			validateConfirmarContrasena(false);
+		});
+		passwordConfirmarInput.addEventListener('blur', function() {
+			validateConfirmarContrasena(true);
+		});
+	}
+
+	if (nombreInput) {
+		nombreInput.addEventListener('input', function() { validateNombreApellido(nombreInput, 'nombre', false); });
+		nombreInput.addEventListener('blur', function() { validateNombreApellido(nombreInput, 'nombre', true); });
+	}
+
+	if (apellidoInput) {
+		apellidoInput.addEventListener('input', function() { validateNombreApellido(apellidoInput, 'apellido', false); });
+		apellidoInput.addEventListener('blur', function() { validateNombreApellido(apellidoInput, 'apellido', true); });
+	}
+
+	if (telefonoInput) {
+		telefonoInput.addEventListener('input', function() { validateTelefono(false); });
+		telefonoInput.addEventListener('blur', function() { validateTelefono(true); });
+	}
+
+	if (correoInput) {
+		correoInput.addEventListener('input', function() { validateCorreo(false); });
+		correoInput.addEventListener('blur', function() { validateCorreo(true); });
+	}
+
+	if (formPerfil) {
+		formPerfil.addEventListener('submit', function(e) {
+			const validaciones = [
+				validateNombreApellido(nombreInput, 'nombre', true),
+				validateNombreApellido(apellidoInput, 'apellido', true),
+				validateTelefono(true),
+				validateCorreo(true),
+			];
+
+			if (validaciones.some(function(estado) { return !estado; })) {
+				e.preventDefault();
+			}
+		});
+	}
+
 	if (passwordForm) {
 		passwordForm.addEventListener('submit', function(e) {
-			if (!validarContrasenaDistinta()) {
+			const validaConfirmacion = validateConfirmarContrasena(true);
+			if (!validaConfirmacion || !validarContrasenaDistinta()) {
 				e.preventDefault();
+				if (!validaConfirmacion) {
+					passwordConfirmarInput && passwordConfirmarInput.focus();
+					return;
+				}
 				alert('La nueva contraseña no puede ser igual a la contraseña actual.');
 				passwordNuevaInput.focus();
 			}

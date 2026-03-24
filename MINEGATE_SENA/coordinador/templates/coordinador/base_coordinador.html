@@ -38,17 +38,32 @@
       </div>
       <div class="topbar-right">
         <div class="topbar-actions">
-          <div class="notification-wrapper">
-            <i class="ri-notification-3-line notification-icon" aria-hidden="true"></i>
-            <span class="notification-badge" id="coordNotifBadge" style="display:none" aria-live="polite" aria-atomic="true">0</span>
-          </div>
-          <!-- Dropdown de notificaciones -->
-          <div class="coord-notif-dropdown" id="coordNotifDropdown" style="position:relative;">
-            <div id="coordNotifList" class="notif-list" style="display:none;position:absolute;right:0;top:36px;background:#fff;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.12);width:320px;z-index:1200;padding:8px;">
-              <div style="padding:8px 12px;border-bottom:1px solid #eee;font-weight:700;">Solicitudes pendientes</div>
-              <div id="coordNotifItems" style="max-height:280px;overflow:auto;"></div>
-              <div style="padding:8px;text-align:center;border-top:1px solid #eee;background:#fafafa;">
-                <a href="{% url 'coordinador:panel' %}" style="text-decoration:none;color:#1f7f55;">Ver todas</a>
+          <div class="notification-wrapper" id="coordNotificationWrapper">
+            <button id="coordNotifBtn" class="notification-btn" aria-label="Notificaciones coordinador" style="background:white;border:none;padding:8px;border-radius:10px;display:flex;align-items:center;justify-content:center;min-width:44px;min-height:40px;">
+              <i class="ri-notification-3-line notification-icon" style="color:#10b981;font-size:20px;background:transparent;border-radius:0;display:block;"></i>
+              <span id="coordNotifBadge" class="notification-badge" style="display:none;background:#ef4444;color:white;border-radius:50%;min-width:20px;height:20px;font-size:12px;font-weight:700;line-height:20px;text-align:center;padding:0 5px;margin-left:8px;">0</span>
+            </button>
+            <div id="coordNotifDropdown" class="admin-notif-dropdown coord-style" aria-hidden="true" style="display:none;position:absolute;right:10px;top:48px;background:white;border:0;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.12);width:360px;z-index:1200;overflow:hidden;">
+              <div class="admin-notif-head" style="padding:12px 14px;background:#00af00;color:white;display:flex;align-items:center;justify-content:space-between;">
+                <div>
+                  <div style="font-weight:700;font-size:15px;">Notificaciones</div>
+                  <div id="coordNotifCountSmall" style="font-size:12px;opacity:0.95;margin-top:4px;">0 nuevas</div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                </div>
+              </div>
+              <div style="padding:10px 12px;background:#fff;display:flex;gap:8px;align-items:center;">
+                <button id="coordFilterAll" class="notif-filter active" data-filter="all" style="background:#eef2ff;color:#4c1d95;border:0;padding:6px 10px;border-radius:10px;font-weight:600;font-size:13px;">Todas</button>
+                <button id="coordFilterInternas" class="notif-filter" data-filter="internas" style="background:#f0fff4;color:#047857;border:0;padding:6px 10px;border-radius:10px;font-weight:600;font-size:13px;display:flex;align-items:center;gap:8px;"><span style="width:10px;height:10px;background:#00af00;border-radius:50%;display:inline-block;"></span>Internas</button>
+                <button id="coordFilterExternas" class="notif-filter" data-filter="externas" style="background:#fff7ed;color:#b45309;border:0;padding:6px 10px;border-radius:10px;font-weight:600;font-size:13px;display:flex;align-items:center;gap:8px;"><span style="width:10px;height:10px;background:#f59e0b;border-radius:50%;display:inline-block;"></span>Externas</button>
+              </div>
+              <div style="max-height:320px;overflow:auto;background:white;padding:8px 6px;">
+                <ul id="coordNotifList" class="admin-notif-list" style="list-style:none;margin:0;padding:6px;">
+                  <li class="admin-notif-empty" style="color:#6b7280;padding:12px;text-align:center">No hay notificaciones</li>
+                </ul>
+              </div>
+              <div class="admin-notif-footer" style="padding:10px 14px;background:#fafafa;text-align:right;border-top:1px solid #f3f4f6;">
+                <a id="coordNotifVerTodas" href="{% url 'coordinador:panel' %}" style="color:#1f7f55;font-weight:600;text-decoration:none;">Ver todas</a>
               </div>
             </div>
           </div>
@@ -420,111 +435,127 @@
     });
   </script>
   <script>
-    // Poll coordinator solicitudes and update notification badge
-    function updateCoordinatorBadge() {
-      fetch('/coordinador/api/solicitudes/?tipo=todas&buscar=')
-        .then(r => {
-          if (!r.ok) throw new Error('network');
-          return r.json();
-        })
-        .then(data => {
-          const visitas = Array.isArray(data.visitas) ? data.visitas : [];
-          const count = visitas.length;
-          const badge = document.getElementById('coordNotifBadge');
-          const notifWrapper = document.querySelector('.notification-wrapper');
-          if (!badge) return;
-
-          // Añadir animación cuando aumente el número de notificaciones
-          const previous = parseInt(badge.getAttribute('data-prev') || '0', 10);
-          if (count > 0) {
-            badge.textContent = count;
-            badge.style.display = 'inline-block';
-          } else {
-            badge.style.display = 'none';
-          }
-
-          if (count > previous && previous !== 0) {
-            // animación breve en la campana
-            if (notifWrapper) {
-              notifWrapper.classList.add('notif-pulse');
-              setTimeout(() => notifWrapper.classList.remove('notif-pulse'), 1200);
-            }
-            // pequeño sonido opcional si el usuario lo permite (silenciado por defecto)
-            try {
-              const audio = new Audio();
-              audio.src = '';
-            } catch (e) {}
-          }
-
-          badge.setAttribute('data-prev', String(count));
-        })
-        .catch(() => {});
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-      updateCoordinatorBadge();
-      // actualizar cada 10 segundos para respuesta más rápida
-      setInterval(updateCoordinatorBadge, 10000);
-    });
-  </script>
-  <script>
-    // Dropdown interactions for coordinator notifications
     (function () {
-      function buildItem(v) {
-        const tipoLabel = v.tipo_display || (v.tipo === 'interna' ? 'Interna' : 'Externa');
-        const div = document.createElement('div');
-        div.style.padding = '8px 12px';
-        div.style.borderBottom = '1px solid #f1f1f1';
-        div.style.cursor = 'pointer';
-        div.innerHTML = `<div style="font-weight:600;color:#1f2937;">${tipoLabel} • #${v.id}</div><div style="font-size:13px;color:#6b7280;">${(v.responsable||'Sin responsable')}</div>`;
-        div.addEventListener('click', function () {
-          // nav to panel and request the specific item
-          const tipo = v.tipo === 'interna' ? 'internas' : 'externas';
-          window.location.href = `/coordinador/panel/?tipo=${encodeURIComponent(tipo)}&id=${encodeURIComponent(v.id)}`;
-        });
-        return div;
+      const list = document.getElementById('coordNotifList');
+      const badge = document.getElementById('coordNotifBadge');
+      const btn = document.getElementById('coordNotifBtn');
+      const dropdown = document.getElementById('coordNotifDropdown');
+      const coordCountSmall = document.getElementById('coordNotifCountSmall');
+      const filterAll = document.getElementById('coordFilterAll');
+      const filterInternas = document.getElementById('coordFilterInternas');
+      const filterExternas = document.getElementById('coordFilterExternas');
+
+      if (dropdown) dropdown.addEventListener('click', function (e) { e.stopPropagation(); });
+
+      // Use same read key as admin so reads are consistent across panels
+      const READ_KEY = 'adminNotifReadIds_v1';
+      function getReadSet() {
+        try { return new Set(JSON.parse(localStorage.getItem(READ_KEY) || '[]')); } catch (e) { return new Set(); }
+      }
+      function saveReadSet(s) { try { localStorage.setItem(READ_KEY, JSON.stringify(Array.from(s))); } catch (e) {} }
+      function markAsReadClient(id, tipo) { const s = getReadSet(); s.add(`${tipo}::${id}`); saveReadSet(s); }
+
+      function tipoNormalized(raw){ const t=(raw||'').toString().toLowerCase(); return (t.indexOf('ext')>=0||t.indexOf('extern')>=0)?'externas':'internas'; }
+
+      function initials(name){ if(!name) return ''; const parts=name.trim().split(/\s+/); if(parts.length===1) return parts[0].substring(0,2).toUpperCase(); return (parts[0][0]+(parts[1]?parts[1][0]:'' )).toUpperCase(); }
+
+      function buildItem(v){
+        const tipo = tipoNormalized(v.tipo);
+        const titulo = v.responsable || v.institucion || (`Visita #${v.id}`);
+        const time = v.fecha_visita || v.created_at || '';
+        const a = document.createElement('a');
+        a.href = `/coordinador/panel/?tipo=${tipo}&id=${v.id}`;
+        a.className = 'admin-notif-item';
+        a.style.display='block'; a.style.color='#111827'; a.style.textDecoration='none';
+        const letter = tipo === 'internas' ? 'I' : 'E';
+        const avatarBg = tipo === 'internas' ? 'linear-gradient(135deg,#00af00,#007a00)' : 'linear-gradient(135deg,#f59e0b,#d97706)';
+        a.innerHTML = `
+          <div style="display:flex;align-items:center;gap:12px;padding:6px 4px;">
+            <div style="width:44px;height:44px;border-radius:50%;background:${avatarBg};display:flex;align-items:center;justify-content:center;color:white;font-weight:700;flex:0 0 44px;font-size:15px;">${letter}</div>
+            <div style="flex:1 1 auto;min-width:0;">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                <div style="font-weight:700;font-size:14px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${titulo}</div>
+                <div style="font-size:12px;color:#6b7280;flex:0 0 auto;">${time}</div>
+              </div>
+              <div style="margin-top:4px;display:flex;align-items:center;gap:8px;">
+                <span style="background:${tipo==='internas'?'#e6fff0':'#fff4e6'};color:${tipo==='internas'?'#047857':'#b45309'};padding:4px 8px;border-radius:8px;font-size:12px;font-weight:600;">${tipo==='internas'?'Visita Interna':'Visita Externa'}</span>
+                <div style="font-size:13px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${v.motivo||''}</div>
+              </div>
+            </div>
+          </div>`;
+
+        a.addEventListener('click', function(e){ e.preventDefault(); try{ markAsReadClient(v.id,tipo); }catch(err){} try{ updateVisibleAfterRead(); }catch(e){} window.location.href=a.href; });
+        return a;
       }
 
-      document.addEventListener('click', function (e) {
-        const badge = document.getElementById('coordNotifBadge');
-        const list = document.getElementById('coordNotifList');
-        const items = document.getElementById('coordNotifItems');
-        const notifWrapper = document.querySelector('.notification-wrapper');
-        if (!notifWrapper || !badge || !list || !items) return;
+      function updateVisibleAfterRead(){
+        const data = window._coordNotifications || [];
+        const read = getReadSet();
+        const visible = data.filter(d => !read.has(`${d.tipo}::${d.id}`));
+        window._coordNotifications = visible;
+        renderFilter(window._coordNotifCurrentFilter||'all');
+        if(coordCountSmall) coordCountSmall.textContent = `${visible.length} nuevas`;
+        if(badge) { if(visible.length>0){ badge.style.display='inline-block'; badge.textContent=visible.length; } else badge.style.display='none'; }
+      }
 
-        // Click on bell toggles dropdown
-        notifWrapper.addEventListener('click', function (ev) {
-          ev.stopPropagation();
-          if (list.style.display === 'none' || list.style.display === '') {
-            // populate
-            items.innerHTML = '<div style="padding:12px;text-align:center;color:#6b7280;">Cargando...</div>';
-            fetch('/coordinador/api/solicitudes/?tipo=todas&buscar=')
-              .then(r => r.json())
-              .then(data => {
-                const visitas = Array.isArray(data.visitas) ? data.visitas.slice(0,5) : [];
-                items.innerHTML = '';
-                if (!visitas.length) {
-                  items.innerHTML = '<div style="padding:12px;text-align:center;color:#6b7280;">No hay solicitudes pendientes.</div>';
-                } else {
-                  visitas.forEach(v => items.appendChild(buildItem(v)));
-                }
-                list.style.display = 'block';
-              })
-              .catch(() => {
-                items.innerHTML = '<div style="padding:12px;text-align:center;color:#b91c1c;">Error al cargar.</div>';
-                list.style.display = 'block';
-              });
-          } else {
-            list.style.display = 'none';
+      function refreshNotificaciones() {
+        Promise.all([
+          fetch('/coordinador/api/solicitudes/?tipo=internas&buscar=').then(r => r.json()),
+          fetch('/coordinador/api/solicitudes/?tipo=externas&buscar=').then(r => r.json())
+        ]).then(([intData, extData]) => {
+          const items = [];
+          const push = (arr, tipo) => {
+            if (!arr || !arr.visitas) return;
+            arr.visitas.forEach(v => { v.tipo = tipo; items.push(v); });
+          };
+          push(intData, 'internas');
+          push(extData, 'externas');
+
+          try {
+            const readSet = getReadSet();
+            const visible = items.filter(v => !readSet.has(`${v.tipo}::${v.id}`));
+            window._coordNotifications = visible;
+            if (coordCountSmall) coordCountSmall.textContent = `${visible.length} nuevas`;
+            if (badge) {
+              if (visible.length > 0) { badge.style.display = 'inline-block'; badge.textContent = visible.length; }
+              else { badge.style.display = 'none'; }
+            }
+            renderFilter(window._coordNotifCurrentFilter || 'all');
+          } catch (err) {
+            window._coordNotifications = items;
+            if (coordCountSmall) coordCountSmall.textContent = `${items.length} nuevas`;
+            if (badge) {
+              if (items.length > 0) { badge.style.display = 'inline-block'; badge.textContent = items.length; }
+              else { badge.style.display = 'none'; }
+            }
+            renderFilter('all');
           }
-        });
+        }).catch(err => { console.error('Error fetching coordinador notificaciones', err); });
+      }
 
-        // Close dropdown when clicking outside
-        document.addEventListener('click', function () {
-          const l = document.getElementById('coordNotifList');
-          if (l) l.style.display = 'none';
-        });
-      });
+      function renderFilter(filter){
+        const data = window._coordNotifications || [];
+        const ul = document.getElementById('coordNotifList');
+        ul.innerHTML='';
+        let filtered = data;
+        if(filter==='internas') filtered = data.filter(d=> (d.tipo||'').toLowerCase()==='internas');
+        if(filter==='externas') filtered = data.filter(d=> (d.tipo||'').toLowerCase()==='externas');
+        if(filtered.length===0){ const empty=document.createElement('li'); empty.className='admin-notif-empty'; empty.style.padding='12px'; empty.style.color='#6b7280'; empty.textContent='No hay notificaciones'; ul.appendChild(empty); return; }
+        filtered.slice(0,50).forEach(v=>{ const li=document.createElement('li'); li.style.padding='6px 0'; li.appendChild(buildItem(v)); ul.appendChild(li); });
+      }
+
+      function setActiveFilterBtn(btn){ document.querySelectorAll('#coordNotifDropdown .notif-filter').forEach(b=>b.classList.remove('active')); if(btn) btn.classList.add('active'); }
+      window._coordNotifCurrentFilter='all';
+      if(filterAll) filterAll.addEventListener('click', function(){ window._coordNotifCurrentFilter='all'; setActiveFilterBtn(this); renderFilter('all'); });
+      if(filterInternas) filterInternas.addEventListener('click', function(){ window._coordNotifCurrentFilter='internas'; setActiveFilterBtn(this); renderFilter('internas'); });
+      if(filterExternas) filterExternas.addEventListener('click', function(){ window._coordNotifCurrentFilter='externas'; setActiveFilterBtn(this); renderFilter('externas'); });
+
+      if(btn) btn.addEventListener('click', function(e){ e.stopPropagation(); if(dropdown.getAttribute('aria-hidden')==='false'){ dropdown.setAttribute('aria-hidden','true'); dropdown.style.display='none'; } else { dropdown.setAttribute('aria-hidden','false'); dropdown.style.display='block'; refreshNotificaciones(); } });
+      document.addEventListener('click', function(){ if(dropdown) { dropdown.setAttribute('aria-hidden','true'); dropdown.style.display='none'; } });
+
+      // initial
+      refreshNotificaciones();
+      setInterval(refreshNotificaciones, 30000);
     })();
   </script>
 </body>

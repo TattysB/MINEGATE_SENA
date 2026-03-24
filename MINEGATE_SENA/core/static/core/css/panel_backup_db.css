@@ -1,0 +1,652 @@
+/* Panel de copias de seguridad - estilo integrado con tema verde del dashboard */
+.backup-admin-wrap {
+  --backup-green-1: #2d8500;
+  --backup-green-2: #39a900;
+  --backup-green-soft: #ecf9e4;
+  --backup-border: #dbe5d1;
+  --backup-text: #253246;
+  --backup-muted: #5d6f83;
+  --backup-danger: #d14334;
+
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 20px;
+  color: var(--backup-text);
+}
+
+.backup-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.backup-hero-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--backup-green-1), var(--backup-green-2));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.45rem;
+  box-shadow: 0 10px 18px rgba(57, 169, 0, 0.23);
+}
+
+.backup-title {
+  margin: 0;
+  font-size: clamp(1.45rem, 2vw, 2rem);
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.backup-subtitle {
+  margin: 2px 0 0;
+  color: var(--backup-muted);
+  font-weight: 600;
+}
+
+.backup-path-box {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid var(--backup-border);
+}
+
+.backup-path-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--backup-green-1);
+}
+
+.backup-path-value {
+  font-size: 0.93rem;
+  font-weight: 600;
+  color: #334155;
+  overflow-wrap: anywhere;
+}
+
+.backup-messages {
+  display: grid;
+  gap: 9px;
+  margin-bottom: 14px;
+}
+
+.backup-alert {
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  box-shadow: 0 3px 10px rgba(31, 41, 55, 0.05);
+}
+
+.backup-alert.success {
+  color: #10673f;
+  background: #e8f9ef;
+  border-color: #85dcb3;
+}
+
+.backup-alert.error {
+  color: #7f1d1d;
+  background: #fee9e9;
+  border-color: #f5a6a6;
+}
+
+.backup-alert.warning {
+  color: #854d0e;
+  background: #fff6db;
+  border-color: #f8d784;
+}
+
+.backup-alert.info {
+  color: #0f4d74;
+  background: #e8f4ff;
+  border-color: #9dcbef;
+}
+
+.backup-stack {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.backup-card {
+  background: #fff;
+  border: 1px solid var(--backup-border);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 8px 24px rgba(34, 70, 12, 0.08);
+}
+
+.backup-card-generate {
+  border-top: 4px solid var(--backup-green-2);
+}
+
+.backup-card-restore {
+  border-top: 4px solid #f59e0b;
+}
+
+.backup-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.backup-card-head h3 {
+  margin: 0;
+  font-size: 1.28rem;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.backup-chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  background: var(--backup-green-soft);
+  color: var(--backup-green-1);
+  border: 1px solid #b9ddb0;
+}
+
+.backup-chip-warning {
+  background: #fff7d7;
+  color: #995d00;
+  border-color: #f4d38a;
+}
+
+.backup-chip-info {
+  background: #e8f4ff;
+  color: #1d5d93;
+  border-color: #b5d5ef;
+}
+
+.backup-stat-row {
+  margin-bottom: 14px;
+}
+
+.backup-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  background: #f8fbf4;
+  border: 1px solid #dae9d4;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.backup-stat-label {
+  font-size: 0.86rem;
+  color: #4a5f73;
+}
+
+.backup-stat strong {
+  font-size: 1.08rem;
+  color: var(--backup-green-1);
+}
+
+.backup-form-row {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 11px;
+}
+
+.backup-form-row label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #23314a;
+}
+
+.backup-form-row input,
+.backup-form-row select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #ced8e4;
+  border-radius: 10px;
+  background: #fff;
+  color: #1f2937;
+  padding: 9px 11px;
+  font-size: 0.96rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.backup-form-row input:focus,
+.backup-form-row select:focus {
+  outline: none;
+  border-color: #5dad3f;
+  box-shadow: 0 0 0 3px rgba(57, 169, 0, 0.14);
+}
+
+.backup-destination-lock {
+  min-height: 44px;
+  border-radius: 10px;
+  border: 1px solid #d2dfcb;
+  background: #f4fbef;
+  color: #275518;
+  padding: 10px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.backup-auto-config-wrap {
+  margin-top: 16px;
+  border-top: 1px dashed #d9e6d1;
+  padding-top: 14px;
+}
+
+.backup-auto-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.backup-auto-title-row h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #26364d;
+}
+
+.backup-auto-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.backup-check-row {
+  margin-bottom: 0;
+}
+
+.backup-check-label {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #d2dfcb;
+  border-radius: 10px;
+  background: #f6fbf2;
+  padding: 10px 12px;
+  cursor: pointer;
+  color: #224126;
+  font-weight: 700;
+}
+
+.backup-check-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #2f8e00;
+}
+
+.backup-auto-meta {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 10px;
+  font-size: 0.88rem;
+  color: #41566c;
+}
+
+.backup-auto-meta p {
+  margin: 0;
+}
+
+.backup-table-wrap {
+  margin-bottom: 14px;
+  border: 1px solid #d9e6d1;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.backup-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.backup-table thead th {
+  background: #f4faef;
+  color: #34552a;
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid #d8e4cf;
+  font-size: 0.84rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.backup-table tbody td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #edf3e8;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.backup-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.backup-table tbody tr:hover {
+  background: #f9fcf6;
+}
+
+.backup-table tbody tr {
+  cursor: pointer;
+}
+
+.backup-table tbody tr.selected {
+  background: #eef8e8;
+}
+
+.backup-radio-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.backup-radio-wrap input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #2f8e00;
+  cursor: pointer;
+}
+
+.backup-file-cell {
+  font-weight: 700;
+  color: #1f2b3f;
+  word-break: break-word;
+}
+
+.backup-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #0f6638;
+  background: #e7f8ed;
+  border: 1px solid #9fdfb7;
+}
+
+.backup-empty-row {
+  text-align: center;
+  color: #627588;
+  font-weight: 600;
+  padding: 18px 12px;
+}
+
+.backup-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.backup-btn {
+  min-height: 44px;
+  border: none;
+  border-radius: 11px;
+  padding: 10px 16px;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 0.97rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.backup-btn:hover {
+  transform: translateY(-1px);
+}
+
+.backup-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.backup-btn-primary {
+  background: linear-gradient(135deg, var(--backup-green-1), var(--backup-green-2));
+  box-shadow: 0 8px 18px rgba(57, 169, 0, 0.26);
+}
+
+.backup-btn-secondary {
+  background: linear-gradient(135deg, #2f6ea6, #3b82c4);
+  box-shadow: 0 8px 18px rgba(42, 111, 170, 0.24);
+}
+
+.backup-btn-danger {
+  background: linear-gradient(135deg, #bd3123, var(--backup-danger));
+  box-shadow: 0 8px 18px rgba(209, 67, 52, 0.26);
+}
+
+.backup-btn-warning {
+  background: linear-gradient(135deg, #b56f00, #d78a0b);
+  box-shadow: 0 8px 18px rgba(181, 111, 0, 0.24);
+}
+
+.backup-btn-muted {
+  background: linear-gradient(135deg, #64748b, #94a3b8);
+  box-shadow: 0 8px 18px rgba(71, 85, 105, 0.22);
+}
+
+body.backup-modal-open {
+  overflow: hidden;
+}
+
+.backup-password-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.52);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 5000;
+}
+
+.backup-password-modal.is-visible {
+  display: flex;
+}
+
+.backup-password-dialog {
+  position: relative;
+  width: min(460px, 100%);
+  border-radius: 16px;
+  border: 1px solid #d8e4cf;
+  background: linear-gradient(180deg, #f7fcf4 0%, #ffffff 28%);
+  box-shadow: 0 24px 42px rgba(15, 23, 42, 0.22);
+  padding: 20px;
+}
+
+.backup-password-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 9px;
+  background: #eef5e8;
+  color: #2a5132;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.08rem;
+}
+
+.backup-password-head {
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+.backup-password-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  margin: 0 auto 10px;
+  background: linear-gradient(135deg, #2d8500, #4caf12);
+  color: #fff;
+  box-shadow: 0 10px 18px rgba(57, 169, 0, 0.25);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.45rem;
+}
+
+.backup-password-head h4 {
+  margin: 0;
+  color: #1e293b;
+  font-size: 1.14rem;
+  font-weight: 800;
+}
+
+.backup-password-head p {
+  margin: 5px 0 0;
+  color: #4b5f74;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.backup-password-body {
+  display: grid;
+  gap: 7px;
+}
+
+.backup-password-body label {
+  color: #22314a;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.backup-password-field {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  border: 1px solid #cad8c3;
+  border-radius: 11px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.backup-password-field:focus-within {
+  border-color: #5dad3f;
+  box-shadow: 0 0 0 3px rgba(57, 169, 0, 0.14);
+}
+
+.backup-password-field input {
+  border: none;
+  min-height: 44px;
+  padding: 0 11px;
+  font-size: 0.95rem;
+  color: #1f2937;
+  outline: none;
+}
+
+.backup-password-toggle {
+  min-width: 44px;
+  border: none;
+  background: #f1f7ec;
+  color: #335d2c;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.backup-password-error {
+  margin: 0;
+  color: #a91d1d;
+  font-size: 0.84rem;
+  font-weight: 700;
+  display: none;
+}
+
+.backup-password-error.is-visible {
+  display: block;
+}
+
+.backup-password-actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.backup-password-actions .backup-btn {
+  min-height: 40px;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 0.92rem;
+}
+
+.backup-password-actions .backup-btn[data-password-confirm].is-danger {
+  background: linear-gradient(135deg, #bd3123, #d14334);
+  box-shadow: 0 8px 18px rgba(209, 67, 52, 0.26);
+}
+
+.backup-password-actions .backup-btn[data-password-confirm].is-warning {
+  background: linear-gradient(135deg, #b56f00, #d78a0b);
+  box-shadow: 0 8px 18px rgba(181, 111, 0, 0.24);
+}
+
+.backup-password-actions .backup-btn[data-password-confirm].is-success {
+  background: linear-gradient(135deg, #2d8500, #39a900);
+  box-shadow: 0 8px 18px rgba(57, 169, 0, 0.26);
+}
+
+@media (max-width: 640px) {
+  .backup-admin-wrap {
+    padding: 12px;
+  }
+
+  .backup-card {
+    border-radius: 14px;
+    padding: 14px;
+  }
+
+  .backup-card-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .backup-auto-title-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .backup-table {
+    font-size: 0.82rem;
+  }
+
+  .backup-table thead th,
+  .backup-table tbody td {
+    padding: 8px 8px;
+  }
+
+  .backup-actions-row,
+  .backup-password-actions {
+    flex-direction: column;
+  }
+
+  .backup-actions-row .backup-btn,
+  .backup-password-actions .backup-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

@@ -6,15 +6,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestionar Fichas - MINEGATE</title>
+  <title>Gestionar Fichas y Programas - MINEGATE</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
   <link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}?v=20260311c">
 <style>
-  :root { --sena-azul: #1d4ed8; }
+  :root { --sena-verde: #39a900; --sena-verde-oscuro: #2d8600; }
   body { padding-top: 0 !important; margin-top: 0 !important; }
-  .page-header { background: linear-gradient(135deg, #1e3a8a, var(--sena-azul)); color: white; padding: 2rem 0; }
+  .page-header { background: linear-gradient(135deg, #1a5c00, var(--sena-verde)); color: white; padding: 2rem 0; }
   .page-header h2 { font-weight: 800; }
   .breadcrumb-nav a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.85rem; }
   .breadcrumb-nav span { color: rgba(255,255,255,0.5); margin: 0 6px; }
@@ -28,9 +28,9 @@
   .btn-accion { padding: 4px 12px; border-radius: 50px; font-size: 0.78rem; font-weight: 600; }
   .empty-state { text-align: center; padding: 3rem; color: #9ca3af; }
   .empty-state i { font-size: 3rem; margin-bottom: 1rem; opacity: 0.4; }
-  .btn-new { background: var(--sena-azul); color: white; border: none; padding: 8px 22px; border-radius: 50px; font-weight: 700; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; }
-  .btn-new:hover { background: #1e3a8a; color: white; }
-  .ficha-num { font-size: 1.1rem; font-weight: 900; color: var(--sena-azul); }
+  .btn-new { background: var(--sena-verde); color: white; border: none; padding: 8px 22px; border-radius: 50px; font-weight: 700; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; }
+  .btn-new:hover { background: var(--sena-verde-oscuro); color: white; }
+  .ficha-num { font-size: 1.1rem; font-weight: 900; color: var(--sena-verde); }
 </style>
 </head>
 <body>
@@ -39,12 +39,12 @@
   <div class="container">
     <div class="breadcrumb-nav mb-2">
       <a href="{% url 'panel_instructor_interno:panel' %}">Mi Panel</a>
-      <span>›</span><span style="color:rgba(255,255,255,0.9)">Gestionar Fichas</span>
+      <span>›</span><span style="color:rgba(255,255,255,0.9)">Gestionar Fichas y Programas</span>
     </div>
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-      <h2 class="mb-0"><i class="fas fa-id-badge me-3"></i>Gestionar Fichas</h2>
+      <h2 class="mb-0"><i class="fas fa-id-badge me-3"></i>Gestionar Fichas y Programas</h2>
       <button type="button" class="btn-new" data-bs-toggle="modal" data-bs-target="#modalCrearFicha" onclick="resetFormularioModalFicha()">
-        <i class="fas fa-plus"></i>Nueva Ficha
+        <i class="fas fa-plus"></i>Nueva Ficha/Programa
       </button>
     </div>
   </div>
@@ -62,18 +62,18 @@
   <div class="filter-bar">
     <form method="get" class="row g-2 align-items-end">
       <div class="col-md-7">
-        <label class="form-label small fw-bold">Buscar ficha</label>
+        <label class="form-label small fw-bold">Buscar ficha y programa</label>
         <input type="text" name="buscar" class="form-control form-control-sm" placeholder="Número de ficha o nombre de programa..." value="{{ buscar }}">
       </div>
       <div class="col-md-5 d-flex gap-2">
-        <button type="submit" class="btn btn-primary btn-sm flex-fill"><i class="fas fa-search me-1"></i>Buscar</button>
+        <button type="submit" class="btn btn-success btn-sm flex-fill"><i class="fas fa-search me-1"></i>Buscar</button>
         <a href="{% url 'panel_instructor_interno:gestionar_fichas' %}" class="btn btn-outline-secondary btn-sm">Limpiar</a>
       </div>
     </form>
   </div>
 
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <p class="mb-0 text-muted small">{{ total }} ficha{{ total|pluralize }} encontrada{{ total|pluralize }}</p>
+    <p class="mb-0 text-muted small">{{ total }} registro{{ total|pluralize }} de ficha y programa</p>
   </div>
 
   {% if fichas %}
@@ -83,7 +83,6 @@
         <tr>
           <th>Número</th>
           <th>Programa</th>
-          <th>Jornada</th>
           <th>Aprendices</th>
           <th>Estado</th>
           <th>Acciones</th>
@@ -98,7 +97,6 @@
             </a>
           </td>
           <td><strong>{{ ficha.programa.nombre }}</strong></td>
-          <td>{{ ficha.get_jornada_display }}</td>
           <td>
             <a href="{% url 'panel_instructor_interno:detalle_aprendices_ficha' ficha.pk %}" style="text-decoration: none; color: inherit; cursor: pointer;">
               <span class="badge" style="background-color: #e0e7ff; color: #3730a3;">
@@ -118,10 +116,10 @@
               <a href="{% url 'panel_instructor_interno:detalle_aprendices_ficha' ficha.pk %}" class="btn btn-outline-success btn-accion" title="Gestionar aprendices">
                 <i class="fas fa-graduation-cap"></i>
               </a>
-              <button type="button" class="btn btn-outline-primary btn-accion" data-bs-toggle="modal" data-bs-target="#modalCrearFicha" onclick="abrirModalEditarFicha('{% url 'panel_instructor_interno:editar_ficha' ficha.pk %}')" title="Editar ficha">
+              <button type="button" class="btn btn-outline-primary btn-accion" data-bs-toggle="modal" data-bs-target="#modalCrearFicha" onclick="abrirModalEditarFicha('{% url 'panel_instructor_interno:editar_ficha' ficha.pk %}')" title="Editar ficha y programa">
                 <i class="fas fa-edit"></i>
               </button>
-              <button type="button" class="btn btn-outline-danger btn-accion" onclick="confirmarEliminarFicha('{% url 'panel_instructor_interno:eliminar_ficha' ficha.pk %}')" title="Eliminar ficha">
+              <button type="button" class="btn btn-outline-danger btn-accion" onclick="confirmarEliminarFicha('{% url 'panel_instructor_interno:eliminar_ficha' ficha.pk %}')" title="Eliminar registro de ficha y programa">
                 <i class="fas fa-trash"></i>
               </button>
             </div>
@@ -141,9 +139,9 @@
   {% else %}
   <div class="empty-state">
     <i class="fas fa-id-badge d-block"></i>
-    <p>No hay fichas registradas aún.</p>
+    <p>No hay registros de ficha y programa aún.</p>
     <button type="button" class="btn-new" data-bs-toggle="modal" data-bs-target="#modalCrearFicha" onclick="resetFormularioModalFicha()">
-      <i class="fas fa-plus me-2"></i>Crear primera ficha
+      <i class="fas fa-plus me-2"></i>Crear primer registro de ficha y programa
     </button>
   </div>
   <section class="mt-4">
@@ -160,14 +158,14 @@
 <div class="modal fade" id="modalCrearFicha" tabindex="-1" aria-labelledby="modalCrearFichaLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
-      <div class="modal-header" style="background: linear-gradient(135deg, #1e3a8a, #1d4ed8); color: white; border: none;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1a5c00, #39a900); color: white; border: none;">
         <h5 class="modal-title" id="modalCrearFichaLabel">
-          <i class="fas fa-id-badge me-2"></i>Crear Nueva Ficha
+          <i class="fas fa-id-badge me-2"></i>Crear Nueva Ficha y Programa
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body" id="modalCrearFichaBody" style="padding: 2rem;">
-        <div class="spinner-border text-primary" role="status">
+        <div class="spinner-border text-success" role="status">
           <span class="visually-hidden">Cargando...</span>
         </div>
       </div>
@@ -222,14 +220,14 @@
     })
     .then(response => response.json())
     .then(data => {
-      const mensaje = '<strong>¿Estás seguro de que deseas eliminar esta ficha?</strong><br><br>' +
+      const mensaje = '<strong>¿Estás seguro de que deseas eliminar este registro de ficha y programa?</strong><br><br>' +
                       '<strong>Número:</strong> ' + data.numero + '<br>' +
                       '<strong>Programa:</strong> ' + data.programa + '<br><br>' +
                       '<small style="color: #6b7280;">Esta acción no se puede deshacer.</small>';
       
       if (typeof window.mConfirm === 'function') {
         window.mConfirm(mensaje, {
-          title: 'Eliminar Ficha',
+          title: 'Eliminar Registro',
           confirmText: 'Eliminar',
           confirmClass: 'cm-btn-danger',
           confirmIcon: 'fas fa-trash'
@@ -244,7 +242,7 @@
         modalBody.innerHTML = `
           <div class="alert alert-warning" role="alert">
             <i class="fas fa-exclamation-triangle me-2"></i>
-            <strong>¿Estás seguro de que deseas eliminar esta ficha?</strong>
+            <strong>¿Estás seguro de que deseas eliminar este registro de ficha y programa?</strong>
           </div>
           <div class="card border-0" style="background-color: #f8f9fa;">
             <div class="card-body">
@@ -352,7 +350,7 @@
     })
     .catch(error => {
       console.error('Error:', error);
-      alert('Error al eliminar la ficha. Intenta nuevamente.');
+      alert('Error al eliminar el registro de ficha y programa. Intenta nuevamente.');
       btnEliminar.disabled = false;
       btnEliminar.innerHTML = '<i class="fas fa-trash me-2"></i>Eliminar';
     });

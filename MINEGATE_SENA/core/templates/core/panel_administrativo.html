@@ -11,10 +11,10 @@
   <title>MineGate</title>
 
   <!-- ESTILOS ANTIGUOS (Comentados para pruebas) -->
-  <link rel="stylesheet" href="{% static 'core/css/nuevos_estilos.css' %}?v=19" />
+  <link rel="stylesheet" href="{% static 'core/css/nuevos_estilos.css' %}?v=20" />
   <!-- Estilos del Dropdown de Usuario -->
   <link rel="stylesheet" href="{% static 'core/css/user_dropdown.css' %}" />
-  <link rel="stylesheet" href="{% static 'css/configuracion_perfil.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/configuracion_perfil.css' %}?v=20260320a" />
   <!-- Iconos y Fuentes -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet" />
@@ -24,11 +24,12 @@
   <link rel="stylesheet" href="{% static 'gestion_visitas/css/panel_visitas_admin.css' %}?v=20260314" />
   <link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}?v=20260309f" />
   <link rel="stylesheet" href="{% static 'calendario/css/calendario_seleccion.css' %}?v=20260309e" />
-  <link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}" />
+  <link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}?v=20260320a" />
   <link rel="stylesheet" href="{% static 'core/css/gestion_pagina_informativa.css' %}?v=20260305e" />
+  <link rel="stylesheet" href="{% static 'core/css/panel_backup_db.css' %}?v=20260318a" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css" />
   <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
-  <script src="{% static 'core/js/custom_modal.js' %}" defer></script>
+  <script src="{% static 'core/js/custom_modal.js' %}?v=20260320a" defer></script>
   <script src="{% static 'documentos/js/gestion_documentos.js' %}" defer></script>
 </head>
 
@@ -50,17 +51,51 @@
           <div class="topbar-brand">
             <span class="brand-main">SICAM</span>
             <span class="brand-divider">|</span>
-            <span class="brand-sub">Sistema Informactivo del Control y Acceso a la Mina </span>
+            <span class="brand-sub">Sistema Informativo del Control y Acceso a la Mina </span>
           </div>
         </div>
       </div>
 
       <div class="topbar-right">
         <div class="topbar-actions">
-          <div class="notification-wrapper">
-            <i class="ri-notification-3-line notification-icon"></i>
-            <span class="notification-badge">3</span>
+          <div class="notification-wrapper" id="adminNotificationWrapper">
+            <button id="adminNotifBtn" class="notification-btn" aria-label="Notificaciones administrativas" style="background:white;border:none;padding:8px;border-radius:10px;display:flex;align-items:center;justify-content:center;min-width:48px;min-height:40px;">
+              <i class="ri-notification-3-line notification-icon" style="color:#10b981;font-size:22px;background:transparent;border-radius:0;display:block;"></i>
+              <span id="adminNotifBadge" class="notification-badge" style="display:none;background:#ef4444;color:white;border-radius:50%;min-width:20px;height:20px;font-size:12px;font-weight:700;line-height:20px;text-align:center;padding:0 5px;margin-left:8px;">0</span>
+            </button>
+            <div id="adminNotifDropdown" class="admin-notif-dropdown" aria-hidden="true" style="display:none;position:absolute;right:10px;top:48px;background:white;border:0;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.12);width:360px;z-index:9999;overflow:hidden;">
+              <div class="admin-notif-head" style="padding:14px 16px;background:#00af00;color:white;display:flex;align-items:center;justify-content:space-between;">
+                <div>
+                  <div style="font-weight:700;font-size:16px;">Notificaciones</div>
+                  <div id="adminNotifCountSmall" style="font-size:12px;opacity:0.9;margin-top:4px;">0 nuevas</div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                </div>
+              </div>
+
+              <div style="padding:10px 12px;background:#fff;display:flex;gap:8px;align-items:center;">
+                <button id="filterAll" class="notif-filter active" data-filter="all" style="background:#eef2ff;color:#4c1d95;border:0;padding:6px 10px;border-radius:10px;font-weight:600;font-size:13px;">Todas</button>
+                <button id="filterInternas" class="notif-filter" data-filter="internas" style="background:#f0fff4;color:#047857;border:0;padding:6px 10px;border-radius:10px;font-weight:600;font-size:13px;display:flex;align-items:center;gap:8px;"><span style="width:10px;height:10px;background:#00af00;border-radius:50%;display:inline-block;"></span>Internas</button>
+                <button id="filterExternas" class="notif-filter" data-filter="externas" style="background:#fff7ed;color:#b45309;border:0;padding:6px 10px;border-radius:10px;font-weight:600;font-size:13px;display:flex;align-items:center;gap:8px;"><span style="width:10px;height:10px;background:#f59e0b;border-radius:50%;display:inline-block;"></span>Externas</button>
+              </div>
+
+              <div style="max-height:320px;overflow:auto;background:white;padding:8px 6px;">
+                <ul id="adminNotifList" class="admin-notif-list" style="list-style:none;margin:0;padding:6px;">
+                  <li class="admin-notif-empty" style="color:#6b7280;padding:12px;text-align:center">No hay notificaciones</li>
+                </ul>
+              </div>
+              <div class="admin-notif-footer" style="padding:10px 14px;background:#fafafa;text-align:right;border-top:1px solid #f3f4f6;">
+                <a id="adminNotifVerTodas" href="{% url 'core:panel_administrativo_seccion' 'gestion_visitas' %}" style="color:#2563eb;font-weight:600;text-decoration:none;">Ver todas</a>
+              </div>
+            </div>
           </div>
+          <style>
+            /* Campana blanca y badge */
+            #adminNotifBtn { background: white !important; }
+            #adminNotifBtn .notification-icon { color: #10b981; }
+            #adminNotifDropdown .admin-notif-item:hover { background:#f3f4f6; }
+            .row-selected { background: #fff7cd !important; color: #4b3710 !important; }
+          </style>
           <div class="topbar-user-profile">
             <div class="user-profile-dropdown">
               <button class="user-profile-btn" id="userDropdownBtn" aria-label="User menu">
@@ -76,7 +111,7 @@
                     class="profile-img-topbar" />
                   {% endif %}
                 </div>
-                <span class="topbar-role-label">{{ panel_role_label|default:'Administrador' }}</span>
+                <span class="topbar-role-label">{{ panel_role_label|default:'SST' }}</span>
               </button>
 
               <!-- desplegable Menu -->
@@ -87,7 +122,7 @@
                   </div>
                   <div class="header-info">
                     <span class="user-name">{{ request.user.get_full_name|default:request.user.username }}</span>
-                    <span class="user-role-label">{{ panel_role_label|default:'Administrador' }}</span>
+                    <span class="user-role-label">{{ panel_role_label|default:'SST' }}</span>
                     <span class="user-email">{{ request.user.email }}</span>
                   </div>
 
@@ -129,6 +164,7 @@
           </a>
         </li>
         {% else %}
+        {% if not solo_sst %}
         <li data-content="Panel_principal" class="{% if seccion_activa == 'panel_principal' %}active{% endif %}">
           <a href="{% url 'core:panel_administrativo_seccion' 'panel_principal' %}" class="sidebar-link" title="Vista general del sistema y estadísticas principales">
             <i class="ri-dashboard-line icon-dashboard"></i><span>Panel principal</span>
@@ -140,6 +176,7 @@
             <span>Calendario</span>
           </a>
         </li>
+        {% endif %}
 
         <li data-content="gestionvisitas" style="position:relative;" class="{% if seccion_activa == 'gestion_visitas' %}active{% endif %}">
           <a href="{% url 'core:panel_administrativo_seccion' 'gestion_visitas' %}" class="sidebar-link" title="Administra visitas internas y externas">
@@ -153,6 +190,7 @@
             <i class="ri-file-search-line icon-documents"></i><span> Documentos</span>
           </a>
         </li>
+        {% if not solo_sst %}
         <li data-content="controlacceso" class="{% if seccion_activa == 'control_acceso' %}active{% endif %}">
           <a href="{% url 'core:panel_administrativo_seccion' 'control_acceso' %}" class="sidebar-link" title="Controla el acceso a la mina en tiempo real">
             <i class="ri-shield-check-line"></i><span>Control de Acceso</span>
@@ -169,6 +207,12 @@
           data-url="{% url 'usuarios:gestionar_permisos' %}" title="Asigna permisos y roles de usuario">
           <i class="ri-shield-user-line icon-permissions"></i><span>Gestión de Permisos</span>
         </li>
+        <li data-content="copiasseguridad" class="{% if seccion_activa == 'copias_seguridad' %}active{% endif %}">
+          <a href="{% url 'core:panel_copias_seguridad' %}" class="sidebar-link" title="Genera y restaura copias de seguridad de PostgreSQL">
+            <i class="ri-database-2-line"></i><span>Copias de Seguridad</span>
+          </a>
+        </li>
+        {% endif %}
         {% endif %}
         <li data-content="Reportes" class="{% if seccion_activa == 'reportes' %}active{% endif %}">
           <a href="{% url 'core:panel_administrativo_seccion' 'reportes' %}" class="sidebar-link" title="Visualiza reportes y análisis del sistema">
@@ -255,7 +299,9 @@
     <main id="mainContent">
       {% block content %}
       {% if not solo_coordinador %}
-      {% if seccion_activa == 'gestion_calendario' %}
+      {% if seccion_activa == 'panel_principal' %}
+      {% include 'core/panel_principal_admin.html' %}
+      {% elif seccion_activa == 'gestion_calendario' %}
       {% include 'calendario.html' %}
       <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -316,6 +362,8 @@
       </div>
       {% elif seccion_activa == 'gestion_pagina_informativa' %}
       {% include 'core/gestion_pagina_informativa.html' %}
+      {% elif seccion_activa == 'copias_seguridad' %}
+      {% include 'core/panel_backup_db.html' %}
       {% elif seccion_activa == 'configuracion' %}
       <div class="contenido-temporal">
         <h2>Configuración</h2>
@@ -345,18 +393,35 @@
       seleccionCssUrl: "{% static 'calendario/css/calendario_seleccion.css' %}?v=20260309e",
       calendarioJsUrl: "{% static 'calendario/js/calendario.js' %}?v=20260309c"
     };
+    window.panelPermisos = {
+      soloSst: {{ solo_sst|yesno:"true,false" }}
+    };
   </script>
   <script defer src="{% static 'calendario/js/panel_calendario_loader.js' %}"></script>
 
   <!-- Script para Gestión de Permisos -->
   {% if es_superusuario %}
   <script>
+    function cerrarAlertaSuave(alertaEl) {
+      if (!alertaEl) return;
+      alertaEl.style.transition = 'opacity 0.28s ease, transform 0.28s ease, max-height 0.28s ease, margin 0.28s ease, padding 0.28s ease';
+      alertaEl.style.opacity = '0';
+      alertaEl.style.transform = 'translateY(-8px)';
+      alertaEl.style.maxHeight = '0px';
+      alertaEl.style.margin = '0';
+      alertaEl.style.paddingTop = '0';
+      alertaEl.style.paddingBottom = '0';
+      setTimeout(() => {
+        alertaEl.style.display = 'none';
+      }, 280);
+    }
+
     // Auto-cerrar alertas después de 5 segundos
     document.addEventListener('DOMContentLoaded', function () {
       const alertas = document.querySelectorAll('.alerta');
       alertas.forEach(alerta => {
         setTimeout(() => {
-          alerta.style.display = 'none';
+          cerrarAlertaSuave(alerta);
         }, 5000);
       });
 
@@ -395,6 +460,25 @@
          FUNCIONES GLOBALES PARA CERRAR SESIÓN
          ========================================== -->
   <script>
+    function abrirModalAnimado(modal) {
+      if (!modal) return;
+      modal.classList.remove('modal-closing');
+      modal.style.display = 'flex';
+      requestAnimationFrame(() => {
+        modal.classList.add('modal-visible');
+      });
+    }
+
+    function cerrarModalAnimado(modal) {
+      if (!modal) return;
+      modal.classList.remove('modal-visible');
+      modal.classList.add('modal-closing');
+      setTimeout(() => {
+        modal.style.display = 'none';
+        modal.classList.remove('modal-closing');
+      }, 220);
+    }
+
     // Función para abrir modal de cerrar sesión (GLOBAL)
     function abrirModalCerrarSesion(event) {
       event.preventDefault();
@@ -417,7 +501,7 @@
         // Fallback: usar modal antiguo si mConfirm no está disponible
         const modal = document.getElementById("modalCerrarSesion");
         if (modal) {
-          modal.style.display = "flex";
+          abrirModalAnimado(modal);
         }
       }
     }
@@ -426,7 +510,7 @@
     function cerrarModal(modalId) {
       const modal = document.getElementById(modalId);
       if (modal) {
-        modal.style.display = "none";
+        cerrarModalAnimado(modal);
       }
     }
 
@@ -436,7 +520,7 @@
       event.stopPropagation();
       const modal = document.getElementById("modalPerfil");
       if (modal) {
-        modal.style.display = "flex";
+        abrirModalAnimado(modal);
       }
       // Cerrar el dropdown para que no se sobreponga
       const dropdown = document.getElementById("userDropdownMenu");
@@ -446,14 +530,14 @@
     function cerrarModalPerfil() {
       const modal = document.getElementById("modalPerfil");
       if (modal) {
-        modal.style.display = "none";
+        cerrarModalAnimado(modal);
       }
     }
 
     // Cerrar el modal de perfil dando click afuera (ya que el overlay cubre toda la pantalla)
     document.addEventListener("click", function (e) {
       const modal = document.getElementById("modalPerfil");
-      if (modal && modal.style.display === "flex") {
+      if (modal && modal.classList.contains("modal-visible")) {
         if (e.target === modal) {
           cerrarModalPerfil();
         }
@@ -500,7 +584,7 @@
       // Get user info from page (you can replace with dynamic data)
       const user = {
         name: "{{ user.username }}" || "Usuario",
-        role: "{{ panel_role_label|default:'Administrador' }}",
+        role: "{{ panel_role_label|default:'SST' }}",
       };
 
       if (userNameEl) userNameEl.textContent = user.name;
@@ -731,10 +815,205 @@
     });
   </script>
   {% if not solo_coordinador %}
-  <script defer src="{% static 'calendario/js/panel_calendario_nueva_visita.js' %}"></script>
   <script defer src="{% static 'documentos/js/panel_documentos_visitas.js' %}?v=20260311-correccion"></script>
-  <script defer src="{% static 'js/panel_visitas.js' %}?v=20260313-quitar-devolver"></script>
+  <script defer src="{% static 'js/panel_visitas.js' %}?v=20260319-fix-gestion-visitas-click"></script>
   {% endif %}
+  {% if seccion_activa == 'copias_seguridad' %}
+  <script defer src="{% static 'core/js/panel_backup_db.js' %}?v=20260318a"></script>
+  {% endif %}
+
+  <script>
+    (function () {
+      const gestionUrl = "{% url 'core:panel_administrativo_seccion' 'gestion_visitas' %}";
+      const btn = document.getElementById('adminNotifBtn');
+      const badge = document.getElementById('adminNotifBadge');
+      const dropdown = document.getElementById('adminNotifDropdown');
+      if (dropdown) {
+        dropdown.addEventListener('click', function (e) { e.stopPropagation(); });
+      }
+      const list = document.getElementById('adminNotifList');
+      const verTodas = document.getElementById('adminNotifVerTodas');
+      const countSmall = document.getElementById('adminNotifCountSmall');
+      const filterAll = document.getElementById('filterAll');
+      const filterInternas = document.getElementById('filterInternas');
+      const filterExternas = document.getElementById('filterExternas');
+
+      window._adminNotifications = window._adminNotifications || [];
+
+      // Local persistence for read notifications (client-only)
+      const READ_KEY = 'adminNotifReadIds_v1';
+      function getReadSet() {
+        try {
+          const raw = localStorage.getItem(READ_KEY) || '[]';
+          return new Set(JSON.parse(raw));
+        } catch (err) { return new Set(); }
+      }
+      function saveReadSet(set) {
+        try { localStorage.setItem(READ_KEY, JSON.stringify(Array.from(set))); } catch (err) {}
+      }
+      function markAsReadClient(id, tipo) {
+        try {
+          const s = getReadSet();
+          s.add(`${tipo}::${id}`);
+          saveReadSet(s);
+        } catch (err) { console.error(err); }
+      }
+
+      function closeDropdown() {
+        if (!dropdown) return;
+        dropdown.setAttribute('aria-hidden', 'true');
+        dropdown.style.display = 'none';
+      }
+
+      function toggleDropdown(e) {
+        e.stopPropagation();
+        if (!dropdown) return;
+        const open = dropdown.getAttribute('aria-hidden') === 'false';
+        dropdown.setAttribute('aria-hidden', String(open ? 'true' : 'false'));
+        dropdown.style.display = open ? 'none' : 'block';
+      }
+
+      if (btn) btn.addEventListener('click', function (e) { toggleDropdown(e); if (window._adminNotifications.length === 0) refreshNotificaciones(); });
+      document.addEventListener('click', closeDropdown);
+
+      function tipoNormalized(raw) {
+        const t = (raw || '').toString().toLowerCase();
+        return (t.indexOf('ext') >= 0 || t.indexOf('extern') >= 0) ? 'externas' : 'internas';
+      }
+
+      function initials(name) {
+        if (!name) return '';
+        const parts = name.trim().split(/\s+/);
+        if (parts.length === 1) return parts[0].substring(0,2).toUpperCase();
+        return (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+      }
+
+      function buildItem(v) {
+        const tipo = tipoNormalized(v.tipo);
+        const tipoLabel = tipo === 'internas' ? 'Visita Interna' : 'Visita Externa';
+        const titulo = v.responsable || v.institucion || (`Visita #${v.id}`);
+        const subtitle = tipoLabel;
+        const desc = v.resumen || v.motivo || v.informacion || '';
+        const time = v.fecha_visita || v.created_at || '';
+
+        const a = document.createElement('a');
+        a.href = `${gestionUrl}?tipo=${tipo}&id=${v.id}`;
+        a.className = 'admin-notif-item';
+        a.setAttribute('data-visita-id', v.id);
+        a.setAttribute('data-visita-tipo', tipo);
+        a.style.display = 'block';
+        a.style.color = '#111827';
+        a.style.textDecoration = 'none';
+
+        const nameInitials = initials(v.responsable || v.nombre || 'US');
+        const letter = tipo === 'internas' ? 'I' : 'E';
+        const avatarBg = tipo === 'internas' ? 'linear-gradient(135deg,#00af00,#007a00)' : 'linear-gradient(135deg,#f59e0b,#d97706)';
+
+        a.innerHTML = `
+          <div style="display:flex;align-items:center;gap:12px;padding:6px 4px;">
+            <div style="width:44px;height:44px;border-radius:50%;background:${avatarBg};display:flex;align-items:center;justify-content:center;color:white;font-weight:700;flex:0 0 44px;font-size:15px;">${letter}</div>
+            <div style="flex:1 1 auto;min-width:0;">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                <div style="font-weight:700;font-size:14px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${titulo}</div>
+                <div style="font-size:12px;color:#6b7280;flex:0 0 auto;">${time}</div>
+              </div>
+              <div style="margin-top:4px;display:flex;align-items:center;gap:8px;">
+                <span style="background:${tipo === 'internas' ? '#e6fff0' : '#fff4e6'};color:${tipo === 'internas' ? '#047857' : '#b45309'};padding:4px 8px;border-radius:8px;font-size:12px;font-weight:600;">${subtitle}</span>
+                <div style="font-size:13px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${desc}</div>
+              </div>
+            </div>
+            <div style="width:8px;height:8px;background:#2563eb;border-radius:50%;flex:0 0 8px;margin-left:8px;"></div>
+          </div>`;
+
+        a.addEventListener('click', function (e) {
+          e.preventDefault();
+          try {
+            // persistir como leído en localStorage
+            markAsReadClient(v.id, tipo);
+            // eliminar de la lista en memoria
+            window._adminNotifications = (window._adminNotifications || []).filter(function (n) {
+              return `${(n.tipo||'')}::${n.id}` !== `${tipo}::${v.id}`;
+            });
+            // actualizar badge y contador pequeño
+            const remaining = (window._adminNotifications || []).length;
+            if (badge) {
+              if (remaining > 0) { badge.style.display = 'inline-block'; badge.textContent = remaining; }
+              else { badge.style.display = 'none'; }
+            }
+            if (countSmall) countSmall.textContent = remaining + ' nuevas';
+            // volver a renderizar filtro actual
+            renderFilter(window._adminNotifCurrentFilter || 'all');
+          } catch (err) { console.error('mark read error', err); }
+          try { closeDropdown(); } catch (err) {}
+          // navegar a la página de gestión con tipo&id
+          window.location.href = a.href;
+        });
+
+        return a;
+      }
+
+      function refreshNotificaciones() {
+        Promise.all([
+          fetch('/gestion/visitas/?tipo=internas&estado=todos&buscar=').then(r => r.json()),
+          fetch('/gestion/visitas/?tipo=externas&estado=todos&buscar=').then(r => r.json())
+        ]).then(([intData, extData]) => {
+          const items = [];
+          const push = (arr, tipo) => {
+            if (!arr || !arr.visitas) return;
+            arr.visitas.forEach(v => {
+              v.tipo = tipo;
+              items.push(v);
+            });
+          };
+          push(intData, 'internas');
+          push(extData, 'externas');
+
+          // filtrar notificaciones ya marcadas como leídas (localStorage)
+          try {
+            const readSet = getReadSet();
+            const visible = items.filter(v => !readSet.has(`${v.tipo}::${v.id}`));
+            window._adminNotifications = visible;
+            // update counters and render
+            if (countSmall) countSmall.textContent = `${visible.length} nuevas`;
+            if (badge) {
+              if (visible.length > 0) { badge.style.display = 'inline-block'; badge.textContent = visible.length; }
+              else { badge.style.display = 'none'; }
+            }
+            renderFilter(window._adminNotifCurrentFilter || 'all');
+          } catch (err) {
+            window._adminNotifications = items;
+            if (countSmall) countSmall.textContent = `${items.length} nuevas`;
+            if (badge) {
+              if (items.length > 0) { badge.style.display = 'inline-block'; badge.textContent = items.length; }
+              else { badge.style.display = 'none'; }
+            }
+            renderFilter('all');
+          }
+        }).catch(err => { console.error('Error fetching notificaciones', err); });
+      }
+
+      function renderFilter(filter) {
+        const data = window._adminNotifications || [];
+        list.innerHTML = '';
+        let filtered = data;
+        if (filter === 'internas') filtered = data.filter(d => (d.tipo || '').toLowerCase() === 'internas');
+        if (filter === 'externas') filtered = data.filter(d => (d.tipo || '').toLowerCase() === 'externas');
+        if (filtered.length === 0) { const empty = document.createElement('li'); empty.className='admin-notif-empty'; empty.style.padding='12px'; empty.style.color='#6b7280'; empty.textContent='No hay notificaciones'; list.appendChild(empty); return; }
+        filtered.slice(0, 50).forEach(v => { const li = document.createElement('li'); li.style.padding='6px 0'; li.appendChild(buildItem(v)); list.appendChild(li); });
+      }
+      function setActiveFilterBtn(btn) { document.querySelectorAll('.notif-filter').forEach(b=>b.classList.remove('active')); if (btn) btn.classList.add('active'); }
+      window._adminNotifCurrentFilter = 'all';
+      if (filterAll) filterAll.addEventListener('click', function(){ window._adminNotifCurrentFilter = 'all'; setActiveFilterBtn(this); renderFilter('all'); });
+      if (filterInternas) filterInternas.addEventListener('click', function(){ window._adminNotifCurrentFilter = 'internas'; setActiveFilterBtn(this); renderFilter('internas'); });
+      if (filterExternas) filterExternas.addEventListener('click', function(){ window._adminNotifCurrentFilter = 'externas'; setActiveFilterBtn(this); renderFilter('externas'); });
+
+      
+
+      // initial load
+      refreshNotificaciones();
+      setInterval(refreshNotificaciones, 30000);
+    })();
+  </script>
 
   <!-- Modal Personalizado de Alertas/Confirmaciones -->
   <div id="customModal" class="cm-overlay">

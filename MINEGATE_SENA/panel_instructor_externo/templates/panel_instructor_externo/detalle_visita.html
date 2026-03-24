@@ -9,9 +9,10 @@
   <title>Detalle Visita #{{ visita.id }} - MINEGATE</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=20260320a">
   <link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}">
 <style>
-  :root { --ext-azul: #0ea5e9; --ext-oscuro: #0c4a6e; }
+  :root { --ext-azul: #39a900; --ext-oscuro: #2d8600; }
   body { padding-top: 0 !important; margin-top: 0 !important; }
   .page-header { background: linear-gradient(135deg, var(--ext-oscuro), var(--ext-azul)); color: white; padding: 2rem 0; }
   .page-header h2 { font-weight: 800; }
@@ -20,7 +21,7 @@
 
   .detail-card { background: white; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden; margin-bottom: 1.5rem; }
   .detail-card-header { padding: 1rem 1.5rem; display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1rem; border-bottom: 1px solid #f0f0f0; }
-  .detail-card-header.azul { background: #f0f9ff; color: var(--ext-oscuro); border-bottom-color: #bae6fd; }
+  .detail-card-header.azul { background: #eff6ff; color: #1e40af; border-bottom-color: #bfdbfe; }
   .detail-card-header.verde { background: #f0fdf4; color: #166534; border-bottom-color: #bbf7d0; }
   .detail-card-header.morado { background: #faf5ff; color: #6b21a8; border-bottom-color: #e9d5ff; }
   .detail-card-body { padding: 1.5rem; }
@@ -50,12 +51,12 @@
   .btn-registrar:hover { background:var(--ext-oscuro); color:white; transform:translateY(-1px); }
   .btn-enviar { background:#6366f1; color:white; border:none; padding:10px 22px; border-radius:50px; font-weight:700; font-size:0.9rem; text-decoration:none; cursor:pointer; display:inline-flex; align-items:center; gap:7px; transition:all 0.2s; }
   .btn-enviar:hover { background:#4f46e5; color:white; }
-  .btn-actualizar-asi { background:transparent; color:#2563eb; border:1px solid #2563eb; padding:4px 12px; border-radius:50px; font-size:0.78rem; font-weight:600; text-decoration:none; transition:all 0.2s; }
-  .btn-actualizar-asi:hover { background:#dbeafe; color:#1d4ed8; }
+  .btn-actualizar-asi { background:transparent; color:var(--ext-azul); border:1px solid var(--ext-azul); padding:4px 12px; border-radius:50px; font-size:0.78rem; font-weight:700; text-decoration:none; transition:all 0.2s; }
+  .btn-actualizar-asi:hover { background:#dcfce7; color:var(--ext-oscuro); border-color:var(--ext-oscuro); }
   .btn-eliminar-asi { background:transparent; color:#ef4444; border:1px solid #ef4444; padding:4px 12px; border-radius:50px; font-size:0.78rem; font-weight:600; text-decoration:none; transition:all 0.2s; }
   .btn-eliminar-asi:hover { background:#fee2e2; color:#991b1b; }
   .progress-wrap { background:#e9ecef; border-radius:50px; height:12px; overflow:hidden; margin:0.5rem 0; }
-  .progress-fill { background:linear-gradient(90deg, var(--ext-azul), #38bdf8); height:100%; border-radius:50px; transition:width 0.5s; }
+  .progress-fill { background:linear-gradient(90deg, var(--ext-azul), #2d8600); height:100%; border-radius:50px; transition:width 0.5s; }
   .empty-asistentes { text-align:center; padding:2rem; color:#9ca3af; }
   .empty-asistentes i { font-size:2rem; opacity:0.4; }
   .info-box-aprobada { background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:1rem 1.3rem; font-size:0.88rem; color:#166534; }
@@ -89,24 +90,24 @@
   .final-modal-subtitle { color: #4b5563; margin: 0 0 16px; font-size: 0.95rem; font-weight: 500; }
 
   .mensaje-confirmacion-final {
-    background: linear-gradient(135deg, #e8f7ff 0%, #f3fbff 50%, #ffffff 100%);
-    border: 1px solid #b6e3fa;
+    background: linear-gradient(135deg, #eef9e8 0%, #f4fbef 50%, #ffffff 100%);
+    border: 1px solid #c7e6a8;
     border-left: 8px solid var(--ext-azul);
     border-radius: 16px;
     padding: 1.25rem 1.35rem;
-    box-shadow: 0 8px 20px rgba(14, 165, 233, 0.14);
+    box-shadow: 0 8px 20px rgba(57, 169, 0, 0.18);
     margin-bottom: 1.3rem;
   }
   .mensaje-confirmacion-final h4 {
     margin: 0 0 0.45rem;
     font-weight: 900;
-    color: #0c4a6e;
+    color: #1f5f16;
     font-size: 1.35rem;
     line-height: 1.2;
   }
   .mensaje-confirmacion-final p {
     margin: 0 0 0.6rem;
-    color: #075985;
+    color: #2d6a1f;
     font-size: 0.98rem;
     line-height: 1.5;
     font-weight: 600;
@@ -116,7 +117,7 @@
     padding-left: 1.1rem;
   }
   .mensaje-confirmacion-final li {
-    color: #0c4a6e;
+    color: #2d6a1f;
     margin-bottom: 0.25rem;
     font-size: 0.92rem;
     font-weight: 600;
@@ -299,9 +300,9 @@
           Hay archivos con inconsistencias, faltantes o rechazo. Revise el detalle por persona y por archivos finales.
         </div>
 
-        {% if visita.estado != 'confirmada' and visita.asistentes.count > 0 %}
+        {% if visita.estado != 'confirmada' and visita.asistentes.count > 0 and mostrar_boton_corregir_archivos_finales %}
         <div class="d-flex flex-wrap gap-2 mb-3">
-          <button type="button" onclick="abrirModalArchivosFinales(true)" class="btn-registrar" style="background: linear-gradient(135deg, #eae1b2 0%, #fff177 100%); color: #333; border: none; cursor: pointer;">
+          <button type="button" onclick="abrirModalArchivosFinales(true)" class="btn-registrar" style="background: linear-gradient(135deg, #39a900 0%, #2d8600 100%); color: #fff; border: none; cursor: pointer;">
             <i class="fas fa-upload"></i> Corregir / subir archivo final
           </button>
           <a href="{% url 'panel_visitante:registrar_asistentes' tipo='externa' visita_id=visita.id %}" class="btn-registrar">
@@ -316,7 +317,7 @@
             <div class="doc-issue-item">
               <div class="doc-issue-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
                 <div>
-                  <i class="fas fa-user me-2" style="color:#6b21a8;"></i>{{ asistente_alerta.nombre }}
+                  <i class="fas fa-user me-2" style="color:#2d8600;"></i>{{ asistente_alerta.nombre }}
                   <span class="doc-issue-sub">{{ asistente_alerta.documento }}</span>
                 </div>
                 {% for incidencia in asistente_alerta.incidencias %}
@@ -339,25 +340,39 @@
           {% endfor %}
         {% endif %}
 
-        <h6 style="font-weight:800; color:#111827; margin:14px 0 10px;">Estado de archivos finales</h6>
-        {% for archivo in reporte_documental.archivos_finales_estado %}
-          <div class="doc-issue-item" style="margin-bottom:8px;">
-            <div class="doc-issue-line" style="justify-content:space-between; flex-wrap:wrap; gap:10px; margin-top:0;">
-              <div>
-                <strong style="font-size:0.86rem; color:#1f2937;">{{ archivo.titulo }}</strong>
-                <span class="doc-issue-sub">{{ archivo.categoria }}</span>
-              </div>
-              <span class="estado-pill-mini {{ archivo.estado }}">
-                {% if archivo.estado == 'faltante' %}FALTANTE{% elif archivo.estado == 'rechazado' %}RECHAZADO{% elif archivo.estado == 'pendiente' %}EN REVISIÓN{% else %}APROBADO{% endif %}
-              </span>
+        {% if reporte_documental.mostrar_estado_archivos_finales %}
+          <h6 style="font-weight:800; color:#111827; margin:14px 0 10px;">Estado de archivos finales</h6>
+          {% if reporte_documental.archivos_finales_rechazados %}
+            <div class="doc-resumen-box" style="background:#fff7ed;border:1px solid #fdba74;color:#9a3412;">
+              <i class="fas fa-file-circle-xmark me-2"></i>
+              Archivo final rechazado:
+              {% for archivo in reporte_documental.archivos_finales_rechazados %}
+                <strong>{{ archivo.titulo }}</strong>{% if not forloop.last %}, {% endif %}
+              {% endfor %}
+              . Esta novedad corresponde a archivo final, no a un asistente.
             </div>
-            <div style="font-size:0.82rem; color:#4b5563; margin-top:6px;">{{ archivo.detalle }}</div>
-          </div>
-        {% endfor %}
+          {% endif %}
+          {% for archivo in reporte_documental.archivos_finales_estado %}
+            {% if archivo.estado != 'aprobado' %}
+            <div class="doc-issue-item" style="margin-bottom:8px;">
+              <div class="doc-issue-line" style="justify-content:space-between; flex-wrap:wrap; gap:10px; margin-top:0;">
+                <div>
+                  <strong style="font-size:0.86rem; color:#1f2937;">{{ archivo.titulo }}</strong>
+                  <span class="doc-issue-sub">{{ archivo.categoria }}</span>
+                </div>
+                <span class="estado-pill-mini {{ archivo.estado }}">
+                  {% if archivo.estado == 'faltante' %}FALTANTE{% elif archivo.estado == 'rechazado' %}RECHAZADO{% elif archivo.estado == 'pendiente' %}EN REVISIÓN{% else %}APROBADO{% endif %}
+                </span>
+              </div>
+              <div style="font-size:0.82rem; color:#4b5563; margin-top:6px;">{{ archivo.detalle }}</div>
+            </div>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
       {% else %}
         <div class="doc-ok-box">
           <i class="fas fa-circle-check me-2"></i>
-          Todos los documentos cargados en esta visita se encuentran completos y sin observaciones de rechazo.
+          Todos los documentos cargados en esta visita se encuentran completos y sin observaciones de rechazo. Recuerde que debe volver a enviar la solicitud para que el administrador revise los documentos cargados y pueda confirmar la visita.
         </div>
       {% endif %}
     </div>
@@ -383,6 +398,47 @@
         <small class="text-muted">{{ visita.asistentes.count }} de {{ visita.cantidad_visitantes }} visitantes registrados</small>
       </div>
 
+      {% if documentos_finales_requeridos %}
+      <div class="mb-3" style="border-left: 4px solid #39a900; background: #fff; border-radius: 16px; padding: 16px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);">
+        <h4 style="margin: 0 0 8px; font-weight: 800; color: #0f172a; font-size: 1.45rem; line-height: 1.25;">
+          <i class="fas fa-download" style="color: #22c55e; margin-right: 10px;"></i>Documentos Requeridos para realizar la visita
+        </h4>
+        <p style="color: #666; margin-bottom: 14px; font-size: 0.92rem;">Descargue, diligencie y tenga listos los siguientes documentos para completar el proceso.</p>
+
+        {% for doc in documentos_finales_requeridos %}
+        <div style="border: 1px solid #d1d5db; border-radius: 16px; overflow: hidden; margin-bottom: 14px; background: #fff;">
+          <div style="display:flex; align-items:center; gap:12px; padding: 12px 14px; background: #e9f4df;">
+            <div style="width:40px; height:40px; border-radius:12px; background:#38b000; display:flex; align-items:center; justify-content:center; box-shadow: 0 8px 20px rgba(56,176,0,.28);">
+              <i class="fas fa-{% if 'ATS' in doc.etiqueta_requerida %}clipboard-list{% elif 'Inducción' in doc.etiqueta_requerida %}graduation-cap{% elif 'Charla' in doc.etiqueta_requerida %}users{% else %}file-lines{% endif %}" style="color:#fff; font-size:1.1rem;"></i>
+            </div>
+            <div>
+              <h5 style="margin:0; font-weight:800; color:#0f172a; font-size:1.12rem; line-height:1.25;">{{ doc.etiqueta_requerida }}</h5>
+              <p style="margin:2px 0 0; color:#475569; font-size:0.84rem;">Documento requerido para completar el proceso</p>
+            </div>
+          </div>
+
+          <div style="padding: 12px 14px; background: #f8f9fa; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 230px;">
+              <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% elif doc.extension == '.jpg' or doc.extension == '.jpeg' or doc.extension == '.png' %}file-image{% else %}file-alt{% endif %}" style="font-size: 1.5rem; color: {% if doc.extension == '.pdf' %}#dc2626{% elif doc.extension == '.doc' or doc.extension == '.docx' %}#2d8600{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}#059669{% else %}#39a900{% endif %};"></i>
+              <div>
+                <strong style="color: #333; font-size: 0.95rem;">{{ doc.etiqueta_requerida }}</strong><br>
+                <small style="color: #888; font-size: 0.83rem;">{{ doc.nombre_archivo }} &middot; {{ doc.tamaño_legible }}</small>
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button type="button" onclick="verDocumentoFinalExterno('{% url 'documentos:ver_documento_inline' doc.id %}', '{{ doc.etiqueta_requerida|escapejs }}', '{{ doc.extension|default:'' }}', '{% url 'documentos:descargar_documento' doc.id %}')" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 8px 18px; border-radius: 8px; border: none; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; cursor: pointer;">
+                <i class="fas fa-eye"></i> Ver
+              </button>
+              <a href="{% url 'documentos:descargar_documento' doc.id %}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 8px 18px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
+                <i class="fas fa-download"></i> Descargar
+              </a>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
       {% if visita.estado == 'aprobada_inicial' %}
         <div class="info-box-aprobada mb-3">
           <i class="fas fa-check-circle me-2"></i>
@@ -393,12 +449,18 @@
             <i class="fas fa-user-plus"></i> Registrar / Ver visitantes
           </a>
           {% if visita.asistentes.count > 0 %}
+          {% if mostrar_boton_subir_archivos_finales %}
           <button type="button" onclick="abrirModalArchivosFinales(false)" class="btn-registrar" style="background: linear-gradient(135deg, #eae1b2 0%, #fff177 100%); color: #333; border: none; cursor: pointer;">
             <i class="fas fa-folder-open"></i> Subir archivos finales
           </button>
+          {% else %}
+          <span class="btn-registrar" style="background:#ecfdf3;color:#166534;border:1px solid #86efac;cursor:default;">
+            <i class="fas fa-check-circle"></i> Archivos cargados para revisión
+          </span>
+          {% endif %}
           <form method="post" action="{% url 'panel_visitante:enviar_solicitud_final' tipo='externa' visita_id=visita.id %}" style="display:inline;">
             {% csrf_token %}
-            <button type="submit" id="btnEnviarSolicitudFinal" class="btn-enviar" {% if not enviar_final_habilitado %}disabled{% endif %} style="{% if not enviar_final_habilitado %}opacity: 0.5; cursor: not-allowed;{% endif %}" onclick="return confirmarEnvioSolicitudFinal(event, this, 'visitantes');">
+            <button type="submit" id="btnEnviarSolicitudFinal" class="btn-enviar" {% if not enviar_final_habilitado %}disabled{% endif %} style="{% if not enviar_final_habilitado %}opacity: 0.5; cursor: not-allowed;{% endif %}">
               <i class="fas fa-paper-plane"></i> Enviar solicitud final
             </button>
           </form>
@@ -414,9 +476,7 @@
             <i class="fas fa-eye"></i> Ver visitantes registrados
           </a>
           {% if visita.asistentes.count > 0 %}
-          <button type="button" onclick="abrirModalArchivosFinales(true)" class="btn-registrar" style="background: linear-gradient(135deg, #eae1b2 0%, #fff177 100%); color: #333; border: none; cursor: pointer;">
-            <i class="fas fa-upload"></i> Corregir / subir archivo final
-          </button>
+          
           {% endif %}
         </div>
       {% elif visita.estado == 'confirmada' %}
@@ -432,18 +492,22 @@
             <h6><i class="fas fa-user me-2" style="color:#6b21a8;"></i>{{ asistente.nombre_completo }}</h6>
             <small>{{ asistente.get_tipo_documento_display }}: {{ asistente.numero_documento }}</small>
           </div>
-          {% if visita.estado == 'aprobada_inicial' %}
+          {% if permite_editar_asistentes or permite_eliminar_asistentes %}
           <div class="d-flex gap-2">
+            {% if permite_editar_asistentes %}
             <a href="{% url 'panel_visitante:actualizar_info_asistente' tipo='externa' asistente_id=asistente.id %}"
                class="btn-actualizar-asi"
                onclick="return abrirModalActualizarAsistente(this.href);">
               <i class="fas fa-pen me-1"></i>Actualizar
             </a>
+            {% endif %}
+            {% if permite_eliminar_asistentes %}
             <a href="{% url 'panel_visitante:eliminar_asistente' tipo='externa' asistente_id=asistente.id %}"
                class="btn-eliminar-asi"
                onclick="return confirm('¿Eliminar a {{ asistente.nombre_completo }}?')">
               <i class="fas fa-trash me-1"></i>Eliminar
             </a>
+            {% endif %}
           </div>
           {% endif %}
         </div>
@@ -515,7 +579,7 @@
       {% csrf_token %}
       {% for categoria, docs in documentos_por_categoria.items %}
         {% if 'ATS' in categoria or 'Inducción y Reinducción' in categoria or 'Charla de Seguridad y Calestenia' in categoria or 'Charla de Seguridad y Calistenia' in categoria %}
-          <div class="final-cat-card">
+          <div class="final-cat-card final-cat-final-doc">
             <div class="final-cat-top">
               <div class="final-cat-top-icon">
                 <i class="fas fa-{% if 'ATS' in categoria %}clipboard-list{% elif 'Inducción' in categoria %}graduation-cap{% else %}users{% endif %}"></i>
@@ -527,7 +591,7 @@
             </div>
             <div class="final-cat-body">
             {% for doc in docs %}
-              <div class="final-doc-item">
+              <div class="final-doc-item final-doc-item-final" data-rechazado="{% if doc.id in documentos_finales_rechazados_ids %}1{% else %}0{% endif %}">
                 <div class="final-doc-head">
                   <div class="final-doc-icon">
                     <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% else %}file-alt{% endif %}"></i>
@@ -551,7 +615,7 @@
         <button type="button" id="btnCancelarModal" onclick="cerrarModalArchivosFinales()" style="background: #e5e7eb; color: #374151; font-weight: 600; padding: 10px 24px; border: none; border-radius: 8px; cursor: pointer;">
           Cancelar
         </button>
-        <button type="submit" id="btnEnviarCompleto" style="background: linear-gradient(90deg, #eae1b2, #fff177); color: #333; font-weight: bold; padding: 10px 28px; border: none; border-radius: 8px; cursor: pointer;">
+        <button type="submit" id="btnEnviarCompleto" style="background: linear-gradient(90deg, #39a900, #2d8600); color: #fff; font-weight: bold; padding: 10px 28px; border: none; border-radius: 8px; cursor: pointer;">
           <i class="fas fa-upload me-2"></i>Subir Archivos Finales
         </button>
       </div>
@@ -587,7 +651,7 @@
         <button type="button" onclick="cerrarModalSubirPorAsistente()" style="background: #e5e7eb; color: #374151; font-weight: 600; padding: 10px 24px; border: none; border-radius: 8px; cursor: pointer;">
           Cancelar
         </button>
-        <button type="submit" style="background: linear-gradient(90deg, #228B22, #2ecc40); color: #fff; font-weight: bold; padding: 10px 28px; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;" id="btnEnviarAsistente">
+        <button type="submit" style="background: linear-gradient(90deg, #39a900, #2d8600); color: #fff; font-weight: bold; padding: 10px 28px; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;" id="btnEnviarAsistente">
           <i class="fas fa-upload me-2"></i>Subir Corrección
         </button>
       </div>
@@ -658,8 +722,7 @@
 </div>
 
 <script>
-  function confirmarEnvioSolicitudFinal(event, boton, tipoPersona) {
-    const mensaje = '¿Enviar la solicitud final? Asegúrate de haber registrado todos los ' + tipoPersona + '.';
+  function confirmarEnvioSolicitudFinal(event, boton) {
     const form = boton && boton.form ? boton.form : null;
 
     if (event) {
@@ -667,23 +730,10 @@
       event.stopPropagation();
     }
 
-    if (typeof window.mConfirm === 'function') {
-      window.mConfirm(mensaje, {
-        title: 'Enviar solicitud final',
-        icon: '<i class="fas fa-paper-plane"></i>',
-        iconClass: 'cm-info',
-        confirmText: 'Sí, enviar',
-        confirmClass: 'cm-btn-success',
-        confirmIcon: 'fas fa-paper-plane'
-      }).then(function (ok) {
-        if (ok && form) {
-          form.submit();
-        }
-      });
-      return false;
+    if (form) {
+      form.submit();
     }
-
-    return confirm(mensaje);
+    return false;
   }
 
   function abrirModalActualizarAsistente(url) {
@@ -943,10 +993,161 @@
     }
   }
 
+  let docxPreviewLoaderPromiseExterno = null;
+
+  function loadScriptOnceExterno(src) {
+    return new Promise((resolve, reject) => {
+      const existing = document.querySelector(`script[src="${src}"]`);
+      if (existing) {
+        if (existing.getAttribute('data-loaded') === 'true') { resolve(); return; }
+        existing.addEventListener('load', () => resolve(), { once: true });
+        existing.addEventListener('error', () => reject(new Error(`No se pudo cargar ${src}`)), { once: true });
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = src;
+      script.async = true;
+      script.onload = () => { script.setAttribute('data-loaded', 'true'); resolve(); };
+      script.onerror = () => reject(new Error(`No se pudo cargar ${src}`));
+      document.head.appendChild(script);
+    });
+  }
+
+  function ensureDocxPreviewReadyExterno() {
+    if (window.docx && window.JSZip) return Promise.resolve();
+    if (docxPreviewLoaderPromiseExterno) return docxPreviewLoaderPromiseExterno;
+    docxPreviewLoaderPromiseExterno = loadScriptOnceExterno('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js')
+      .then(() => loadScriptOnceExterno('https://cdn.jsdelivr.net/npm/docx-preview@0.3.3/dist/docx-preview.min.js'))
+      .finally(() => {
+        if (!(window.docx && window.JSZip)) docxPreviewLoaderPromiseExterno = null;
+      });
+    return docxPreviewLoaderPromiseExterno;
+  }
+
+  function verDocumentoFinalExterno(urlViewer, titulo, extension, urlDescarga) {
+    const imgExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    let extNorm = (extension || '').toLowerCase();
+    if (extNorm && !extNorm.startsWith('.')) extNorm = '.' + extNorm;
+
+    const modal = document.createElement('div');
+    modal.style.cssText = 'display:block; position:fixed; z-index:12000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.75); overflow-y:auto;';
+
+    const contenido = document.createElement('div');
+    contenido.style.cssText = 'background:#fff; margin:2% auto; padding:20px; border-radius:12px; width:92%; max-width:960px; height:90vh; display:flex; flex-direction:column; box-shadow:0 8px 40px rgba(0,0,0,0.4);';
+
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid #e5e7eb;';
+    header.innerHTML = `
+      <h5 style="margin:0; color:#1f2937; font-size:16px;"><i class="fas fa-file me-2" style="color:#39a900;"></i>${titulo}</h5>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <a href="${urlDescarga}" download style="background:#39a900; color:white; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:13px; display:inline-flex; align-items:center; gap:4px; font-weight:600;"><i class="fas fa-download"></i> Descargar</a>
+        <button type="button" style="background:#ef4444; color:white; border:none; font-size:18px; cursor:pointer; width:36px; height:36px; border-radius:6px; display:flex; align-items:center; justify-content:center;">&times;</button>
+      </div>`;
+
+    const cuerpo = document.createElement('div');
+    cuerpo.style.cssText = 'flex:1; overflow:auto; border:1px solid #e5e7eb; border-radius:8px; background:#f0f0f0; display:flex; align-items:center; justify-content:center;';
+
+    if (extNorm === '.pdf' || imgExts.includes(extNorm)) {
+      cuerpo.innerHTML = '<iframe src="' + urlViewer + '" style="width:100%; height:100%; min-height:600px; border:none;"></iframe>';
+    } else if (extNorm === '.docx') {
+      cuerpo.innerHTML = '<div id="docxPreviewContainerExterno" style="width:100%; height:100%; overflow:auto; background:#fff; padding:24px;">'
+        + '<div style="text-align:center; color:#6b7280; padding:40px 20px;"><i class="fas fa-spinner fa-spin" style="font-size:26px; display:block; margin-bottom:12px;"></i>Cargando documento Word...</div></div>';
+      ensureDocxPreviewReadyExterno()
+        .then(() => fetch(urlViewer, { credentials: 'same-origin' }))
+        .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
+        .then(buf => {
+          const c = document.getElementById('docxPreviewContainerExterno');
+          if (!c) return;
+          c.innerHTML = '';
+          return window.docx.renderAsync(buf, c, null, { inWrapper: true, breakPages: true });
+        })
+        .catch(err => {
+          const c = document.getElementById('docxPreviewContainerExterno');
+          if (!c) return;
+          c.innerHTML = '<div style="text-align:center; padding:50px; color:#6b7280;"><i class="fas fa-file-word" style="font-size:64px; color:#9ca3af; display:block; margin-bottom:20px;"></i><p style="font-size:16px; margin-bottom:20px;">No se pudo mostrar el archivo Word.</p><a href="' + urlDescarga + '" download style="background:#39a900; color:white; padding:12px 28px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:8px;"><i class="fas fa-download"></i> Descargar</a></div>';
+        });
+    } else {
+      cuerpo.innerHTML = '<div style="text-align:center; padding:50px; color:#6b7280;"><i class="fas fa-file-alt" style="font-size:64px; color:#9ca3af; display:block; margin-bottom:20px;"></i><p style="font-size:16px; margin-bottom:20px;">Vista previa no disponible para este tipo de archivo.</p><a href="' + urlDescarga + '" download style="background:#39a900; color:white; padding:12px 28px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:8px;"><i class="fas fa-download"></i> Descargar</a></div>';
+    }
+
+    contenido.appendChild(header);
+    contenido.appendChild(cuerpo);
+    modal.appendChild(contenido);
+    document.body.appendChild(modal);
+
+    header.querySelector('button').onclick = () => { modal.remove(); document.body.style.overflow = ''; };
+    modal.onclick = e => { if (e.target === modal) { modal.remove(); document.body.style.overflow = ''; } };
+    document.body.style.overflow = 'hidden';
+  }
+
   function abrirModalArchivosFinales(esCorreccion) {
     esModalCorreccion = esCorreccion;
+    aplicarFiltroArchivosFinales(esCorreccion);
     document.getElementById('modalArchivosFinales').style.display = 'block';
     document.body.style.overflow = 'hidden';
+  }
+
+  function aplicarFiltroArchivosFinales(esCorreccion) {
+    const modal = document.getElementById('modalArchivosFinales');
+    if (!modal) return;
+
+    const subtitle = modal.querySelector('.final-modal-subtitle');
+    const items = modal.querySelectorAll('.final-doc-item-final');
+    const categorias = modal.querySelectorAll('.final-cat-final-doc');
+    let hayRechazados = false;
+
+    items.forEach((item) => {
+      const esRechazado = item.dataset.rechazado === '1';
+      const input = item.querySelector('input[type="file"]');
+      const errorSpan = item.querySelector('.error-mensaje');
+
+      if (esCorreccion) {
+        const mostrar = esRechazado;
+        item.style.display = mostrar ? '' : 'none';
+        if (input) {
+          input.disabled = !mostrar;
+          if (!mostrar) {
+            input.value = '';
+          }
+        }
+        if (mostrar) {
+          hayRechazados = true;
+        }
+      } else {
+        item.style.display = '';
+        if (input) {
+          input.disabled = false;
+        }
+      }
+
+      if (errorSpan) {
+        errorSpan.style.display = 'none';
+      }
+    });
+
+    categorias.forEach((categoriaCard) => {
+      const visibles = categoriaCard.querySelectorAll('.final-doc-item-final:not([style*="display: none"])').length;
+      categoriaCard.style.display = visibles > 0 ? '' : 'none';
+    });
+
+    if (subtitle) {
+      subtitle.textContent = esCorreccion
+        ? 'Suba únicamente los archivos finales rechazados para continuar el proceso:'
+        : 'Suba los archivos requeridos para finalizar el proceso:';
+    }
+
+    if (esCorreccion && !hayRechazados) {
+      categorias.forEach((categoriaCard) => {
+        categoriaCard.style.display = '';
+      });
+      items.forEach((item) => {
+        item.style.display = '';
+        const input = item.querySelector('input[type="file"]');
+        if (input) {
+          input.disabled = false;
+        }
+      });
+    }
   }
 
   function cerrarModalArchivosFinales() {
@@ -970,8 +1171,8 @@
       const fileInputs = form.querySelectorAll('input[type="file"]');
       fileInputs.forEach(input => input.style.borderColor = '#e5e7eb');
       const btn = document.getElementById('btnEnviarCompleto');
-      btn.style.background = 'linear-gradient(90deg, #eae1b2, #fff177)';
-      btn.style.color = '#333';
+      btn.style.background = 'linear-gradient(90deg, #39a900, #2d8600)';
+      btn.style.color = '#fff';
       btn.innerHTML = '<i class="fas fa-upload me-2"></i>Subir Archivos Finales';
       btn.disabled = false;
     }
@@ -1035,7 +1236,7 @@
     
     if (statusMensaje) {
       statusMensaje.style.display = 'block';
-      statusContenido.innerHTML = '<div style="background: #e0f2fe; border-left: 4px solid #0284c7; padding: 12px; border-radius: 6px; color: #075985;"><i class="fas fa-spinner fa-spin me-2"></i>Enviando solicitud...</div>';
+      statusContenido.innerHTML = '<div style="background: #eef9e8; border-left: 4px solid #39a900; padding: 12px; border-radius: 6px; color: #1f5f16;"><i class="fas fa-spinner fa-spin me-2"></i>Enviando solicitud...</div>';
     }
 
     try {
@@ -1148,6 +1349,9 @@
       const extensionesPermitidas = ['pdf', 'doc', 'docx'];
       fileInputs.forEach(input => {
         input.addEventListener('change', function() {
+          if (this.disabled) {
+            return;
+          }
           const errorId = this.id.replace('input_archivo_', 'error_');
           const errorSpan = document.getElementById(errorId);
           if (!errorSpan || this.files.length === 0) {
@@ -1179,6 +1383,9 @@
         let hayErrores = false;
         
         fileInputs.forEach(input => {
+          if (input.disabled) {
+            return;
+          }
           if (!input.files || input.files.length === 0) {
             // Mostrar error en este campo
             const errorId = input.id.replace('input_archivo_', 'error_');
@@ -1209,7 +1416,7 @@
         if (hayErrores) {
         // Permitir corrección parcial: basta con adjuntar al menos un archivo final.
         const hayArchivoSeleccionado = Array.from(fileInputs).some(
-          input => input.files && input.files.length > 0
+          input => !input.disabled && input.files && input.files.length > 0
         );
         if (!hayArchivoSeleccionado) {
           const statusDiv = document.getElementById('statusMensaje');
@@ -1270,7 +1477,7 @@
                 }
                 statusDiv.style.display = 'block';
                 statusContenido.innerHTML = `
-                  <div style="background: #e0f2fe; border: 1px solid #93c5fd; border-radius: 8px; padding: 12px; color: #075985;">
+                  <div style="background: #eef9e8; border: 1px solid #c7e6a8; border-radius: 8px; padding: 12px; color: #1f5f16;">
                     <i class="fas fa-info-circle me-2"></i><strong>Archivo(s) guardado(s).</strong> Aún faltan ${pendientesCorreccion} archivo(s)/corrección(es) para completar el envío final.
                   </div>
                 `;
@@ -1289,7 +1496,7 @@
             // SI es corrección y aún faltan pendientes, mantener flujo abierto.
             if (!listoParaConfirmar) {
               statusDiv.style.display = 'block';
-              statusContenido.innerHTML = `<div style="background: #e0f2fe; border: 1px solid #93c5fd; border-radius: 8px; padding: 12px; color: #075985;"><i class="fas fa-info-circle me-2"></i>Corrección cargada. Aún faltan ${pendientesCorreccion} corrección(es).</div>`;
+              statusContenido.innerHTML = `<div style="background: #eef9e8; border: 1px solid #c7e6a8; border-radius: 8px; padding: 12px; color: #1f5f16;"><i class="fas fa-info-circle me-2"></i>Corrección cargada. Aún faltan ${pendientesCorreccion} corrección(es).</div>`;
               btn.style.background = 'linear-gradient(90deg, #10b981, #059669)';
               btn.style.color = '#fff';
               btn.innerHTML = '<i class="fas fa-check me-2"></i>Guardado';
@@ -1312,7 +1519,7 @@
             // Mostrar modal de confirmación
             setTimeout(function() {
               cerrarModalArchivosFinales();
-              abrirModalConfirmacion();
+              ejecutarEnvioFinal();
             }, 1200);
 
           } else {
@@ -1375,7 +1582,7 @@
         btnEnviarAsistente.disabled = true;
         btnEnviarAsistente.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Procesando...';
         statusMensaje.style.display = 'block';
-        statusContenido.innerHTML = '<div style="background: #e0f2fe; border-left: 4px solid #0284c7; padding: 12px; border-radius: 6px; color: #075985;"><i class="fas fa-spinner fa-spin me-2"></i>Subiendo corrección...</div>';
+        statusContenido.innerHTML = '<div style="background: #eef9e8; border-left: 4px solid #39a900; padding: 12px; border-radius: 6px; color: #1f5f16;"><i class="fas fa-spinner fa-spin me-2"></i>Subiendo corrección...</div>';
 
         try {
           if (!this.action || this.action.includes('/interna//') || this.action.includes('/externa//')) {

@@ -123,6 +123,12 @@
     z-index: 1100;
 }
 
+/* Evita conflicto con Bootstrap .sticky-top que devuelve la navbar al flujo normal. */
+.navbar.sticky-top {
+    position: fixed !important;
+    top: 0;
+}
+
 /* Fondo verde para el footer igual a la navbar */
 .bg-navbar-green {
     background-color: #00af00 !important;

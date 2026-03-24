@@ -1,9 +1,47 @@
 from django import forms
+from django_recaptcha.fields import ReCaptchaField
+from django_recaptcha.widgets import ReCaptchaV2Checkbox
 from .models import RegistroVisitante
 import re
 
 
+class LoginResponsableForm(forms.Form):
+    documento = forms.CharField(
+        label="Numero de Documento",
+        max_length=20,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "documento",
+                "placeholder": "Ingrese su numero de documento",
+                "required": True,
+                "autofocus": True,
+            }
+        ),
+    )
+    contrasena = forms.CharField(
+        label="Contrasena",
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "form-control",
+                "id": "contrasena",
+                "placeholder": "Ingrese su contrasena",
+                "required": True,
+            }
+        ),
+    )
+    captcha = ReCaptchaField(
+        widget=ReCaptchaV2Checkbox,
+        error_messages={"required": "Debe completar el captcha."},
+    )
+
+    def clean_documento(self):
+        return self.cleaned_data.get("documento", "").strip()
+
+
 class RegistroVisitanteForm(forms.Form):
+    DOMINIOS_CORREO_INTERNO = ("@sena.edu.co",)
+
     nombre = forms.CharField(
         label="Nombre",
         max_length=100,
@@ -155,12 +193,44 @@ class RegistroVisitanteForm(forms.Form):
         cleaned_data = super().clean()
         password1 = cleaned_data.get("password1")
         password2 = cleaned_data.get("password2")
+        rol = cleaned_data.get("rol")
+        correo = cleaned_data.get("correo", "").strip().lower()
+
+        if rol == "interno" and correo:
+            if not any(correo.endswith(dominio) for dominio in self.DOMINIOS_CORREO_INTERNO):
+                self.add_error(
+                    "correo",
+                    "Para usuario interno, el correo debe terminar en @sena.edu.co.",
+                )
 
         if password1 and password2:
             if password1 != password2:
                 raise forms.ValidationError("Las contrasenias no coinciden.")
 
         return cleaned_data
+
+
+class VerificacionCodigoRegistroForm(forms.Form):
+    codigo = forms.CharField(
+        label="Codigo de verificacion",
+        max_length=6,
+        min_length=6,
+        required=True,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Ingrese el codigo de 6 digitos",
+                "inputmode": "numeric",
+                "autocomplete": "one-time-code",
+            }
+        ),
+    )
+
+    def clean_codigo(self):
+        codigo = self.cleaned_data.get("codigo", "").strip()
+        if not codigo.isdigit():
+            raise forms.ValidationError("El codigo debe contener solo numeros.")
+        return codigo
 
 
 class PasswordResetRequestForm(forms.Form):

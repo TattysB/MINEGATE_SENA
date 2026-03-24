@@ -292,7 +292,7 @@
         </div>
     {% endif %}
 
-    <form method="POST" enctype="multipart/form-data">
+    <form id="formAprendiz" method="POST" enctype="multipart/form-data">
         {% csrf_token %}
         <div class="row">
             <div class="col-xl-5">
@@ -404,7 +404,7 @@
                     <!-- Nota importante -->
                     <div class="alert alert-info alert-dismissible fade show" role="alert" style="margin-bottom: 20px;">
                         <i class="fas fa-info-circle me-2"></i>
-                        <strong>Importante:</strong> Para aprendices internos se solicitan estos documentos: Auto Reporte de Salud (obligatorio) y Autorizacion de Padres (solo si aplica), este ultimo es en caso de ser menor de edad.
+                        <strong>Importante:</strong> El reporte de condiciones de salud es obligatorio. La autorización de padres solo aplica para Tarjeta de Identidad (TI).
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
 
@@ -412,7 +412,7 @@
                     <div class="mb-4">
                         {% if documentos_por_categoria %}
                             {% for categoria, docs in documentos_por_categoria.items %}
-                                {% if categoria == '👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud' or categoria == '📋 Formato Autorización Padres de Familia' %}
+                                {% if categoria == '👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud' %}
                                     <div class="mb-2 mt-3">
                                         <span class="doc-required-category">{{ categoria }}</span>
                                     </div>
@@ -421,12 +421,7 @@
                                             <label style="font-weight: 600; margin-bottom: 8px; display: block; color: #1f2937;">
                                                 <i class="fas fa-upload me-2" style="color: #667eea;"></i>
                                                 Cargar {{ doc.titulo }}
-                                                {% if categoria == '👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud' %}
-                                                    <span class="required">*</span>
-                                                {% endif %}
-                                                {% if categoria == '📋 Formato Autorización Padres de Familia' %}
-                                                    <span class="badge bg-warning text-dark ms-2">Solo si aplica</span>
-                                                {% endif %}
+                                                <span class="required">*</span>
                                                 {% if doc.id in docs_subidos_ids %}
                                                     <span class="badge bg-success ms-2">Ya cargado</span>
                                                 {% endif %}
@@ -436,8 +431,7 @@
                                                 name="documento_{{ doc.id }}"
                                                 class="form-control"
                                                 accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                                                data-required="{% if categoria == '👩🏻‍⚕️ Formato Auto Reporte Condiciones de Salud' and doc.id not in docs_subidos_ids %}true{% else %}false{% endif %}"
-                                                data-autorizacion-padres="{% if categoria == '📋 Formato Autorización Padres de Familia' %}true{% else %}false{% endif %}"
+                                                data-required="{% if doc.id not in docs_subidos_ids %}true{% else %}false{% endif %}"
                                                 data-ya-cargado="{% if doc.id in docs_subidos_ids %}true{% else %}false{% endif %}"
                                                 data-doc-titulo="{{ doc.titulo }}"
                                                 style="padding: 10px; border-radius: 6px; border: 1px solid #d1d5db;"
@@ -448,6 +442,37 @@
                                             <small style="color: #6b7280; display: block; margin-top: 6px;"><i class="fas fa-info-circle me-1"></i>Formatos aceptados: PDF, DOC, DOCX (Max. 10MB)</small>
                                         </div>
                                     {% endfor %}
+                                {% endif %}
+                            {% endfor %}
+
+                            {% for categoria, docs in documentos_por_categoria.items %}
+                                {% if categoria == '📋 Formato Autorización Padres de Familia' %}
+                                    <div id="bloqueAutorizacionPadresAprendiz" style="display:none;">
+                                        <div class="mb-2 mt-3">
+                                            <span class="doc-required-category">{{ categoria }}</span>
+                                        </div>
+                                        {% for doc in docs %}
+                                            <div style="padding: 15px; background: #f3f4f6; border: 2px solid #d1d5db; border-radius: 8px; margin-bottom: 12px;">
+                                                <label style="font-weight: 600; margin-bottom: 8px; display: block; color: #1f2937;">
+                                                    <i class="fas fa-upload me-2" style="color: #667eea;"></i>
+                                                    Cargar {{ doc.titulo }}
+                                                    {% if doc.id in docs_subidos_ids %}
+                                                        <span class="badge bg-success ms-2">Ya cargado</span>
+                                                    {% endif %}
+                                                </label>
+                                                <input
+                                                    type="file"
+                                                    name="documento_{{ doc.id }}"
+                                                    class="form-control input-autorizacion-padres-aprendiz"
+                                                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                                    data-ya-cargado="{% if doc.id in docs_subidos_ids %}true{% else %}false{% endif %}"
+                                                    data-doc-titulo="{{ doc.titulo }}"
+                                                    style="padding: 10px; border-radius: 6px; border: 1px solid #d1d5db;"
+                                                >
+                                                <small style="color: #6b7280; display: block; margin-top: 6px;"><i class="fas fa-info-circle me-1"></i>Se muestra únicamente cuando el tipo de documento es TI.</small>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
                                 {% endif %}
                             {% endfor %}
                         {% else %}
@@ -544,10 +569,24 @@ function verDocumento(urlViewer, titulo, extension, urlDescarga) {
 <!-- Validación de Documentos Requeridos -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const formulario = document.querySelector('form');
+    const formulario = document.getElementById('formAprendiz') || document.querySelector('form');
     const btnGuardar = document.getElementById('btnGuardar');
+    const modoEmbed = new URLSearchParams(window.location.search).get('embed') === '1';
     const tipoDocumentoSelect = document.querySelector('select[name="tipo_documento"]');
     const extensionesPermitidas = ['.pdf', '.doc', '.docx'];
+    const tamanoMaximoBytes = 10 * 1024 * 1024;
+    const regexNombre = /^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s'-]{2,100}$/;
+    const regexDocumento = /^[0-9]{5,10}$/;
+    const regexCorreo = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const regexTelefono = /^[\+]?[0-9\s\-]{7,20}$/;
+
+    const campoNombre = document.querySelector('input[name="nombre"]');
+    const campoApellido = document.querySelector('input[name="apellido"]');
+    const campoDocumento = document.querySelector('input[name="numero_documento"]');
+    const campoCorreo = document.querySelector('input[name="correo"]');
+    const campoTelefono = document.querySelector('input[name="telefono"]');
+    const bloqueAutorizacionPadresAprendiz = document.getElementById('bloqueAutorizacionPadresAprendiz');
+    const inputsAutorizacionPadresAprendiz = Array.from(document.querySelectorAll('.input-autorizacion-padres-aprendiz'));
 
     function obtenerExtension(nombreArchivo) {
         const punto = nombreArchivo.lastIndexOf('.');
@@ -574,9 +613,36 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    function normalizarEspacios(valor) {
+        return (valor || '').trim().replace(/\s+/g, ' ');
+    }
+
+    function alternarAutorizacionPadresAprendiz() {
+        if (!tipoDocumentoSelect || !bloqueAutorizacionPadresAprendiz) {
+            return;
+        }
+
+        const mostrar = tipoDocumentoSelect.value === 'TI';
+        bloqueAutorizacionPadresAprendiz.style.display = mostrar ? 'block' : 'none';
+        inputsAutorizacionPadresAprendiz.forEach((input) => {
+            input.disabled = !mostrar;
+            if (!mostrar) {
+                input.value = '';
+            }
+        });
+    }
+
     document.querySelectorAll('input[type="file"][name^="documento_"]').forEach(campo => {
         campo.addEventListener('change', function() {
             if (!this.files || !this.files.length) {
+                return;
+            }
+
+            if (this.files[0].size > tamanoMaximoBytes) {
+                this.value = '';
+                mostrarAlertaError(
+                    '<i class="fas fa-exclamation-circle me-2"></i><strong>Archivo demasiado grande:</strong><br>Cada archivo debe pesar máximo 10MB.'
+                );
                 return;
             }
 
@@ -591,14 +657,82 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     if (formulario && btnGuardar) {
+        alternarAutorizacionPadresAprendiz();
+        if (tipoDocumentoSelect) {
+            tipoDocumentoSelect.addEventListener('change', alternarAutorizacionPadresAprendiz);
+        }
+
         formulario.addEventListener('submit', function(evento) {
             const camposArchivo = Array.from(document.querySelectorAll('input[type="file"][name^="documento_"]'));
             const camposRequeridos = Array.from(document.querySelectorAll('input[type="file"][data-required="true"]'));
-            const esMenorEdad = tipoDocumentoSelect && tipoDocumentoSelect.value === 'TI';
             const archivosFormatoInvalido = [];
+            const archivosTamanoInvalido = [];
+            const erroresDatos = [];
+
+            const nombre = normalizarEspacios(campoNombre ? campoNombre.value : '');
+            const apellido = normalizarEspacios(campoApellido ? campoApellido.value : '');
+            const numeroDocumento = normalizarEspacios(campoDocumento ? campoDocumento.value : '');
+            const correo = normalizarEspacios(campoCorreo ? campoCorreo.value : '').toLowerCase();
+            const telefono = normalizarEspacios(campoTelefono ? campoTelefono.value : '');
+
+            if (campoNombre) {
+                campoNombre.style.borderColor = '#d1d5db';
+                if (!regexNombre.test(nombre)) {
+                    erroresDatos.push('El nombre debe contener solo letras y tener entre 2 y 100 caracteres.');
+                    campoNombre.style.borderColor = '#dc2626';
+                }
+            }
+
+            if (campoApellido) {
+                campoApellido.style.borderColor = '#d1d5db';
+                if (!regexNombre.test(apellido)) {
+                    erroresDatos.push('El apellido debe contener solo letras y tener entre 2 y 100 caracteres.');
+                    campoApellido.style.borderColor = '#dc2626';
+                }
+            }
+
+            if (campoDocumento) {
+                campoDocumento.style.borderColor = '#d1d5db';
+                if (!regexDocumento.test(numeroDocumento)) {
+                    erroresDatos.push('El número de documento debe contener entre 5 y 10 dígitos numéricos.');
+                    campoDocumento.style.borderColor = '#dc2626';
+                }
+            }
+
+            if (campoCorreo) {
+                campoCorreo.style.borderColor = '#d1d5db';
+                if (!regexCorreo.test(correo)) {
+                    erroresDatos.push('Ingresa un correo válido con dominio (ejemplo: usuario@dominio.com).');
+                    campoCorreo.style.borderColor = '#dc2626';
+                }
+            }
+
+            if (campoTelefono) {
+                campoTelefono.style.borderColor = '#d1d5db';
+                if (telefono && !regexTelefono.test(telefono)) {
+                    erroresDatos.push('El teléfono solo puede contener números, espacios, guiones o + (7 a 15 dígitos).');
+                    campoTelefono.style.borderColor = '#dc2626';
+                }
+            }
+
+            if (erroresDatos.length > 0) {
+                evento.preventDefault();
+                mostrarAlertaError(
+                    '<i class="fas fa-exclamation-circle me-2"></i><strong>Corrige los siguientes campos:</strong><ul class="mb-0 mt-2">'
+                    + erroresDatos.map(error => `<li>${error}</li>`).join('')
+                    + '</ul>'
+                );
+                return;
+            }
 
             camposArchivo.forEach(campo => {
                 if (campo.files && campo.files.length) {
+                    if (campo.files[0].size > tamanoMaximoBytes) {
+                        archivosTamanoInvalido.push(campo.files[0].name);
+                        campo.style.borderColor = '#dc2626';
+                        campo.style.borderWidth = '2px';
+                    }
+
                     const extension = obtenerExtension(campo.files[0].name);
                     if (!extensionesPermitidas.includes(extension)) {
                         archivosFormatoInvalido.push(campo.files[0].name);
@@ -608,23 +742,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
 
-            if (archivosFormatoInvalido.length > 0) {
+            if (archivosFormatoInvalido.length > 0 || archivosTamanoInvalido.length > 0) {
                 evento.preventDefault();
+
+                let detalleErroresArchivos = '';
+                if (archivosFormatoInvalido.length > 0) {
+                    detalleErroresArchivos += '<strong>Formatos no permitidos:</strong><ul class="mb-2 mt-2">'
+                        + archivosFormatoInvalido.map(archivo => `<li>${archivo}</li>`).join('')
+                        + '</ul>';
+                }
+
+                if (archivosTamanoInvalido.length > 0) {
+                    detalleErroresArchivos += '<strong>Archivos que superan 10MB:</strong><ul class="mb-0 mt-2">'
+                        + archivosTamanoInvalido.map(archivo => `<li>${archivo}</li>`).join('')
+                        + '</ul>';
+                }
+
                 mostrarAlertaError(
-                    '<i class="fas fa-exclamation-circle me-2"></i><strong>Formatos no permitidos:</strong><br>Solo se permiten PDF o Word (.doc, .docx).<ul class="mb-0 mt-2">'
-                    + archivosFormatoInvalido.map(archivo => `<li>${archivo}</li>`).join('')
-                    + '</ul>'
+                    '<i class="fas fa-exclamation-circle me-2"></i>'
+                    + detalleErroresArchivos
                 );
                 return;
-            }
-
-            if (esMenorEdad) {
-                const camposAutorizacion = document.querySelectorAll('input[type="file"][data-autorizacion-padres="true"]');
-                camposAutorizacion.forEach(campo => {
-                    if (campo.dataset.yaCargado !== 'true' && !camposRequeridos.includes(campo)) {
-                        camposRequeridos.push(campo);
-                    }
-                });
             }
 
             let todosLosArchivosCompletos = true;
@@ -655,7 +793,62 @@ document.addEventListener('DOMContentLoaded', function() {
                         ${archivosNoSubidos.map(archivo => `<li>${archivo}</li>`).join('')}
                     </ul>
                 `);
+                return;
             }
+
+            if (!modoEmbed) {
+                return;
+            }
+
+            evento.preventDefault();
+            btnGuardar.disabled = true;
+            btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Guardando...';
+
+            const formData = new FormData(formulario);
+            fetch(formulario.action || window.location.href, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(async function(response) {
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || data.success === false) {
+                    const errores = Array.isArray(data.errores) ? data.errores : [];
+                    const detalle = errores.length
+                        ? '<ul class="mb-0 mt-2">' + errores.map(error => `<li>${error}</li>`).join('') + '</ul>'
+                        : '';
+                    mostrarAlertaError(
+                        '<i class="fas fa-exclamation-circle me-2"></i><strong>No se pudo registrar el aprendiz.</strong>'
+                        + (data.error ? ('<br>' + data.error) : '')
+                        + detalle
+                    );
+                    btnGuardar.disabled = false;
+                    btnGuardar.innerHTML = '<i class="fas fa-plus-circle me-2"></i>Guardar Registro';
+                    return;
+                }
+
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'aprendizCreado',
+                        message: data.message || 'Aprendiz registrado correctamente.',
+                        aprendiz: data.aprendiz || null
+                    }, '*');
+                    return;
+                }
+
+                if (data.redirect_url) {
+                    window.location.href = data.redirect_url;
+                }
+            })
+            .catch(function() {
+                mostrarAlertaError(
+                    '<i class="fas fa-exclamation-circle me-2"></i><strong>Error de conexión.</strong><br>Intenta nuevamente en unos segundos.'
+                );
+                btnGuardar.disabled = false;
+                btnGuardar.innerHTML = '<i class="fas fa-plus-circle me-2"></i>Guardar Registro';
+            });
         });
     }
 });

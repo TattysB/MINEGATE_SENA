@@ -8,9 +8,18 @@ from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.views.decorators.csrf import csrf_protect
 from django.urls import reverse
-from datetime import datetime
-from visitaInterna.models import VisitaInterna, AsistenteVisitaInterna
-from visitaExterna.models import VisitaExterna, AsistenteVisitaExterna
+from datetime import datetime, timedelta
+import random
+from visitaInterna.models import (
+    VisitaInterna,
+    AsistenteVisitaInterna,
+    HistorialAccionVisitaInterna,
+)
+from visitaExterna.models import (
+    VisitaExterna,
+    AsistenteVisitaExterna,
+    HistorialAccionVisitaExterna,
+)
 from documentos.models import (
     Documento,
     DocumentoSubidoAsistente,
@@ -27,12 +36,21 @@ from .forms import (
     PasswordResetConfirmForm,
     ActualizarPerfilForm,
     CambiarContrasenaForm,
+    LoginResponsableForm,
+    VerificacionCodigoRegistroForm,
 )
 from .models import RegistroVisitante
 from django.conf import settings
 from django.db import IntegrityError, transaction
 from pathlib import Path
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
+from django.utils import timezone
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
+import re
+import os
+import csv
+import io
 
 
 CATEGORIAS_ARCHIVOS_FINALES = {
@@ -41,7 +59,352 @@ CATEGORIAS_ARCHIVOS_FINALES = {
     "charla de seguridad y calestenia",
     "charla de seguridad y calistenia",
 }
+CATEGORIAS_DOCUMENTOS_REGISTRO = {
+    "formato auto reporte condiciones de salud",
+    "formato autorizacion padres de familia",
+}
 AUTH_VISITANTE_MESSAGE_TAG = "auth_visitante"
+REGISTRO_VERIFICACION_SESSION_KEY = "registro_verificacion_pendiente"
+REGISTRO_VERIFICACION_TTL_MINUTOS = 10
+FORMATOS_CARGA_MASIVA_ASISTENTES = {".csv", ".xlsx", ".xls", ".pdf"}
+MARCADOR_SOLICITUD_FINAL_ENVIADA = "[SOLICITUD_FINAL_ENVIADA]"
+COLUMNAS_CARGA_MASIVA_ASISTENTES = [
+    "nombre_completo",
+    "tipo_documento",
+    "numero_documento",
+    "correo",
+    "telefono",
+]
+EJEMPLOS_CARGA_MASIVA_ASISTENTES = [
+    {
+        "nombre_completo": "Laura Gomez",
+        "tipo_documento": "CC",
+        "numero_documento": "1022334455",
+        "correo": "laura.gomez@example.com",
+        "telefono": "3001234567",
+    },
+    {
+        "nombre_completo": "Mateo Rodriguez",
+        "tipo_documento": "TI",
+        "numero_documento": "1099988877",
+        "correo": "mateo.rodriguez@example.com",
+        "telefono": "3017654321",
+    },
+]
+MAX_INTENTOS_LOGIN = 5
+MINUTOS_BLOQUEO_LOGIN = 10
+
+
+def _generar_codigo_verificacion(longitud=6):
+    generador = random.SystemRandom()
+    return "".join(str(generador.randint(0, 9)) for _ in range(longitud))
+
+
+def _normalizar_encabezado_importacion(valor):
+    return (
+        str(valor or "")
+        .strip()
+        .lower()
+        .replace(" ", "_")
+        .replace("á", "a")
+        .replace("é", "e")
+        .replace("í", "i")
+        .replace("ó", "o")
+        .replace("ú", "u")
+    )
+
+
+def _mapear_tipo_documento_importacion(valor):
+    tipo = str(valor or "").strip().upper()
+    equivalencias = {
+        "CEDULA": "CC",
+        "CEDULA_DE_CIUDADANIA": "CC",
+        "TARJETA_DE_IDENTIDAD": "TI",
+        "PASAPORTE": "PP",
+    }
+    return equivalencias.get(tipo, tipo)
+
+
+def _extraer_filas_csv_asistentes(archivo):
+    contenido = archivo.read()
+    if isinstance(contenido, bytes):
+        try:
+            texto = contenido.decode("utf-8-sig")
+        except UnicodeDecodeError:
+            texto = contenido.decode("latin-1")
+    else:
+        texto = str(contenido)
+
+    lector = csv.DictReader(io.StringIO(texto))
+    if not lector.fieldnames:
+        return [], ["El CSV no contiene encabezados."]
+
+    headers = [_normalizar_encabezado_importacion(h) for h in lector.fieldnames]
+    faltantes = [c for c in COLUMNAS_CARGA_MASIVA_ASISTENTES if c not in headers]
+    if faltantes:
+        return [], [
+            "La plantilla no coincide. Faltan columnas: " + ", ".join(faltantes)
+        ]
+
+    filas = []
+    for idx, row in enumerate(lector, start=2):
+        fila = {}
+        for key, value in row.items():
+            fila[_normalizar_encabezado_importacion(key)] = (value or "").strip()
+        if not any(fila.values()):
+            continue
+        filas.append((idx, fila))
+
+    if not filas:
+        return [], ["No se encontraron filas de asistentes para importar."]
+
+    return filas, []
+
+
+def _extraer_filas_excel_asistentes(archivo):
+    try:
+        from openpyxl import load_workbook
+    except Exception:
+        return [], [
+            "No se pudo procesar Excel. Instale openpyxl para habilitar este formato."
+        ]
+
+    try:
+        wb = load_workbook(filename=archivo, data_only=True)
+        ws = wb.active
+    except Exception:
+        return [], ["No fue posible leer el archivo Excel. Verifique la plantilla."]
+
+    encabezados = []
+    for cell in ws[1]:
+        encabezados.append(_normalizar_encabezado_importacion(cell.value))
+
+    faltantes = [c for c in COLUMNAS_CARGA_MASIVA_ASISTENTES if c not in encabezados]
+    if faltantes:
+        return [], [
+            "La plantilla no coincide. Faltan columnas: " + ", ".join(faltantes)
+        ]
+
+    filas = []
+    for idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+        fila = {}
+        for col_idx, valor in enumerate(row):
+            if col_idx >= len(encabezados):
+                continue
+            clave = encabezados[col_idx]
+            fila[clave] = "" if valor is None else str(valor).strip()
+
+        if not any(fila.values()):
+            continue
+        filas.append((idx, fila))
+
+    if not filas:
+        return [], ["No se encontraron filas de asistentes para importar."]
+
+    return filas, []
+
+
+def _extraer_filas_pdf_asistentes(archivo):
+    try:
+        from pypdf import PdfReader
+    except Exception:
+        return [], ["No se pudo procesar PDF. Instale pypdf para habilitar este formato."]
+
+    try:
+        reader = PdfReader(archivo)
+        texto = "\n".join((p.extract_text() or "") for p in reader.pages)
+    except Exception:
+        return [], ["No fue posible leer el archivo PDF. Use la plantilla descargable."]
+
+    filas = []
+    for idx, linea in enumerate(texto.splitlines(), start=1):
+        normalizada = linea.strip()
+        if not normalizada or ";" not in normalizada:
+            continue
+        partes = [p.strip() for p in normalizada.split(";")]
+        if len(partes) < 5:
+            continue
+        if _normalizar_encabezado_importacion(partes[0]) == "nombre_completo":
+            continue
+
+        filas.append(
+            (
+                idx,
+                {
+                    "nombre_completo": partes[0],
+                    "tipo_documento": partes[1],
+                    "numero_documento": partes[2],
+                    "correo": partes[3],
+                    "telefono": partes[4],
+                },
+            )
+        )
+
+    if not filas:
+        return [], [
+            "No se detectaron filas válidas en el PDF. Mantenga el formato con ';'."
+        ]
+
+    return filas, []
+
+
+def _extraer_filas_importacion_asistentes(archivo):
+    extension = os.path.splitext(getattr(archivo, "name", ""))[1].lower()
+
+    if extension not in FORMATOS_CARGA_MASIVA_ASISTENTES:
+        return [], ["Formato no permitido. Use CSV, Excel (.xlsx/.xls) o PDF."]
+
+    if extension == ".csv":
+        return _extraer_filas_csv_asistentes(archivo)
+
+    if extension in {".xlsx", ".xls"}:
+        return _extraer_filas_excel_asistentes(archivo)
+
+    return _extraer_filas_pdf_asistentes(archivo)
+
+
+def _validar_fila_asistente_importacion(fila):
+    errores = []
+    tipos_documento_validos = {"CC", "CE", "TI", "PPT", "PP"}
+
+    nombre = " ".join(str(fila.get("nombre_completo", "")).split())
+    tipo_doc = _mapear_tipo_documento_importacion(fila.get("tipo_documento"))
+    num_doc = str(fila.get("numero_documento", "")).strip()
+    correo = str(fila.get("correo", "")).strip().lower()
+    telefono = str(fila.get("telefono", "")).strip()
+
+    if not nombre or len(nombre) < 3 or len(nombre) > 80:
+        errores.append("nombre_completo invalido (3 a 80 caracteres).")
+    elif not re.fullmatch(r"[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]+", nombre):
+        errores.append("nombre_completo solo puede contener letras y espacios.")
+
+    if tipo_doc not in tipos_documento_validos:
+        errores.append("tipo_documento no valido.")
+
+    if not num_doc or not num_doc.isdigit() or not 5 <= len(num_doc) <= 10:
+        errores.append("numero_documento debe tener entre 5 y 10 digitos.")
+
+    if correo:
+        try:
+            validate_email(correo)
+        except ValidationError:
+            errores.append("correo invalido.")
+
+    if telefono:
+        if not telefono.isdigit() or not 7 <= len(telefono) <= 10:
+            errores.append("telefono debe tener entre 7 y 10 digitos.")
+
+    return {
+        "nombre_completo": nombre,
+        "tipo_documento": tipo_doc,
+        "numero_documento": num_doc,
+        "correo": correo,
+        "telefono": telefono,
+    }, errores
+
+
+def _sincronizar_asistente_con_ficha_interna(visita, datos_asistente):
+    try:
+        from panel_instructor_interno.models import Ficha, Aprendiz
+    except Exception:
+        return
+
+    ficha = Ficha.objects.filter(numero=visita.numero_ficha).first()
+    if not ficha:
+        return
+
+    existe = Aprendiz.objects.filter(
+        ficha=ficha,
+        numero_documento=datos_asistente["numero_documento"],
+    ).exists()
+    if existe:
+        return
+
+    partes_nombre = datos_asistente["nombre_completo"].split()
+    nombre = partes_nombre[0] if partes_nombre else ""
+    apellido = " ".join(partes_nombre[1:]) if len(partes_nombre) > 1 else ""
+
+    Aprendiz.objects.create(
+        ficha=ficha,
+        nombre=nombre,
+        apellido=apellido,
+        tipo_documento=datos_asistente["tipo_documento"],
+        numero_documento=datos_asistente["numero_documento"],
+        correo=datos_asistente["correo"],
+        telefono=datos_asistente["telefono"],
+        estado="activo",
+    )
+
+
+def _procesar_carga_masiva_asistentes(visita, tipo, filas, max_asistentes):
+    creados = 0
+    duplicados = 0
+    omitidos_limite = 0
+    errores = []
+
+    modelo_asistente = AsistenteVisitaInterna if tipo == "interna" else AsistenteVisitaExterna
+    total_actual = visita.asistentes.count()
+
+    for fila_numero, fila in filas:
+        if total_actual + creados >= max_asistentes:
+            omitidos_limite += 1
+            continue
+
+        datos, errores_validacion = _validar_fila_asistente_importacion(fila)
+        if errores_validacion:
+            errores.append(f"Fila {fila_numero}: {' | '.join(errores_validacion)}")
+            continue
+
+        if modelo_asistente.objects.filter(
+            visita=visita,
+            numero_documento=datos["numero_documento"],
+        ).exists():
+            duplicados += 1
+            continue
+
+        asistente = modelo_asistente.objects.create(
+            visita=visita,
+            nombre_completo=datos["nombre_completo"],
+            tipo_documento=datos["tipo_documento"],
+            numero_documento=datos["numero_documento"],
+            correo=datos["correo"],
+            telefono=datos["telefono"],
+        )
+
+        if tipo == "interna":
+            _sincronizar_asistente_con_ficha_interna(visita, datos)
+
+        asistente.tiene_doc_salud = False
+        creados += 1
+
+    return {
+        "creados": creados,
+        "duplicados": duplicados,
+        "omitidos_limite": omitidos_limite,
+        "errores": errores,
+    }
+
+
+def _enviar_codigo_verificacion_registro(correo, codigo, nombre):
+    asunto = "Codigo de verificacion de cuenta - MINEGATE"
+    html_content = render_to_string(
+        "emails/codigo_verificacion_registro.html",
+        {
+            "nombre": nombre,
+            "codigo": codigo,
+            "minutos": REGISTRO_VERIFICACION_TTL_MINUTOS,
+        },
+    )
+    text_content = strip_tags(html_content)
+
+    email = EmailMultiAlternatives(
+        subject=asunto,
+        body=text_content,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[correo],
+    )
+    email.attach_alternative(html_content, "text/html")
+    email.send()
 
 
 def _redirect_segun_rol(request, tipo=None, visita_id=None):
@@ -80,6 +443,52 @@ def _tiene_acceso_por_correo(visita, correo):
     return (visita.correo_responsable or "").strip().lower() == correo.strip().lower()
 
 
+def _solicitud_final_ya_enviada(visita, tipo):
+    """
+    Indica si la visita ya fue enviada a revision al menos una vez.
+    Se considera historico, incluso si el estado volvio a aprobada_inicial
+    por una devolucion de correcciones.
+    """
+    if visita.estado in ["documentos_enviados", "en_revision_documentos", "confirmada"]:
+        return True
+
+    if tipo == "interna":
+        if HistorialAccionVisitaInterna.objects.filter(
+            visita=visita,
+            descripcion__icontains=MARCADOR_SOLICITUD_FINAL_ENVIADA,
+        ).exists():
+            return True
+        if HistorialAccionVisitaInterna.objects.filter(
+            visita=visita,
+            tipo_accion__in=["inicio_revision", "devolucion_correccion", "confirmacion"],
+        ).exists():
+            return True
+    else:
+        if HistorialAccionVisitaExterna.objects.filter(
+            visita=visita,
+            descripcion__icontains=MARCADOR_SOLICITUD_FINAL_ENVIADA,
+        ).exists():
+            return True
+        if HistorialAccionVisitaExterna.objects.filter(
+            visita=visita,
+            tipo_accion__in=["inicio_revision", "devolucion_correccion", "confirmacion"],
+        ).exists():
+            return True
+
+    if visita.asistentes.filter(
+        estado__in=["documentos_aprobados", "documentos_rechazados"]
+    ).exists():
+        return True
+
+    filtros_docs = {"estado__in": ["aprobado", "rechazado"]}
+    if tipo == "interna":
+        filtros_docs["asistente_interna__visita"] = visita
+    else:
+        filtros_docs["asistente_externa__visita"] = visita
+
+    return DocumentoSubidoAsistente.objects.filter(**filtros_docs).exists()
+
+
 def _normalizar_categoria_texto(valor):
     return (
         str(valor or "")
@@ -97,10 +506,26 @@ def _es_categoria_archivo_final(categoria):
     return _normalizar_categoria_texto(categoria) in CATEGORIAS_ARCHIVOS_FINALES
 
 
+def _es_categoria_documento_registro(categoria):
+    return _normalizar_categoria_texto(categoria) in CATEGORIAS_DOCUMENTOS_REGISTRO
+
+
+def _agrupar_documentos_por_categoria(documentos):
+    documentos_por_categoria = {}
+    for doc in documentos:
+        categoria = doc.categoria
+        if categoria not in documentos_por_categoria:
+            documentos_por_categoria[categoria] = []
+        documentos_por_categoria[categoria].append(doc)
+    return documentos_por_categoria
+
+
 def _documentos_actuales_asistente(asistente, tipo):
-    filtros = {
-        "asistente_interna": asistente
-    } if tipo == "interna" else {"asistente_externa": asistente}
+    filtros = (
+        {"asistente_interna": asistente}
+        if tipo == "interna"
+        else {"asistente_externa": asistente}
+    )
 
     docs = (
         DocumentoSubidoAsistente.objects.filter(**filtros)
@@ -161,7 +586,9 @@ def _sincronizar_estado_asistente_por_docs(asistente, tipo):
 
 
 def _resumen_pendientes_correccion(visita, tipo):
-    asistentes_rechazados = visita.asistentes.filter(estado="documentos_rechazados").count()
+    asistentes_rechazados = visita.asistentes.filter(
+        estado="documentos_rechazados"
+    ).count()
 
     docs_finales_requeridos = Documento.objects.filter(
         categoria__in=[
@@ -208,13 +635,39 @@ def login_responsable(request):
     """
     Login para responsables de visitas usando solo documento y contraseña.
     """
+    form = LoginResponsableForm(request.POST or None)
+
     if request.method == "POST":
-        documento = request.POST.get("documento", "").strip()
-        contrasena = request.POST.get("contrasena", "")
+        if not form.is_valid():
+            return render(request, "login_responsable.html", {"form": form})
+
+        documento = form.cleaned_data["documento"]
+        contrasena = form.cleaned_data["contrasena"]
 
         visitante = RegistroVisitante.objects.filter(documento=documento).first()
 
+        if visitante and visitante.bloqueado_hasta:
+            ahora = timezone.now()
+            if visitante.bloqueado_hasta <= ahora:
+                visitante.bloqueado_hasta = None
+                visitante.intentos_fallidos = 0
+                visitante.save(update_fields=["bloqueado_hasta", "intentos_fallidos"])
+            else:
+                segundos_restantes = int((visitante.bloqueado_hasta - ahora).total_seconds())
+                minutos_restantes = max(1, (segundos_restantes + 59) // 60)
+                messages.error(
+                    request,
+                    f"Usuario bloqueado temporalmente. Intenta de nuevo en {minutos_restantes} minuto(s).",
+                    extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+                )
+                return render(request, "login_responsable.html", {"form": form})
+
         if visitante and visitante.check_password(contrasena):
+            if visitante.intentos_fallidos or visitante.bloqueado_hasta:
+                visitante.intentos_fallidos = 0
+                visitante.bloqueado_hasta = None
+                visitante.save(update_fields=["intentos_fallidos", "bloqueado_hasta"])
+
             # Guardar sesión
             request.session["responsable_correo"] = visitante.correo
             request.session["responsable_documento"] = visitante.documento
@@ -237,13 +690,37 @@ def login_responsable(request):
             else:
                 return redirect("panel_instructor_externo:panel")
 
+        if visitante:
+            visitante.intentos_fallidos += 1
+
+            if visitante.intentos_fallidos >= MAX_INTENTOS_LOGIN:
+                visitante.bloqueado_hasta = timezone.now() + timedelta(
+                    minutes=MINUTOS_BLOQUEO_LOGIN
+                )
+                visitante.save(update_fields=["intentos_fallidos", "bloqueado_hasta"])
+                messages.error(
+                    request,
+                    "Se alcanzaron 5 intentos fallidos. Tu usuario ha sido bloqueado por 10 minutos.",
+                    extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+                )
+                return render(request, "login_responsable.html", {"form": form})
+
+            visitante.save(update_fields=["intentos_fallidos"])
+            intentos_restantes = MAX_INTENTOS_LOGIN - visitante.intentos_fallidos
+            messages.error(
+                request,
+                f"Credenciales invalidas. Verifica tu documento y contrasena. Te quedan {intentos_restantes} intento(s).",
+                extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+            )
+            return render(request, "login_responsable.html", {"form": form})
+
         messages.error(
             request,
             "Credenciales invalidas. Verifica tu documento y contrasena.",
             extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
         )
 
-    return render(request, "login_responsable.html")
+    return render(request, "login_responsable.html", {"form": form})
 
 
 def registro_visita(request):
@@ -254,23 +731,47 @@ def registro_visita(request):
         form = RegistroVisitanteForm(request.POST)
 
         if form.is_valid():
-            visitante = RegistroVisitante(
-                nombre=form.cleaned_data["nombre"],
-                apellido=form.cleaned_data["apellido"],
-                tipo_documento=form.cleaned_data["tipo_documento"],
-                documento=form.cleaned_data["documento"],
-                telefono=form.cleaned_data["telefono"],
-                correo=form.cleaned_data["correo"],
-                rol=form.cleaned_data["rol"],
-            )
-            visitante.set_password(form.cleaned_data["password1"])
-            visitante.save()
-            messages.success(
+            correo = form.cleaned_data["correo"].strip().lower()
+            codigo = _generar_codigo_verificacion()
+
+            request.session[REGISTRO_VERIFICACION_SESSION_KEY] = {
+                "nombre": form.cleaned_data["nombre"],
+                "apellido": form.cleaned_data["apellido"],
+                "tipo_documento": form.cleaned_data["tipo_documento"],
+                "documento": form.cleaned_data["documento"],
+                "telefono": form.cleaned_data["telefono"],
+                "correo": correo,
+                "rol": form.cleaned_data["rol"],
+                "password1": form.cleaned_data["password1"],
+                "codigo": codigo,
+                "creado_en": timezone.now().isoformat(),
+            }
+            request.session.modified = True
+
+            try:
+                _enviar_codigo_verificacion_registro(
+                    correo=correo,
+                    codigo=codigo,
+                    nombre=form.cleaned_data["nombre"],
+                )
+            except Exception:
+                messages.error(
+                    request,
+                    "No fue posible enviar el codigo de verificacion al correo. Intente nuevamente.",
+                    extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+                )
+                return render(
+                    request,
+                    "registro_visita.html",
+                    {"form": form, "titulo": "Registro de Usuario"},
+                )
+
+            messages.info(
                 request,
-                f"Cuenta creada exitosamente para {visitante.nombre} {visitante.apellido}. Ya puedes iniciar sesion con tus credenciales.",
+                f"Enviamos un codigo de verificacion a {correo}. Ingreselo para finalizar el registro.",
                 extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
             )
-            return redirect("panel_visitante:login_responsable")
+            return redirect("panel_visitante:verificar_codigo_registro")
     else:
         form = RegistroVisitanteForm()
 
@@ -279,6 +780,101 @@ def registro_visita(request):
         "registro_visita.html",
         {"form": form, "titulo": "Registro de Usuario"},
     )
+
+
+def verificar_codigo_registro(request):
+    datos_registro = request.session.get(REGISTRO_VERIFICACION_SESSION_KEY)
+    if not datos_registro:
+        messages.warning(
+            request,
+            "No hay un registro pendiente por verificar.",
+            extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+        )
+        return redirect("panel_visitante:registro_visita")
+
+    try:
+        creado_en = datetime.fromisoformat(datos_registro.get("creado_en", ""))
+    except (TypeError, ValueError):
+        creado_en = None
+
+    expirado = True
+    if creado_en is not None:
+        expirado = (timezone.now() - creado_en).total_seconds() > (
+            REGISTRO_VERIFICACION_TTL_MINUTOS * 60
+        )
+
+    if request.method == "POST" and request.POST.get("accion") == "reenviar":
+        codigo = _generar_codigo_verificacion()
+        datos_registro["codigo"] = codigo
+        datos_registro["creado_en"] = timezone.now().isoformat()
+        request.session[REGISTRO_VERIFICACION_SESSION_KEY] = datos_registro
+        request.session.modified = True
+
+        try:
+            _enviar_codigo_verificacion_registro(
+                correo=datos_registro["correo"],
+                codigo=codigo,
+                nombre=datos_registro["nombre"],
+            )
+            messages.success(
+                request,
+                "Se envio un nuevo codigo de verificacion a su correo.",
+                extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+            )
+        except Exception:
+            messages.error(
+                request,
+                "No fue posible reenviar el codigo. Intente de nuevo.",
+                extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+            )
+        return redirect("panel_visitante:verificar_codigo_registro")
+
+    form = VerificacionCodigoRegistroForm(request.POST or None)
+
+    if request.method == "POST" and request.POST.get("accion") != "reenviar":
+        if expirado:
+            form.add_error("codigo", "El codigo ha expirado. Solicite uno nuevo.")
+        elif form.is_valid():
+            codigo_ingresado = form.cleaned_data["codigo"]
+            codigo_real = str(datos_registro.get("codigo", "")).strip()
+
+            if codigo_ingresado != codigo_real:
+                form.add_error("codigo", "Codigo incorrecto.")
+            else:
+                try:
+                    with transaction.atomic():
+                        visitante = RegistroVisitante(
+                            nombre=datos_registro["nombre"],
+                            apellido=datos_registro["apellido"],
+                            tipo_documento=datos_registro["tipo_documento"],
+                            documento=datos_registro["documento"],
+                            telefono=datos_registro["telefono"],
+                            correo=datos_registro["correo"],
+                            rol=datos_registro["rol"],
+                        )
+                        visitante.set_password(datos_registro["password1"])
+                        visitante.save()
+                except IntegrityError:
+                    form.add_error(
+                        None,
+                        "No fue posible crear la cuenta porque el correo o documento ya existe.",
+                    )
+                else:
+                    request.session.pop(REGISTRO_VERIFICACION_SESSION_KEY, None)
+                    messages.success(
+                        request,
+                        f"Cuenta creada exitosamente para {visitante.nombre} {visitante.apellido}. Ya puedes iniciar sesion con tus credenciales.",
+                        extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+                    )
+                    return redirect("panel_visitante:login_responsable")
+
+    context = {
+        "form": form,
+        "correo": datos_registro.get("correo"),
+        "expirado": expirado,
+        "minutos": REGISTRO_VERIFICACION_TTL_MINUTOS,
+    }
+    return render(request, "verificar_codigo_registro.html", context)
 
 
 def logout_responsable(request):
@@ -341,6 +937,130 @@ def panel_responsable(request):
             extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
         )
         return redirect("panel_visitante:login_responsable")
+
+
+def descargar_plantilla_carga_masiva_asistentes(request, tipo, visita_id, formato):
+    if not request.session.get("responsable_autenticado"):
+        messages.warning(
+            request,
+            "Debe iniciar sesión para acceder.",
+            extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
+        )
+        return redirect("panel_visitante:login_responsable")
+
+    correo = request.session.get("responsable_correo")
+    if tipo == "interna":
+        get_object_or_404(VisitaInterna, id=visita_id, correo_responsable__iexact=correo)
+        messages.error(
+            request,
+            "La plantilla de carga masiva de asistentes aplica solo para visitas externas.",
+        )
+        return redirect(
+            "panel_visitante:registrar_asistentes", tipo=tipo, visita_id=visita_id
+        )
+    elif tipo == "externa":
+        get_object_or_404(VisitaExterna, id=visita_id, correo_responsable__iexact=correo)
+    else:
+        messages.error(request, "Tipo de visita no válido.")
+        return _redirect_segun_rol(request)
+
+    formato = str(formato or "").lower()
+
+    if formato == "csv":
+        response = HttpResponse(content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = (
+            'attachment; filename="plantilla_carga_masiva_asistentes.csv"'
+        )
+        writer = csv.DictWriter(response, fieldnames=COLUMNAS_CARGA_MASIVA_ASISTENTES)
+        writer.writeheader()
+        writer.writerows(EJEMPLOS_CARGA_MASIVA_ASISTENTES)
+        return response
+
+    if formato == "xlsx":
+        try:
+            from openpyxl import Workbook
+        except Exception:
+            messages.error(
+                request,
+                "No fue posible generar la plantilla Excel. Instale openpyxl.",
+            )
+            return redirect(
+                "panel_visitante:registrar_asistentes", tipo=tipo, visita_id=visita_id
+            )
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Plantilla"
+        ws.append(COLUMNAS_CARGA_MASIVA_ASISTENTES)
+        for ejemplo in EJEMPLOS_CARGA_MASIVA_ASISTENTES:
+            ws.append([ejemplo.get(col, "") for col in COLUMNAS_CARGA_MASIVA_ASISTENTES])
+
+        salida = io.BytesIO()
+        wb.save(salida)
+        salida.seek(0)
+
+        response = HttpResponse(
+            salida.getvalue(),
+            content_type=(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            ),
+        )
+        response["Content-Disposition"] = (
+            'attachment; filename="plantilla_carga_masiva_asistentes.xlsx"'
+        )
+        return response
+
+    if formato == "pdf":
+        from reportlab.lib.pagesizes import letter
+        from reportlab.pdfgen import canvas
+
+        output = io.BytesIO()
+        pdf = canvas.Canvas(output, pagesize=letter)
+
+        y = 760
+        pdf.setFont("Helvetica-Bold", 12)
+        pdf.drawString(40, y, "Plantilla carga masiva de asistentes")
+        y -= 22
+        pdf.setFont("Helvetica", 9)
+        pdf.drawString(
+            40,
+            y,
+            "Cada fila debe conservar este orden y usar ';' como separador:",
+        )
+        y -= 14
+        pdf.drawString(40, y, "; ".join(COLUMNAS_CARGA_MASIVA_ASISTENTES))
+        y -= 22
+        pdf.setFont("Helvetica-Bold", 10)
+        pdf.drawString(40, y, "Ejemplos:")
+        y -= 16
+        pdf.setFont("Helvetica", 9)
+
+        for ejemplo in EJEMPLOS_CARGA_MASIVA_ASISTENTES:
+            linea = ";".join(
+                [str(ejemplo.get(col, "")) for col in COLUMNAS_CARGA_MASIVA_ASISTENTES]
+            )
+            pdf.drawString(40, y, linea)
+            y -= 14
+
+        y -= 6
+        pdf.drawString(
+            40,
+            y,
+            "Nota: si usas PDF para importar, mantén una fila por línea con ese formato.",
+        )
+
+        pdf.showPage()
+        pdf.save()
+        output.seek(0)
+
+        response = HttpResponse(output.getvalue(), content_type="application/pdf")
+        response["Content-Disposition"] = (
+            'attachment; filename="plantilla_carga_masiva_asistentes.pdf"'
+        )
+        return response
+
+    messages.error(request, "Formato de plantilla no válido.")
+    return redirect("panel_visitante:registrar_asistentes", tipo=tipo, visita_id=visita_id)
 
 
 def registrar_asistentes(request, tipo, visita_id):
@@ -507,31 +1227,49 @@ def registrar_asistentes(request, tipo, visita_id):
     documentos_disponibles = Documento.objects.all().order_by(
         "categoria", "-fecha_subida"
     )
-    documentos_por_categoria = {}
-    for doc in documentos_disponibles:
-        categoria = doc.categoria
-        if categoria not in documentos_por_categoria:
-            documentos_por_categoria[categoria] = []
-        documentos_por_categoria[categoria].append(doc)
+    documentos_por_categoria = _agrupar_documentos_por_categoria(documentos_disponibles)
+    documentos_registro_por_categoria = {
+        categoria: docs
+        for categoria, docs in documentos_por_categoria.items()
+        if _es_categoria_documento_registro(categoria)
+    }
+    documentos_finales_por_categoria = {
+        categoria: docs
+        for categoria, docs in documentos_por_categoria.items()
+        if _es_categoria_archivo_final(categoria)
+    }
 
     asistentes_actuales = asistentes.count()
-    puede_agregar = asistentes_actuales < max_asistentes
+    solicitud_final_historica = _solicitud_final_ya_enviada(visita, tipo)
+    puede_agregar = asistentes_actuales < max_asistentes and not solicitud_final_historica
     # Permitir archivos finales si hay al menos 1 asistente registrado
     mostrar_archivos_finales = asistentes_actuales > 0
 
-    solicitud_final_enviada = visita.estado in [
-        "documentos_enviados",
-        "en_revision_documentos",
-        "confirmada",
-    ]
     resumen_pendientes = _resumen_pendientes_correccion(visita, tipo)
     flujo_completo_con_finales = (
         asistentes_actuales >= max_asistentes
         and resumen_pendientes["archivos_finales_faltantes"] == 0
     )
     puede_actualizar_asistentes = not (
-        solicitud_final_enviada or flujo_completo_con_finales
+        solicitud_final_historica or flujo_completo_con_finales
     )
+
+    asistentes_documentos_pendientes = []
+    for asistente in asistentes:
+        faltantes = []
+        if not getattr(asistente, "tiene_doc_salud", False):
+            faltantes.append("Reporte de condiciones de salud")
+
+        if faltantes:
+            asistentes_documentos_pendientes.append(
+                {
+                    "id": asistente.id,
+                    "nombre": asistente.nombre_completo,
+                    "tipo_documento": asistente.tipo_documento,
+                    "documento": f"{asistente.get_tipo_documento_display()} {asistente.numero_documento}",
+                    "faltantes": faltantes,
+                }
+            )
 
     context = {
         "visita": visita,
@@ -540,12 +1278,98 @@ def registrar_asistentes(request, tipo, visita_id):
         "asistentes_actuales": asistentes_actuales,
         "max_asistentes": max_asistentes,
         "puede_agregar": puede_agregar,
-        "documentos_por_categoria": documentos_por_categoria,
+        "documentos_registro_por_categoria": documentos_registro_por_categoria,
+        "documentos_finales_por_categoria": documentos_finales_por_categoria,
         "asistentes_previos": asistentes_previos,
         "tiene_asistentes_previos": len(asistentes_previos) > 0,
         "mostrar_archivos_finales": mostrar_archivos_finales,
         "puede_actualizar_asistentes": puede_actualizar_asistentes,
+        "solicitud_final_historica": solicitud_final_historica,
+        "asistentes_documentos_pendientes": asistentes_documentos_pendientes,
+        "total_asistentes_pendientes": len(asistentes_documentos_pendientes),
     }
+
+    if request.method == "POST" and request.POST.get("accion") == "carga_masiva_asistentes":
+        if tipo != "externa":
+            messages.error(
+                request,
+                "La carga masiva de asistentes solo está disponible para visitas externas.",
+            )
+            return redirect(
+                "panel_visitante:registrar_asistentes",
+                tipo=tipo,
+                visita_id=visita_id,
+            )
+
+        if solicitud_final_historica:
+            messages.error(
+                request,
+                "La solicitud final ya fue enviada previamente. No es posible modificar los datos de asistentes.",
+            )
+            return redirect(
+                "panel_visitante:registrar_asistentes",
+                tipo=tipo,
+                visita_id=visita_id,
+            )
+
+        archivo = request.FILES.get("archivo_carga_masiva")
+        if not archivo:
+            messages.error(request, "Seleccione un archivo para realizar la carga masiva.")
+            return redirect(
+                "panel_visitante:registrar_asistentes",
+                tipo=tipo,
+                visita_id=visita_id,
+            )
+
+        filas, errores_lectura = _extraer_filas_importacion_asistentes(archivo)
+        if errores_lectura:
+            for error in errores_lectura:
+                messages.error(request, error)
+            return redirect(
+                "panel_visitante:registrar_asistentes",
+                tipo=tipo,
+                visita_id=visita_id,
+            )
+
+        resumen_importacion = _procesar_carga_masiva_asistentes(
+            visita=visita,
+            tipo=tipo,
+            filas=filas,
+            max_asistentes=max_asistentes,
+        )
+
+        if resumen_importacion["creados"]:
+            messages.success(
+                request,
+                f"Carga masiva completada. Se registraron {resumen_importacion['creados']} asistentes.",
+            )
+
+        if resumen_importacion["duplicados"]:
+            messages.warning(
+                request,
+                f"Se omitieron {resumen_importacion['duplicados']} filas por documento repetido en esta visita.",
+            )
+
+        if resumen_importacion["omitidos_limite"]:
+            messages.warning(
+                request,
+                f"Se omitieron {resumen_importacion['omitidos_limite']} filas por límite máximo de asistentes.",
+            )
+
+        for error in resumen_importacion["errores"][:10]:
+            messages.error(request, error)
+
+        if len(resumen_importacion["errores"]) > 10:
+            messages.error(
+                request,
+                f"Se ocultaron {len(resumen_importacion['errores']) - 10} errores adicionales para mantener legible el resultado.",
+            )
+
+        return redirect(
+            "panel_visitante:registrar_asistentes",
+            tipo=tipo,
+            visita_id=visita_id,
+        )
 
     # Procesar archivos finales si se envía el formulario del modal
     if (
@@ -561,31 +1385,26 @@ def registrar_asistentes(request, tipo, visita_id):
         primer_asistente = asistentes.first() if asistentes.exists() else None
 
         if primer_asistente:
-            for categoria, docs in context["documentos_por_categoria"].items():
-                if categoria in [
-                    "ATS",
-                    "Formato Inducción y Reinducción",
-                    "Charla de Seguridad y Calestenia",
-                ]:
-                    for doc in docs:
-                        archivo = request.FILES.get(f"archivo_final_{doc.id}")
-                        if archivo:
-                            # Reemplazar la versión anterior para permitir nueva revisión
-                            DocumentoSubidoAsistente.objects.update_or_create(
-                                documento_requerido=doc,
-                                asistente_interna=(
-                                    primer_asistente if tipo == "interna" else None
-                                ),
-                                asistente_externa=(
-                                    primer_asistente if tipo == "externa" else None
-                                ),
-                                defaults={
-                                    "archivo": archivo,
-                                    "estado": "pendiente",
-                                    "observaciones_revision": "",
-                                },
-                            )
-                            archivos_subidos.append(doc.titulo)
+            for docs in context["documentos_finales_por_categoria"].values():
+                for doc in docs:
+                    archivo = request.FILES.get(f"archivo_final_{doc.id}")
+                    if archivo:
+                        # Reemplazar la versión anterior para permitir nueva revisión
+                        DocumentoSubidoAsistente.objects.update_or_create(
+                            documento_requerido=doc,
+                            asistente_interna=(
+                                primer_asistente if tipo == "interna" else None
+                            ),
+                            asistente_externa=(
+                                primer_asistente if tipo == "externa" else None
+                            ),
+                            defaults={
+                                "archivo": archivo,
+                                "estado": "pendiente",
+                                "observaciones_revision": "",
+                            },
+                        )
+                        archivos_subidos.append(doc.titulo)
 
             if archivos_subidos:
                 _sincronizar_estado_asistente_por_docs(primer_asistente, tipo)
@@ -640,7 +1459,12 @@ def registrar_asistentes(request, tipo, visita_id):
             )
 
     if request.method == "POST":
-        if not puede_agregar:
+        if solicitud_final_historica:
+            messages.error(
+                request,
+                "La solicitud final ya fue enviada previamente. No es posible modificar los datos de asistentes.",
+            )
+        elif not puede_agregar:
             messages.error(
                 request, f"Ya se alcanzó el límite de {max_asistentes} asistentes."
             )
@@ -648,27 +1472,92 @@ def registrar_asistentes(request, tipo, visita_id):
             nombre = request.POST.get("nombre_completo", "").strip()
             tipo_doc = request.POST.get("tipo_documento", "")
             num_doc = request.POST.get("numero_documento", "").strip()
-            correo_asistente = request.POST.get("correo", "").strip()
+            correo_asistente = request.POST.get("correo", "").strip().lower()
             telefono = request.POST.get("telefono", "").strip()
 
-            # Validar campos obligatorios
-            campos_ok = nombre and tipo_doc and num_doc
+            # Validar campos obligatorios y formato
+            campos_ok = True
+            errores_campos = []
+            tipos_documento_validos = {"CC", "CE", "TI", "PPT", "PP"}
+
+            nombre = " ".join(nombre.split())
+            if not nombre or not tipo_doc or not num_doc:
+                errores_campos.append("Complete todos los campos obligatorios.")
+
+            if nombre:
+                if len(nombre) < 3 or len(nombre) > 80:
+                    errores_campos.append(
+                        "El nombre completo debe tener entre 3 y 80 caracteres."
+                    )
+                elif not re.fullmatch(r"[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]+", nombre):
+                    errores_campos.append(
+                        "El nombre completo solo puede contener letras y espacios."
+                    )
+
+            if tipo_doc and tipo_doc not in tipos_documento_validos:
+                errores_campos.append("Seleccione un tipo de documento valido.")
+
+            if num_doc:
+                if not num_doc.isdigit():
+                    errores_campos.append(
+                        "El numero de documento solo debe contener numeros."
+                    )
+                elif not 5 <= len(num_doc) <= 10:
+                    errores_campos.append(
+                        "El numero de documento debe tener entre 5 y 10 digitos."
+                    )
+
+            if correo_asistente:
+                try:
+                    validate_email(correo_asistente)
+                except ValidationError:
+                    errores_campos.append("Ingrese un correo electronico valido.")
+
+            if telefono:
+                if not telefono.isdigit():
+                    errores_campos.append("El telefono solo debe contener numeros.")
+                elif not 7 <= len(telefono) <= 10:
+                    errores_campos.append(
+                        "El telefono debe tener entre 7 y 10 digitos."
+                    )
+
+            if tipo == "interna":
+                documento_existente = AsistenteVisitaInterna.objects.filter(
+                    visita=visita, numero_documento=num_doc
+                ).exists()
+            else:
+                documento_existente = AsistenteVisitaExterna.objects.filter(
+                    visita=visita, numero_documento=num_doc
+                ).exists()
+
+            if num_doc and documento_existente:
+                errores_campos.append(
+                    "Este numero de documento ya esta registrado para esta visita."
+                )
+
+            if errores_campos:
+                campos_ok = False
+                for error in errores_campos:
+                    messages.error(request, error)
+
             documentos_disponibles = Documento.objects.all().order_by(
                 "categoria", "-fecha_subida"
             )
-            documentos_por_categoria = {}
-            for doc in documentos_disponibles:
-                categoria = doc.categoria
-                if categoria not in documentos_por_categoria:
-                    documentos_por_categoria[categoria] = []
-                documentos_por_categoria[categoria].append(doc)
+            documentos_por_categoria = _agrupar_documentos_por_categoria(
+                documentos_disponibles
+            )
+            documentos_registro_por_categoria = {
+                categoria: docs
+                for categoria, docs in documentos_por_categoria.items()
+                if _es_categoria_documento_registro(categoria)
+            }
 
             # Validar que solo el documento de 'Formato Auto Reporte Condiciones de Salud' fue subido
             archivos_ok = False
             archivos_dict = {}
             extensiones_permitidas_docs = {".pdf", ".doc", ".docx"}
             archivos_invalidos = []
-            for categoria, docs in documentos_por_categoria.items():
+            for categoria, docs in documentos_registro_por_categoria.items():
                 if categoria == "Formato Auto Reporte Condiciones de Salud":
                     for doc in docs:
                         file_field = f"documento_{doc.id}"
@@ -819,21 +1708,24 @@ def registrar_asistentes(request, tipo, visita_id):
                     else:
                         messages.error(request, f"Error al registrar: {str(e)}")
             else:
-                if not campos_ok:
-                    messages.error(request, "Complete todos los campos obligatorios.")
-                elif not archivos_ok:
+                if campos_ok and not archivos_ok:
                     messages.error(request, "Debe subir todos los archivos requeridos.")
 
     # Obtener documentos disponibles para descargar, agrupados por categoría
     documentos_disponibles = Documento.objects.all().order_by(
         "categoria", "-fecha_subida"
     )
-    documentos_por_categoria = {}
-    for doc in documentos_disponibles:
-        categoria = doc.categoria
-        if categoria not in documentos_por_categoria:
-            documentos_por_categoria[categoria] = []
-        documentos_por_categoria[categoria].append(doc)
+    documentos_por_categoria = _agrupar_documentos_por_categoria(documentos_disponibles)
+    documentos_registro_por_categoria = {
+        categoria: docs
+        for categoria, docs in documentos_por_categoria.items()
+        if _es_categoria_documento_registro(categoria)
+    }
+    documentos_finales_por_categoria = {
+        categoria: docs
+        for categoria, docs in documentos_por_categoria.items()
+        if _es_categoria_archivo_final(categoria)
+    }
 
     context = {
         "visita": visita,
@@ -842,8 +1734,15 @@ def registrar_asistentes(request, tipo, visita_id):
         "asistentes_actuales": asistentes_actuales,
         "max_asistentes": max_asistentes,
         "puede_agregar": puede_agregar,
-        "documentos_por_categoria": documentos_por_categoria,
+        "documentos_registro_por_categoria": documentos_registro_por_categoria,
+        "documentos_finales_por_categoria": documentos_finales_por_categoria,
+        "asistentes_previos": asistentes_previos,
+        "tiene_asistentes_previos": len(asistentes_previos) > 0,
+        "mostrar_archivos_finales": mostrar_archivos_finales,
         "puede_actualizar_asistentes": puede_actualizar_asistentes,
+        "solicitud_final_historica": solicitud_final_historica,
+        "asistentes_documentos_pendientes": asistentes_documentos_pendientes,
+        "total_asistentes_pendientes": len(asistentes_documentos_pendientes),
     }
 
     return render(request, "registrar_asistentes.html", context)
@@ -865,6 +1764,16 @@ def eliminar_asistente(request, tipo, asistente_id):
         if not _tiene_acceso_por_correo(visita, correo):
             messages.error(request, "No tiene permiso para esta acción.")
             return _redirect_segun_rol(request)
+        if _solicitud_final_ya_enviada(visita, tipo):
+            messages.error(
+                request,
+                "La solicitud final ya fue enviada previamente. No es posible eliminar asistentes.",
+            )
+            return redirect(
+                "panel_visitante:registrar_asistentes",
+                tipo=tipo,
+                visita_id=visita.id,
+            )
         visita_id = visita.id
         asistente.delete()
     elif tipo == "externa":
@@ -873,6 +1782,16 @@ def eliminar_asistente(request, tipo, asistente_id):
         if not _tiene_acceso_por_correo(visita, correo):
             messages.error(request, "No tiene permiso para esta acción.")
             return _redirect_segun_rol(request)
+        if visita.estado in ["documentos_enviados", "en_revision_documentos", "confirmada"]:
+            messages.error(
+                request,
+                "No es posible eliminar asistentes en el estado actual de la visita.",
+            )
+            return redirect(
+                "panel_visitante:registrar_asistentes",
+                tipo=tipo,
+                visita_id=visita.id,
+            )
         visita_id = visita.id
         asistente.delete()
     else:
@@ -996,6 +1915,38 @@ def enviar_solicitud_final(request, tipo, visita_id):
     # Cambiar el estado a documentos_enviados
     visita.estado = "documentos_enviados"
     visita.save()
+
+    # Guardar una marca historica para bloquear futuras ediciones de asistentes,
+    # incluso si la visita vuelve temporalmente a aprobada_inicial por correcciones.
+    try:
+        usuario_historial = (
+            request.user
+            if getattr(request, "user", None)
+            and getattr(request.user, "is_authenticated", False)
+            else None
+        )
+        descripcion_historial = (
+            f"{MARCADOR_SOLICITUD_FINAL_ENVIADA} Envio final realizado por el responsable {correo}."
+        )
+
+        if tipo == "interna":
+            HistorialAccionVisitaInterna.objects.create(
+                visita=visita,
+                usuario=usuario_historial,
+                tipo_accion="modificacion",
+                descripcion=descripcion_historial,
+                ip_address=request.META.get("REMOTE_ADDR"),
+            )
+        else:
+            HistorialAccionVisitaExterna.objects.create(
+                visita=visita,
+                usuario=usuario_historial,
+                tipo_accion="modificacion",
+                descripcion=descripcion_historial,
+                ip_address=request.META.get("REMOTE_ADDR"),
+            )
+    except Exception:
+        pass
 
     # Enviar correo al responsable informando que la solicitud final fue enviada
     try:
@@ -1407,14 +2358,18 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
             else:
                 filtros_doc["asistente_externa"] = asistente
 
-            doc_objetivo = DocumentoSubidoAsistente.objects.select_related(
-                "documento_requerido"
-            ).filter(**filtros_doc).first()
+            doc_objetivo = (
+                DocumentoSubidoAsistente.objects.select_related("documento_requerido")
+                .filter(**filtros_doc)
+                .first()
+            )
 
             if not doc_objetivo:
                 error_msg = "No se encontró el documento rechazado para este asistente."
                 if es_ajax:
-                    return JsonResponse({"success": False, "error": error_msg}, status=400)
+                    return JsonResponse(
+                        {"success": False, "error": error_msg}, status=400
+                    )
                 messages.error(request, error_msg)
                 return redirect(
                     "panel_visitante:registrar_asistentes",
@@ -1430,7 +2385,9 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
             if not documento_objetivo:
                 error_msg = "No se encontró el documento base de salud para registrar la corrección."
                 if es_ajax:
-                    return JsonResponse({"success": False, "error": error_msg}, status=400)
+                    return JsonResponse(
+                        {"success": False, "error": error_msg}, status=400
+                    )
                 messages.error(request, error_msg)
                 return redirect(
                     "panel_visitante:registrar_asistentes",
@@ -1490,10 +2447,8 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
 
 
 def actualizar_info_asistente(request, tipo, asistente_id):
-    """Actualiza solo la informacion basica del asistente (sin documentos)."""
-    embed_mode = (
-        request.GET.get("embed") == "1" or request.POST.get("embed") == "1"
-    )
+    """Actualiza informacion basica del asistente y opcionalmente sus documentos."""
+    embed_mode = request.GET.get("embed") == "1" or request.POST.get("embed") == "1"
 
     if not request.session.get("responsable_autenticado"):
         return redirect("panel_visitante:login_responsable")
@@ -1527,13 +2482,85 @@ def actualizar_info_asistente(request, tipo, asistente_id):
             ctx.update(extra)
         return ctx
 
+    bloqueo_edicion = _solicitud_final_ya_enviada(visita, tipo)
+    if tipo == "externa":
+        bloqueo_edicion = visita.estado in [
+            "documentos_enviados",
+            "en_revision_documentos",
+            "confirmada",
+        ]
+
+    if bloqueo_edicion:
+        mensaje_bloqueo = (
+            "La solicitud final ya fue enviada previamente. "
+            "No puede modificar los datos del asistente."
+        )
+        if embed_mode:
+            return render(
+                request,
+                "actualizar_info_asistente.html",
+                _contexto(
+                    {
+                        "bloqueado_envio_final": True,
+                        "mensaje_bloqueo": mensaje_bloqueo,
+                    }
+                ),
+            )
+        messages.warning(request, mensaje_bloqueo)
+        return _redirect_segun_rol(request, tipo=tipo, visita_id=visita.id)
+
     if request.method == "POST":
         nombre = request.POST.get("nombre_completo", "").strip()
         tipo_doc = request.POST.get("tipo_documento", "").strip()
         numero_doc = request.POST.get("numero_documento", "").strip()
-        correo_asistente = request.POST.get("correo", "").strip()
+        correo_asistente = request.POST.get("correo", "").strip().lower()
         telefono = request.POST.get("telefono", "").strip()
         numero_doc_anterior = asistente.numero_documento
+        archivo_salud = request.FILES.get("archivo_salud")
+        archivo_autorizacion = request.FILES.get("archivo_autorizacion_padres")
+
+        extensiones_permitidas = {
+            ".pdf",
+            ".doc",
+            ".docx",
+            ".jpg",
+            ".jpeg",
+            ".png",
+        }
+
+        for etiqueta, archivo in [
+            ("documento de salud", archivo_salud),
+            ("autorización de padres", archivo_autorizacion),
+        ]:
+            if not archivo:
+                continue
+            extension = Path(archivo.name).suffix.lower()
+            if extension not in extensiones_permitidas:
+                messages.error(
+                    request,
+                    f"El archivo de {etiqueta} no es válido. Solo se permiten PDF, Word o imagen.",
+                )
+                return render(
+                    request,
+                    "actualizar_info_asistente.html",
+                    _contexto(),
+                )
+
+        documento_salud_requerido = None
+        if archivo_salud:
+            documento_salud_requerido = Documento.objects.filter(
+                categoria="Formato Auto Reporte Condiciones de Salud"
+            ).first()
+            if not documento_salud_requerido:
+                messages.error(
+                    request,
+                    "No se encontró el documento base de salud para registrar la actualización.",
+                )
+                return render(
+                    request,
+                    "actualizar_info_asistente.html",
+                    _contexto(),
+                )
 
         if not nombre or not tipo_doc or not numero_doc:
             messages.error(
@@ -1566,6 +2593,25 @@ def actualizar_info_asistente(request, tipo, asistente_id):
         asistente.numero_documento = numero_doc
         asistente.correo = correo_asistente
         asistente.telefono = telefono
+        campos_asistente_update = [
+            "nombre_completo",
+            "tipo_documento",
+            "numero_documento",
+            "correo",
+            "telefono",
+        ]
+
+        if archivo_autorizacion:
+            asistente.formato_autorizacion_padres = archivo_autorizacion
+            asistente.estado_autorizacion_padres = "pendiente"
+            asistente.observaciones_autorizacion_padres = ""
+            campos_asistente_update.extend(
+                [
+                    "formato_autorizacion_padres",
+                    "estado_autorizacion_padres",
+                    "observaciones_autorizacion_padres",
+                ]
+            )
 
         try:
             aprendiz_a_actualizar = None
@@ -1618,7 +2664,9 @@ def actualizar_info_asistente(request, tipo, asistente_id):
                                 if apellido_actual_partes
                                 else 1
                             )
-                            apellido_len = max(1, min(apellido_len, len(partes_nombre) - 1))
+                            apellido_len = max(
+                                1, min(apellido_len, len(partes_nombre) - 1)
+                            )
                             nuevo_apellido = " ".join(partes_nombre[-apellido_len:])
                             nuevo_nombre = " ".join(partes_nombre[:-apellido_len])
 
@@ -1645,8 +2693,23 @@ def actualizar_info_asistente(request, tipo, asistente_id):
                     )
 
             with transaction.atomic():
-                asistente.save()
+                asistente.save(update_fields=campos_asistente_update)
+
+                if archivo_salud:
+                    DocumentoSubidoAsistente.objects.create(
+                        documento_requerido=documento_salud_requerido,
+                        asistente_interna=asistente if tipo == "interna" else None,
+                        asistente_externa=asistente if tipo == "externa" else None,
+                        archivo=archivo_salud,
+                        estado="pendiente",
+                        observaciones_revision="",
+                    )
+
                 if aprendiz_a_actualizar and campos_aprendiz_update:
+                    if archivo_salud:
+                        aprendiz_a_actualizar.documento_adicional = archivo_salud
+                        if "documento_adicional" not in campos_aprendiz_update:
+                            campos_aprendiz_update.append("documento_adicional")
                     aprendiz_a_actualizar.save(update_fields=campos_aprendiz_update)
 
             mensaje_exito = "Informacion del asistente actualizada correctamente." + (
@@ -1654,6 +2717,17 @@ def actualizar_info_asistente(request, tipo, asistente_id):
                 if tipo == "interna" and aprendiz_a_actualizar
                 else ""
             )
+
+            detalles_docs_actualizados = []
+            if archivo_salud:
+                detalles_docs_actualizados.append("documento de salud")
+            if archivo_autorizacion:
+                detalles_docs_actualizados.append("autorización de padres")
+
+            if detalles_docs_actualizados:
+                mensaje_exito += " Se actualizó: " + ", ".join(
+                    detalles_docs_actualizados
+                ) + "."
 
             if embed_mode:
                 return render(

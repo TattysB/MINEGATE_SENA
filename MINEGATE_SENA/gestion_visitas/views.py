@@ -199,6 +199,10 @@ def es_coordinador(user):
     return user.groups.filter(name="coordinador").exists()
 
 
+def es_usuario_sst(user):
+    return user.is_staff and not user.is_superuser and not es_coordinador(user)
+
+
 def es_administrador_panel(user):
     return user.is_superuser or (user.is_staff and not es_coordinador(user))
 
@@ -237,6 +241,29 @@ def _documentos_subidos_actuales(asistente):
     return documentos_actuales
 
 
+def _normalizar_categoria_documento(categoria):
+    return (
+        str(categoria or "")
+        .strip()
+        .lower()
+        .replace("á", "a")
+        .replace("é", "e")
+        .replace("í", "i")
+        .replace("ó", "o")
+        .replace("ú", "u")
+    )
+
+
+def _es_categoria_archivo_final(categoria):
+    categoria_normalizada = _normalizar_categoria_documento(categoria)
+    return categoria_normalizada in {
+        "ats",
+        "formato induccion y reinduccion",
+        "charla de seguridad y calestenia",
+        "charla de seguridad y calistenia",
+    }
+
+
 def _serializar_documento_subido(ds, versiones_envio=1, es_reenvio=False):
     return {
         "id": ds.id,
@@ -258,12 +285,19 @@ def _serializar_documento_subido(ds, versiones_envio=1, es_reenvio=False):
 def _calcular_estado_revision_asistente(asistente):
     """Calcula estado agregado del asistente en función de sus últimos documentos."""
     documentos_actuales = _documentos_subidos_actuales(asistente)
-    tiene_docs = bool(documentos_actuales)
+    documentos_personales = [
+        doc_actual
+        for doc_actual in documentos_actuales
+        if not _es_categoria_archivo_final(
+            doc_actual["ds"].documento_requerido.categoria
+        )
+    ]
+    tiene_docs = bool(documentos_personales)
     tiene_rechazos = any(
-        doc_actual["ds"].estado == "rechazado" for doc_actual in documentos_actuales
+        doc_actual["ds"].estado == "rechazado" for doc_actual in documentos_personales
     )
     todos_aprobados = tiene_docs and all(
-        doc_actual["ds"].estado == "aprobado" for doc_actual in documentos_actuales
+        doc_actual["ds"].estado == "aprobado" for doc_actual in documentos_personales
     )
 
     tiene_autorizacion_padres = bool(
@@ -561,7 +595,7 @@ def api_detalle_visita(request, tipo, visita_id):
         ]:
             for a in visita.asistentes.all():
                 documentos_actuales = _documentos_subidos_actuales(a)
-                revision = _calcular_estado_revision_asistente(a)
+                revision = _sincronizar_estado_asistente(a)
                 asistentes.append(
                     {
                         "id": a.id,
@@ -570,7 +604,7 @@ def api_detalle_visita(request, tipo, visita_id):
                         "numero_documento": a.numero_documento,
                         "correo": a.correo,
                         "telefono": a.telefono,
-                        "estado": a.estado,
+                        "estado": revision["estado"],
                         "documento_identidad": (
                             reverse(
                                 "documentos:ver_campo_asistente_inline",
@@ -632,7 +666,11 @@ def api_detalle_visita(request, tipo, visita_id):
                             if a.formato_autorizacion_padres
                             else None
                         ),
-                        "observaciones_revision": a.observaciones_revision,
+                        "observaciones_revision": (
+                            a.observaciones_revision
+                            if revision["estado"] == "documentos_rechazados"
+                            else ""
+                        ),
                         "tiene_rechazos": revision["tiene_rechazos"],
                         "todos_aprobados": revision["todos_aprobados"],
                         "documentos_subidos": [
@@ -698,7 +736,7 @@ def api_detalle_visita(request, tipo, visita_id):
         ]:
             for a in visita.asistentes.all():
                 documentos_actuales = _documentos_subidos_actuales(a)
-                revision = _calcular_estado_revision_asistente(a)
+                revision = _sincronizar_estado_asistente(a)
                 asistentes.append(
                     {
                         "id": a.id,
@@ -707,7 +745,7 @@ def api_detalle_visita(request, tipo, visita_id):
                         "numero_documento": a.numero_documento,
                         "correo": a.correo,
                         "telefono": a.telefono,
-                        "estado": a.estado,
+                        "estado": revision["estado"],
                         "documento_identidad": (
                             reverse(
                                 "documentos:ver_campo_asistente_inline",
@@ -759,7 +797,11 @@ def api_detalle_visita(request, tipo, visita_id):
                             if a.formato_autorizacion_padres
                             else None
                         ),
-                        "observaciones_revision": a.observaciones_revision,
+                        "observaciones_revision": (
+                            a.observaciones_revision
+                            if revision["estado"] == "documentos_rechazados"
+                            else ""
+                        ),
                         "tiene_rechazos": revision["tiene_rechazos"],
                         "todos_aprobados": revision["todos_aprobados"],
                         "documentos_subidos": [
@@ -821,6 +863,15 @@ def api_detalle_visita(request, tipo, visita_id):
 @login_required(login_url="usuarios:login")
 def api_accion_visita(request, tipo, visita_id, accion):
     """API para ejecutar acciones sobre una visita"""
+
+    if es_usuario_sst(request.user):
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "El rol SST solo puede revisar documentos. No puede aprobar, rechazar, reprogramar ni confirmar visitas.",
+            },
+            status=403,
+        )
 
     if tipo == "interna":
         visita = get_object_or_404(VisitaInterna, pk=visita_id)
@@ -1405,7 +1456,7 @@ def api_documentos_revision(request):
                 qs = qs.filter(estado=estado_asistente)
         for a in qs:
             documentos_actuales = _documentos_subidos_actuales(a)
-            revision = _calcular_estado_revision_asistente(a)
+            revision = _sincronizar_estado_asistente(a)
             documentos_data.append(
                 {
                     "asistente_id": a.id,
@@ -1423,7 +1474,7 @@ def api_documentos_revision(request):
                     "nombre_completo": a.nombre_completo,
                     "tipo_documento": a.tipo_documento,
                     "numero_documento": a.numero_documento,
-                    "estado": a.estado,
+                    "estado": revision["estado"],
                     "documento_identidad": (
                         reverse(
                             "documentos:ver_campo_asistente_inline",
@@ -1468,7 +1519,11 @@ def api_documentos_revision(request):
                         if a.formato_autorizacion_padres
                         else None
                     ),
-                    "observaciones_revision": a.observaciones_revision,
+                    "observaciones_revision": (
+                        a.observaciones_revision
+                        if revision["estado"] == "documentos_rechazados"
+                        else ""
+                    ),
                     "tiene_rechazos": revision["tiene_rechazos"],
                     "todos_aprobados": revision["todos_aprobados"],
                     "documentos_subidos": [
@@ -1492,7 +1547,7 @@ def api_documentos_revision(request):
                 qs = qs.filter(estado=estado_asistente)
         for a in qs:
             documentos_actuales = _documentos_subidos_actuales(a)
-            revision = _calcular_estado_revision_asistente(a)
+            revision = _sincronizar_estado_asistente(a)
             documentos_data.append(
                 {
                     "asistente_id": a.id,
@@ -1510,7 +1565,7 @@ def api_documentos_revision(request):
                     "nombre_completo": a.nombre_completo,
                     "tipo_documento": a.tipo_documento,
                     "numero_documento": a.numero_documento,
-                    "estado": a.estado,
+                    "estado": revision["estado"],
                     "documento_identidad": (
                         reverse(
                             "documentos:ver_campo_asistente_inline",
@@ -1545,7 +1600,11 @@ def api_documentos_revision(request):
                         if a.documento_adicional
                         else None
                     ),
-                    "observaciones_revision": a.observaciones_revision,
+                    "observaciones_revision": (
+                        a.observaciones_revision
+                        if revision["estado"] == "documentos_rechazados"
+                        else ""
+                    ),
                     "tiene_rechazos": revision["tiene_rechazos"],
                     "todos_aprobados": revision["todos_aprobados"],
                     "documentos_subidos": [

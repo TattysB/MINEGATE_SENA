@@ -10,6 +10,63 @@ function addCsrfToFormData(formData) {
   }
 }
 
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function getObservationTheme(observacion) {
+  const texto = String(observacion || '').toLowerCase();
+
+  const tiene = (palabras) => palabras.some((p) => texto.includes(p));
+
+  if (tiene(['urgente', 'riesgo', 'emergencia', 'accidente', 'incumplimiento', 'prohibido'])) {
+    return {
+      label: 'Observaciones del coordinador',
+      icon: 'ri-alarm-warning-line',
+      bg: '#fef2f2',
+      border: '#fca5a5',
+      accent: '#dc2626',
+      text: '#7f1d1d'
+    };
+  }
+
+  if (tiene(['seguridad', 'protocolo', 'importante', 'precaucion', 'precaución', 'requisito', 'obligatorio', 'atencion', 'atención'])) {
+    return {
+      label: 'Observaciones del coordinador',
+      icon: 'ri-error-warning-line',
+      bg: '#fffbeb',
+      border: '#fcd34d',
+      accent: '#d97706',
+      text: '#92400e'
+    };
+  }
+
+  if (tiene(['ok', 'correcto', 'completo', 'aprobado', 'cumple', 'listo', 'autorizado'])) {
+    return {
+      label: 'Observaciones del coordinador',
+      icon: 'ri-checkbox-circle-line',
+      bg: '#ecfdf5',
+      border: '#86efac',
+      accent: '#16a34a',
+      text: '#166534'
+    };
+  }
+
+  return {
+    label: 'Observaciones del coordinador',
+    icon: 'ri-information-line',
+    bg: '#eff6ff',
+    border: '#93c5fd',
+    accent: '#2563eb',
+    text: '#1e3a8a'
+  };
+}
+
 let _docxPreviewLoaderPromiseVisitas = null;
 
 function _loadScriptOnceVisitas(src) {
@@ -71,6 +128,10 @@ function _inferirExtensionDesdeMimeVisitas(contentType) {
 
 let tipoVisitaActual = 'internas';
 
+function esUsuarioSst() {
+  return Boolean(window.panelPermisos && window.panelPermisos.soloSst);
+}
+
 function cambiarTabVisita(tipo) {
   tipoVisitaActual = tipo;
   document.querySelectorAll('.tab-visita').forEach(tab => {
@@ -102,7 +163,7 @@ function cargarVisitas() {
       <p>Cargando visitas...</p>
     </td></tr>`;
 
-  fetch(`/gestion/visitas/?tipo=${tipoVisitaActual}&estado=${estado}&buscar=${encodeURIComponent(buscar)}`)
+  return fetch(`/gestion/visitas/?tipo=${tipoVisitaActual}&estado=${estado}&buscar=${encodeURIComponent(buscar)}`)
     .then(response => response.json())
     .then(data => {
       document.getElementById('statPendientes').textContent = data.stats.pendientes;
@@ -161,7 +222,7 @@ function cargarVisitas() {
       let html = '';
       data.visitas.forEach(v => {
         const estadoBadge = getEstadoBadge(v.estado);
-        html += `<tr class="docs-fila gv-fila">
+        html += `<tr id="visita-${tipoVisitaActual}-${v.id}" class="docs-fila gv-fila visit-row" data-id="${v.id}" data-tipo="${tipoVisitaActual}">
             <td class="gv-celda-id">#${v.id}</td>
             <td>
               <span class="gv-tipo-badge ${v.tipo === 'interna' ? 'interna' : 'externa'}">
@@ -217,7 +278,7 @@ function getEstadoDocumentoBadge(estado) {
   const badges = {
     'pendiente_documentos': '<span style="background:#fef3c7;color:#92400e;padding:3px 8px;border-radius:15px;font-size:10px;">⏳ Pendiente</span>',
     'documentos_aprobados': '<span style="background:#d1fae5;color:#065f46;padding:3px 8px;border-radius:15px;font-size:10px;">✅ Aprobados</span>',
-    'documentos_rechazados': '<span style="background:#fee2e2;color:#991b1b;padding:3px 8px;border-radius:15px;font-size:10px;">⚠️ Pendiente corrección</span>',
+    'documentos_rechazados': '<span style="background:#fee2e2;color:#991b1b;padding:3px 8px;border-radius:15px;font-size:10px;">❌ Rechazado</span>',
   };
   return badges[estado] || estado;
 }
@@ -229,7 +290,9 @@ function getBadgeRevisionDocumento(ds, opts = {}) {
   const marginLeft = opts.marginLeft || '4px';
   const badges = [];
 
-  if (ds.estado === 'aprobado') {
+  if (ds.estado === 'pendiente') {
+    badges.push(`<span style="background:#fef3c7;color:#92400e;font-size:${fontSize};padding:${padding};border-radius:${borderRadius};margin-left:${marginLeft};">Pendiente</span>`);
+  } else if (ds.estado === 'aprobado') {
     badges.push(`<span style="background:#d1fae5;color:#065f46;font-size:${fontSize};padding:${padding};border-radius:${borderRadius};margin-left:${marginLeft};">Aprobado</span>`);
   } else if (ds.estado === 'rechazado') {
     badges.push(`<span style="background:#fee2e2;color:#991b1b;font-size:${fontSize};padding:${padding};border-radius:${borderRadius};margin-left:${marginLeft};">Rechazado</span>`);
@@ -264,6 +327,17 @@ function getAccionesVisita(v) {
     </button>`
   ];
 
+  if (esUsuarioSst()) {
+    if (v.estado === 'documentos_enviados' || v.estado === 'en_revision_documentos') {
+      acciones.push(`<button type="button" onclick="verDetalleVisita('${v.tipo}', ${v.id})" class="docs-btn-accion gv-btn-docs">
+        <i class="ri-file-search-line"></i> Revisar docs
+      </button>`);
+    } else {
+      acciones.push('<span class="gv-pill-info gv-pill-espera"><i class="ri-lock-line"></i> Solo revisión documental</span>');
+    }
+    return `<div class="docs-acciones gv-acciones">${acciones.join('')}</div>`;
+  }
+
   if (v.estado === 'enviada_coordinacion') {
     acciones.push('<span class="gv-pill-info gv-pill-espera"><i class="ri-time-line"></i> Esperando coordinación</span>');
     return `<div class="docs-acciones gv-acciones">${acciones.join('')}</div>`;
@@ -272,9 +346,6 @@ function getAccionesVisita(v) {
   if (v.estado === 'pendiente') {
     acciones.push(`<button type="button" onclick="accionVisita('${v.tipo}', ${v.id}, 'aprobar')" class="docs-btn-accion gv-btn-approve">
       <i class="ri-check-line"></i> Aprobar
-    </button>`);
-    acciones.push(`<button type="button" onclick="accionVisita('${v.tipo}', ${v.id}, 'rechazar')" class="docs-btn-accion gv-btn-reject" title="Rechazar visita">
-      <i class="ri-close-line"></i>
     </button>`);
   }
 
@@ -289,7 +360,7 @@ function getAccionesVisita(v) {
       <i class="ri-file-search-line"></i> Revisar docs
     </button>`);
     acciones.push(`<button type="button" onclick="accionVisita('${v.tipo}', ${v.id}, 'iniciar_revision')" class="docs-btn-accion gv-btn-review">
-      <i class="ri-search-line"></i> Iniciar revisión
+      <i class="ri-search-line"></i> Finalizar revisión
     </button>`);
   }
 
@@ -303,7 +374,7 @@ function getAccionesVisita(v) {
         <i class="ri-verified-badge-line"></i> Confirmar
       </button>`);
     } else if (v.tiene_rechazos) {
-      acciones.push('<span class="gv-pill-info gv-pill-warning"><i class="ri-error-warning-line"></i> Pendiente corrección</span>');
+      acciones.push('<span class="gv-pill-info gv-pill-warning"><i class="ri-error-warning-line"></i> Rechazos detectados</span>');
     } else {
       acciones.push(`<button type="button" onclick="mAlert('No se puede confirmar la visita aún. Asegúrese de que todos los asistentes tengan sus documentos aprobados.', 'warning')" class="docs-btn-accion gv-btn-confirm gv-btn-disabled" title="Documentos pendientes de aprobación">
         <i class="ri-alert-line"></i> Confirmar
@@ -327,7 +398,7 @@ function mostrarVisitasAprobadas() {
       <p>Cargando visitas aprobadas...</p>
     </td></tr>`;
 
-  fetch(`/gestion/visitas-aprobadas/?tipo=${tipoVisitaActual}`)
+  return fetch(`/gestion/visitas-aprobadas/?tipo=${tipoVisitaActual}`)
     .then(response => response.json())
     .then(data => {
       const visitas = data.visitas || [];
@@ -343,7 +414,7 @@ function mostrarVisitasAprobadas() {
       let html = '';
       visitas.forEach(v => {
         const estadoBadge = getEstadoBadge(v.estado);
-        html += `<tr class="docs-fila gv-fila">
+        html += `<tr id="visita-${tipoVisitaActual}-${v.id}" class="docs-fila gv-fila visit-row" data-id="${v.id}" data-tipo="${tipoVisitaActual}">
             <td class="gv-celda-id">#${v.id}</td>
             <td>
               <span class="gv-tipo-badge ${v.tipo === 'interna' ? 'interna' : 'externa'}">${v.tipo_display}</span>
@@ -584,11 +655,11 @@ function mostrarDocumentosPorEstado(filtro) {
             aBadge = '<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">✅ Aprobado</span>';
             borderLeft = '#10b981';
           } else if (tieneRechazosPersonales) {
-            aBadge = '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">⚠️ Pendiente corrección</span>';
+            aBadge = '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">❌ Rechazado</span>';
             borderLeft = '#ef4444';
           } else if (a.estado === 'documentos_rechazados') {
-            aBadge = '<span style="background:#e2e8f0;color:#334155;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">ℹ️ Sin novedad personal</span>';
-            borderLeft = '#94a3b8';
+            aBadge = '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">❌ Rechazado</span>';
+            borderLeft = '#ef4444';
           }
 
           let botonesDoc = '';
@@ -604,7 +675,7 @@ function mostrarDocumentosPorEstado(filtro) {
                         <i class="ri-download-2-line"></i>
                       </a>
                     </div>
-                    ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (tieneRechazosPersonales ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Pendiente corrección</span>' : '')}
+                    ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (tieneRechazosPersonales ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Rechazado</span>' : '')}
                   </div>`;
           }
           if (a.documentos_subidos && a.documentos_subidos.length > 0) {
@@ -1162,7 +1233,7 @@ function verDetalleVisita(tipo, id) {
                         <i class="ri-download-2-line"></i>
                       </a>
                     </div>
-                    ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (tieneRechazosPersonales ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Pendiente corrección</span>' : '')}
+                    ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (tieneRechazosPersonales ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Rechazado</span>' : '')}
                   </div>`;
           }
           if (a.documento_adicional) {
@@ -1178,7 +1249,7 @@ function verDetalleVisita(tipo, id) {
                         <i class="ri-download-2-line"></i>
                       </a>
                     </div>
-                    ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (tieneRechazosPersonales ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Pendiente corrección</span>' : '')}
+                    ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (tieneRechazosPersonales ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Rechazado</span>' : '')}
                   </div>`;
           }
           if (a.formato_autorizacion_padres) {
@@ -1256,62 +1327,14 @@ function verDetalleVisita(tipo, id) {
             estadoBadge = '<span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">✅ Aprobado</span>';
           } else if (tieneRechazosPersonales) {
             borderColor = '#ef4444';
-            estadoBadge = '<span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">⚠️ Pendiente corrección</span>';
+            estadoBadge = '<span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">❌ Rechazado</span>';
           } else if (a.estado === 'documentos_rechazados') {
-            borderColor = '#94a3b8';
-            estadoBadge = '<span style="background:#e2e8f0;color:#334155;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">ℹ️ Sin novedad personal</span>';
+            borderColor = '#ef4444';
+            estadoBadge = '<span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">❌ Rechazado</span>';
           }
 
           let accionesDocHtml = '';
-          if (a.estado === 'pendiente_documentos' && tieneDocs) {
-            let btnAprobarMask = '';
-
-            // Verificar rechazos (incluyendo autorización de padres si existe)
-            let hasRechazos = a.tiene_rechazos || a.documentos_subidos.some(ds => ds.estado === 'rechazado');
-            if (a.formato_autorizacion_padres && a.estado_autorizacion_padres === 'rechazado') {
-              hasRechazos = true;
-            }
-
-            // Verificar si todos están aprobados
-            let allAprobados = a.todos_aprobados || (tieneDocs && a.documentos_subidos.every(ds => ds.estado === 'aprobado'));
-
-            // Si tiene autorización de padres, debe estar aprobada también
-            if (a.formato_autorizacion_padres) {
-              if (a.estado_autorizacion_padres !== 'aprobado') {
-                allAprobados = false;
-              }
-            }
-
-            if (hasRechazos) {
-              btnAprobarMask = `
-                <button onclick="mAlert('No se puede aprobar masivamente porque existen documentos rechazados. El asistente debe corregir los archivos o debe marcarlos todos individualmente.', 'warning')" 
-                        style="background:#9ca3af;color:white;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px;opacity:0.7;">
-                  <i class="ri-forbid-line"></i> Rechazos detectados
-                </button>`;
-            } else if (!allAprobados) {
-              btnAprobarMask = `
-                <button onclick="mAlert('Debe aprobar individualmente todos los archivos antes de realizar la aprobación final.', 'info')" 
-                        style="background:#6b7280;color:white;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px;opacity:0.7;">
-                  <i class="ri-information-line"></i> Pendiente aprobar todo
-                </button>`;
-            } else {
-              btnAprobarMask = `
-                <button onclick="event.stopPropagation();aprobarDocRevision('${tipo}', ${a.id})" 
-                        style="background:linear-gradient(135deg,#22c55e,#16a34a);color:white;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px;transition:all .2s;box-shadow:0 2px 6px rgba(34,197,94,0.32);">
-                  <i class="ri-check-double-line"></i> Aprobación Final
-                </button>`;
-            }
-
-            accionesDocHtml = `
-                <div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px dashed #d1d5db;align-items:center;">
-                  <span style="font-size:12px;font-weight:600;color:#374151;">Acción:</span>
-                  ${btnAprobarMask}
-                  <button onclick="event.stopPropagation();rechazarDocRevision('${tipo}', ${a.id}, '${a.nombre_completo.replace(/'/g, "\\'")}')" 
-                          style="background:linear-gradient(135deg,#ef4444,#dc2626);color:white;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px;transition:all .2s;box-shadow:0 2px 6px rgba(239,68,68,0.3);">
-                    <i class="ri-close-line"></i> Rechazar Todo
-                  </button>
-                </div>`;
-          } else if (tieneRechazosPersonales) {
+          if (tieneRechazosPersonales) {
             accionesDocHtml = `
                 <div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px dashed #d1d5db;align-items:center;flex-wrap:wrap;">
                   <span style="font-size:12px;font-weight:600;color:#9a3412;background:#fff7ed;border:1px solid #fdba74;border-radius:6px;padding:6px 10px;display:inline-flex;align-items:center;gap:6px;"><i class="ri-alert-fill"></i> Requiere actualización de documentos</span>
@@ -1348,6 +1371,9 @@ function verDetalleVisita(tipo, id) {
         }).join('');
       }
 
+      const observacionesTheme = getObservationTheme(data.observaciones);
+      const puedeMostrarObservacionesCoordinador = !['enviada_coordinacion', 'reprogramacion_solicitada'].includes(data.estado);
+
       let html = `
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;background:linear-gradient(135deg,#f8fafc,#f1f5f9);padding:16px;border-radius:12px;border:1px solid #e2e8f0;">
             <div style="display:flex;align-items:center;gap:8px;">
@@ -1371,6 +1397,15 @@ function verDetalleVisita(tipo, id) {
               <div><span style="font-size:11px;color:#6b7280;display:block;">Registrada</span><strong style="font-size:13px;color:#111827;">${data.fecha_registro || data.fecha_solicitud}</strong></div>
             </div>
           </div>
+          ${data.observaciones && puedeMostrarObservacionesCoordinador
+          ? `<div style="margin-bottom:16px;padding:12px 14px;background:${observacionesTheme.bg};border:1px solid ${observacionesTheme.border};border-left:4px solid ${observacionesTheme.accent};border-radius:10px;color:${observacionesTheme.text};">
+              <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.35px;">
+                <i class="${observacionesTheme.icon}"></i>
+                ${observacionesTheme.label}
+              </div>
+              <div style="font-size:13px;line-height:1.5;white-space:normal;">${escapeHtml(data.observaciones).replace(/\n/g, '<br>')}</div>
+            </div>`
+          : ''}
           
           ${archivosFinalesHtml}
           
@@ -1447,22 +1482,17 @@ function cerrarModalDetalle() {
 }
 
 async function accionVisita(tipo, id, accion) {
+  if (esUsuarioSst()) {
+    mAlert('Tu rol SST solo puede revisar documentos.', 'warning');
+    return;
+  }
+
   let observaciones = '';
   if (accion === 'rechazar') {
-    observaciones = await mPrompt('Ingrese el motivo del rechazo de esta visita:', {
-      title: 'Rechazar Visita',
-      icon: '<i class="ri-close-circle-line"></i>',
-      iconClass: 'cm-error',
-      confirmText: 'Rechazar',
-      confirmClass: 'cm-btn-danger',
-      placeholder: 'Escriba el motivo aquí...'
-    });
-    if (observaciones === null) return;
-    if (observaciones.trim() === '') {
-      mAlert('Debe proporcionar un motivo para rechazar la visita.', 'warning');
-      return;
-    }
+    mAlert('La acción de rechazar visita no está disponible para el administrador.', 'warning');
+    return;
   }
+
   if (accion === 'aprobar') {
     const ok = await mConfirm('¿Estás seguro de <strong>aprobar</strong> esta visita?', {
       title: 'Aprobar Visita',
@@ -1533,6 +1563,11 @@ async function accionVisita(tipo, id, accion) {
 }
 
 async function solicitarReprogramacionVisita(tipo, id) {
+  if (esUsuarioSst()) {
+    mAlert('Tu rol SST no tiene permitido solicitar reprogramaciones.', 'warning');
+    return;
+  }
+
   const motivo = await mPrompt('Indique el motivo para solicitar reprogramación al instructor:', {
     title: 'Solicitar Reprogramación',
     icon: '<i class="ri-calendar-event-line"></i>',
@@ -1727,4 +1762,55 @@ document.addEventListener('DOMContentLoaded', function () {
       if (e.target === this) cerrarModalVisualizarDoc();
     });
   }
+});
+
+// Resaltar fila objetivo si la URL contiene ?tipo=&id=
+document.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(window.location.search);
+  const tipoParam = params.get('tipo');
+  const idParam = params.get('id');
+  if (!tipoParam || !idParam) return;
+
+  // Asegurar que la pestaña correcta esté activa
+  if (typeof cambiarTabVisita === 'function') {
+    cambiarTabVisita(tipoParam);
+  }
+
+  const attempt = () => {
+    // selector por id creado: visita-<tipo>-<id>
+    const sel = `#visita-${tipoParam}-${idParam}`;
+    let el = document.querySelector(sel);
+    if (!el) {
+      // fallback: buscar por data attributes
+      el = document.querySelector(`.visit-row[data-id="${idParam}"][data-tipo="${tipoParam}"]`);
+    }
+    if (el) {
+      el.classList.add('row-selected');
+      el.scrollIntoView({behavior: 'smooth', block: 'center'});
+      return true;
+    }
+    return false;
+  };
+
+  // Esperar la carga de visitas si cargarVisitas devuelve promesa
+  if (typeof cargarVisitas === 'function') {
+    const p = cargarVisitas();
+    if (p && typeof p.then === 'function') {
+      p.then(() => {
+        let tries = 0;
+        const max = 12;
+        const iv = setInterval(() => {
+          if (attempt() || ++tries >= max) clearInterval(iv);
+        }, 300);
+      }).catch(() => setTimeout(attempt, 500));
+      return;
+    }
+  }
+
+  // fallback retries
+  let tries = 0;
+  const max = 12;
+  const iv = setInterval(() => {
+    if (attempt() || ++tries >= max) clearInterval(iv);
+  }, 300);
 });
