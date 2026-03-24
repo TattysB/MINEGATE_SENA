@@ -154,9 +154,10 @@ class Aprendiz(models.Model):
     
     telefono = models.CharField(
         max_length=20,
-        blank=True,
+        blank=False,
         verbose_name='Teléfono',
-        null=True
+        null=False,
+        default=''
     )
     
     # Documentos requeridos

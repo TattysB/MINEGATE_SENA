@@ -103,11 +103,14 @@ def validar_nombre_alfabetico(nombre, campo='nombre'):
     return nombre
 
 
-def validar_telefono(telefono):
+def validar_telefono(telefono, requerido=False):
     """
     Valida que el teléfono sea solo numérico (7-15 dígitos, con + opcional).
+    Si requerido=True, el teléfono no puede estar vacío.
     """
     if not telefono:
+        if requerido:
+            raise ValidationError('El teléfono es obligatorio.')
         return None  # Opcional
     
     telefono = str(telefono).strip()
@@ -526,11 +529,12 @@ class AprendizForm(forms.ModelForm):
             }),
             'telefono': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Teléfono (opcional)',
+                'placeholder': 'Teléfono ★ (Requerido)',
                 'inputmode': 'tel',
                 'maxlength': '20',
                 'pattern': r'^[\+]?[0-9\s\-]{7,20}$',
                 'title': 'Teléfono válido: 7 a 15 dígitos (puede incluir +, espacios y guiones).',
+                'required': True,
             }),
             'documento_identidad': forms.FileInput(attrs={
                 'class': 'form-control',
@@ -591,8 +595,8 @@ class AprendizForm(forms.ModelForm):
         return correo
     
     def clean_telefono(self):
-        """Validación de teléfono."""
-        return validar_telefono(self.cleaned_data.get('telefono', ''))
+        """Validación de teléfono (OBLIGATORIO)."""
+        return validar_telefono(self.cleaned_data.get('telefono', ''), requerido=True)
 
     def clean_documento_identidad(self):
         """Valida formato permitido para documento de identidad."""

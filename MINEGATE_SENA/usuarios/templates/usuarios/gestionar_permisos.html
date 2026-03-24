@@ -2,7 +2,7 @@
 {% load static %}
  {% block content %} 
 <link rel="stylesheet" href="{% static 'css/gestionar_permisos.css' %}" />
-<link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}?v=20260311c">
+<link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}?v=20260320a">
 
 <style>
   /* ===== ESTILOS ADICIONALES PARA GESTIÓN DE PERMISOS ===== */
@@ -184,7 +184,7 @@
       <button
         type="button"
         class="btn-cerrar-alerta"
-        onclick="this.parentElement.style.display = 'none'"
+        onclick="cerrarAlertaSuave(this.parentElement)"
       >
         ×
       </button>
@@ -455,13 +455,41 @@
   </div>
 
   <!-- Script para Modal Unificado -->
-  <script src="{% static 'core/js/custom_modal.js' %}?v=20260311c"></script>
+  <script src="{% static 'core/js/custom_modal.js' %}?v=20260320a"></script>
 
   <!-- Script para Gestión de Permisos -->
   <script>
     let usuarioIdEliminar = null;
     let usuarioIdToggle = null;
     let filtroActualValor = '{{ filtro_actual|default:"todos" }}';
+
+    function cerrarAlertaSuave(alertaEl) {
+      if (!alertaEl) return;
+      alertaEl.style.transition = 'opacity 0.28s ease, transform 0.28s ease, max-height 0.28s ease, margin 0.28s ease, padding 0.28s ease';
+      alertaEl.classList.add('alerta-ocultando');
+      setTimeout(() => {
+        alertaEl.style.display = 'none';
+      }, 280);
+    }
+
+    function abrirModalAnimado(modal) {
+      if (!modal) return;
+      modal.classList.remove('modal-closing');
+      modal.style.display = 'flex';
+      requestAnimationFrame(() => {
+        modal.classList.add('modal-visible');
+      });
+    }
+
+    function cerrarModalAnimado(modal) {
+      if (!modal) return;
+      modal.classList.remove('modal-visible');
+      modal.classList.add('modal-closing');
+      setTimeout(() => {
+        modal.style.display = 'none';
+        modal.classList.remove('modal-closing');
+      }, 220);
+    }
 
     // ==================== FUNCIONES DE FILTRADO ====================
 
@@ -753,18 +781,18 @@
 
     function abrirModal(modalId) {
       const modal = document.getElementById(modalId);
-      modal.style.display = "flex";
+      abrirModalAnimado(modal);
     }
 
     function cerrarModal(modalId) {
       const modal = document.getElementById(modalId);
-      modal.style.display = "none";
+      cerrarModalAnimado(modal);
     }
 
     // Cerrar modal si se hace clic fuera del contenido
     window.addEventListener("click", function (event) {
       if (event.target.classList.contains("modal")) {
-        event.target.style.display = "none";
+        cerrarModalAnimado(event.target);
       }
     });
 
@@ -773,7 +801,7 @@
       const alertas = document.querySelectorAll(".alerta");
       alertas.forEach((alerta) => {
         setTimeout(() => {
-          alerta.style.display = "none";
+          cerrarAlertaSuave(alerta);
         }, 5000);
       });
     });

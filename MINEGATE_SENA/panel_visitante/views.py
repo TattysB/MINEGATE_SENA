@@ -1782,10 +1782,10 @@ def eliminar_asistente(request, tipo, asistente_id):
         if not _tiene_acceso_por_correo(visita, correo):
             messages.error(request, "No tiene permiso para esta acción.")
             return _redirect_segun_rol(request)
-        if _solicitud_final_ya_enviada(visita, tipo):
+        if visita.estado in ["documentos_enviados", "en_revision_documentos", "confirmada"]:
             messages.error(
                 request,
-                "La solicitud final ya fue enviada previamente. No es posible eliminar asistentes.",
+                "No es posible eliminar asistentes en el estado actual de la visita.",
             )
             return redirect(
                 "panel_visitante:registrar_asistentes",
@@ -2482,7 +2482,15 @@ def actualizar_info_asistente(request, tipo, asistente_id):
             ctx.update(extra)
         return ctx
 
-    if _solicitud_final_ya_enviada(visita, tipo):
+    bloqueo_edicion = _solicitud_final_ya_enviada(visita, tipo)
+    if tipo == "externa":
+        bloqueo_edicion = visita.estado in [
+            "documentos_enviados",
+            "en_revision_documentos",
+            "confirmada",
+        ]
+
+    if bloqueo_edicion:
         mensaje_bloqueo = (
             "La solicitud final ya fue enviada previamente. "
             "No puede modificar los datos del asistente."

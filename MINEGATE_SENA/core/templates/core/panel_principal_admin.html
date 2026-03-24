@@ -1,0 +1,701 @@
+<style>
+  .pp-dashboard {
+    --pp-bg: linear-gradient(145deg, #effcf3 0%, #f6fff8 50%, #ffffff 100%);
+    --pp-card: #ffffff;
+    --pp-border: #d9f0de;
+    --pp-text: #1f2937;
+    --pp-muted: #5b6472;
+    --pp-green: #0f8b4c;
+    --pp-green-soft: #e5f7ec;
+    --pp-warning: #d97706;
+    --pp-danger: #dc2626;
+    --pp-shadow: 0 14px 34px rgba(15, 139, 76, 0.08);
+    background: var(--pp-bg);
+    border: 1px solid var(--pp-border);
+    border-radius: 22px;
+    padding: 1.5rem;
+    color: var(--pp-text);
+    box-shadow: var(--pp-shadow);
+  }
+
+  .pp-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .pp-title {
+    margin: 0;
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: #0f5132;
+  }
+
+  .pp-subtitle {
+    margin: 0.35rem 0 0;
+    color: var(--pp-muted);
+    font-size: 0.95rem;
+  }
+
+  .pp-variation {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background: #eef2f7;
+    color: #334155;
+  }
+
+  .pp-variation.up {
+    background: #e7f9ed;
+    color: #0f8b4c;
+    border-color: #bde7ca;
+  }
+
+  .pp-variation.down {
+    background: #fff4f4;
+    color: #dc2626;
+    border-color: #fecaca;
+  }
+
+  .pp-variation.neutral {
+    background: #f3f4f6;
+    color: #4b5563;
+    border-color: #e5e7eb;
+  }
+
+  .pp-kpis {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(160px, 1fr));
+    gap: 0.9rem;
+    margin-bottom: 1.3rem;
+  }
+
+  .pp-kpi {
+    --kpi-start: #ffffff;
+    --kpi-end: #f7fcf9;
+    --kpi-border: #d9f0de;
+    --kpi-value: #0f5132;
+    background: linear-gradient(145deg, var(--kpi-start) 0%, var(--kpi-end) 100%);
+    border: 1px solid var(--kpi-border);
+    border-radius: 14px;
+    padding: 0.95rem;
+    box-shadow: 0 10px 24px rgba(15, 139, 76, 0.07);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .pp-kpi::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.4) 0%, var(--kpi-value) 100%);
+    opacity: 0.45;
+  }
+
+  .pp-kpi:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 30px rgba(15, 139, 76, 0.13);
+  }
+
+  .pp-kpi-label {
+    display: block;
+    color: var(--pp-muted);
+    font-size: 0.8rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .pp-kpi-value {
+    font-size: 1.42rem;
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--kpi-value);
+  }
+
+  .pp-kpi.kpi-total {
+    --kpi-start: #ecfdf4;
+    --kpi-end: #dff8ea;
+    --kpi-border: #b8eacb;
+    --kpi-value: #0f8b4c;
+  }
+
+  .pp-kpi.kpi-internas {
+    --kpi-start: #f0fdf4;
+    --kpi-end: #e4faed;
+    --kpi-border: #c7efd8;
+    --kpi-value: #15803d;
+  }
+
+  .pp-kpi.kpi-externas {
+    --kpi-start: #eef8ff;
+    --kpi-end: #e3f2ff;
+    --kpi-border: #c5e2ff;
+    --kpi-value: #1d4ed8;
+  }
+
+  .pp-kpi.kpi-pendientes {
+    --kpi-start: #fff8eb;
+    --kpi-end: #ffefd4;
+    --kpi-border: #f8d9a0;
+    --kpi-value: #b45309;
+  }
+
+  .pp-kpi.kpi-entradas {
+    --kpi-start: #ecfeff;
+    --kpi-end: #dff9ff;
+    --kpi-border: #bdeef9;
+    --kpi-value: #0f766e;
+  }
+
+  .pp-kpi.kpi-salidas {
+    --kpi-start: #fff2f2;
+    --kpi-end: #ffe5e5;
+    --kpi-border: #ffcaca;
+    --kpi-value: #be123c;
+  }
+
+  .pp-resumen-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(280px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .pp-card {
+    background: linear-gradient(145deg, #ffffff 0%, #fbfffc 100%);
+    border: 1px solid var(--pp-border);
+    border-radius: 16px;
+    padding: 1rem;
+    box-shadow: 0 12px 24px rgba(15, 139, 76, 0.06);
+  }
+
+  .pp-mini-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+    gap: 0.65rem;
+  }
+
+  .pp-mini-card {
+    --mini-start: #ffffff;
+    --mini-end: #f7fcf9;
+    --mini-border: #e6efe9;
+    --mini-value: #0f5132;
+    border: 1px solid var(--mini-border);
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--mini-start) 0%, var(--mini-end) 100%);
+    padding: 0.75rem 0.8rem;
+    box-shadow: 0 8px 18px rgba(15, 139, 76, 0.06);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  }
+
+  .pp-mini-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 24px rgba(15, 139, 76, 0.12);
+  }
+
+  .pp-mini-label {
+    display: block;
+    font-size: 0.78rem;
+    color: #64748b;
+    margin-bottom: 0.2rem;
+  }
+
+  .pp-mini-value {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--mini-value);
+    line-height: 1.1;
+  }
+
+  .pp-mini-card.mini-total {
+    --mini-start: #ecfdf4;
+    --mini-end: #e2f9ea;
+    --mini-border: #b9e9ca;
+    --mini-value: #0f8b4c;
+  }
+
+  .pp-mini-card.mini-mes-actual {
+    --mini-start: #ecfeff;
+    --mini-end: #def9ff;
+    --mini-border: #baeefa;
+    --mini-value: #0369a1;
+  }
+
+  .pp-mini-card.mini-mes-anterior {
+    --mini-start: #f5f3ff;
+    --mini-end: #ede9fe;
+    --mini-border: #ddd6fe;
+    --mini-value: #5b21b6;
+  }
+
+  .pp-mini-card.mini-asistentes {
+    --mini-start: #fff7ed;
+    --mini-end: #ffedd5;
+    --mini-border: #fed7aa;
+    --mini-value: #c2410c;
+  }
+
+  .pp-mini-card.mini-pendientes {
+    --mini-start: #fffbeb;
+    --mini-end: #fef3c7;
+    --mini-border: #fcd34d;
+    --mini-value: #b45309;
+  }
+
+  .pp-mini-card.mini-confirmadas {
+    --mini-start: #f0fdf4;
+    --mini-end: #dcfce7;
+    --mini-border: #86efac;
+    --mini-value: #166534;
+  }
+
+  .pp-mini-card.mini-rechazadas {
+    --mini-start: #fff1f2;
+    --mini-end: #ffe4e6;
+    --mini-border: #fecdd3;
+    --mini-value: #be123c;
+  }
+
+  .pp-mini-card.mini-reprogramacion {
+    --mini-start: #eff6ff;
+    --mini-end: #dbeafe;
+    --mini-border: #bfdbfe;
+    --mini-value: #1d4ed8;
+  }
+
+  .pp-mini-value.warning {
+    color: #b45309;
+  }
+
+  .pp-mini-value.success {
+    color: #166534;
+  }
+
+  .pp-mini-value.danger {
+    color: #b91c1c;
+  }
+
+  .pp-mini-value.info {
+    color: #1d4ed8;
+  }
+
+  .pp-mini-meta {
+    margin-top: 0.22rem;
+    font-size: 0.74rem;
+    color: #6b7280;
+  }
+
+  .pp-card h3 {
+    margin: 0 0 0.85rem;
+    font-size: 1.02rem;
+    color: #134e3a;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .pp-card h3::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #0f8b4c;
+    box-shadow: 0 0 0 4px rgba(15, 139, 76, 0.15);
+  }
+
+  .pp-trend-row {
+    display: grid;
+    grid-template-columns: 64px 1fr 34px;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.84rem;
+    color: #374151;
+  }
+
+  .pp-trend-track {
+    width: 100%;
+    height: 10px;
+    border-radius: 999px;
+    background: #ecf5ef;
+    overflow: hidden;
+  }
+
+  .pp-trend-bar {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #16a34a 0%, #0f8b4c 100%);
+  }
+
+  .pp-distribucion-item {
+    margin-bottom: 0.75rem;
+  }
+
+  .pp-distribucion-head {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.82rem;
+    color: #4b5563;
+    margin-bottom: 0.3rem;
+  }
+
+  .pp-distribucion-track {
+    height: 9px;
+    border-radius: 999px;
+    background: #edf2f7;
+    overflow: hidden;
+  }
+
+  .pp-distribucion-fill {
+    height: 100%;
+    border-radius: 999px;
+  }
+
+  .pp-fill-pendiente {
+    background: #f59e0b;
+  }
+
+  .pp-fill-aprobada {
+    background: #10b981;
+  }
+
+  .pp-fill-rechazada {
+    background: #ef4444;
+  }
+
+  .pp-fill-reprogramacion {
+    background: #3b82f6;
+  }
+
+  .pp-bottom {
+    display: grid;
+    grid-template-columns: 1.7fr 1fr;
+    gap: 1rem;
+  }
+
+  .pp-lista {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .pp-lista-item {
+    border: 1px solid #e8f2ea;
+    border-radius: 12px;
+    padding: 0.65rem 0.7rem;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 0.55rem;
+    align-items: center;
+  }
+
+  .pp-tipo {
+    font-size: 0.76rem;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 0.23rem 0.52rem;
+    color: #14532d;
+    background: #dcfce7;
+  }
+
+  .pp-tipo.externa {
+    color: #1d4ed8;
+    background: #dbeafe;
+  }
+
+  .pp-item-main {
+    min-width: 0;
+  }
+
+  .pp-item-title {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #111827;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+
+  .pp-item-meta {
+    margin: 0.16rem 0 0;
+    font-size: 0.78rem;
+    color: #6b7280;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+
+  .pp-estado {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.23rem 0.5rem;
+    border-radius: 999px;
+    text-transform: capitalize;
+    border: 1px solid #d1d5db;
+    color: #374151;
+    background: #f3f4f6;
+  }
+
+  .pp-estado.estado-pendiente {
+    color: #b45309;
+    background: #fef3c7;
+    border-color: #fde68a;
+  }
+
+  .pp-estado.estado-aprobada_final {
+    color: #166534;
+    background: #dcfce7;
+    border-color: #bbf7d0;
+  }
+
+  .pp-estado.estado-rechazada {
+    color: #991b1b;
+    background: #fee2e2;
+    border-color: #fecaca;
+  }
+
+  .pp-estado.estado-reprogramacion_solicitada {
+    color: #1d4ed8;
+    background: #dbeafe;
+    border-color: #bfdbfe;
+  }
+
+  .pp-actions {
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  .pp-action {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-decoration: none;
+    border: 1px solid #d8ecde;
+    border-radius: 12px;
+    padding: 0.72rem 0.85rem;
+    color: #14532d;
+    background: linear-gradient(135deg, #f8fff9 0%, #ecfdf1 100%);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  }
+
+  .pp-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px rgba(22, 163, 74, 0.12);
+  }
+
+  .pp-action small {
+    color: #3f4c5a;
+    display: block;
+    margin-top: 0.15rem;
+  }
+
+  .pp-empty {
+    margin: 0;
+    color: #6b7280;
+    font-size: 0.9rem;
+  }
+
+  .pp-alerta {
+    border: 1px solid #fde68a;
+    background: #fffbeb;
+    color: #92400e;
+    border-radius: 12px;
+    padding: 0.75rem 0.9rem;
+    font-size: 0.88rem;
+    margin-bottom: 1rem;
+  }
+
+  @media (max-width: 1200px) {
+    .pp-kpis {
+      grid-template-columns: repeat(3, minmax(150px, 1fr));
+    }
+
+    .pp-resumen-grid,
+    .pp-bottom {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 680px) {
+    .pp-dashboard {
+      border-radius: 16px;
+      padding: 1rem;
+    }
+
+    .pp-kpis {
+      grid-template-columns: repeat(2, minmax(120px, 1fr));
+    }
+
+    .pp-top {
+      flex-direction: column;
+    }
+
+    .pp-mini-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .pp-lista-item {
+      grid-template-columns: 1fr;
+      align-items: start;
+    }
+  }
+</style>
+
+<div class="pp-dashboard">
+  <div class="pp-top">
+    <div>
+      <h2 class="pp-title">Dashboard General</h2>
+      <p class="pp-subtitle">Resumen operativo de visitas, accesos y estado actual del flujo administrativo.</p>
+    </div>
+    <div>
+      <span class="pp-variation {% if dashboard.variacion_mes_pct > 0 %}up{% elif dashboard.variacion_mes_pct < 0 %}down{% else %}neutral{% endif %}">
+        {% if dashboard.variacion_mes_pct > 0 %}▲{% elif dashboard.variacion_mes_pct < 0 %}▼{% else %}■{% endif %}
+        {{ dashboard.variacion_mes_pct }}% vs mes anterior
+      </span>
+    </div>
+  </div>
+
+  {% if dashboard_error %}
+  <div class="pp-alerta">{{ dashboard_error }}</div>
+  {% endif %}
+
+  <div class="pp-kpis">
+    <article class="pp-kpi kpi-total">
+      <span class="pp-kpi-label">Visitas Totales</span>
+      <div class="pp-kpi-value">{{ dashboard.total_visitas }}</div>
+    </article>
+    <article class="pp-kpi kpi-internas">
+      <span class="pp-kpi-label">Internas</span>
+      <div class="pp-kpi-value">{{ dashboard.total_internas }}</div>
+    </article>
+    <article class="pp-kpi kpi-externas">
+      <span class="pp-kpi-label">Externas</span>
+      <div class="pp-kpi-value">{{ dashboard.total_externas }}</div>
+    </article>
+    <article class="pp-kpi kpi-pendientes">
+      <span class="pp-kpi-label">Pendientes</span>
+      <div class="pp-kpi-value">{{ dashboard.pendientes_total }}</div>
+    </article>
+    <article class="pp-kpi kpi-entradas">
+      <span class="pp-kpi-label">Entradas Hoy</span>
+      <div class="pp-kpi-value">{{ dashboard.accesos_hoy_entradas }}</div>
+    </article>
+    <article class="pp-kpi kpi-salidas">
+      <span class="pp-kpi-label">Salidas Hoy</span>
+      <div class="pp-kpi-value">{{ dashboard.accesos_hoy_salidas }}</div>
+    </article>
+  </div>
+
+  <div class="pp-resumen-grid">
+    <section class="pp-card">
+      <h3>Visitas Registradas</h3>
+      <div class="pp-mini-grid">
+        <article class="pp-mini-card mini-total">
+          <span class="pp-mini-label">Total del Sistema</span>
+          <div class="pp-mini-value">{{ dashboard.total_visitas }}</div>
+          <div class="pp-mini-meta">Internas: {{ dashboard.total_internas }} · Externas: {{ dashboard.total_externas }}</div>
+        </article>
+        <article class="pp-mini-card mini-mes-actual">
+          <span class="pp-mini-label">Mes Actual</span>
+          <div class="pp-mini-value">{{ dashboard.visitas_mes_actual }}</div>
+          <div class="pp-mini-meta">Solicitudes registradas este mes</div>
+        </article>
+        <article class="pp-mini-card mini-mes-anterior">
+          <span class="pp-mini-label">Mes Anterior</span>
+          <div class="pp-mini-value">{{ dashboard.visitas_mes_anterior }}</div>
+          <div class="pp-mini-meta">Solicitudes del mes pasado</div>
+        </article>
+        <article class="pp-mini-card mini-asistentes">
+          <span class="pp-mini-label">Asistentes Totales</span>
+          <div class="pp-mini-value">{{ dashboard.asistentes_total }}</div>
+          <div class="pp-mini-meta">Aprendices y visitantes vinculados</div>
+        </article>
+      </div>
+    </section>
+
+    <section class="pp-card">
+      <h3>Estado Actual de Visitas</h3>
+      <div class="pp-mini-grid">
+        <article class="pp-mini-card mini-pendientes">
+          <span class="pp-mini-label">Pendientes</span>
+          <div class="pp-mini-value warning">{{ dashboard.pendientes_total }}</div>
+          <div class="pp-mini-meta">Esperando revisión</div>
+        </article>
+        <article class="pp-mini-card mini-confirmadas">
+          <span class="pp-mini-label">Confirmadas</span>
+          <div class="pp-mini-value success">{{ dashboard.confirmadas_total }}</div>
+          <div class="pp-mini-meta">Aprobadas y listas</div>
+        </article>
+        <article class="pp-mini-card mini-rechazadas">
+          <span class="pp-mini-label">Rechazadas</span>
+          <div class="pp-mini-value danger">{{ dashboard.rechazadas_total }}</div>
+          <div class="pp-mini-meta">No aprobadas</div>
+        </article>
+        <article class="pp-mini-card mini-reprogramacion">
+          <span class="pp-mini-label">Reprogramación</span>
+          <div class="pp-mini-value info">{{ dashboard.reprogramaciones_total }}</div>
+          <div class="pp-mini-meta">Pendientes por reagendar</div>
+        </article>
+      </div>
+    </section>
+  </div>
+
+  <div class="pp-bottom">
+    <section class="pp-card">
+      <h3>Actividad Reciente</h3>
+      <ul class="pp-lista">
+        {% for item in dashboard.visitas_recientes %}
+        <li class="pp-lista-item">
+          <span class="pp-tipo {% if item.tipo == 'Externa' %}externa{% endif %}">{{ item.tipo }}</span>
+          <div class="pp-item-main">
+            <p class="pp-item-title">{{ item.responsable }} · {{ item.entidad }}</p>
+            <p class="pp-item-meta">Solicitud {{ item.fecha_solicitud|date:'d/m/Y H:i' }} · ID {{ item.id }}</p>
+          </div>
+          <span class="pp-estado estado-{{ item.estado }}">{{ item.estado|title }}</span>
+        </li>
+        {% empty %}
+        <li class="pp-empty">No hay solicitudes recientes para mostrar.</li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section class="pp-card">
+      <h3>Acciones Rápidas</h3>
+      <div class="pp-actions">
+        <a class="pp-action" href="{% url 'core:panel_administrativo_seccion' 'gestion_visitas' %}">
+          <div>
+            <strong>Gestionar Visitas</strong>
+            <small>Revisar estados y aprobar solicitudes</small>
+          </div>
+          <span>→</span>
+        </a>
+        <a class="pp-action" href="{% url 'core:panel_administrativo_seccion' 'control_acceso' %}">
+          <div>
+            <strong>Control de Acceso</strong>
+            <small>Consultar trazabilidad de ingresos y salidas</small>
+          </div>
+          <span>→</span>
+        </a>
+        <a class="pp-action" href="{% url 'core:panel_administrativo_seccion' 'gestion_calendario' %}">
+          <div>
+            <strong>Calendario</strong>
+            <small>Validar cupos y disponibilidad por bloque</small>
+          </div>
+          <span>→</span>
+        </a>
+      </div>
+    </section>
+  </div>
+</div>

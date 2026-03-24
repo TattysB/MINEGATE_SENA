@@ -171,6 +171,7 @@ def construir_reporte_documental_visita(visita, tipo_visita):
 
         archivos_finales_estado.append(
             {
+                "documento_requerido_id": doc_final.id,
                 "titulo": doc_final.titulo,
                 "categoria": doc_final.get_categoria_display(),
                 "estado": estado,
@@ -187,6 +188,9 @@ def construir_reporte_documental_visita(visita, tipo_visita):
     archivos_finales_rechazados = [
         a for a in archivos_finales_estado if a["estado"] == "rechazado"
     ]
+    mostrar_estado_archivos_finales = any(
+        a["estado"] != "aprobado" for a in archivos_finales_estado
+    )
     total_incidencias_asistentes = sum(
         len(item["incidencias"]) for item in asistentes_con_alertas
     )
@@ -196,6 +200,7 @@ def construir_reporte_documental_visita(visita, tipo_visita):
         "archivos_finales_estado": archivos_finales_estado,
         "archivos_finales_con_alerta": archivos_finales_con_alerta,
         "archivos_finales_rechazados": archivos_finales_rechazados,
+        "mostrar_estado_archivos_finales": mostrar_estado_archivos_finales,
         "total_alertas": total_incidencias_asistentes
         + len(archivos_finales_con_alerta),
         "hay_alertas": bool(asistentes_con_alertas or archivos_finales_con_alerta),
@@ -418,6 +423,11 @@ def detalle_visita_externa(request, pk):
         categorias_finales_agregadas.add(clave_categoria)
 
     reporte_documental = construir_reporte_documental_visita(visita, "externa")
+    documentos_finales_rechazados_ids = [
+        item.get("documento_requerido_id")
+        for item in reporte_documental.get("archivos_finales_rechazados", [])
+        if item.get("documento_requerido_id") is not None
+    ]
     hay_alertas_documentales = bool(reporte_documental.get("hay_alertas"))
     estados_finales = reporte_documental.get("archivos_finales_estado", [])
     archivos_finales_faltantes = sum(
@@ -442,9 +452,10 @@ def detalle_visita_externa(request, pk):
     )
 
     solicitud_final_historica = _solicitud_final_historica_externa(visita)
-    permite_editar_asistentes = (
-        visita.estado == "aprobada_inicial" and not solicitud_final_historica
-    )
+    # En externo se permite actualizar datos mientras la visita siga editable
+    # en el estado actual, incluso si hubo un envio final historico.
+    permite_editar_asistentes = visita.estado == "aprobada_inicial"
+    permite_eliminar_asistentes = visita.estado == "aprobada_inicial"
 
     return render(
         request,
@@ -454,6 +465,7 @@ def detalle_visita_externa(request, pk):
             "correo": correo,
             "documentos_por_categoria": documentos_por_categoria,
             "documentos_finales_requeridos": documentos_finales_requeridos,
+            "documentos_finales_rechazados_ids": documentos_finales_rechazados_ids,
             "reporte_documental": reporte_documental,
             "reprogramacion_pendiente": reprogramacion_pendiente,
             "enviar_final_habilitado": enviar_final_habilitado,
@@ -461,5 +473,6 @@ def detalle_visita_externa(request, pk):
             "mostrar_boton_corregir_archivos_finales": mostrar_boton_corregir_archivos_finales,
             "solicitud_final_historica": solicitud_final_historica,
             "permite_editar_asistentes": permite_editar_asistentes,
+            "permite_eliminar_asistentes": permite_eliminar_asistentes,
         },
     )

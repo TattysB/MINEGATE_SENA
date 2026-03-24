@@ -9,6 +9,7 @@
   <title>Detalle Visita #{{ visita.id }} - MINEGATE</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=20260320a">
   <link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}">
 <style>
   :root { --ext-azul: #39a900; --ext-oscuro: #2d8600; }
@@ -339,21 +340,35 @@
           {% endfor %}
         {% endif %}
 
-        <h6 style="font-weight:800; color:#111827; margin:14px 0 10px;">Estado de archivos finales</h6>
-        {% for archivo in reporte_documental.archivos_finales_estado %}
-          <div class="doc-issue-item" style="margin-bottom:8px;">
-            <div class="doc-issue-line" style="justify-content:space-between; flex-wrap:wrap; gap:10px; margin-top:0;">
-              <div>
-                <strong style="font-size:0.86rem; color:#1f2937;">{{ archivo.titulo }}</strong>
-                <span class="doc-issue-sub">{{ archivo.categoria }}</span>
-              </div>
-              <span class="estado-pill-mini {{ archivo.estado }}">
-                {% if archivo.estado == 'faltante' %}FALTANTE{% elif archivo.estado == 'rechazado' %}RECHAZADO{% elif archivo.estado == 'pendiente' %}EN REVISIÓN{% else %}APROBADO{% endif %}
-              </span>
+        {% if reporte_documental.mostrar_estado_archivos_finales %}
+          <h6 style="font-weight:800; color:#111827; margin:14px 0 10px;">Estado de archivos finales</h6>
+          {% if reporte_documental.archivos_finales_rechazados %}
+            <div class="doc-resumen-box" style="background:#fff7ed;border:1px solid #fdba74;color:#9a3412;">
+              <i class="fas fa-file-circle-xmark me-2"></i>
+              Archivo final rechazado:
+              {% for archivo in reporte_documental.archivos_finales_rechazados %}
+                <strong>{{ archivo.titulo }}</strong>{% if not forloop.last %}, {% endif %}
+              {% endfor %}
+              . Esta novedad corresponde a archivo final, no a un asistente.
             </div>
-            <div style="font-size:0.82rem; color:#4b5563; margin-top:6px;">{{ archivo.detalle }}</div>
-          </div>
-        {% endfor %}
+          {% endif %}
+          {% for archivo in reporte_documental.archivos_finales_estado %}
+            {% if archivo.estado != 'aprobado' %}
+            <div class="doc-issue-item" style="margin-bottom:8px;">
+              <div class="doc-issue-line" style="justify-content:space-between; flex-wrap:wrap; gap:10px; margin-top:0;">
+                <div>
+                  <strong style="font-size:0.86rem; color:#1f2937;">{{ archivo.titulo }}</strong>
+                  <span class="doc-issue-sub">{{ archivo.categoria }}</span>
+                </div>
+                <span class="estado-pill-mini {{ archivo.estado }}">
+                  {% if archivo.estado == 'faltante' %}FALTANTE{% elif archivo.estado == 'rechazado' %}RECHAZADO{% elif archivo.estado == 'pendiente' %}EN REVISIÓN{% else %}APROBADO{% endif %}
+                </span>
+              </div>
+              <div style="font-size:0.82rem; color:#4b5563; margin-top:6px;">{{ archivo.detalle }}</div>
+            </div>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
       {% else %}
         <div class="doc-ok-box">
           <i class="fas fa-circle-check me-2"></i>
@@ -477,18 +492,22 @@
             <h6><i class="fas fa-user me-2" style="color:#6b21a8;"></i>{{ asistente.nombre_completo }}</h6>
             <small>{{ asistente.get_tipo_documento_display }}: {{ asistente.numero_documento }}</small>
           </div>
-          {% if permite_editar_asistentes %}
+          {% if permite_editar_asistentes or permite_eliminar_asistentes %}
           <div class="d-flex gap-2">
+            {% if permite_editar_asistentes %}
             <a href="{% url 'panel_visitante:actualizar_info_asistente' tipo='externa' asistente_id=asistente.id %}"
                class="btn-actualizar-asi"
                onclick="return abrirModalActualizarAsistente(this.href);">
               <i class="fas fa-pen me-1"></i>Actualizar
             </a>
+            {% endif %}
+            {% if permite_eliminar_asistentes %}
             <a href="{% url 'panel_visitante:eliminar_asistente' tipo='externa' asistente_id=asistente.id %}"
                class="btn-eliminar-asi"
                onclick="return confirm('¿Eliminar a {{ asistente.nombre_completo }}?')">
               <i class="fas fa-trash me-1"></i>Eliminar
             </a>
+            {% endif %}
           </div>
           {% endif %}
         </div>
@@ -560,7 +579,7 @@
       {% csrf_token %}
       {% for categoria, docs in documentos_por_categoria.items %}
         {% if 'ATS' in categoria or 'Inducción y Reinducción' in categoria or 'Charla de Seguridad y Calestenia' in categoria or 'Charla de Seguridad y Calistenia' in categoria %}
-          <div class="final-cat-card">
+          <div class="final-cat-card final-cat-final-doc">
             <div class="final-cat-top">
               <div class="final-cat-top-icon">
                 <i class="fas fa-{% if 'ATS' in categoria %}clipboard-list{% elif 'Inducción' in categoria %}graduation-cap{% else %}users{% endif %}"></i>
@@ -572,7 +591,7 @@
             </div>
             <div class="final-cat-body">
             {% for doc in docs %}
-              <div class="final-doc-item">
+              <div class="final-doc-item final-doc-item-final" data-rechazado="{% if doc.id in documentos_finales_rechazados_ids %}1{% else %}0{% endif %}">
                 <div class="final-doc-head">
                   <div class="final-doc-icon">
                     <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% else %}file-alt{% endif %}"></i>
@@ -1063,8 +1082,72 @@
 
   function abrirModalArchivosFinales(esCorreccion) {
     esModalCorreccion = esCorreccion;
+    aplicarFiltroArchivosFinales(esCorreccion);
     document.getElementById('modalArchivosFinales').style.display = 'block';
     document.body.style.overflow = 'hidden';
+  }
+
+  function aplicarFiltroArchivosFinales(esCorreccion) {
+    const modal = document.getElementById('modalArchivosFinales');
+    if (!modal) return;
+
+    const subtitle = modal.querySelector('.final-modal-subtitle');
+    const items = modal.querySelectorAll('.final-doc-item-final');
+    const categorias = modal.querySelectorAll('.final-cat-final-doc');
+    let hayRechazados = false;
+
+    items.forEach((item) => {
+      const esRechazado = item.dataset.rechazado === '1';
+      const input = item.querySelector('input[type="file"]');
+      const errorSpan = item.querySelector('.error-mensaje');
+
+      if (esCorreccion) {
+        const mostrar = esRechazado;
+        item.style.display = mostrar ? '' : 'none';
+        if (input) {
+          input.disabled = !mostrar;
+          if (!mostrar) {
+            input.value = '';
+          }
+        }
+        if (mostrar) {
+          hayRechazados = true;
+        }
+      } else {
+        item.style.display = '';
+        if (input) {
+          input.disabled = false;
+        }
+      }
+
+      if (errorSpan) {
+        errorSpan.style.display = 'none';
+      }
+    });
+
+    categorias.forEach((categoriaCard) => {
+      const visibles = categoriaCard.querySelectorAll('.final-doc-item-final:not([style*="display: none"])').length;
+      categoriaCard.style.display = visibles > 0 ? '' : 'none';
+    });
+
+    if (subtitle) {
+      subtitle.textContent = esCorreccion
+        ? 'Suba únicamente los archivos finales rechazados para continuar el proceso:'
+        : 'Suba los archivos requeridos para finalizar el proceso:';
+    }
+
+    if (esCorreccion && !hayRechazados) {
+      categorias.forEach((categoriaCard) => {
+        categoriaCard.style.display = '';
+      });
+      items.forEach((item) => {
+        item.style.display = '';
+        const input = item.querySelector('input[type="file"]');
+        if (input) {
+          input.disabled = false;
+        }
+      });
+    }
   }
 
   function cerrarModalArchivosFinales() {
@@ -1266,6 +1349,9 @@
       const extensionesPermitidas = ['pdf', 'doc', 'docx'];
       fileInputs.forEach(input => {
         input.addEventListener('change', function() {
+          if (this.disabled) {
+            return;
+          }
           const errorId = this.id.replace('input_archivo_', 'error_');
           const errorSpan = document.getElementById(errorId);
           if (!errorSpan || this.files.length === 0) {
@@ -1297,6 +1383,9 @@
         let hayErrores = false;
         
         fileInputs.forEach(input => {
+          if (input.disabled) {
+            return;
+          }
           if (!input.files || input.files.length === 0) {
             // Mostrar error en este campo
             const errorId = input.id.replace('input_archivo_', 'error_');
@@ -1327,7 +1416,7 @@
         if (hayErrores) {
         // Permitir corrección parcial: basta con adjuntar al menos un archivo final.
         const hayArchivoSeleccionado = Array.from(fileInputs).some(
-          input => input.files && input.files.length > 0
+          input => !input.disabled && input.files && input.files.length > 0
         );
         if (!hayArchivoSeleccionado) {
           const statusDiv = document.getElementById('statusMensaje');
