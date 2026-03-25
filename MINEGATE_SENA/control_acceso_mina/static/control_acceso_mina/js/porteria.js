@@ -31,10 +31,6 @@
     const tablaIngresosBody = document.getElementById('tablaIngresosBody');
     const tablaSalidasBody = document.getElementById('tablaSalidasBody');
     const tablaAsistentesBody = document.getElementById('tablaAsistentesBody');
-    const personasEl = document.getElementById('personasEnMina');
-    const entradasEl = document.getElementById('entradasHoy');
-    const salidasEl = document.getElementById('salidasHoy');
-    const clockEl = document.getElementById('porteriaClock');
 
     if (!docInput || !DATOS_URL || !SELECTED_VISIT_TYPE || !SELECTED_VISIT_ID) return;
 
@@ -56,12 +52,6 @@
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
-    }
-
-    function actualizarReloj() {
-        if (!clockEl) return;
-        const now = new Date();
-        clockEl.textContent = now.toLocaleTimeString('es-CO', { hour12: false });
     }
 
     function mostrarFeedback(data) {
@@ -260,10 +250,6 @@
                 return;
             }
 
-            if (personasEl) personasEl.textContent = data.personas_en_mina || 0;
-            if (entradasEl) entradasEl.textContent = data.entradas_hoy || 0;
-            if (salidasEl) salidasEl.textContent = data.salidas_hoy || 0;
-
             const asistentes = data.asistentes_aprobados || [];
             if (asistentes.length === 0) {
                 tablaAsistentesBody.innerHTML = `
@@ -354,8 +340,6 @@
         }
     });
 
-    actualizarReloj();
-    setInterval(actualizarReloj, 1000);
     cargarDatosVisita();
     setInterval(cargarDatosVisita, POLLING_MS);
 })();

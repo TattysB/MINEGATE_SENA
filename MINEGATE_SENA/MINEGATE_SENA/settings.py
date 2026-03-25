@@ -93,10 +93,10 @@ WSGI_APPLICATION = "MINEGATE_SENA.wsgi.application"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'sicam_db',
-        'USER': 'sicam_user',
-        'PASSWORD': 'Sicam123.',
-        'HOST': 'localhost',
+        'NAME': 'SICAM_db',
+        'USER': 'postgres',
+        'PASSWORD': 'Yamisipq',
+        'HOST': '127.0.0.1',
         'PORT': '5432',
     }
 }

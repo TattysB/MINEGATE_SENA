@@ -36,6 +36,7 @@ from documentos.models import (
 )
 
 CATEGORIA_DOC_SALUD = "Formato Auto Reporte Condiciones de Salud"
+CATEGORIA_AUTORIZACION_PADRES = "Formato Autorización Padres de Familia"
 CATEGORIAS_ARCHIVOS_FINALES = [
     "ATS",
     "Formato Inducción y Reinducción",
@@ -269,9 +270,15 @@ def _extraer_filas_importacion_aprendices(archivo):
 def _procesar_carga_masiva_aprendices(ficha, filas):
     creados = 0
     duplicados = 0
+    omitidos_cupo = 0
     errores = []
+    cupos_disponibles = max(0, ficha.cantidad_aprendices - ficha.aprendices.count())
 
     for fila_numero, fila in filas:
+        if creados >= cupos_disponibles:
+            omitidos_cupo += 1
+            continue
+
         datos_form = {
             "nombre": fila.get("nombre", ""),
             "apellido": fila.get("apellido", ""),
@@ -313,6 +320,7 @@ def _procesar_carga_masiva_aprendices(ficha, filas):
     return {
         "creados": creados,
         "duplicados": duplicados,
+        "omitidos_cupo": omitidos_cupo,
         "errores": errores,
     }
 
@@ -408,6 +416,7 @@ def construir_reporte_documental_visita(visita, tipo_visita):
                 incidencias.append(
                     {
                         "tipo": "rechazado",
+                        "tipo_correccion": "documento",
                         "documento_subido_id": doc_subido.id,
                         "detalle": (
                             f"{doc_subido.documento_requerido.titulo}: "
@@ -424,6 +433,7 @@ def construir_reporte_documental_visita(visita, tipo_visita):
             incidencias.append(
                 {
                     "tipo": "rechazado",
+                    "tipo_correccion": "autorizacion_padres",
                     "detalle": (
                         "Autorización de padres: "
                         f"{asistente.observaciones_autorizacion_padres}"
@@ -1468,6 +1478,15 @@ def detalle_aprendices_ficha(request, pk):
                 f"Se omitieron {resumen['duplicados']} filas por documento repetido en la ficha.",
             )
 
+        if resumen.get("omitidos_cupo"):
+            messages.warning(
+                request,
+                (
+                    f"Se omitieron {resumen['omitidos_cupo']} filas porque la ficha "
+                    f"alcanzó su límite de {ficha.cantidad_aprendices} aprendices."
+                ),
+            )
+
         for error in resumen["errores"][:10]:
             messages.error(request, error)
 
@@ -1480,41 +1499,141 @@ def detalle_aprendices_ficha(request, pk):
         return redirect("panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id)
 
     if request.method == "POST" and request.POST.get("accion") == "subir_reporte_salud_pendiente":
-        aprendiz_id = request.POST.get("aprendiz_id")
-        archivo_salud = request.FILES.get("documento_salud")
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        
+        try:
+            aprendiz_id = request.POST.get("aprendiz_id", "").strip()
+            archivo_salud = request.FILES.get("documento_salud")
+            archivo_autorizacion = request.FILES.get("documento_autorizacion_padres")
 
-        aprendiz = get_object_or_404(Aprendiz, pk=aprendiz_id, ficha=ficha)
+            # Validar que se proporcionó ID de aprendiz
+            if not aprendiz_id:
+                mensaje = "ID de aprendiz inválido."
+                if is_ajax:
+                    return JsonResponse({"success": False, "message": mensaje}, status=400)
+                messages.error(request, mensaje)
+                return redirect("panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id)
 
-        if not archivo_salud:
-            messages.error(
-                request,
-                "Seleccione el archivo del reporte de salud para continuar.",
+            aprendiz = get_object_or_404(Aprendiz, pk=aprendiz_id, ficha=ficha)
+
+            if not archivo_salud and not archivo_autorizacion:
+                mensaje = "Seleccione al menos un archivo para continuar."
+                if is_ajax:
+                    return JsonResponse({"success": False, "message": mensaje}, status=400)
+                messages.error(request, mensaje)
+                return redirect("panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id)
+
+            def _validar_archivo(archivo):
+                extension = os.path.splitext(archivo.name)[1].lower()
+                if extension not in EXTENSIONES_DOCUMENTOS_APRENDIZ:
+                    return "Formato no permitido. Solo se admiten archivos PDF o Word (.doc, .docx)."
+                if getattr(archivo, "size", 0) > MAX_TAMANO_DOCUMENTO_APRENDIZ:
+                    return "El archivo supera el tamaño máximo permitido de 10MB."
+                return None
+
+            if archivo_salud:
+                error_archivo = _validar_archivo(archivo_salud)
+                if error_archivo:
+                    if is_ajax:
+                        return JsonResponse({"success": False, "message": error_archivo}, status=400)
+                    messages.error(request, error_archivo)
+                    return redirect("panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id)
+
+            if archivo_autorizacion:
+                error_archivo = _validar_archivo(archivo_autorizacion)
+                if error_archivo:
+                    if is_ajax:
+                        return JsonResponse({"success": False, "message": error_archivo}, status=400)
+                    messages.error(request, error_archivo)
+                    return redirect("panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id)
+
+            cambios_realizados = []
+
+            if archivo_salud:
+                aprendiz.documento_adicional = archivo_salud
+                aprendiz.save(update_fields=["documento_adicional"])
+                cambios_realizados.append("reporte de salud")
+
+            if archivo_autorizacion:
+                doc_autorizacion = Documento.objects.filter(
+                    categoria=CATEGORIA_AUTORIZACION_PADRES
+                ).order_by("-fecha_subida").first()
+
+                if not doc_autorizacion:
+                    docs_autorizacion = [
+                        doc
+                        for doc in Documento.objects.all().order_by("-fecha_subida")
+                        if "autorizacion padres" in _normalizar_categoria_texto(doc.categoria)
+                    ]
+                    doc_autorizacion = docs_autorizacion[0] if docs_autorizacion else None
+
+                if not doc_autorizacion:
+                    mensaje = (
+                        "No se encontró un documento configurado para 'Formato Autorización Padres de Familia'."
+                    )
+                    if is_ajax:
+                        return JsonResponse({"success": False, "message": mensaje}, status=400)
+                    messages.error(request, mensaje)
+                    return redirect("panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id)
+
+                DocumentoSubidoAprendiz.objects.update_or_create(
+                    aprendiz=aprendiz,
+                    documento_requerido=doc_autorizacion,
+                    defaults={
+                        "archivo": archivo_autorizacion,
+                        "estado": "pendiente",
+                        "observaciones_revision": "",
+                    },
+                )
+                cambios_realizados.append("autorización de padres")
+
+            faltantes_actualizados = []
+            tiene_doc_salud = bool(aprendiz.documento_adicional) or aprendiz.documentos_subidos.filter(
+                documento_requerido__categoria=CATEGORIA_DOC_SALUD
+            ).exists()
+            if not tiene_doc_salud:
+                faltantes_actualizados.append("Reporte de condiciones de salud")
+
+            if aprendiz.tipo_documento == "TI":
+                tiene_autorizacion_padres = any(
+                    "autorizacion padres"
+                    in _normalizar_categoria_texto(doc.documento_requerido.categoria)
+                    for doc in aprendiz.documentos_subidos.select_related("documento_requerido")
+                )
+                if not tiene_autorizacion_padres:
+                    faltantes_actualizados.append("Autorización de padres")
+
+            mensaje = (
+                f'Documento(s) cargado(s) correctamente para "{aprendiz.get_nombre_completo()}": '
+                + ", ".join(cambios_realizados)
+                + "."
             )
+            if is_ajax:
+                return JsonResponse(
+                    {
+                        "success": True,
+                        "message": mensaje,
+                        "aprendiz_id": aprendiz.id,
+                        "faltantes": faltantes_actualizados,
+                    }
+                )
+            
+            messages.success(request, mensaje)
             return redirect("panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id)
-
-        extension = os.path.splitext(archivo_salud.name)[1].lower()
-        if extension not in EXTENSIONES_DOCUMENTOS_APRENDIZ:
-            messages.error(
-                request,
-                "Formato no permitido. Solo se admiten archivos PDF o Word (.doc, .docx).",
-            )
+        
+        except Aprendiz.DoesNotExist:
+            mensaje = "Aprendiz no encontrado."
+            if is_ajax:
+                return JsonResponse({"success": False, "message": mensaje}, status=404)
+            messages.error(request, mensaje)
             return redirect("panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id)
-
-        if getattr(archivo_salud, "size", 0) > MAX_TAMANO_DOCUMENTO_APRENDIZ:
-            messages.error(
-                request,
-                "El archivo supera el tamaño máximo permitido de 10MB.",
-            )
+        
+        except Exception as error:
+            mensaje = f"Error al guardar el archivo: {str(error)}"
+            if is_ajax:
+                return JsonResponse({"success": False, "message": mensaje}, status=500)
+            messages.error(request, mensaje)
             return redirect("panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id)
-
-        aprendiz.documento_adicional = archivo_salud
-        aprendiz.save(update_fields=["documento_adicional"])
-
-        messages.success(
-            request,
-            f'Reporte de salud cargado correctamente para "{aprendiz.get_nombre_completo()}".',
-        )
-        return redirect("panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id)
 
     aprendices = ficha.aprendices.all().order_by("apellido", "nombre")
     estado_filtro = request.GET.get("estado", "")
@@ -1538,18 +1657,33 @@ def detalle_aprendices_ficha(request, pk):
         faltantes = []
 
         tiene_doc_salud = bool(aprendiz.documento_adicional) or aprendiz.documentos_subidos.filter(
-            documento_requerido__categoria="Formato Auto Reporte Condiciones de Salud"
+            documento_requerido__categoria=CATEGORIA_DOC_SALUD
         ).exists()
         if not tiene_doc_salud:
             faltantes.append("Reporte de condiciones de salud")
+
+        tiene_autorizacion_padres = False
+        if aprendiz.tipo_documento == "TI":
+            tiene_autorizacion_padres = any(
+                "autorizacion padres"
+                in _normalizar_categoria_texto(doc.documento_requerido.categoria)
+                for doc in aprendiz.documentos_subidos.all()
+            )
+            if not tiene_autorizacion_padres:
+                faltantes.append("Autorización de padres")
 
         if faltantes:
             aprendices_faltantes_docs.append(
                 {
                     "id": aprendiz.id,
                     "nombre": aprendiz.get_nombre_completo(),
+                    "tipo_documento": aprendiz.tipo_documento,
                     "documento": f"{aprendiz.get_tipo_documento_display()} {aprendiz.numero_documento}",
                     "faltantes": faltantes,
+                    "falta_salud": not tiene_doc_salud,
+                    "falta_autorizacion_padres": (
+                        aprendiz.tipo_documento == "TI" and not tiene_autorizacion_padres
+                    ),
                 }
             )
 
@@ -2124,6 +2258,24 @@ def guardar_documentos_aprendiz(aprendiz, archivos_subidos, documentos_por_categ
             )
 
 
+def _obtener_docs_subidos_ids_aprendiz(aprendiz, documentos_por_categoria):
+    """Retorna IDs de documentos ya cargados, incluyendo compatibilidad con campos legacy."""
+    docs_ids = set(
+        aprendiz.documentos_subidos.values_list("documento_requerido_id", flat=True)
+    )
+
+    # Compatibilidad: registros antiguos que solo guardaban el reporte en documento_adicional.
+    if getattr(aprendiz, "documento_adicional", None):
+        for categoria, docs in documentos_por_categoria.items():
+            cat_norm = _normalizar_categoria_texto(categoria)
+            if "auto reporte condiciones de salud" not in cat_norm:
+                continue
+            for doc in docs:
+                docs_ids.add(doc.id)
+
+    return docs_ids
+
+
 def validar_carga_documentos_aprendiz(
     archivos_subidos,
     documentos_por_categoria,
@@ -2305,8 +2457,8 @@ def editar_aprendiz(request, pk):
     docs_cat = obtener_documentos_por_categoria()
 
     if request.method == "POST":
-        docs_subidos_ids = set(
-            aprendiz.documentos_subidos.values_list("documento_requerido_id", flat=True)
+        docs_subidos_ids = _obtener_docs_subidos_ids_aprendiz(
+            aprendiz, docs_cat
         )
         form = AprendizForm(request.POST, request.FILES, instance=aprendiz, ficha=ficha)
         errores_docs_dinamicos = validar_carga_documentos_aprendiz(
@@ -2341,9 +2493,7 @@ def editar_aprendiz(request, pk):
     else:
         form = AprendizForm(instance=aprendiz, ficha=ficha)
 
-    docs_subidos_ids = list(
-        aprendiz.documentos_subidos.values_list("documento_requerido_id", flat=True)
-    )
+    docs_subidos_ids = list(_obtener_docs_subidos_ids_aprendiz(aprendiz, docs_cat))
 
     context = {
         "form": form,
