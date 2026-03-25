@@ -734,6 +734,7 @@ def _agregar_contexto_panel_principal(context):
                     "responsable": visita.responsable,
                     "entidad": visita.nombre_programa,
                     "estado": visita.estado,
+                    "estado_label": visita.estado.replace("_", " ").capitalize(),
                     "fecha_solicitud": visita.fecha_solicitud,
                 }
             )
@@ -746,6 +747,7 @@ def _agregar_contexto_panel_principal(context):
                     "responsable": visita.nombre_responsable,
                     "entidad": visita.nombre,
                     "estado": visita.estado,
+                    "estado_label": visita.estado.replace("_", " ").capitalize(),
                     "fecha_solicitud": visita.fecha_solicitud,
                 }
             )

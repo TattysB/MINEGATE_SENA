@@ -8,11 +8,6 @@
     const POLLING_MS = 30000;
 
     const tablaVisitasHoyBody = document.getElementById('tablaVisitasHoyBody');
-    const visitasInternasEl = document.getElementById('visitasInternasHoy');
-    const visitasExternasEl = document.getElementById('visitasExternasHoy');
-    const visitasTotalEl = document.getElementById('visitasTotalHoy');
-    const clockEl = document.getElementById('porteriaClock');
-    const dateEl = document.getElementById('porteriaDate');
 
     if (!tablaVisitasHoyBody) return;
 
@@ -25,28 +20,12 @@
             .replace(/'/g, '&#39;');
     }
 
-    function actualizarReloj() {
-        if (!clockEl || !dateEl) return;
-
-        const now = new Date();
-        clockEl.textContent = now.toLocaleTimeString('es-CO', { hour12: false });
-
-        const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-        const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-        dateEl.textContent = `${dias[now.getDay()]}, ${now.getDate()} ${meses[now.getMonth()]} ${now.getFullYear()}`;
-    }
-
     async function cargarVisitasHoy() {
         try {
             const resp = await fetch(VISITAS_URL);
             const data = await resp.json();
 
             if (!data.success) return;
-
-            const totales = data.totales || {};
-            if (visitasInternasEl) visitasInternasEl.textContent = totales.internas || 0;
-            if (visitasExternasEl) visitasExternasEl.textContent = totales.externas || 0;
-            if (visitasTotalEl) visitasTotalEl.textContent = totales.total || 0;
 
             const visitas = data.visitas || [];
             if (visitas.length === 0) {
@@ -72,9 +51,6 @@
             console.error('Error cargando visitas de hoy:', err);
         }
     }
-
-    actualizarReloj();
-    setInterval(actualizarReloj, 1000);
 
     cargarVisitasHoy();
     setInterval(cargarVisitasHoy, POLLING_MS);

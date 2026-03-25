@@ -4,6 +4,7 @@ Gestión administrativa de visitas - APIs para el panel administrativo
 """
 
 import threading
+from types import SimpleNamespace
 
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
@@ -30,6 +31,7 @@ from django.utils import timezone
 from django.conf import settings
 from django.urls import reverse
 from gestion_visitas.services import GeneradorQRPDF
+from core.sanitization import sanitize_text, sanitize_token
 
 ESTADOS_APROBADAS = [
     "aprobada_inicial",
@@ -66,6 +68,38 @@ def _enviar_qr_asistentes_confirmados(visita, tipo):
                 )
         except Exception:
             continue
+
+
+def _enviar_qr_responsable_confirmado(visita, tipo):
+    correo = (getattr(visita, "correo_responsable", "") or "").strip()
+    documento = (getattr(visita, "documento_responsable", "") or "").strip()
+    if not correo or not documento:
+        return
+
+    if tipo == "interna":
+        nombre_responsable = (getattr(visita, "responsable", "") or "").strip()
+    else:
+        nombre_responsable = (
+            getattr(visita, "nombre_responsable", "") or ""
+        ).strip()
+
+    if not nombre_responsable:
+        return
+
+    try:
+        responsable_virtual = SimpleNamespace(
+            nombre_completo=nombre_responsable,
+            numero_documento=documento,
+            correo=correo,
+        )
+        generador_qr = GeneradorQRPDF(
+            asistente=responsable_virtual,
+            visita=visita,
+            tipo_visita=tipo,
+        )
+        generador_qr.enviar_por_email()
+    except Exception:
+        pass
 
 
 def _enviar_correo_confirmacion_responsable(visita, tipo, panel_url):
@@ -188,6 +222,7 @@ def _procesar_confirmacion_visita_async(visita_id, tipo, panel_url):
         visita_model = VisitaInterna if tipo == "interna" else VisitaExterna
         visita = visita_model.objects.prefetch_related("asistentes").get(id=visita_id)
         _enviar_qr_asistentes_confirmados(visita, tipo)
+        _enviar_qr_responsable_confirmado(visita, tipo)
         _enviar_correo_confirmacion_responsable(visita, tipo, panel_url)
     except Exception:
         pass
@@ -406,9 +441,9 @@ def api_listar_visitas(request):
     if not es_administrador_panel(request.user):
         return JsonResponse({"success": False, "error": "No autorizado"}, status=403)
 
-    tipo = request.GET.get("tipo", "internas")
-    estado = request.GET.get("estado", "todos")
-    buscar = request.GET.get("buscar", "")
+    tipo = sanitize_token(request.GET.get("tipo", "internas"), max_length=20) or "internas"
+    estado = sanitize_token(request.GET.get("estado", "todos"), max_length=30) or "todos"
+    buscar = sanitize_text(request.GET.get("buscar", ""), max_length=100, allow_newlines=False)
 
     visitas_data = []
 
@@ -998,7 +1033,11 @@ def api_accion_visita(request, tipo, visita_id, accion):
         )
 
     elif accion == "rechazar":
-        observaciones = request.POST.get("observaciones", "")
+        observaciones = sanitize_text(
+            request.POST.get("observaciones", ""),
+            max_length=1000,
+            allow_newlines=True,
+        )
 
         if es_coordinador(request.user):
             if visita.estado != "enviada_coordinacion":
@@ -1187,7 +1226,11 @@ def api_revisar_autorizacion_padres(request, tipo, asistente_id, accion):
             }
         )
 
-    observaciones = request.POST.get("observaciones", "")
+    observaciones = sanitize_text(
+        request.POST.get("observaciones", ""),
+        max_length=1000,
+        allow_newlines=True,
+    )
 
     if asistente.estado_autorizacion_padres != "pendiente":
         return JsonResponse(
@@ -1266,7 +1309,11 @@ def api_revisar_documento_asistente(request, tipo, asistente_id, accion):
     else:
         asistente = get_object_or_404(AsistenteVisitaExterna, pk=asistente_id)
 
-    observaciones = request.POST.get("observaciones", "")
+    observaciones = sanitize_text(
+        request.POST.get("observaciones", ""),
+        max_length=1000,
+        allow_newlines=True,
+    )
 
     if accion == "aprobar":
         documentos_actuales = _documentos_subidos_actuales(asistente)
@@ -1383,7 +1430,7 @@ def api_visitas_aprobadas(request):
     if not es_administrador_panel(request.user):
         return JsonResponse({"success": False, "error": "No autorizado"}, status=403)
 
-    tipo = request.GET.get("tipo", "internas")
+    tipo = sanitize_token(request.GET.get("tipo", "internas"), max_length=20) or "internas"
     visitas_data = []
 
     if tipo == "internas":
@@ -1440,8 +1487,8 @@ def api_documentos_revision(request):
     if not es_administrador_panel(request.user):
         return JsonResponse({"success": False, "error": "No autorizado"}, status=403)
 
-    tipo = request.GET.get("tipo", "internas")
-    estado_asistente = request.GET.get("estado_asistente", "")
+    tipo = sanitize_token(request.GET.get("tipo", "internas"), max_length=20) or "internas"
+    estado_asistente = sanitize_token(request.GET.get("estado_asistente", ""), max_length=40)
 
     documentos_data = []
 

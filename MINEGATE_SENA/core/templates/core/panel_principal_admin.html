@@ -663,7 +663,7 @@
             <p class="pp-item-title">{{ item.responsable }} · {{ item.entidad }}</p>
             <p class="pp-item-meta">Solicitud {{ item.fecha_solicitud|date:'d/m/Y H:i' }} · ID {{ item.id }}</p>
           </div>
-          <span class="pp-estado estado-{{ item.estado }}">{{ item.estado|title }}</span>
+          <span class="pp-estado estado-{{ item.estado }}">{{ item.estado_label }}</span>
         </li>
         {% empty %}
         <li class="pp-empty">No hay solicitudes recientes para mostrar.</li>
