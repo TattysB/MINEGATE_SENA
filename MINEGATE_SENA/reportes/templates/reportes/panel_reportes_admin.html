@@ -99,6 +99,98 @@
         align-items: stretch;
       }
     }
+
+    @media (max-width: 700px) {
+      .rp-tabla-scroll {
+        overflow-x: visible;
+      }
+
+      .rp-tabla {
+        min-width: 0;
+      }
+
+      .rp-tabla thead {
+        display: none;
+      }
+
+      .rp-tabla,
+      .rp-tabla tbody,
+      .rp-tabla tr,
+      .rp-tabla td {
+        display: block;
+        width: 100% !important;
+      }
+
+      .rp-tabla tbody tr {
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        padding: 10px;
+        background: #fff;
+      }
+
+      .rp-tabla tbody tr td {
+        border: 0;
+        border-bottom: 1px dashed #e5e7eb;
+        padding: 8px 0 !important;
+        display: grid;
+        grid-template-columns: minmax(95px, 38%) minmax(0, 1fr);
+        gap: 10px;
+        align-items: start;
+        text-align: left !important;
+      }
+
+      .rp-tabla tbody tr td:last-child {
+        border-bottom: 0;
+        padding-bottom: 0 !important;
+      }
+
+      .rp-tabla tbody tr td::before {
+        grid-column: 1;
+        font-size: 11px;
+        font-weight: 700;
+        color: #4b5563;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+
+      .rp-tabla tbody tr td > * {
+        grid-column: 2;
+        min-width: 0;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+      }
+
+      .rp-tabla tbody tr td:nth-child(1)::before { content: 'Tipo'; }
+      .rp-tabla tbody tr td:nth-child(2)::before { content: 'ID'; }
+      .rp-tabla tbody tr td:nth-child(3)::before { content: 'Nombre'; }
+      .rp-tabla tbody tr td:nth-child(4)::before { content: 'Responsable'; }
+      .rp-tabla tbody tr td:nth-child(5)::before { content: 'Documento'; }
+      .rp-tabla tbody tr td:nth-child(6)::before { content: 'Correo'; }
+      .rp-tabla tbody tr td:nth-child(7)::before { content: 'Cantidad'; }
+      .rp-tabla tbody tr td:nth-child(8)::before { content: 'Solicitud'; }
+      .rp-tabla tbody tr td:nth-child(9)::before { content: 'Visita'; }
+      .rp-tabla tbody tr td:nth-child(10)::before { content: 'Estado'; }
+      .rp-tabla tbody tr td:nth-child(11)::before { content: 'Descargar'; }
+
+      .rp-celda-acciones {
+        min-width: 0;
+      }
+
+      .rp-acciones-fila {
+        justify-content: flex-start;
+      }
+
+      .rp-tabla tbody tr td[colspan] {
+        display: block;
+        text-align: center !important;
+        border-bottom: 0;
+      }
+
+      .rp-tabla tbody tr td[colspan]::before {
+        content: none;
+      }
+    }
   </style>
   <div style="padding:20px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:15px;">

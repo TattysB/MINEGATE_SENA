@@ -11,6 +11,8 @@
   -webkit-font-smoothing: antialiased;
   max-width: 1520px;
   margin: 0 auto;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 .gpi-wrapper *,
@@ -1001,5 +1003,172 @@
   .gpi-card {
     padding: 1rem;
     border-radius: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .gpi-wrapper {
+    padding: 0;
+  }
+
+  .gpi-header {
+    margin-bottom: 1rem;
+  }
+
+  .gpi-header-content {
+    gap: 0.65rem;
+    align-items: flex-start;
+  }
+
+  .gpi-header-icon {
+    font-size: 1.35rem;
+    margin-top: 1px;
+  }
+
+  .gpi-title {
+    font-size: 1.05rem;
+    line-height: 1.2;
+  }
+
+  .gpi-subtitle {
+    font-size: 0.79rem;
+    line-height: 1.35;
+  }
+
+  .gpi-preview-title {
+    font-size: 0.95rem;
+    line-height: 1.3;
+  }
+
+  .gpi-section-head {
+    gap: 0.55rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.65rem;
+  }
+
+  .gpi-step {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    font-size: 0.75rem;
+  }
+
+  .gpi-card-title {
+    font-size: 0.9rem;
+    line-height: 1.25;
+    flex-wrap: wrap;
+  }
+
+  .gpi-section-desc {
+    font-size: 0.78rem;
+    line-height: 1.35;
+  }
+
+  .gpi-live-hero {
+    height: 190px;
+  }
+
+  .gpi-live-hero-controls,
+  .gpi-live-media-controls {
+    gap: 0.2rem;
+    padding: 0.15rem;
+  }
+
+  .gpi-live-hero-controls button,
+  .gpi-live-media-controls button {
+    width: 24px;
+    height: 24px;
+    font-size: 0.8rem;
+  }
+
+  .gpi-live-hero-controls span,
+  .gpi-live-media-controls span {
+    min-width: 40px;
+    font-size: 0.68rem;
+  }
+
+  .gpi-live-gallery-media {
+    height: 170px;
+  }
+
+  .gpi-live-gallery-caption {
+    width: min(92%, 700px);
+    bottom: 10px;
+    padding: 0.42rem 0.5rem;
+  }
+
+  .gpi-live-gallery-caption strong {
+    font-size: 0.8rem;
+  }
+
+  .gpi-live-gallery-caption small {
+    font-size: 0.72rem;
+  }
+
+  .gpi-wrapper .btn {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.7rem;
+    white-space: normal;
+    text-align: left;
+    justify-content: flex-start;
+    line-height: 1.25;
+  }
+
+  .gpi-toggle-btn {
+    padding: 0.52rem 0.68rem;
+  }
+
+  .gpi-actions-row .btn,
+  .gpi-item-actions .btn {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .gpi-item-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .gpi-field label,
+  .gpi-help {
+    line-height: 1.3;
+  }
+
+  .gpi-cropper-wrapper {
+    min-height: 170px;
+    max-height: 220px;
+  }
+
+  .gpi-cropper-wrapper img {
+    min-height: 170px;
+  }
+}
+
+@media (max-width: 380px) {
+  .gpi-card {
+    padding: 0.82rem;
+  }
+
+  .gpi-live-hero {
+    height: 170px;
+  }
+
+  .gpi-live-gallery-media {
+    height: 150px;
+  }
+
+  .gpi-title {
+    font-size: 0.98rem;
+  }
+
+  .gpi-subtitle,
+  .gpi-section-desc,
+  .gpi-help {
+    font-size: 0.74rem;
+  }
+
+  .gpi-wrapper .btn {
+    font-size: 0.77rem;
   }
 }

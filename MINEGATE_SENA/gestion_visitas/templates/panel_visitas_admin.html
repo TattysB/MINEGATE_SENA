@@ -1,7 +1,8 @@
 <!-- Sección Gestión de Visitas -->
 <div id="seccion-gestion-visitas" class="contenido-seccion" style="display: none;">
-  <div style="padding: 20px;">
+  <div class="gv-contenido" style="padding: 20px;">
     <div
+      class="gv-header-row"
       style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
       <h2 style="color: #1f2937; margin: 0; display: flex; align-items: center; gap: 10px;">
         <i class="ri-calendar-check-line" style="color: #10b981;"></i>
@@ -10,7 +11,7 @@
     </div>
 
     <!-- Tabs para tipo de visita -->
-    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+    <div class="gv-tabs" style="display: flex; gap: 10px; margin-bottom: 20px;">
       <button class="tab-visita active" data-tipo="internas" onclick="cambiarTabVisita('internas')"
         style="padding: 10px 20px; border: none; background: #059669; color: white; border-radius: 8px; cursor: pointer; font-weight: 500;">
         📋 Visitas Internas (SENA)
@@ -22,8 +23,9 @@
     </div>
 
     <!-- Filtros -->
-    <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
+    <div class="gv-filtros" style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
       <select id="filtroEstadoVisita" onchange="filtrarVisitas()"
+        class="gv-select"
         style="padding: 10px 15px; border: 1px solid #d1d5db; border-radius: 8px; background: white;">
         <option value="todos">Todos los estados</option>
         <option value="enviada_coordinacion">🕒 Pendiente aprobación por coordinación</option>
@@ -34,8 +36,10 @@
         <option value="rechazada">❌ Rechazadas</option>
       </select>
       <input type="text" id="buscarVisita" placeholder="Buscar por responsable, institución..." onkeyup="filtrarVisitas()"
+        class="gv-buscador"
         style="padding: 10px 15px; border: 1px solid #d1d5db; border-radius: 8px; width: 300px;">
       <button onclick="cargarVisitas()"
+        class="gv-refresh"
         style="padding: 10px 15px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer;">
         <i class="ri-refresh-line"></i> Actualizar
       </button>
@@ -43,6 +47,7 @@
 
     <!-- Estadísticas -->
     <div id="estadisticasVisitas"
+      class="gv-stats"
       style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px;">
       <div
         style="background: linear-gradient(135deg, #fef3c7, #fcd34d); padding: 15px; border-radius: 10px; text-align: center; cursor:pointer;"
