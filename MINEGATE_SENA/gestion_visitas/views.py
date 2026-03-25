@@ -412,11 +412,183 @@ def api_listar_visitas(request):
 
     visitas_data = []
 
+    if tipo == "todas":
+        visitas_internas = VisitaInterna.objects.all().order_by("-fecha_solicitud", "-id")
+        visitas_externas = VisitaExterna.objects.all().order_by("-fecha_solicitud", "-id")
+
+        if estado == "aprobadas":
+            visitas_internas = visitas_internas.filter(estado__in=ESTADOS_APROBADAS)
+            visitas_externas = visitas_externas.filter(estado__in=ESTADOS_APROBADAS)
+        elif estado in ["en_revision_documentos", "pendiente_revision"]:
+            estados_revision = ["documentos_enviados", "en_revision_documentos"]
+            visitas_internas = visitas_internas.filter(estado__in=estados_revision)
+            visitas_externas = visitas_externas.filter(estado__in=estados_revision)
+        elif estado != "todos":
+            visitas_internas = visitas_internas.filter(estado=estado)
+            visitas_externas = visitas_externas.filter(estado=estado)
+
+        if buscar:
+            visitas_internas = visitas_internas.filter(
+                Q(responsable__icontains=buscar)
+                | Q(nombre_programa__icontains=buscar)
+                | Q(correo_responsable__icontains=buscar)
+            )
+            visitas_externas = visitas_externas.filter(
+                Q(nombre_responsable__icontains=buscar)
+                | Q(nombre__icontains=buscar)
+                | Q(correo_responsable__icontains=buscar)
+            )
+
+        for v in visitas_internas:
+            visitas_data.append(
+                {
+                    "id": v.id,
+                    "tipo": "interna",
+                    "tipo_display": "Interna (SENA)",
+                    "responsable": v.responsable,
+                    "institucion": v.nombre_programa or "N/A",
+                    "correo": v.correo_responsable,
+                    "telefono": v.telefono_responsable,
+                    "fecha_visita": (
+                        v.fecha_visita.strftime("%d/%m/%Y")
+                        if v.fecha_visita
+                        else (
+                            v.fecha_solicitud.strftime("%d/%m/%Y")
+                            if v.fecha_solicitud
+                            else "N/A"
+                        )
+                    ),
+                    "cantidad": v.cantidad_aprendices,
+                    "estado": v.estado,
+                    "tiene_rechazos": v.asistentes.filter(
+                        estado="documentos_rechazados"
+                    ).exists(),
+                    "puede_confirmar": (
+                        v.asistentes.exists()
+                        and not v.asistentes.exclude(
+                            estado="documentos_aprobados"
+                        ).exists()
+                    ),
+                    "fecha_solicitud": (
+                        v.fecha_solicitud.strftime("%d/%m/%Y %H:%M")
+                        if v.fecha_solicitud
+                        else "N/A"
+                    ),
+                    "_orden": v.fecha_solicitud.isoformat() if v.fecha_solicitud else "",
+                }
+            )
+
+        for v in visitas_externas:
+            visitas_data.append(
+                {
+                    "id": v.id,
+                    "tipo": "externa",
+                    "tipo_display": "Externa (Institución)",
+                    "responsable": v.nombre_responsable,
+                    "institucion": v.nombre or "N/A",
+                    "correo": v.correo_responsable,
+                    "telefono": v.telefono_responsable,
+                    "fecha_visita": (
+                        v.fecha_visita.strftime("%d/%m/%Y")
+                        if v.fecha_visita
+                        else (
+                            v.fecha_solicitud.strftime("%d/%m/%Y")
+                            if v.fecha_solicitud
+                            else "N/A"
+                        )
+                    ),
+                    "cantidad": v.cantidad_visitantes,
+                    "estado": v.estado,
+                    "tiene_rechazos": v.asistentes.filter(
+                        estado="documentos_rechazados"
+                    ).exists(),
+                    "puede_confirmar": (
+                        v.asistentes.exists()
+                        and not v.asistentes.exclude(
+                            estado="documentos_aprobados"
+                        ).exists()
+                    ),
+                    "fecha_solicitud": (
+                        v.fecha_solicitud.strftime("%d/%m/%Y %H:%M")
+                        if v.fecha_solicitud
+                        else "N/A"
+                    ),
+                    "_orden": v.fecha_solicitud.isoformat() if v.fecha_solicitud else "",
+                }
+            )
+
+        visitas_data.sort(key=lambda item: item.get("_orden", ""), reverse=True)
+        for item in visitas_data:
+            item.pop("_orden", None)
+
+        docs_int = AsistenteVisitaInterna.objects.exclude(
+            visita__estado__in=["aprobada_inicial", "pendiente", "enviada_coordinacion"]
+        )
+        docs_ext = AsistenteVisitaExterna.objects.exclude(
+            visita__estado__in=["aprobada_inicial", "pendiente", "enviada_coordinacion"]
+        )
+
+        stats = {
+            "pendientes": (
+                VisitaInterna.objects.filter(estado="pendiente").count()
+                + VisitaExterna.objects.filter(estado="pendiente").count()
+            ),
+            "aprobadas_inicial": (
+                VisitaInterna.objects.filter(estado="aprobada_inicial").count()
+                + VisitaExterna.objects.filter(estado="aprobada_inicial").count()
+            ),
+            "aprobadas_total": (
+                VisitaInterna.objects.filter(estado__in=ESTADOS_APROBADAS).count()
+                + VisitaExterna.objects.filter(estado__in=ESTADOS_APROBADAS).count()
+            ),
+            "documentos_enviados": (
+                VisitaInterna.objects.filter(estado="documentos_enviados").count()
+                + VisitaExterna.objects.filter(estado="documentos_enviados").count()
+            ),
+            "en_revision": (
+                VisitaInterna.objects.filter(estado="en_revision_documentos").count()
+                + VisitaExterna.objects.filter(estado="en_revision_documentos").count()
+            ),
+            "confirmadas": (
+                VisitaInterna.objects.filter(estado="confirmada").count()
+                + VisitaExterna.objects.filter(estado="confirmada").count()
+            ),
+            "rechazadas": (
+                VisitaInterna.objects.filter(estado="rechazada").count()
+                + VisitaExterna.objects.filter(estado="rechazada").count()
+            ),
+            "docs_pendientes_revision": (
+                docs_int.filter(estado="pendiente_documentos").count()
+                + docs_ext.filter(estado="pendiente_documentos").count()
+            ),
+            "docs_aprobados": (
+                docs_int.filter(estado="documentos_aprobados").count()
+                + docs_ext.filter(estado="documentos_aprobados").count()
+            ),
+            "docs_rechazados": (
+                docs_int.filter(estado="documentos_rechazados").count()
+                + docs_ext.filter(estado="documentos_rechazados").count()
+            ),
+            "docs_total": docs_int.count() + docs_ext.count(),
+            "total": len(visitas_data),
+        }
+
+        return JsonResponse(
+            {
+                "visitas": visitas_data,
+                "stats": stats,
+            }
+        )
+
     if tipo == "internas":
         visitas = VisitaInterna.objects.all().order_by("-fecha_solicitud", "-id")
 
         if estado == "aprobadas":
             visitas = visitas.filter(estado__in=ESTADOS_APROBADAS)
+        elif estado in ["en_revision_documentos", "pendiente_revision"]:
+            visitas = visitas.filter(
+                estado__in=["documentos_enviados", "en_revision_documentos"]
+            )
         elif estado != "todos":
             visitas = visitas.filter(estado=estado)
 
@@ -496,6 +668,10 @@ def api_listar_visitas(request):
 
         if estado == "aprobadas":
             visitas = visitas.filter(estado__in=ESTADOS_APROBADAS)
+        elif estado in ["en_revision_documentos", "pendiente_revision"]:
+            visitas = visitas.filter(
+                estado__in=["documentos_enviados", "en_revision_documentos"]
+            )
         elif estado != "todos":
             visitas = visitas.filter(estado=estado)
 

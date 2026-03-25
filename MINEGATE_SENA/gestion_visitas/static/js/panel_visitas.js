@@ -136,16 +136,35 @@ function cambiarTabVisita(tipo) {
   tipoVisitaActual = tipo;
   document.querySelectorAll('.tab-visita').forEach(tab => {
     if (tab.getAttribute('data-tipo') === tipo) {
-      tab.style.background = '#059669';
-      tab.style.color = 'white';
       tab.classList.add('active');
     } else {
-      tab.style.background = '#e5e7eb';
-      tab.style.color = '#374151';
       tab.classList.remove('active');
     }
   });
   cargarVisitas();
+}
+
+function actualizarTarjetaEstadoActiva(estado) {
+  const cards = document.querySelectorAll('#estadisticasVisitas .gv-stat-card');
+  cards.forEach(card => card.classList.remove('gv-active-filter'));
+
+  const selectorPorEstado = {
+    todos: '.gv-stat-total',
+    pendiente: '.gv-stat-pendiente',
+    aprobadas: '.gv-stat-aprobada',
+    aprobada_inicial: '.gv-stat-aprobada',
+    en_revision_documentos: '.gv-stat-revision',
+    rechazada: null,
+    enviada_coordinacion: null,
+  };
+
+  const selector = selectorPorEstado[estado] || null;
+  if (!selector) return;
+
+  const cardActiva = document.querySelector(`#estadisticasVisitas ${selector}`);
+  if (cardActiva) {
+    cardActiva.classList.add('gv-active-filter');
+  }
 }
 
 function cargarVisitas() {
@@ -166,15 +185,18 @@ function cargarVisitas() {
   return fetch(`/gestion/visitas/?tipo=${tipoVisitaActual}&estado=${estado}&buscar=${encodeURIComponent(buscar)}`)
     .then(response => response.json())
     .then(data => {
+      const totalEl = document.getElementById('statTotalVisitas');
       document.getElementById('statPendientes').textContent = data.stats.pendientes;
       document.getElementById('statAprobadas').textContent = data.stats.aprobadas_total;
-      document.getElementById('statRechazadas').textContent = data.stats.rechazadas;
+      if (totalEl) {
+        totalEl.textContent = data.stats.total ?? data.visitas.length;
+      }
 
       const docsPend = data.stats.docs_pendientes_revision || 0;
       const visitasEnRev = data.stats.en_revision || 0;
 
       document.getElementById('statEnRevision').textContent = docsPend;
-      document.getElementById('statEnRevisionArchivos').textContent = visitasEnRev > 0 ? `📋 ${visitasEnRev} visita(s)` : '';
+      document.getElementById('statEnRevisionArchivos').textContent = visitasEnRev > 0 ? `${visitasEnRev} visita(s)` : '';
 
       const docsEnviados = data.stats.documentos_enviados || 0;
       const enRevision = data.stats.en_revision || 0;
@@ -222,11 +244,12 @@ function cargarVisitas() {
       let html = '';
       data.visitas.forEach(v => {
         const estadoBadge = getEstadoBadge(v.estado);
-        html += `<tr id="visita-${tipoVisitaActual}-${v.id}" class="docs-fila gv-fila visit-row" data-id="${v.id}" data-tipo="${tipoVisitaActual}">
+        const tipoFila = tipoVisitaActual === 'todas' ? (v.tipo === 'interna' ? 'internas' : 'externas') : tipoVisitaActual;
+        html += `<tr id="visita-${tipoFila}-${v.id}" class="docs-fila gv-fila visit-row" data-id="${v.id}" data-tipo="${tipoFila}">
             <td class="gv-celda-id">#${v.id}</td>
             <td>
               <span class="gv-tipo-badge ${v.tipo === 'interna' ? 'interna' : 'externa'}">
-                ${v.tipo === 'interna' ? '📋 Interna' : '🏢 Externa'}
+                ${v.tipo === 'interna' ? 'Interna' : 'Externa'}
               </span>
             </td>
             <td>
@@ -257,7 +280,7 @@ function getEstadoBadge(estado) {
     'enviada_coordinacion': '<span class="gv-estado-pill gv-estado-enviada"><i class="ri-time-line"></i> Pendiente coordinación</span>',
     'pendiente': '<span class="gv-estado-pill gv-estado-pendiente"><i class="ri-hourglass-line"></i> Pendiente</span>',
     'aprobada_inicial': '<span class="gv-estado-pill gv-estado-aprobada"><i class="ri-check-double-line"></i> Aprobada inicial</span>',
-    'documentos_enviados': '<span class="gv-estado-pill gv-estado-docs"><i class="ri-file-upload-line"></i> Docs enviados</span>',
+    'documentos_enviados': '<span class="gv-estado-pill gv-estado-docs gv-estado-multiline"><i class="ri-file-upload-line"></i><span class="gv-estado-copy"><span>Docs enviados</span><small>Pendiente de revision</small></span></span>',
     'en_revision_documentos': '<span class="gv-estado-pill gv-estado-revision"><i class="ri-search-eye-line"></i> En revisión</span>',
     'reprogramacion_solicitada': '<span class="gv-estado-pill gv-estado-reprogramacion"><i class="ri-calendar-2-line"></i> Reprogramación solicitada</span>',
     'confirmada': '<span class="gv-estado-pill gv-estado-confirmada"><i class="ri-verified-badge-line"></i> Confirmada</span>',
@@ -276,9 +299,9 @@ function puedeDevolverCorreccion(estado, tieneRechazos) {
 
 function getEstadoDocumentoBadge(estado) {
   const badges = {
-    'pendiente_documentos': '<span style="background:#fef3c7;color:#92400e;padding:3px 8px;border-radius:15px;font-size:10px;">⏳ Pendiente</span>',
-    'documentos_aprobados': '<span style="background:#d1fae5;color:#065f46;padding:3px 8px;border-radius:15px;font-size:10px;">✅ Aprobados</span>',
-    'documentos_rechazados': '<span style="background:#fee2e2;color:#991b1b;padding:3px 8px;border-radius:15px;font-size:10px;">❌ Rechazado</span>',
+    'pendiente_documentos': '<span style="background:#fef3c7;color:#92400e;padding:3px 8px;border-radius:15px;font-size:10px;">Pendiente</span>',
+    'documentos_aprobados': '<span style="background:#d1fae5;color:#065f46;padding:3px 8px;border-radius:15px;font-size:10px;">Aprobados</span>',
+    'documentos_rechazados': '<span style="background:#fee2e2;color:#991b1b;padding:3px 8px;border-radius:15px;font-size:10px;">Rechazado</span>',
   };
   return badges[estado] || estado;
 }
@@ -300,7 +323,7 @@ function getBadgeRevisionDocumento(ds, opts = {}) {
 
   if (ds.es_reenvio) {
     const versiones = parseInt(ds.versiones_envio || 2, 10);
-    badges.push(`<span style="background:#e0f2fe;color:#075985;font-size:${fontSize};padding:${padding};border-radius:${borderRadius};margin-left:${marginLeft};" title="Documento reenviado ${versiones} veces">🔁 Reenvío</span>`);
+    badges.push(`<span style="background:#e0f2fe;color:#075985;font-size:${fontSize};padding:${padding};border-radius:${borderRadius};margin-left:${marginLeft};" title="Documento reenviado ${versiones} veces">Reenvio</span>`);
   }
 
   return badges.join('');
@@ -322,15 +345,15 @@ function esCategoriaArchivoFinal(categoria) {
 
 function getAccionesVisita(v) {
   const acciones = [
-    `<button type="button" onclick="verDetalleVisita('${v.tipo}', ${v.id})" class="docs-btn-accion docs-btn-ver gv-btn-base">
-      <i class="ri-eye-line"></i> Ver
+    `<button type="button" onclick="verDetalleVisita('${v.tipo}', ${v.id})" class="docs-btn-accion docs-btn-ver gv-btn-base" title="Ver detalle" aria-label="Ver detalle">
+      <i class="ri-eye-line" aria-hidden="true"></i>
     </button>`
   ];
 
   if (esUsuarioSst()) {
     if (v.estado === 'documentos_enviados' || v.estado === 'en_revision_documentos') {
-      acciones.push(`<button type="button" onclick="verDetalleVisita('${v.tipo}', ${v.id})" class="docs-btn-accion gv-btn-docs">
-        <i class="ri-file-search-line"></i> Revisar docs
+      acciones.push(`<button type="button" onclick="verDetalleVisita('${v.tipo}', ${v.id})" class="docs-btn-accion gv-btn-docs" title="Revisar documentos" aria-label="Revisar documentos">
+        <i class="ri-file-search-line" aria-hidden="true"></i>
       </button>`);
     } else {
       acciones.push('<span class="gv-pill-info gv-pill-espera"><i class="ri-lock-line"></i> Solo revisión documental</span>');
@@ -344,40 +367,40 @@ function getAccionesVisita(v) {
   }
 
   if (v.estado === 'pendiente') {
-    acciones.push(`<button type="button" onclick="accionVisita('${v.tipo}', ${v.id}, 'aprobar')" class="docs-btn-accion gv-btn-approve">
-      <i class="ri-check-line"></i> Aprobar
+    acciones.push(`<button type="button" onclick="accionVisita('${v.tipo}', ${v.id}, 'aprobar')" class="docs-btn-accion gv-btn-approve" title="Aprobar visita" aria-label="Aprobar visita">
+      <i class="ri-check-line" aria-hidden="true"></i>
     </button>`);
   }
 
   if (puedeSolicitarReprogramacionAdmin(v.estado)) {
-    acciones.push(`<button type="button" onclick="solicitarReprogramacionVisita('${v.tipo}', ${v.id})" class="docs-btn-accion gv-btn-reschedule">
-      <i class="ri-calendar-schedule-line"></i> Reprogramar
+    acciones.push(`<button type="button" onclick="solicitarReprogramacionVisita('${v.tipo}', ${v.id})" class="docs-btn-accion gv-btn-reschedule gv-btn-icon-only" title="Solicitar reprogramación" aria-label="Solicitar reprogramación">
+      <i class="ri-calendar-line" aria-hidden="true"></i>
     </button>`);
   }
 
   if (v.estado === 'documentos_enviados') {
-    acciones.push(`<button type="button" onclick="verDetalleVisita('${v.tipo}', ${v.id})" class="docs-btn-accion gv-btn-docs">
-      <i class="ri-file-search-line"></i> Revisar docs
+    acciones.push(`<button type="button" onclick="verDetalleVisita('${v.tipo}', ${v.id})" class="docs-btn-accion gv-btn-docs gv-btn-icon-only" title="Revisar documentos" aria-label="Revisar documentos">
+      <i class="ri-file-search-line" aria-hidden="true"></i>
     </button>`);
-    acciones.push(`<button type="button" onclick="accionVisita('${v.tipo}', ${v.id}, 'iniciar_revision')" class="docs-btn-accion gv-btn-review">
-      <i class="ri-search-line"></i> Finalizar revisión
+    acciones.push(`<button type="button" onclick="accionVisita('${v.tipo}', ${v.id}, 'iniciar_revision')" class="docs-btn-accion gv-btn-review gv-btn-icon-only" title="Finalizar revisión" aria-label="Finalizar revisión">
+      <i class="ri-check-double-line" aria-hidden="true"></i>
     </button>`);
   }
 
   if (v.estado === 'en_revision_documentos') {
-    acciones.push(`<button type="button" onclick="verDetalleVisita('${v.tipo}', ${v.id})" class="docs-btn-accion gv-btn-docs">
-      <i class="ri-file-search-line"></i> Revisar docs
+    acciones.push(`<button type="button" onclick="verDetalleVisita('${v.tipo}', ${v.id})" class="docs-btn-accion gv-btn-docs gv-btn-icon-only" title="Revisar documentos" aria-label="Revisar documentos">
+      <i class="ri-file-search-line" aria-hidden="true"></i>
     </button>`);
 
     if (v.puede_confirmar) {
-      acciones.push(`<button type="button" onclick="accionVisita('${v.tipo}', ${v.id}, 'confirmar_visita')" class="docs-btn-accion gv-btn-confirm">
-        <i class="ri-verified-badge-line"></i> Confirmar
+      acciones.push(`<button type="button" onclick="accionVisita('${v.tipo}', ${v.id}, 'confirmar_visita')" class="docs-btn-accion gv-btn-confirm gv-btn-icon-only" title="Confirmar visita" aria-label="Confirmar visita">
+        <i class="ri-verified-badge-line" aria-hidden="true"></i>
       </button>`);
     } else if (v.tiene_rechazos) {
       acciones.push('<span class="gv-pill-info gv-pill-warning"><i class="ri-error-warning-line"></i> Rechazos detectados</span>');
     } else {
-      acciones.push(`<button type="button" onclick="mAlert('No se puede confirmar la visita aún. Asegúrese de que todos los asistentes tengan sus documentos aprobados.', 'warning')" class="docs-btn-accion gv-btn-confirm gv-btn-disabled" title="Documentos pendientes de aprobación">
-        <i class="ri-alert-line"></i> Confirmar
+      acciones.push(`<button type="button" onclick="mAlert('No se puede confirmar la visita aún. Asegúrese de que todos los asistentes tengan sus documentos aprobados.', 'warning')" class="docs-btn-accion gv-btn-confirm gv-btn-disabled gv-btn-icon-only" title="Documentos pendientes de aprobación" aria-label="Confirmar visita bloqueada">
+        <i class="ri-alert-line" aria-hidden="true"></i>
       </button>`);
     }
   }
@@ -414,7 +437,8 @@ function mostrarVisitasAprobadas() {
       let html = '';
       visitas.forEach(v => {
         const estadoBadge = getEstadoBadge(v.estado);
-        html += `<tr id="visita-${tipoVisitaActual}-${v.id}" class="docs-fila gv-fila visit-row" data-id="${v.id}" data-tipo="${tipoVisitaActual}">
+        const tipoFila = tipoVisitaActual === 'todas' ? (v.tipo === 'interna' ? 'internas' : 'externas') : tipoVisitaActual;
+        html += `<tr id="visita-${tipoFila}-${v.id}" class="docs-fila gv-fila visit-row" data-id="${v.id}" data-tipo="${tipoFila}">
             <td class="gv-celda-id">#${v.id}</td>
             <td>
               <span class="gv-tipo-badge ${v.tipo === 'interna' ? 'interna' : 'externa'}">${v.tipo_display}</span>
@@ -428,8 +452,8 @@ function mostrarVisitasAprobadas() {
             <td class="gv-celda-cantidad">${v.cantidad || 0}</td>
             <td>${estadoBadge}</td>
             <td class="docs-celda-acciones gv-celda-acciones">
-              <button type="button" onclick="verDetalleVisita('${v.tipo}', ${v.id})" class="docs-btn-accion docs-btn-ver gv-btn-base">
-                <i class="ri-eye-line"></i> Ver detalles
+              <button type="button" onclick="verDetalleVisita('${v.tipo}', ${v.id})" class="docs-btn-accion docs-btn-ver gv-btn-base" title="Ver detalle" aria-label="Ver detalle">
+                <i class="ri-eye-line" aria-hidden="true"></i>
               </button>
             </td>
           </tr>`;
@@ -446,16 +470,13 @@ function mostrarVisitasAprobadas() {
 
 function filtrarPorEstado(estado) {
   document.getElementById('filtroEstadoVisita').value = estado;
+  actualizarTarjetaEstadoActiva(estado);
   cargarVisitas();
 
-  if (estado === 'en_revision_documentos') {
-    mostrarDocumentosPorEstado('revision');
-  } else if (estado === 'documentos_enviados') {
-    mostrarDocumentosPorEstado('enviados');
-  } else {
-    document.getElementById('contenedorInlineDocs').style.display = 'none';
-    document.getElementById('contenedorTablaVisitas').style.display = '';
-  }
+  const inline = document.getElementById('contenedorInlineDocs');
+  const tabla = document.getElementById('contenedorTablaVisitas');
+  if (inline) inline.style.display = 'none';
+  if (tabla) tabla.style.display = '';
 }
 
 function mostrarDocumentosPorEstado(filtro) {
@@ -466,16 +487,22 @@ function mostrarDocumentosPorEstado(filtro) {
   const subtitulo = document.getElementById('subtituloInlineDocs');
   const statsDiv = document.getElementById('statsInlineDocs');
 
+  // Si el bloque inline fue retirado del layout, mantener flujo en la tabla.
+  if (!inlineContainer || !contenido || !titulo || !subtitulo || !statsDiv) {
+    if (tablaContainer) tablaContainer.style.display = '';
+    return;
+  }
+
   const configs = {
     'revision': {
-      titulo: '🔍 Documentos Pendientes de Revisión',
+      titulo: 'Documentos Pendientes de Revision',
       subtitulo: 'Archivos pendientes de revisión o corrección',
       color: '#f59e0b',
       queryParams: 'estado_asistente=revision_activa',
       filtroLocal: null
     },
     'enviados': {
-      titulo: '📄 Documentos Enviados',
+      titulo: 'Documentos Enviados',
       subtitulo: 'Todos los archivos que han sido enviados por los asistentes',
       color: '#3b82f6',
       queryParams: '',
@@ -511,9 +538,9 @@ function mostrarDocumentosPorEstado(filtro) {
       const rechazados = docs.filter(d => d.estado === 'documentos_rechazados').length;
 
       statsDiv.innerHTML = `
-          <span style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;">⏳ ${pendientes} Pendientes</span>
-          <span style="background:#d1fae5;color:#065f46;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;">✅ ${aprobados} Aprobados</span>
-          <span style="background:#fee2e2;color:#991b1b;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;">❌ ${rechazados} Rechazados</span>
+          <span style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;">${pendientes} Pendientes</span>
+          <span style="background:#d1fae5;color:#065f46;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;">${aprobados} Aprobados</span>
+          <span style="background:#fee2e2;color:#991b1b;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;">${rechazados} Rechazados</span>
         `;
       subtitulo.textContent = `${docs.length} asistente(s) con documentos encontrados`;
 
@@ -548,22 +575,25 @@ function mostrarDocumentosPorEstado(filtro) {
       let html = '';
       Object.values(visitasMap).forEach(visita => {
         const visitaBadge = getEstadoBadge(visita.estado);
-        const tipoIcon = visita.tipo === 'interna' ? '📋' : '🏢';
+        const tipoLabel = visita.tipo === 'interna' ? 'Interna' : 'Externa';
+        const cantidadAsistentes = visita.asistentes.length;
 
         html += `
             <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:16px;overflow:hidden;">
-              <div style="background:linear-gradient(135deg,#f3f4f6,#e5e7eb);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-                <div>
-                  <span style="font-weight:700;font-size:14px;color:#1f2937;">${tipoIcon} Visita #${visita.visita_id}</span>
-                  <span style="margin-left:8px;color:#6b7280;font-size:13px;">${visita.responsable}</span>
-                  <span style="margin-left:6px;color:#9ca3af;font-size:12px;">• ${visita.programa}</span>
+              <div style="background:linear-gradient(135deg,#f3f4f6,#e5e7eb);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                  <span style="font-weight:700;font-size:14px;color:#1f2937;">Visita #${visita.visita_id}</span>
+                  <span style="background:${visita.tipo === 'interna' ? '#dcfce7' : '#ffedd5'};color:${visita.tipo === 'interna' ? '#166534' : '#9a3412'};padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;">${tipoLabel}</span>
+                  <span style="color:#6b7280;font-size:13px;">${visita.responsable}</span>
+                  <span style="color:#9ca3af;font-size:12px;">${visita.programa}</span>
+                  <span style="background:#e2e8f0;color:#334155;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;">${cantidadAsistentes} asistentes</span>
                 </div>
                 <div style="display:flex;gap:6px;align-items:center;">
                   ${visitaBadge}
-                  <span style="color:#9ca3af;font-size:11px;">📅 ${visita.fecha}</span>
+                  <span style="color:#64748b;font-size:11px;">${visita.fecha}</span>
                   ${filtro !== 'revision' && filtro !== 'confirmados' && filtro !== 'enviados' ? `<button onclick="verDetalleVisita('${visita.tipo}', ${visita.visita_id})" 
                           style="background:#6b7280;color:white;border:none;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:11px;font-weight:500;">
-                    👁️ Ver Detalle
+                    Ver detalle
                   </button>` : ''}
                 </div>
               </div>
@@ -649,16 +679,16 @@ function mostrarDocumentosPorEstado(filtro) {
           let aBadge = '';
           let borderLeft = '#d1d5db';
           if (a.estado === 'pendiente_documentos') {
-            aBadge = '<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">⏳ Pendiente</span>';
+            aBadge = '<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">Pendiente</span>';
             borderLeft = '#f59e0b';
           } else if (a.estado === 'documentos_aprobados') {
-            aBadge = '<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">✅ Aprobado</span>';
+            aBadge = '<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">Aprobado</span>';
             borderLeft = '#10b981';
           } else if (tieneRechazosPersonales) {
-            aBadge = '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">❌ Rechazado</span>';
+            aBadge = '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">Rechazado</span>';
             borderLeft = '#ef4444';
           } else if (a.estado === 'documentos_rechazados') {
-            aBadge = '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">❌ Rechazado</span>';
+            aBadge = '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">Rechazado</span>';
             borderLeft = '#ef4444';
           }
 
@@ -766,8 +796,10 @@ function mostrarDocumentosPorEstado(filtro) {
 }
 
 function volverAVisitas() {
-  document.getElementById('contenedorInlineDocs').style.display = 'none';
-  document.getElementById('contenedorTablaVisitas').style.display = '';
+  const inline = document.getElementById('contenedorInlineDocs');
+  const tabla = document.getElementById('contenedorTablaVisitas');
+  if (inline) inline.style.display = 'none';
+  if (tabla) tabla.style.display = '';
   document.getElementById('filtroEstadoVisita').value = 'todos';
   cargarVisitas();
 }
@@ -838,7 +870,7 @@ async function rechazarDocDesdeListado(tipo, asistenteId, nombre, filtroActual) 
 }
 
 async function visualizarDocumento(url, titulo, extraOptions = null) {
-  document.getElementById('tituloVisualizarDoc').textContent = '📄 ' + titulo;
+  document.getElementById('tituloVisualizarDoc').textContent = titulo;
   document.getElementById('descargarDocLink').href = url;
   document.getElementById('abrirNuevaTab').href = url;
 
@@ -1321,16 +1353,16 @@ function verDetalleVisita(tipo, id) {
           let borderColor = '#e5e7eb';
           if (a.estado === 'pendiente_documentos') {
             borderColor = '#f59e0b';
-            estadoBadge = '<span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">⏳ Pendiente</span>';
+            estadoBadge = '<span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">Pendiente</span>';
           } else if (a.estado === 'documentos_aprobados') {
             borderColor = '#22c55e';
-            estadoBadge = '<span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">✅ Aprobado</span>';
+            estadoBadge = '<span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">Aprobado</span>';
           } else if (tieneRechazosPersonales) {
             borderColor = '#ef4444';
-            estadoBadge = '<span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">❌ Rechazado</span>';
+            estadoBadge = '<span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">Rechazado</span>';
           } else if (a.estado === 'documentos_rechazados') {
             borderColor = '#ef4444';
-            estadoBadge = '<span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">❌ Rechazado</span>';
+            estadoBadge = '<span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">Rechazado</span>';
           }
 
           let accionesDocHtml = '';
@@ -1769,12 +1801,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const params = new URLSearchParams(window.location.search);
   const tipoParam = params.get('tipo');
   const idParam = params.get('id');
-  if (!tipoParam || !idParam) return;
+  const estadoParam = params.get('estado');
+  const openDocsParam = params.get('open_docs');
 
-  // Asegurar que la pestaña correcta esté activa
-  if (typeof cambiarTabVisita === 'function') {
+  if (tipoParam && typeof cambiarTabVisita === 'function') {
     cambiarTabVisita(tipoParam);
   }
+
+  const estadosDocs = new Set(['documentos_enviados', 'en_revision_documentos']);
+  if (openDocsParam === '1' && estadoParam && estadosDocs.has(estadoParam) && typeof filtrarPorEstado === 'function') {
+    // Espera breve para permitir que la tabla/filtros terminen su carga inicial.
+    setTimeout(() => filtrarPorEstado(estadoParam), 220);
+  }
+
+  if (!tipoParam || !idParam) return;
 
   const attempt = () => {
     // selector por id creado: visita-<tipo>-<id>
