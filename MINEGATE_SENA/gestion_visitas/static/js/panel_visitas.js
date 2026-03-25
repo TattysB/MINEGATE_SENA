@@ -365,9 +365,11 @@ function getAccionesVisita(v) {
   }
 
   if (v.estado === 'en_revision_documentos') {
-    acciones.push(`<button type="button" onclick="verDetalleVisita('${v.tipo}', ${v.id})" class="docs-btn-accion gv-btn-docs">
-      <i class="ri-file-search-line"></i> Revisar docs
-    </button>`);
+    if (!v.puede_confirmar) {
+      acciones.push(`<button type="button" onclick="verDetalleVisita('${v.tipo}', ${v.id})" class="docs-btn-accion gv-btn-docs">
+        <i class="ri-file-search-line"></i> Revisar docs
+      </button>`);
+    }
 
     if (v.puede_confirmar) {
       acciones.push(`<button type="button" onclick="accionVisita('${v.tipo}', ${v.id}, 'confirmar_visita')" class="docs-btn-accion gv-btn-confirm">
@@ -1295,6 +1297,31 @@ function verDetalleVisita(tipo, id) {
 
             documentos_personales.forEach(ds => {
               const badgeDoc = getBadgeRevisionDocumento(ds);
+              const textoDoc = `${ds.titulo || ''} ${ds.categoria || ''}`.toLowerCase();
+              const esAutorizacionPadres = textoDoc.includes('autorizacion padres') || textoDoc.includes('autorización padres');
+
+              if (esAutorizacionPadres) {
+                botonesDoc += `
+                  <div style="background:#fef3c7;padding:8px;border-radius:6px;border:2px solid #f59e0b;margin-bottom:6px;width:100%;box-sizing:border-box;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
+                      <div style="display:flex;gap:4px;align-items:center;">
+                        <button onclick="visualizarDocumento('${ds.url}', 'Formato Autorización Padres - ${a.nombre_completo}', {id: ${ds.id}, estado: '${ds.estado}', nombre_archivo: '${(ds.nombre_archivo || '').replace(/'/g, '')}'})" 
+                                style="background:linear-gradient(135deg,#f59e0b,#d97706);color:white;padding:7px 14px;border-radius:7px;border:none;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:6px;font-weight:600;box-shadow:0 2px 5px rgba(245,158,11,0.25);">
+                          <i class="ri-parent-line"></i> Autorización Padres
+                        </button>
+                        <a href="${ds.download_url || ds.url}" download style="background:#f3f4f6;color:#374151;padding:7px 10px;border-radius:7px;text-decoration:none;font-size:12px;display:inline-flex;align-items:center;border:1px solid #e5e7eb;" title="Descargar">
+                          <i class="ri-download-2-line"></i>
+                        </a>
+                      </div>
+                      <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
+                        <span style="background:#fef3c7;color:#78350f;font-size:10px;padding:3px 8px;border-radius:6px;font-weight:600;display:inline-flex;align-items:center;gap:4px;border:1px solid #fcd34d;"><i class="ri-user-heart-line"></i> Menor</span>
+                        ${badgeDoc}
+                      </div>
+                    </div>
+                    ${ds.observaciones_revision ? `<div style="font-size:11px;color:#991b1b;margin-left:4px;margin-top:6px;margin-bottom:2px;display:flex;align-items:flex-start;gap:5px;"><i class="ri-close-circle-fill" style="flex-shrink:0;margin-top:1px;"></i><span>${ds.observaciones_revision}</span></div>` : ''}
+                  </div>`;
+                return;
+              }
 
               botonesDoc += `
                   <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">

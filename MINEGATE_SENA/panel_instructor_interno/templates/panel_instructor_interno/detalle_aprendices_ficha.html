@@ -311,17 +311,21 @@
       <div id="collapseFaltantes" class="accordion-collapse collapse" aria-labelledby="headingFaltantes" data-bs-parent="#acordeonFaltantes">
         <div class="accordion-body">
           <p class="mb-3" style="font-size:0.86rem; color:#6b7280;">
-            Para cargar documentos faltantes, usa el botón <strong>Editar y subir</strong> de cada aprendiz y adjunta el reporte de salud desde aquí mismo.
+            Para cargar documentos faltantes, usa <strong>Editar y subir</strong> para el reporte de salud. Si el aprendiz tiene TI, adjunta también la <strong>autorización de padres</strong> desde el formulario de edición del aprendiz.
           </p>
           {% if aprendices_faltantes_docs %}
             {% for pendiente in aprendices_faltantes_docs %}
-              <div class="missing-doc-item">
+              <div class="missing-doc-item" data-aprendiz-id="{{ pendiente.id }}">
                 <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
                   <div>
                     <strong style="color:#1f2937;">{{ pendiente.nombre }}</strong>
                     <div style="font-size:0.8rem; color:#6b7280;">{{ pendiente.documento }}</div>
                   </div>
-                  <button type="button" class="btn btn-sm btn-subir-salud" onclick="abrirModalCargaSaludPendiente('{{ pendiente.id }}', '{{ pendiente.nombre|escapejs }}')">Editar y subir</button>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-subir-salud"
+                    onclick="abrirModalCargaSaludPendiente('{{ pendiente.id }}', '{{ pendiente.nombre|escapejs }}', {{ pendiente.falta_salud|yesno:'true,false' }}, {{ pendiente.falta_autorizacion_padres|yesno:'true,false' }})"
+                  >Suba aquí</button>
                 </div>
                 {% for faltante in pendiente.faltantes %}
                   <span class="missing-pill"><i class="fas fa-exclamation-circle me-1"></i>{{ faltante }}</span>
@@ -343,7 +347,7 @@
       <div class="modal-content" style="border-radius:14px; overflow:hidden; border:1px solid #dbe7cf;">
         <div class="modal-header" style="background:#eef9e8; border-bottom:1px solid #dbe7cf;">
           <h5 class="modal-title" style="color:#1f5f16; font-weight:800;">
-            <i class="fas fa-file-medical me-2"></i>Subir reporte de salud
+            <i class="fas fa-file-upload me-2"></i>Subir documentos pendientes
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
@@ -351,18 +355,30 @@
           {% csrf_token %}
           <input type="hidden" name="accion" value="subir_reporte_salud_pendiente">
           <input type="hidden" name="aprendiz_id" id="inputAprendizPendienteId">
+          <input type="hidden" id="inputFaltaSaludPendiente" value="false">
+          <input type="hidden" id="inputFaltaAutorizacionPendiente" value="false">
           <div class="modal-body">
             <p class="mb-2" style="font-size:0.9rem; color:#374151;">
               Aprendiz: <strong id="nombreAprendizPendiente"></strong>
             </p>
-            <label class="form-label fw-semibold">Archivo del reporte de salud</label>
-            <input type="file" class="form-control" name="documento_salud" id="inputDocumentoSaludPendiente" accept=".pdf,.doc,.docx" required>
-            <small style="display:block; margin-top:6px; color:#6b7280;">Formatos permitidos: PDF, DOC, DOCX. Tamaño máximo: 10MB.</small>
+
+            <div id="bloqueDocumentoSaludPendiente" style="margin-bottom:14px;">
+              <label class="form-label fw-semibold">Archivo del reporte de salud</label>
+              <input type="file" class="form-control" name="documento_salud" id="inputDocumentoSaludPendiente" accept=".pdf,.doc,.docx">
+            </div>
+
+            <div id="bloqueAutorizacionPadresPendiente" style="margin-bottom:14px; display:none;">
+              <label class="form-label fw-semibold">Autorización de padres</label>
+              <input type="file" class="form-control" name="documento_autorizacion_padres" id="inputDocumentoAutorizacionPendiente" accept=".pdf,.doc,.docx">
+            </div>
+
+            <small style="display:block; margin-top:6px; color:#6b7280;">Formatos permitidos: PDF, DOC, DOCX. Tamaño máximo: 10MB por archivo.</small>
+            <small style="display:block; margin-top:4px; color:#6b7280;">Puedes cargar uno o varios documentos en el mismo envío.</small>
           </div>
           <div class="modal-footer" style="border-top:1px solid #eef2f7;">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
             <button type="submit" class="btn" style="background:linear-gradient(135deg,#39a900,#2d8600); color:#fff; font-weight:700;">
-              <i class="fas fa-upload me-1"></i>Subir reporte
+              <i class="fas fa-upload me-1"></i>Subir documentos
             </button>
           </div>
         </form>
@@ -377,7 +393,7 @@
   </div>
   <div class="row g-3" id="aprendicesGrid">
     {% for aprendiz in aprendices %}
-    <div class="col-md-6">
+    <div class="col-md-6" data-aprendiz-id="{{ aprendiz.id }}">
       <div class="aprendiz-card">
 
         <!-- Cabecera de la tarjeta -->
@@ -529,6 +545,100 @@ function incrementarTextoNumerico(idElemento, delta) {
   el.textContent = String((isNaN(base) ? 0 : base) + delta);
 }
 
+function autoCerrarAlerta(alerta, tiempoMs = 7000) {
+  if (!alerta) {
+    return;
+  }
+
+  setTimeout(() => {
+    if (!alerta || !alerta.parentNode) {
+      return;
+    }
+
+    if (window.bootstrap && window.bootstrap.Alert) {
+      const instancia = bootstrap.Alert.getOrCreateInstance(alerta);
+      instancia.close();
+    } else {
+      alerta.classList.remove('show');
+      setTimeout(() => {
+        if (alerta.parentNode) {
+          alerta.remove();
+        }
+      }, 200);
+    }
+  }, tiempoMs);
+}
+
+function recargarManteniendoSeccion(sectionId) {
+  if (sectionId) {
+    window.location.hash = sectionId;
+  }
+  window.location.reload();
+}
+
+function actualizarEstadoPendientes() {
+  const accordionBody = document.querySelector('#collapseFaltantes .accordion-body');
+  const badge = document.querySelector('#headingFaltantes .badge');
+  const remainingItems = document.querySelectorAll('.missing-doc-item').length;
+
+  if (badge) {
+    badge.textContent = remainingItems;
+    if (remainingItems === 0) {
+      badge.style.background = '#d1fae5';
+      badge.style.color = '#065f46';
+    } else {
+      badge.style.background = '#fde68a';
+      badge.style.color = '#78350f';
+    }
+  }
+
+  if (!accordionBody) {
+    return;
+  }
+
+  if (remainingItems === 0) {
+    const existeMensaje = accordionBody.querySelector('[data-empty-pending="true"]');
+    if (!existeMensaje) {
+      const successDiv = document.createElement('div');
+      successDiv.setAttribute('data-empty-pending', 'true');
+      successDiv.style.cssText = 'padding:0.8rem; border-radius:10px; background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; font-weight:600;';
+      successDiv.innerHTML = '<i class="fas fa-check-circle me-1"></i> Todos los aprendices tienen los documentos principales cargados.';
+      accordionBody.appendChild(successDiv);
+    }
+  } else {
+    const mensajeVacio = accordionBody.querySelector('[data-empty-pending="true"]');
+    if (mensajeVacio) {
+      mensajeVacio.remove();
+    }
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.container.py-4 .alert').forEach((alerta) => {
+    autoCerrarAlerta(alerta, 7000);
+  });
+
+  const hash = (window.location.hash || '').replace('#', '');
+  if (!hash) {
+    return;
+  }
+
+  if (hash === 'acordeonFaltantes') {
+    const collapseEl = document.getElementById('collapseFaltantes');
+    if (collapseEl) {
+      const instancia = bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false });
+      instancia.show();
+    }
+  }
+
+  const target = document.getElementById(hash);
+  if (target) {
+    setTimeout(() => {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 140);
+  }
+});
+
 function badgeEstadoAprendiz(estado) {
   if (estado === 'activo') {
     return '<span class="badge-activo"><i class="fas fa-circle me-1" style="font-size:.45rem; vertical-align:middle;"></i>Activo</span>';
@@ -637,6 +747,7 @@ window.addEventListener('message', function(event) {
     alerta.role = 'alert';
     alerta.innerHTML = `${data.message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
     contenedor.insertBefore(alerta, contenedor.firstChild);
+    autoCerrarAlerta(alerta, 7000);
   }
 });
 
@@ -649,12 +760,38 @@ document.addEventListener('keydown', function(event) {
   }
 });
 
-function abrirModalCargaSaludPendiente(aprendizId, nombreAprendiz) {
+function abrirModalCargaSaludPendiente(aprendizId, nombreAprendiz, faltaSalud, faltaAutorizacion) {
   document.getElementById('inputAprendizPendienteId').value = aprendizId;
+  document.getElementById('inputFaltaSaludPendiente').value = faltaSalud ? 'true' : 'false';
+  document.getElementById('inputFaltaAutorizacionPendiente').value = faltaAutorizacion ? 'true' : 'false';
   document.getElementById('nombreAprendizPendiente').textContent = nombreAprendiz;
-  const input = document.getElementById('inputDocumentoSaludPendiente');
-  if (input) {
-    input.value = '';
+
+  const inputSalud = document.getElementById('inputDocumentoSaludPendiente');
+  const inputAutorizacion = document.getElementById('inputDocumentoAutorizacionPendiente');
+  const bloqueSalud = document.getElementById('bloqueDocumentoSaludPendiente');
+  const bloqueAutorizacion = document.getElementById('bloqueAutorizacionPadresPendiente');
+
+  if (inputSalud) {
+    inputSalud.value = '';
+    inputSalud.required = false;
+  }
+  if (inputAutorizacion) {
+    inputAutorizacion.value = '';
+    inputAutorizacion.required = false;
+  }
+
+  if (bloqueSalud) {
+    bloqueSalud.style.display = faltaSalud ? '' : 'none';
+  }
+  if (bloqueAutorizacion) {
+    bloqueAutorizacion.style.display = faltaAutorizacion ? '' : 'none';
+  }
+
+  if (faltaSalud && !faltaAutorizacion && inputSalud) {
+    inputSalud.required = true;
+  }
+  if (faltaAutorizacion && !faltaSalud && inputAutorizacion) {
+    inputAutorizacion.required = true;
   }
 
   const modalEl = document.getElementById('modalCargaSaludPendiente');
@@ -792,11 +929,38 @@ function abrirModalEliminarAprendiz(deleteUrl, btnElement) {
       if (data.success) {
         overlay.remove();
         
+        let aprendizId = null;
+        const tarjetaCol = btnElement && btnElement.closest('[data-aprendiz-id]') ? btnElement.closest('[data-aprendiz-id]') : null;
+        if (tarjetaCol) {
+          aprendizId = tarjetaCol.getAttribute('data-aprendiz-id');
+        }
+
         // Buscar y remover la tarjeta del aprendiz
-        const aprendizCard = btnElement && btnElement.closest('[data-aprendiz-id]') ? btnElement.closest('[data-aprendiz-id]') : null;
-        if (aprendizCard) {
-          aprendizCard.style.animation = 'fadeOut 0.3s ease';
-          setTimeout(() => aprendizCard.remove(), 300);
+        if (tarjetaCol) {
+          const estadoTexto = (tarjetaCol.querySelector('.pt-1 span')?.textContent || '').toLowerCase();
+          tarjetaCol.style.animation = 'fadeOut 0.3s ease';
+          setTimeout(() => tarjetaCol.remove(), 300);
+
+          incrementarTextoNumerico('statTotalAprendices', -1);
+          incrementarTextoNumerico('aprendicesCountLabel', -1);
+          if (estadoTexto.includes('activo')) {
+            incrementarTextoNumerico('statActivosAprendices', -1);
+          } else if (estadoTexto.includes('inactivo')) {
+            incrementarTextoNumerico('statInactivosAprendices', -1);
+          } else if (estadoTexto.includes('retirado')) {
+            incrementarTextoNumerico('statRetiradosAprendices', -1);
+          }
+        }
+
+        if (aprendizId) {
+          const pendienteItem = document.querySelector(`.missing-doc-item[data-aprendiz-id="${aprendizId}"]`);
+          if (pendienteItem) {
+            pendienteItem.remove();
+            actualizarEstadoPendientes();
+          }
+        } else {
+          recargarManteniendoSeccion('aprendicesGrid');
+          return;
         }
         
         // Mostrar alerta de éxito
@@ -806,7 +970,7 @@ function abrirModalEliminarAprendiz(deleteUrl, btnElement) {
         const containerPy4 = document.querySelector('.container.py-4');
         if (containerPy4) {
           containerPy4.insertAdjacentElement('afterbegin', alertDiv);
-          setTimeout(() => alertDiv.remove(), 5000);
+          autoCerrarAlerta(alertDiv, 7000);
         }
       } else {
         alert('Error: ' + (data.error || 'No se pudo eliminar'));
@@ -835,6 +999,171 @@ document.addEventListener('click', function(e) {
     if (href) abrirModalEliminarAprendiz(href, btnEliminar);
     return false;
   }
+});
+
+// Manejar envío del formulario de carga de salud por AJAX
+document.getElementById('formCargaSaludPendiente').addEventListener('submit', function(e) {
+  e.preventDefault();
+  
+  const form = this;
+  const submitBtn = form.querySelector('button[type="submit"]');
+  const originalText = submitBtn.innerHTML;
+  
+  // Verificar que al menos hay un archivo seleccionado
+  const fileSaludInput = document.getElementById('inputDocumentoSaludPendiente');
+  const fileAutorizacionInput = document.getElementById('inputDocumentoAutorizacionPendiente');
+  const fileSalud = fileSaludInput && fileSaludInput.files && fileSaludInput.files.length > 0 ? fileSaludInput.files[0] : null;
+  const fileAutorizacion = fileAutorizacionInput && fileAutorizacionInput.files && fileAutorizacionInput.files.length > 0 ? fileAutorizacionInput.files[0] : null;
+
+  if (!fileSalud && !fileAutorizacion) {
+    alert('Por favor, selecciona al menos un archivo.');
+    return;
+  }
+
+  if (fileSalud) {
+    console.log('Archivo salud seleccionado:', fileSalud.name, 'Tamaño:', fileSalud.size, 'Tipo:', fileSalud.type);
+  }
+  if (fileAutorizacion) {
+    console.log('Archivo autorización seleccionado:', fileAutorizacion.name, 'Tamaño:', fileAutorizacion.size, 'Tipo:', fileAutorizacion.type);
+  }
+  
+  // Deshabilitar botón y mostrar estado de carga
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Enviando...';
+  
+  // Crear FormData manualmente para control total
+  const formData = new FormData();
+  
+  // Agregar CSRF token
+  const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  formData.append('csrfmiddlewaretoken', csrfToken);
+  
+  // Agregar datos del formulario
+  formData.append('accion', 'subir_reporte_salud_pendiente');
+  formData.append('aprendiz_id', document.getElementById('inputAprendizPendienteId').value);
+  if (fileSalud) {
+    formData.append('documento_salud', fileSalud);
+  }
+  if (fileAutorizacion) {
+    formData.append('documento_autorizacion_padres', fileAutorizacion);
+  }
+  
+  console.log('FormData enviado con:', {
+    accion: 'subir_reporte_salud_pendiente',
+    aprendiz_id: document.getElementById('inputAprendizPendienteId').value,
+    archivo_salud: fileSalud ? fileSalud.name : null,
+    archivo_autorizacion: fileAutorizacion ? fileAutorizacion.name : null
+  });
+  
+  // Obtener URL actual (la misma URL del formulario)
+  const url = window.location.href;
+  
+  // Enviar por AJAX
+  fetch(url, {
+    method: 'POST',
+    body: formData,
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  })
+  .then(response => {
+    console.log('Respuesta recibida:', response.status, response.statusText);
+    
+    // Leer el contenido como JSON primero
+    const contentType = response.headers.get('content-type');
+    console.log('Content-Type:', contentType);
+    
+    if (contentType && contentType.includes('application/json')) {
+      return response.json().then(data => {
+        console.log('JSON parseado:', data);
+        return { status: response.status, data: data, ok: response.ok };
+      });
+    } else {
+      // Si no es JSON, intentar leer como texto para debugging
+      return response.text().then(text => {
+        console.log('Respuesta no-JSON:', text.substring(0, 500));
+        throw new Error('Respuesta inesperada del servidor (no es JSON). Status: ' + response.status);
+      });
+    }
+  })
+  .then(result => {
+    const { status, data, ok } = result;
+    
+    if (data && data.success === true) {
+      // Crear alerta de éxito
+      const alertDiv = document.createElement('div');
+      alertDiv.className = 'alert alert-success alert-dismissible fade show';
+      alertDiv.role = 'alert';
+      alertDiv.innerHTML = '<i class="fas fa-check-circle me-2"></i>' + data.message + 
+                          '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+      
+      // Insertar alerta en el contenedor principal
+      const container = document.querySelector('.container.py-4');
+      if (container) {
+        container.insertBefore(alertDiv, container.firstChild);
+        autoCerrarAlerta(alertDiv, 7000);
+      }
+      
+      // Cerrar modal
+      const modalEl = document.getElementById('modalCargaSaludPendiente');
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      if (modal) modal.hide();
+      
+      // Limpiar formulario
+      form.reset();
+      
+      // Actualizar el estado del aprendiz en el acordeón de pendientes
+      const aprendizId = document.getElementById('inputAprendizPendienteId').value;
+      const item = document.querySelector(`.missing-doc-item[data-aprendiz-id="${aprendizId}"]`);
+      const faltantesActualizados = Array.isArray(data.faltantes) ? data.faltantes : [];
+
+      if (item) {
+        if (faltantesActualizados.length === 0) {
+          item.style.transition = 'opacity 0.3s ease-out';
+          item.style.opacity = '0';
+          setTimeout(() => item.remove(), 300);
+        } else {
+          const pillsPrevias = item.querySelectorAll('.missing-pill');
+          pillsPrevias.forEach(pill => pill.remove());
+
+          faltantesActualizados.forEach(texto => {
+            const pill = document.createElement('span');
+            pill.className = 'missing-pill';
+            pill.innerHTML = `<i class="fas fa-exclamation-circle me-1"></i>${texto}`;
+            item.appendChild(pill);
+          });
+        }
+      }
+
+      setTimeout(() => {
+        actualizarEstadoPendientes();
+
+        if (!document.querySelector(`.missing-doc-item[data-aprendiz-id="${aprendizId}"]`) && faltantesActualizados.length > 0) {
+          recargarManteniendoSeccion('acordeonFaltantes');
+        }
+      }, 320);
+
+      // Refresca la tarjeta inferior del aprendiz (documentos visibles) y mantiene la posición.
+      setTimeout(() => {
+        recargarManteniendoSeccion('acordeonFaltantes');
+      }, 850);
+      
+      console.log('Archivo guardado exitosamente');
+    } else {
+      const mensaje = (data && data.message) || 'No se pudo guardar el archivo';
+      alert('Error: ' + mensaje);
+      console.error('Error en respuesta:', data);
+    }
+  })
+  .catch(error => {
+    console.error('Error AJAX:', error);
+    alert('Error al enviar el archivo: ' + error.message);
+  })
+  .finally(() => {
+    // Restaurar botón
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = originalText;
+  });
 });
 </script>
 {% accessibility_widget %}

@@ -107,6 +107,7 @@ def construir_reporte_documental_visita(visita, tipo_visita):
                 incidencias.append(
                     {
                         "tipo": "rechazado",
+                        "tipo_correccion": "documento",
                         "documento_subido_id": doc_subido.id,
                         "detalle": (
                             f"{doc_subido.documento_requerido.titulo}: "
@@ -123,6 +124,7 @@ def construir_reporte_documental_visita(visita, tipo_visita):
             incidencias.append(
                 {
                     "tipo": "rechazado",
+                    "tipo_correccion": "autorizacion_padres",
                     "detalle": (
                         "Autorización de padres: "
                         f"{asistente.observaciones_autorizacion_padres}"

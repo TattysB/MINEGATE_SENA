@@ -63,6 +63,7 @@ CATEGORIAS_DOCUMENTOS_REGISTRO = {
     "formato auto reporte condiciones de salud",
     "formato autorizacion padres de familia",
 }
+CATEGORIA_AUTORIZACION_PADRES = "Formato Autorización Padres de Familia"
 AUTH_VISITANTE_MESSAGE_TAG = "auth_visitante"
 REGISTRO_VERIFICACION_SESSION_KEY = "registro_verificacion_pendiente"
 REGISTRO_VERIFICACION_TTL_MINUTOS = 10
@@ -1260,6 +1261,11 @@ def registrar_asistentes(request, tipo, visita_id):
         if not getattr(asistente, "tiene_doc_salud", False):
             faltantes.append("Reporte de condiciones de salud")
 
+        if asistente.tipo_documento == "TI" and not getattr(
+            asistente, "formato_autorizacion_padres", None
+        ):
+            faltantes.append("Autorización de padres")
+
         if faltantes:
             asistentes_documentos_pendientes.append(
                 {
@@ -2303,10 +2309,21 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
     # Para AJAX llega "archivo_correccion". Para formulario tradicional,
     # se mantiene la compatibilidad con los nombres por asistente.
     documento_subido_id = (request.POST.get("documento_subido_id") or "").strip()
-    archivo_salud = request.FILES.get("archivo_correccion") or request.FILES.get(
-        f"documento_salud_{asistente_id}"
-    )
-    archivo_autorizacion = request.FILES.get(f"formato_padres_{asistente_id}")
+    tipo_correccion = (request.POST.get("tipo_correccion") or "documento").strip().lower()
+    if tipo_correccion not in {"documento", "autorizacion_padres"}:
+        tipo_correccion = "documento"
+
+    archivo_correccion = request.FILES.get("archivo_correccion")
+    if tipo_correccion == "autorizacion_padres":
+        archivo_salud = request.FILES.get(f"documento_salud_{asistente_id}")
+        archivo_autorizacion = archivo_correccion or request.FILES.get(
+            f"formato_padres_{asistente_id}"
+        )
+    else:
+        archivo_salud = archivo_correccion or request.FILES.get(
+            f"documento_salud_{asistente_id}"
+        )
+        archivo_autorizacion = request.FILES.get(f"formato_padres_{asistente_id}")
 
     if not archivo_salud and not archivo_autorizacion:
         error_msg = "Debe seleccionar al menos un archivo para corregir."

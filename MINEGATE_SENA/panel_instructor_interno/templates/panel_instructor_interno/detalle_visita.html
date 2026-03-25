@@ -309,7 +309,7 @@
         </div>
         <div class="info-item">
           <label>Estado actual</label>
-          <span>{{ visita.get_estado_display }}</span>
+          <span>{% if visita.estado == 'documentos_enviados' %}Documentos enviados{% else %}{{ visita.get_estado_display }}{% endif %}</span>
         </div>
         <div class="info-item">
           <label>Cantidad de aprendices</label>
@@ -378,10 +378,12 @@
                   <span class="doc-issue-sub">{{ asistente_alerta.documento }}</span>
                 </div>
                 {% for incidencia in asistente_alerta.incidencias %}
-                  {% if incidencia.tipo == 'rechazado' and incidencia.documento_subido_id %}
-                    <button type="button" class="btn" style="padding:4px 8px; font-size:0.75rem; background:#ef4444; color:white; border:none; border-radius:4px; cursor:pointer;" onclick="abrirModalSubirPorAsistente('{{ asistente_alerta.nombre }}', '{{ asistente_alerta.id }}', '{{ incidencia.detalle|escapejs }}', '{{ incidencia.documento_subido_id }}')">
+                  {% if incidencia.tipo == 'rechazado' %}
+                    {% if incidencia.documento_subido_id or incidencia.tipo_correccion == 'autorizacion_padres' %}
+                    <button type="button" class="btn" style="padding:4px 8px; font-size:0.75rem; background:#ef4444; color:white; border:none; border-radius:4px; cursor:pointer;" onclick="abrirModalSubirPorAsistente('{{ asistente_alerta.nombre }}', '{{ asistente_alerta.id }}', '{{ incidencia.detalle|escapejs }}', '{{ incidencia.documento_subido_id }}', '{{ incidencia.tipo_correccion|default:'documento' }}')">
                       <i class="fas fa-upload me-1"></i>Subir corrección
                     </button>
+                    {% endif %}
                   {% endif %}
                 {% endfor %}
               </div>
@@ -652,7 +654,7 @@
             </div>
             <div class="final-cat-body">
             {% for doc in docs %}
-              <div class="final-doc-item final-doc-item-final" data-rechazado="{% if doc.id in documentos_finales_rechazados_ids or categoria in categorias_finales_rechazadas %}1{% else %}0{% endif %}">
+              <div class="final-doc-item final-doc-item-final" data-rechazado="{% if doc.id in documentos_finales_rechazados_ids %}1{% else %}0{% endif %}">
                 <div class="final-doc-head">
                   <div class="final-doc-icon">
                     <i class="fas fa-{% if doc.extension == '.pdf' %}file-pdf{% elif doc.extension == '.doc' or doc.extension == '.docx' %}file-word{% elif doc.extension == '.xls' or doc.extension == '.xlsx' %}file-excel{% else %}file-alt{% endif %}"></i>
@@ -693,6 +695,7 @@
     <form method="post" enctype="multipart/form-data" id="formSubirPorAsistente" action="{% url 'panel_visitante:actualizar_documento_asistente' tipo='interna' asistente_id=0 %}">
       {% csrf_token %}
       <input type="hidden" name="documento_subido_id" id="inputDocumentoSubidoId" value="">
+      <input type="hidden" name="tipo_correccion" id="inputTipoCorreccion" value="documento">
       <div class="final-doc-item" style="background: #f9fafb; padding: 16px; border-radius: 8px;">
         <div class="final-doc-head" style="margin-bottom: 12px;">
           <div class="final-doc-icon">
@@ -1182,12 +1185,13 @@
     restablecerEstadoSubidaArchivosFinales();
   }
 
-  function abrirModalSubirPorAsistente(nombre, asistenteId, documentoNombre, documentoSubidoId) {
+  function abrirModalSubirPorAsistente(nombre, asistenteId, documentoNombre, documentoSubidoId, tipoCorreccion) {
+    const correccionEsAutorizacion = String(tipoCorreccion || '').trim() === 'autorizacion_padres';
     if (!asistenteId || String(asistenteId).trim() === '') {
       mostrarPopupEmergente('No se pudo identificar el asistente para subir la corrección.', 'error');
       return;
     }
-    if (!documentoSubidoId || String(documentoSubidoId).trim() === '') {
+    if (!correccionEsAutorizacion && (!documentoSubidoId || String(documentoSubidoId).trim() === '')) {
       mostrarPopupEmergente('No se pudo identificar el documento rechazado para corregir.', 'error');
       return;
     }
@@ -1195,8 +1199,9 @@
     document.getElementById('modalSubirPorAsistente').style.display = 'block';
     document.body.style.overflow = 'hidden';
     document.getElementById('modalAsistenteInfo').innerHTML = `<strong>${nombre}</strong> - Cargue el archivo rechazado: <em>${documentoNombre}</em>`;
-    document.getElementById('modalDocumentoNombre').textContent = documentoNombre;
-    document.getElementById('inputDocumentoSubidoId').value = documentoSubidoId;
+    document.getElementById('modalDocumentoNombre').textContent = correccionEsAutorizacion ? 'Autorización de padres' : documentoNombre;
+    document.getElementById('inputDocumentoSubidoId').value = correccionEsAutorizacion ? '' : documentoSubidoId;
+    document.getElementById('inputTipoCorreccion').value = correccionEsAutorizacion ? 'autorizacion_padres' : 'documento';
     
     // Actualizar la acción del formulario
     const formSubir = document.getElementById('formSubirPorAsistente');
@@ -1211,6 +1216,8 @@
       form.reset();
       const inputDocumentoSubidoId = document.getElementById('inputDocumentoSubidoId');
       if (inputDocumentoSubidoId) inputDocumentoSubidoId.value = '';
+      const inputTipoCorreccion = document.getElementById('inputTipoCorreccion');
+      if (inputTipoCorreccion) inputTipoCorreccion.value = 'documento';
       const errorMensaje = document.getElementById('errorArchivoCorreccion');
       if (errorMensaje) errorMensaje.style.display = 'none';
       const statusMensaje = document.getElementById('statusMensajeAsistente');
@@ -1702,13 +1709,15 @@
         const statusMensaje = document.getElementById('statusMensajeAsistente');
         const statusContenido = document.getElementById('statusContenidoAsistente');
         const inputDocumentoSubidoId = document.getElementById('inputDocumentoSubidoId');
+        const inputTipoCorreccion = document.getElementById('inputTipoCorreccion');
+        const correccionEsAutorizacion = inputTipoCorreccion && inputTipoCorreccion.value === 'autorizacion_padres';
 
         if (!inputArchivo.files || inputArchivo.files.length === 0) {
           errorMensaje.style.display = 'block';
           return;
         }
 
-        if (!inputDocumentoSubidoId || !inputDocumentoSubidoId.value) {
+        if (!correccionEsAutorizacion && (!inputDocumentoSubidoId || !inputDocumentoSubidoId.value)) {
           statusMensaje.style.display = 'block';
           statusContenido.innerHTML = '<div style="background: #fee2e2; border-left: 4px solid #dc2626; padding: 12px; border-radius: 6px; color: #991b1b;"><i class="fas fa-exclamation-circle me-2"></i>No se encontró el documento rechazado para aplicar la corrección.</div>';
           return;
