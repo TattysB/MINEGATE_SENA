@@ -488,6 +488,11 @@ class AprendizForm(forms.ModelForm):
         """Inicializa el formulario con la ficha opcional para validación."""
         self.ficha = ficha
         super().__init__(*args, **kwargs)
+
+        # En este módulo el documento obligatorio es el Auto Reporte de Salud
+        # (documentos dinámicos), no documento_identidad.
+        self.fields["documento_identidad"].required = False
+        self.fields["documento_identidad"].widget.attrs.pop("required", None)
     
     class Meta:
         model = Aprendiz
@@ -539,7 +544,6 @@ class AprendizForm(forms.ModelForm):
             'documento_identidad': forms.FileInput(attrs={
                 'class': 'form-control',
                 'accept': '.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                'required': True,
             }),
             'documento_adicional': forms.FileInput(attrs={
                 'class': 'form-control',
@@ -550,7 +554,7 @@ class AprendizForm(forms.ModelForm):
             }),
         }
         labels = {
-            'documento_identidad': 'Documento de Identidad ★',
+            'documento_identidad': 'Documento de Identidad (Opcional)',
             'documento_adicional': 'Documento Adicional (Opcional)',
         }
     
@@ -599,7 +603,7 @@ class AprendizForm(forms.ModelForm):
         return validar_telefono(self.cleaned_data.get('telefono', ''), requerido=True)
 
     def clean_documento_identidad(self):
-        """Valida formato permitido para documento de identidad."""
+        """Valida formato permitido para documento de identidad (opcional)."""
         return validar_archivo_pdf_word(
             self.cleaned_data.get('documento_identidad'),
             'documento de identidad'

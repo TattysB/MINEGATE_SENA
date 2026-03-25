@@ -2258,6 +2258,24 @@ def guardar_documentos_aprendiz(aprendiz, archivos_subidos, documentos_por_categ
             )
 
 
+def _obtener_docs_subidos_ids_aprendiz(aprendiz, documentos_por_categoria):
+    """Retorna IDs de documentos ya cargados, incluyendo compatibilidad con campos legacy."""
+    docs_ids = set(
+        aprendiz.documentos_subidos.values_list("documento_requerido_id", flat=True)
+    )
+
+    # Compatibilidad: registros antiguos que solo guardaban el reporte en documento_adicional.
+    if getattr(aprendiz, "documento_adicional", None):
+        for categoria, docs in documentos_por_categoria.items():
+            cat_norm = _normalizar_categoria_texto(categoria)
+            if "auto reporte condiciones de salud" not in cat_norm:
+                continue
+            for doc in docs:
+                docs_ids.add(doc.id)
+
+    return docs_ids
+
+
 def validar_carga_documentos_aprendiz(
     archivos_subidos,
     documentos_por_categoria,
@@ -2439,8 +2457,8 @@ def editar_aprendiz(request, pk):
     docs_cat = obtener_documentos_por_categoria()
 
     if request.method == "POST":
-        docs_subidos_ids = set(
-            aprendiz.documentos_subidos.values_list("documento_requerido_id", flat=True)
+        docs_subidos_ids = _obtener_docs_subidos_ids_aprendiz(
+            aprendiz, docs_cat
         )
         form = AprendizForm(request.POST, request.FILES, instance=aprendiz, ficha=ficha)
         errores_docs_dinamicos = validar_carga_documentos_aprendiz(
@@ -2475,9 +2493,7 @@ def editar_aprendiz(request, pk):
     else:
         form = AprendizForm(instance=aprendiz, ficha=ficha)
 
-    docs_subidos_ids = list(
-        aprendiz.documentos_subidos.values_list("documento_requerido_id", flat=True)
-    )
+    docs_subidos_ids = list(_obtener_docs_subidos_ids_aprendiz(aprendiz, docs_cat))
 
     context = {
         "form": form,

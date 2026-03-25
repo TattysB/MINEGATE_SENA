@@ -13,6 +13,12 @@ from django.utils import timezone
 from visitaInterna.models import VisitaInterna, AsistenteVisitaInterna
 from visitaExterna.models import VisitaExterna, AsistenteVisitaExterna
 from .models import Documento, DocumentoSubidoAsistente
+from core.sanitization import (
+    sanitize_document_number,
+    sanitize_phone,
+    sanitize_text,
+    sanitize_token,
+)
 
 
 def _get_docsubido_aprendiz_model():
@@ -199,11 +205,23 @@ def registro_publico_asistentes(request, token, tipo):
                 request, f"Ya se alcanzó el límite de {max_asistentes} asistentes."
             )
         else:
-            nombre = request.POST.get("nombre_completo", "").strip()
-            tipo_doc = request.POST.get("tipo_documento", "")
-            num_doc = request.POST.get("numero_documento", "").strip()
-            correo_asistente = request.POST.get("correo", "").strip()
-            telefono = request.POST.get("telefono", "").strip()
+            nombre = sanitize_text(
+                request.POST.get("nombre_completo", ""),
+                max_length=200,
+                allow_newlines=False,
+            )
+            tipo_doc = sanitize_text(
+                request.POST.get("tipo_documento", ""),
+                max_length=3,
+                allow_newlines=False,
+            ).upper()
+            num_doc = sanitize_document_number(request.POST.get("numero_documento", ""), max_length=50)
+            correo_asistente = sanitize_text(
+                request.POST.get("correo", ""),
+                max_length=254,
+                allow_newlines=False,
+            ).lower()
+            telefono = sanitize_phone(request.POST.get("telefono", ""), max_length=20)
             documento_identidad = request.FILES.get("documento_identidad")
             documento_adicional = request.FILES.get("documento_adicional")
             formato_autorizacion_padres = request.FILES.get(
@@ -413,12 +431,12 @@ def listar_documentos_api(request):
     documentos = Documento.objects.all()
 
     # Filtrar por categoría si se envía
-    categoria = request.GET.get("categoria", "")
+    categoria = sanitize_token(request.GET.get("categoria", ""), max_length=40)
     if categoria:
         documentos = documentos.filter(categoria=categoria)
 
     # Buscar por título, nombre de archivo o categoría
-    buscar = request.GET.get("buscar", "")
+    buscar = sanitize_text(request.GET.get("buscar", ""), max_length=100, allow_newlines=False)
     if buscar:
         from django.db.models import Q
 
@@ -476,7 +494,11 @@ def subir_documentos_api(request):
     """API: Sube uno o varios documentos."""
     archivos = request.FILES.getlist("archivos")
     categorias = request.POST.getlist("categorias")
-    descripcion = request.POST.get("descripcion", "")
+    descripcion = sanitize_text(
+        request.POST.get("descripcion", ""),
+        max_length=500,
+        allow_newlines=True,
+    )
 
     if not archivos:
         return JsonResponse(
@@ -822,8 +844,12 @@ def descargar_documento_asistente(request, documento_subido_id):
 def revisar_documento_asistente_api(request, documento_subido_id):
     """API: Aprueba o rechaza un documento específico de un asistente."""
     doc = get_object_or_404(DocumentoSubidoAsistente, id=documento_subido_id)
-    estado = request.POST.get("estado")
-    observaciones = request.POST.get("observaciones", "")
+    estado = sanitize_token(request.POST.get("estado", ""), max_length=20)
+    observaciones = sanitize_text(
+        request.POST.get("observaciones", ""),
+        max_length=1000,
+        allow_newlines=True,
+    )
 
     if estado not in ["aprobado", "rechazado"]:
         return JsonResponse(
