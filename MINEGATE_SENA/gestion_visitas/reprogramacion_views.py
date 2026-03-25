@@ -14,6 +14,7 @@ from django.utils.html import strip_tags
 from django.conf import settings
 from django.urls import reverse
 from datetime import timedelta
+from core.sanitization import sanitize_text
 
 from visitaInterna.models import VisitaInterna, HistorialReprogramacion as HistorialReprogramacionInterna
 from visitaExterna.models import VisitaExterna, HistorialReprogramacion as HistorialReprogramacionExterna
@@ -132,7 +133,11 @@ def solicitar_reprogramacion(request, tipo, visita_id):
                 "message": "El rol SST no tiene permitido solicitar reprogramaciones."
             }, status=403)
 
-        motivo = request.POST.get("motivo", "").strip()
+        motivo = sanitize_text(
+            request.POST.get("motivo", ""),
+            max_length=1000,
+            allow_newlines=True,
+        )
         
         if not motivo:
             return JsonResponse({
@@ -240,10 +245,10 @@ def completar_reprogramacion(request, tipo, visita_id):
                 "message": "Sesión no válida. Inicie sesión nuevamente."
             }, status=401)
 
-        nueva_fecha = request.POST.get("fecha", "").strip()
-        nueva_hora = request.POST.get("hora", "").strip()
-        nueva_hora_fin = request.POST.get("hora_fin", "").strip()
-        historial_id = request.POST.get("historial_id")
+        nueva_fecha = sanitize_text(request.POST.get("fecha", ""), max_length=10, allow_newlines=False)
+        nueva_hora = sanitize_text(request.POST.get("hora", ""), max_length=5, allow_newlines=False)
+        nueva_hora_fin = sanitize_text(request.POST.get("hora_fin", ""), max_length=5, allow_newlines=False)
+        historial_id = sanitize_text(request.POST.get("historial_id", ""), max_length=12, allow_newlines=False)
         
         if not nueva_fecha or not nueva_hora or not historial_id:
             return JsonResponse({

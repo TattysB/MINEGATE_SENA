@@ -1,33 +1,17 @@
 <!-- Alerta de documentos pendientes de revisión -->
 <div id="alertaDocsPendientes"
-  style="display:none; background:linear-gradient(135deg, #fff7ed, #ffedd5); border:2px solid #f97316; border-radius:12px; padding:16px 20px; margin-bottom:20px; align-items:center; gap:14px; box-shadow:0 4px 15px rgba(249,115,22,0.15); animation:slideInAlert 0.4s ease-out;">
-  <div style="font-size:32px;animation:pulseBadge 2s ease-in-out infinite;">🔔</div>
+  style="display:none; background:linear-gradient(135deg, #fffdf3, #fef9e8); border:2px solid #eab308; border-radius:12px; padding:16px 20px; margin-bottom:20px; align-items:center; gap:14px; box-shadow:0 4px 15px rgba(202,138,4,0.14); animation:slideInAlert 0.4s ease-out;">
+  <div style="width:42px;height:42px;border-radius:10px;background:#fef3c7;color:#92400e;display:flex;align-items:center;justify-content:center;font-size:24px;animation:pulseBadge 2s ease-in-out infinite;">
+    <i class="ri-notification-3-line"></i>
+  </div>
   <div style="flex:1;">
-    <div style="font-weight:700; color:#9a3412; font-size:15px;">¡Documentos pendientes de revisión!</div>
-    <div style="color:#c2410c; font-size:13px; margin-top:3px;" id="alertaDocsTexto">Hay asistentes con
+    <div style="font-weight:700; color:#92400e; font-size:15px;">Documentos pendientes de revisión</div>
+    <div style="color:#a16207; font-size:13px; margin-top:3px;" id="alertaDocsTexto">Hay asistentes con
       documentos enviados que requieren tu aprobación.</div>
   </div>
-  <button onclick="filtrarPorEstado('documentos_enviados')"
-    style="background:linear-gradient(135deg,#f97316,#ea580c); color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:600; white-space:nowrap; font-size:13px; box-shadow:0 2px 8px rgba(249,115,22,0.3); transition:transform 0.2s;"
+  <button onclick="filtrarPorEstado('en_revision_documentos')"
+    style="background:linear-gradient(135deg,#d4a018,#b88710); color:#fff; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:600; white-space:nowrap; font-size:13px; box-shadow:0 2px 8px rgba(184,135,16,0.3); transition:transform 0.2s;"
     onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">Revisar ahora</button>
-</div>
-
-<!-- Contenedor inline de documentos (oculto por defecto) -->
-<div id="contenedorInlineDocs" style="display:none;margin-bottom:20px;">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
-    <div>
-      <h3 style="margin:0;color:#1f2937;font-size:18px;" id="tituloInlineDocs">📄 Documentos</h3>
-      <p style="margin:4px 0 0;color:#6b7280;font-size:13px;" id="subtituloInlineDocs"></p>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <div id="statsInlineDocs" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
-      <button onclick="volverAVisitas()"
-        style="background:#6b7280;color:white;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:5px;">
-        <i class="ri-arrow-left-line"></i> Volver a visitas
-      </button>
-    </div>
-  </div>
-  <div id="contenidoInlineDocs"></div>
 </div>
 
 <!-- Modal Visualizar Documento -->
@@ -37,7 +21,7 @@
     style="background:#fff;margin:2% auto;padding:20px;border-radius:12px;width:90%;max-width:950px;height:90vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.5);">
     <div
       style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #e5e7eb;">
-      <h4 style="margin:0;color:#1f2937;font-size:16px;" id="tituloVisualizarDoc">📄 Documento</h4>
+      <h4 style="margin:0;color:#1f2937;font-size:16px;" id="tituloVisualizarDoc">Documento</h4>
       <div style="display:flex;gap:8px;align-items:center;">
         <a id="descargarDocLink" href="#" download
           style="background:#3b82f6;color:white;padding:8px 16px;border-radius:6px;text-decoration:none;font-size:13px;display:inline-flex;align-items:center;gap:4px;font-weight:500;"><i

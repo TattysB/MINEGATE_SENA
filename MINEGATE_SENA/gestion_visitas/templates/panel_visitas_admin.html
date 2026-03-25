@@ -1,86 +1,97 @@
 <!-- Sección Gestión de Visitas -->
 <div id="seccion-gestion-visitas" class="contenido-seccion" style="display: none;">
-  <div class="gv-contenido" style="padding: 20px;">
-    <div
-      class="gv-header-row"
-      style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
-      <h2 style="color: #1f2937; margin: 0; display: flex; align-items: center; gap: 10px;">
-        <i class="ri-calendar-check-line" style="color: #10b981;"></i>
-        Gestión de Visitas
-      </h2>
-    </div>
-
-    <!-- Tabs para tipo de visita -->
-    <div class="gv-tabs" style="display: flex; gap: 10px; margin-bottom: 20px;">
-      <button class="tab-visita active" data-tipo="internas" onclick="cambiarTabVisita('internas')"
-        style="padding: 10px 20px; border: none; background: #059669; color: white; border-radius: 8px; cursor: pointer; font-weight: 500;">
-        📋 Visitas Internas (SENA)
-      </button>
-      <button class="tab-visita" data-tipo="externas" onclick="cambiarTabVisita('externas')"
-        style="padding: 10px 20px; border: none; background: #e5e7eb; color: #374151; border-radius: 8px; cursor: pointer; font-weight: 500;">
-        🏢 Visitas Externas
-      </button>
-    </div>
-
-    <!-- Filtros -->
-    <div class="gv-filtros" style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
-      <select id="filtroEstadoVisita" onchange="filtrarVisitas()"
-        class="gv-select"
-        style="padding: 10px 15px; border: 1px solid #d1d5db; border-radius: 8px; background: white;">
-        <option value="todos">Todos los estados</option>
-        <option value="enviada_coordinacion">🕒 Pendiente aprobación por coordinación</option>
-        <option value="pendiente">⏳ Pendientes</option>
-        <option value="aprobadas">✅ Aprobadas</option>
-        <option value="aprobada_inicial">✅ Aprobadas (registro habilitado)</option>
-        <option value="en_revision_documentos">🔍 En revisión de documentos</option>
-        <option value="rechazada">❌ Rechazadas</option>
-      </select>
-      <input type="text" id="buscarVisita" placeholder="Buscar por responsable, institución..." onkeyup="filtrarVisitas()"
-        class="gv-buscador"
-        style="padding: 10px 15px; border: 1px solid #d1d5db; border-radius: 8px; width: 300px;">
-      <button onclick="cargarVisitas()"
-        class="gv-refresh"
-        style="padding: 10px 15px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer;">
-        <i class="ri-refresh-line"></i> Actualizar
-      </button>
+  <div class="gv-layout">
+    <div class="pg-hero">
+      <div class="pg-hero-left">
+        <span class="pg-hero-icon"><i class="ri-calendar-check-line"></i></span>
+        <div>
+          <h2 class="pg-hero-title">Gestión de Visitas</h2>
+          <p class="pg-hero-subtitle">Administra y controla todas las visitas programadas</p>
+        </div>
+      </div>
+      <div class="pg-hero-right">
+        <span class="pg-hero-chip"><i class="ri-calendar-line"></i> {% now "D, j M Y" %}</span>
+      </div>
     </div>
 
     <!-- Estadísticas -->
-    <div id="estadisticasVisitas"
-      class="gv-stats"
-      style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px;">
-      <div
-        style="background: linear-gradient(135deg, #fef3c7, #fcd34d); padding: 15px; border-radius: 10px; text-align: center; cursor:pointer;"
-        onclick="filtrarPorEstado('pendiente')">
-        <div style="font-size: 24px; font-weight: bold; color: #92400e;" id="statPendientes">0</div>
-        <div style="color: #92400e; font-size: 12px;">⏳ Pendientes</div>
-      </div>
-      <div
-        style="background: linear-gradient(135deg, #bbf7d0, #86efac); padding: 15px; border-radius: 10px; text-align: center; cursor:pointer;"
-        onclick="filtrarPorEstado('aprobadas')">
-        <div style="font-size: 24px; font-weight: bold; color: #166534;" id="statAprobadas">0</div>
-        <div style="color: #166534; font-size: 12px;">✅ Aprobadas</div>
-      </div>
-
-      <div
-        style="background: linear-gradient(135deg, #fef3c7, #f59e0b); padding: 15px; border-radius: 10px; text-align: center; cursor:pointer; position:relative;"
-        onclick="filtrarPorEstado('en_revision_documentos')">
-        <div style="font-size: 24px; font-weight: bold; color: #78350f;" id="statEnRevision">0</div>
-        <div style="color: #78350f; font-size: 12px;">🔍 Pendientes Revisión</div>
-        <div id="statEnRevisionArchivos"
-          style="color:#78350f;font-size:10px;margin-top:3px;font-weight:500;opacity:0.8;"></div>
-        <div id="badgeEnRevision"
-          style="display:none;position:absolute;top:-5px;right:-5px;background:#ef4444;color:white;border-radius:50%;width:20px;height:20px;font-size:11px;line-height:20px;">
+    <div id="estadisticasVisitas" class="gv-stats-grid">
+      <div class="gv-stat-card gv-stat-total" onclick="filtrarPorEstado('todos')">
+        <span class="gv-stat-icon"><i class="ri-list-check-2"></i></span>
+        <div class="gv-stat-content">
+          <div class="gv-stat-number" id="statTotalVisitas">0</div>
+          <div class="gv-stat-label">Total</div>
         </div>
       </div>
 
-      <div
-        style="background: linear-gradient(135deg, #fee2e2, #fca5a5); padding: 15px; border-radius: 10px; text-align: center; cursor:pointer;"
-        onclick="filtrarPorEstado('rechazada')">
-        <div style="font-size: 24px; font-weight: bold; color: #991b1b;" id="statRechazadas">0</div>
-        <div style="color: #991b1b; font-size: 12px;">❌ Rechazadas</div>
+      <div class="gv-stat-card gv-stat-pendiente" onclick="filtrarPorEstado('pendiente')">
+        <span class="gv-stat-icon"><i class="ri-time-line"></i></span>
+        <div class="gv-stat-content">
+          <div class="gv-stat-number" id="statPendientes">0</div>
+          <div class="gv-stat-label">Pendientes</div>
+        </div>
+      </div>
+
+      <div class="gv-stat-card gv-stat-aprobada" onclick="filtrarPorEstado('aprobadas')">
+        <span class="gv-stat-icon"><i class="ri-checkbox-circle-line"></i></span>
+        <div class="gv-stat-content">
+          <div class="gv-stat-number" id="statAprobadas">0</div>
+          <div class="gv-stat-label">Aceptadas</div>
+        </div>
+      </div>
+
+      <div class="gv-stat-card gv-stat-revision" onclick="filtrarPorEstado('en_revision_documentos')">
+        <span class="gv-stat-icon"><i class="ri-file-search-line"></i></span>
+        <div class="gv-stat-content">
+          <div class="gv-stat-number" id="statEnRevision">0</div>
+          <div class="gv-stat-label">En revisión</div>
+          <div id="statEnRevisionArchivos" class="gv-stat-sub"></div>
+        </div>
+        <div id="badgeEnRevision" class="gv-stat-badge" style="display:none;"></div>
       </div>
     </div>
+
+    <div class="gv-panel-shell">
+      <div class="gv-toolbar">
+        <!-- Tabs para tipo de visita -->
+        <div class="gv-tab-group" role="tablist" aria-label="Tipo de visita">
+          <button class="tab-visita gv-tab-button" data-tipo="todas" onclick="cambiarTabVisita('todas')" role="tab">
+            <i class="ri-layout-grid-line"></i>
+            Todas
+          </button>
+          <button class="tab-visita gv-tab-button active" data-tipo="internas" onclick="cambiarTabVisita('internas')" role="tab">
+            <i class="ri-clipboard-line"></i>
+            Visitas Internas
+          </button>
+          <button class="tab-visita gv-tab-button" data-tipo="externas" onclick="cambiarTabVisita('externas')" role="tab">
+            <i class="ri-building-2-line"></i>
+            Visitas Externas
+          </button>
+        </div>
+
+        <!-- Filtros -->
+        <div class="gv-filters">
+          <div class="gv-search-wrap">
+            <i class="ri-search-line"></i>
+            <input type="text" id="buscarVisita" placeholder="Buscar visita..." onkeyup="filtrarVisitas()">
+          </div>
+
+          <select id="filtroEstadoVisita" onchange="filtrarVisitas()">
+            <option value="todos">Todos los estados</option>
+            <option value="enviada_coordinacion">Pendiente aprobación por coordinación</option>
+            <option value="pendiente">Pendientes</option>
+            <option value="aprobadas">Aprobadas</option>
+            <option value="aprobada_inicial">Aprobadas (registro habilitado)</option>
+            <option value="en_revision_documentos">En revisión de documentos</option>
+            <option value="rechazada">Rechazadas</option>
+          </select>
+
+          <button type="button" class="gv-refresh-btn" onclick="cargarVisitas()">
+            <i class="ri-refresh-line"></i>
+            Actualizar
+          </button>
+        </div>
+      </div>
 
     {% include 'documentos/panel_documentos_visitas.html' %}
 
@@ -110,6 +121,7 @@
           </tbody>
         </table>
       </div>
+    </div>
     </div>
   </div>
 </div>

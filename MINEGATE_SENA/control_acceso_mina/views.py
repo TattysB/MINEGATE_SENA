@@ -7,6 +7,7 @@ from django.shortcuts import render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
+from core.sanitization import sanitize_document_number, sanitize_text, sanitize_token
 
 from .models import RegistroAccesoMina
 
@@ -22,15 +23,15 @@ def registrar_acceso(request):
     """
     try:
         body = json.loads(request.body)
-        documento = body.get('documento', '').strip()
-        qr_data = body.get('qr_data', '').strip()
-        selected_visit_id = str(body.get('selected_visit_id', '')).strip()
-        selected_visit_type = str(body.get('selected_visit_type', '')).strip().lower()
+        documento = sanitize_document_number(body.get('documento', ''), max_length=50)
+        qr_data = sanitize_text(body.get('qr_data', ''), max_length=500, allow_newlines=False)
+        selected_visit_id = sanitize_text(str(body.get('selected_visit_id', '')), max_length=12, allow_newlines=False)
+        selected_visit_type = sanitize_token(str(body.get('selected_visit_type', '')), max_length=20)
     except (json.JSONDecodeError, AttributeError):
-        documento = request.POST.get('documento', '').strip()
-        qr_data = request.POST.get('qr_data', '').strip()
-        selected_visit_id = str(request.POST.get('selected_visit_id', '')).strip()
-        selected_visit_type = str(request.POST.get('selected_visit_type', '')).strip().lower()
+        documento = sanitize_document_number(request.POST.get('documento', ''), max_length=50)
+        qr_data = sanitize_text(request.POST.get('qr_data', ''), max_length=500, allow_newlines=False)
+        selected_visit_id = sanitize_text(str(request.POST.get('selected_visit_id', '')), max_length=12, allow_newlines=False)
+        selected_visit_type = sanitize_token(str(request.POST.get('selected_visit_type', '')), max_length=20)
 
     if selected_visit_type not in ('interna', 'externa') or not selected_visit_id.isdigit():
         return JsonResponse({
@@ -53,7 +54,7 @@ def registrar_acceso(request):
                 'success': False,
                 'error': 'El documento no coincide con el contenido del QR.'
             }, status=400)
-        documento = qr_info['documento']
+        documento = sanitize_document_number(qr_info['documento'], max_length=50)
 
     if not documento:
         return JsonResponse({
@@ -196,17 +197,18 @@ def _parse_qr_data(raw_text):
     if not raw_text or '|' not in raw_text:
         return {}
 
-    parts = [p.strip() for p in str(raw_text).split('|')]
+    parts = [sanitize_text(p, max_length=120, allow_newlines=False) for p in str(raw_text).split('|')]
     if len(parts) < 5 or parts[0] != 'SENA':
         return {}
 
     visita_id = int(parts[1]) if parts[1].isdigit() else None
-    tipo = parts[4].lower() if parts[4].lower() in ('interna', 'externa') else None
+    tipo_token = sanitize_token(parts[4], max_length=20)
+    tipo = tipo_token if tipo_token in ('interna', 'externa') else None
 
     return {
         'visita_id': visita_id,
-        'documento': parts[2],
-        'nombre': parts[3],
+        'documento': sanitize_document_number(parts[2], max_length=50),
+        'nombre': sanitize_text(parts[3], max_length=200, allow_newlines=False),
         'tipo': tipo,
     }
 
@@ -284,7 +286,18 @@ def _buscar_asistente_en_visita(documento, tipo_visita, visita_id, qr_info=None)
 
     if tipo_visita == 'interna':
         try:
-            from visitaInterna.models import AsistenteVisitaInterna
+            from visitaInterna.models import AsistenteVisitaInterna, VisitaInterna
+
+            visita = VisitaInterna.objects.filter(
+                id=visita_id,
+                estado__in=ESTADOS_VISITA_CONFIRMADA,
+                fecha_visita=timezone.localdate(),
+            ).first()
+            if visita and str(visita.documento_responsable).strip() == str(documento).strip():
+                return {
+                    'nombre_completo': visita.responsable,
+                    'categoria': 'Instructor Interno',
+                }, None
 
             asistente = AsistenteVisitaInterna.objects.filter(
                 numero_documento=documento,
@@ -306,7 +319,18 @@ def _buscar_asistente_en_visita(documento, tipo_visita, visita_id, qr_info=None)
 
     if tipo_visita == 'externa':
         try:
-            from visitaExterna.models import AsistenteVisitaExterna
+            from visitaExterna.models import AsistenteVisitaExterna, VisitaExterna
+
+            visita = VisitaExterna.objects.filter(
+                id=visita_id,
+                estado__in=ESTADOS_VISITA_CONFIRMADA,
+                fecha_visita=timezone.localdate(),
+            ).first()
+            if visita and str(visita.documento_responsable).strip() == str(documento).strip():
+                return {
+                    'nombre_completo': visita.nombre_responsable,
+                    'categoria': 'Instructor Externo',
+                }, None
 
             asistente = AsistenteVisitaExterna.objects.filter(
                 numero_documento=documento,
@@ -334,7 +358,14 @@ def _obtener_asistentes_visita_aprobados(tipo_visita, visita_id):
 
     if tipo_visita == 'interna':
         try:
-            from visitaInterna.models import AsistenteVisitaInterna
+            from visitaInterna.models import AsistenteVisitaInterna, VisitaInterna
+
+            visita = VisitaInterna.objects.filter(id=visita_id).first()
+            if visita and visita.documento_responsable:
+                asistentes.append({
+                    'documento': visita.documento_responsable,
+                    'nombre_completo': visita.responsable,
+                })
 
             qs = AsistenteVisitaInterna.objects.filter(
                 visita_id=visita_id,
@@ -351,7 +382,14 @@ def _obtener_asistentes_visita_aprobados(tipo_visita, visita_id):
 
     if tipo_visita == 'externa':
         try:
-            from visitaExterna.models import AsistenteVisitaExterna
+            from visitaExterna.models import AsistenteVisitaExterna, VisitaExterna
+
+            visita = VisitaExterna.objects.filter(id=visita_id).first()
+            if visita and visita.documento_responsable:
+                asistentes.append({
+                    'documento': visita.documento_responsable,
+                    'nombre_completo': visita.nombre_responsable,
+                })
 
             qs = AsistenteVisitaExterna.objects.filter(
                 visita_id=visita_id,

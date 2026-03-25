@@ -20,8 +20,8 @@
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="{% static 'documentos/css/gestion_documentos.css' %}?v=20260325b" />
-  <link rel="stylesheet" href="{% static 'gestion_visitas/css/panel_visitas_admin.css' %}?v=20260325c" />
+  <link rel="stylesheet" href="{% static 'documentos/css/gestion_documentos.css' %}" />
+  <link rel="stylesheet" href="{% static 'gestion_visitas/css/panel_visitas_admin.css' %}?v=20260325-tablas-scroll-v10" />
   <link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}?v=20260309f" />
   <link rel="stylesheet" href="{% static 'calendario/css/calendario_seleccion.css' %}?v=20260309e" />
   <link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}?v=20260320a" />
@@ -817,7 +817,7 @@
   </script>
   {% if not solo_coordinador %}
   <script defer src="{% static 'documentos/js/panel_documentos_visitas.js' %}?v=20260311-correccion"></script>
-  <script defer src="{% static 'js/panel_visitas.js' %}?v=20260319-fix-gestion-visitas-click"></script>
+  <script defer src="{% static 'js/panel_visitas.js' %}?v=20260325-tab-todas-v8"></script>
   {% endif %}
   {% if seccion_activa == 'copias_seguridad' %}
   <script defer src="{% static 'core/js/panel_backup_db.js' %}?v=20260318a"></script>
@@ -943,13 +943,17 @@
       function buildItem(v) {
         const tipo = tipoNormalized(v.tipo);
         const tipoLabel = tipo === 'internas' ? 'Visita Interna' : 'Visita Externa';
+        const estadoRaw = (v.estado || '').toString().toLowerCase();
+        const estadoDestino = (estadoRaw === 'documentos_enviados' || estadoRaw === 'en_revision_documentos')
+          ? estadoRaw
+          : 'todos';
         const titulo = v.responsable || v.institucion || (`Visita #${v.id}`);
         const subtitle = tipoLabel;
         const desc = v.resumen || v.motivo || v.informacion || '';
         const time = v.fecha_visita || v.created_at || '';
 
         const a = document.createElement('a');
-        a.href = `${gestionUrl}?tipo=${tipo}&id=${v.id}`;
+        a.href = `${gestionUrl}?tipo=${tipo}&id=${v.id}&estado=${estadoDestino}`;
         a.className = 'admin-notif-item';
         a.setAttribute('data-visita-id', v.id);
         a.setAttribute('data-visita-tipo', tipo);

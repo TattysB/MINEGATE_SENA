@@ -4,6 +4,7 @@ Gestión administrativa de visitas - APIs para el panel administrativo
 """
 
 import threading
+from types import SimpleNamespace
 
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
@@ -30,6 +31,7 @@ from django.utils import timezone
 from django.conf import settings
 from django.urls import reverse
 from gestion_visitas.services import GeneradorQRPDF
+from core.sanitization import sanitize_text, sanitize_token
 
 ESTADOS_APROBADAS = [
     "aprobada_inicial",
@@ -66,6 +68,38 @@ def _enviar_qr_asistentes_confirmados(visita, tipo):
                 )
         except Exception:
             continue
+
+
+def _enviar_qr_responsable_confirmado(visita, tipo):
+    correo = (getattr(visita, "correo_responsable", "") or "").strip()
+    documento = (getattr(visita, "documento_responsable", "") or "").strip()
+    if not correo or not documento:
+        return
+
+    if tipo == "interna":
+        nombre_responsable = (getattr(visita, "responsable", "") or "").strip()
+    else:
+        nombre_responsable = (
+            getattr(visita, "nombre_responsable", "") or ""
+        ).strip()
+
+    if not nombre_responsable:
+        return
+
+    try:
+        responsable_virtual = SimpleNamespace(
+            nombre_completo=nombre_responsable,
+            numero_documento=documento,
+            correo=correo,
+        )
+        generador_qr = GeneradorQRPDF(
+            asistente=responsable_virtual,
+            visita=visita,
+            tipo_visita=tipo,
+        )
+        generador_qr.enviar_por_email()
+    except Exception:
+        pass
 
 
 def _enviar_correo_confirmacion_responsable(visita, tipo, panel_url):
@@ -188,6 +222,7 @@ def _procesar_confirmacion_visita_async(visita_id, tipo, panel_url):
         visita_model = VisitaInterna if tipo == "interna" else VisitaExterna
         visita = visita_model.objects.prefetch_related("asistentes").get(id=visita_id)
         _enviar_qr_asistentes_confirmados(visita, tipo)
+        _enviar_qr_responsable_confirmado(visita, tipo)
         _enviar_correo_confirmacion_responsable(visita, tipo, panel_url)
     except Exception:
         pass
@@ -406,17 +441,189 @@ def api_listar_visitas(request):
     if not es_administrador_panel(request.user):
         return JsonResponse({"success": False, "error": "No autorizado"}, status=403)
 
-    tipo = request.GET.get("tipo", "internas")
-    estado = request.GET.get("estado", "todos")
-    buscar = request.GET.get("buscar", "")
+    tipo = sanitize_token(request.GET.get("tipo", "internas"), max_length=20) or "internas"
+    estado = sanitize_token(request.GET.get("estado", "todos"), max_length=30) or "todos"
+    buscar = sanitize_text(request.GET.get("buscar", ""), max_length=100, allow_newlines=False)
 
     visitas_data = []
+
+    if tipo == "todas":
+        visitas_internas = VisitaInterna.objects.all().order_by("-fecha_solicitud", "-id")
+        visitas_externas = VisitaExterna.objects.all().order_by("-fecha_solicitud", "-id")
+
+        if estado == "aprobadas":
+            visitas_internas = visitas_internas.filter(estado__in=ESTADOS_APROBADAS)
+            visitas_externas = visitas_externas.filter(estado__in=ESTADOS_APROBADAS)
+        elif estado in ["en_revision_documentos", "pendiente_revision"]:
+            estados_revision = ["documentos_enviados", "en_revision_documentos"]
+            visitas_internas = visitas_internas.filter(estado__in=estados_revision)
+            visitas_externas = visitas_externas.filter(estado__in=estados_revision)
+        elif estado != "todos":
+            visitas_internas = visitas_internas.filter(estado=estado)
+            visitas_externas = visitas_externas.filter(estado=estado)
+
+        if buscar:
+            visitas_internas = visitas_internas.filter(
+                Q(responsable__icontains=buscar)
+                | Q(nombre_programa__icontains=buscar)
+                | Q(correo_responsable__icontains=buscar)
+            )
+            visitas_externas = visitas_externas.filter(
+                Q(nombre_responsable__icontains=buscar)
+                | Q(nombre__icontains=buscar)
+                | Q(correo_responsable__icontains=buscar)
+            )
+
+        for v in visitas_internas:
+            visitas_data.append(
+                {
+                    "id": v.id,
+                    "tipo": "interna",
+                    "tipo_display": "Interna (SENA)",
+                    "responsable": v.responsable,
+                    "institucion": v.nombre_programa or "N/A",
+                    "correo": v.correo_responsable,
+                    "telefono": v.telefono_responsable,
+                    "fecha_visita": (
+                        v.fecha_visita.strftime("%d/%m/%Y")
+                        if v.fecha_visita
+                        else (
+                            v.fecha_solicitud.strftime("%d/%m/%Y")
+                            if v.fecha_solicitud
+                            else "N/A"
+                        )
+                    ),
+                    "cantidad": v.cantidad_aprendices,
+                    "estado": v.estado,
+                    "tiene_rechazos": v.asistentes.filter(
+                        estado="documentos_rechazados"
+                    ).exists(),
+                    "puede_confirmar": (
+                        v.asistentes.exists()
+                        and not v.asistentes.exclude(
+                            estado="documentos_aprobados"
+                        ).exists()
+                    ),
+                    "fecha_solicitud": (
+                        v.fecha_solicitud.strftime("%d/%m/%Y %H:%M")
+                        if v.fecha_solicitud
+                        else "N/A"
+                    ),
+                    "_orden": v.fecha_solicitud.isoformat() if v.fecha_solicitud else "",
+                }
+            )
+
+        for v in visitas_externas:
+            visitas_data.append(
+                {
+                    "id": v.id,
+                    "tipo": "externa",
+                    "tipo_display": "Externa (Institución)",
+                    "responsable": v.nombre_responsable,
+                    "institucion": v.nombre or "N/A",
+                    "correo": v.correo_responsable,
+                    "telefono": v.telefono_responsable,
+                    "fecha_visita": (
+                        v.fecha_visita.strftime("%d/%m/%Y")
+                        if v.fecha_visita
+                        else (
+                            v.fecha_solicitud.strftime("%d/%m/%Y")
+                            if v.fecha_solicitud
+                            else "N/A"
+                        )
+                    ),
+                    "cantidad": v.cantidad_visitantes,
+                    "estado": v.estado,
+                    "tiene_rechazos": v.asistentes.filter(
+                        estado="documentos_rechazados"
+                    ).exists(),
+                    "puede_confirmar": (
+                        v.asistentes.exists()
+                        and not v.asistentes.exclude(
+                            estado="documentos_aprobados"
+                        ).exists()
+                    ),
+                    "fecha_solicitud": (
+                        v.fecha_solicitud.strftime("%d/%m/%Y %H:%M")
+                        if v.fecha_solicitud
+                        else "N/A"
+                    ),
+                    "_orden": v.fecha_solicitud.isoformat() if v.fecha_solicitud else "",
+                }
+            )
+
+        visitas_data.sort(key=lambda item: item.get("_orden", ""), reverse=True)
+        for item in visitas_data:
+            item.pop("_orden", None)
+
+        docs_int = AsistenteVisitaInterna.objects.exclude(
+            visita__estado__in=["aprobada_inicial", "pendiente", "enviada_coordinacion"]
+        )
+        docs_ext = AsistenteVisitaExterna.objects.exclude(
+            visita__estado__in=["aprobada_inicial", "pendiente", "enviada_coordinacion"]
+        )
+
+        stats = {
+            "pendientes": (
+                VisitaInterna.objects.filter(estado="pendiente").count()
+                + VisitaExterna.objects.filter(estado="pendiente").count()
+            ),
+            "aprobadas_inicial": (
+                VisitaInterna.objects.filter(estado="aprobada_inicial").count()
+                + VisitaExterna.objects.filter(estado="aprobada_inicial").count()
+            ),
+            "aprobadas_total": (
+                VisitaInterna.objects.filter(estado__in=ESTADOS_APROBADAS).count()
+                + VisitaExterna.objects.filter(estado__in=ESTADOS_APROBADAS).count()
+            ),
+            "documentos_enviados": (
+                VisitaInterna.objects.filter(estado="documentos_enviados").count()
+                + VisitaExterna.objects.filter(estado="documentos_enviados").count()
+            ),
+            "en_revision": (
+                VisitaInterna.objects.filter(estado="en_revision_documentos").count()
+                + VisitaExterna.objects.filter(estado="en_revision_documentos").count()
+            ),
+            "confirmadas": (
+                VisitaInterna.objects.filter(estado="confirmada").count()
+                + VisitaExterna.objects.filter(estado="confirmada").count()
+            ),
+            "rechazadas": (
+                VisitaInterna.objects.filter(estado="rechazada").count()
+                + VisitaExterna.objects.filter(estado="rechazada").count()
+            ),
+            "docs_pendientes_revision": (
+                docs_int.filter(estado="pendiente_documentos").count()
+                + docs_ext.filter(estado="pendiente_documentos").count()
+            ),
+            "docs_aprobados": (
+                docs_int.filter(estado="documentos_aprobados").count()
+                + docs_ext.filter(estado="documentos_aprobados").count()
+            ),
+            "docs_rechazados": (
+                docs_int.filter(estado="documentos_rechazados").count()
+                + docs_ext.filter(estado="documentos_rechazados").count()
+            ),
+            "docs_total": docs_int.count() + docs_ext.count(),
+            "total": len(visitas_data),
+        }
+
+        return JsonResponse(
+            {
+                "visitas": visitas_data,
+                "stats": stats,
+            }
+        )
 
     if tipo == "internas":
         visitas = VisitaInterna.objects.all().order_by("-fecha_solicitud", "-id")
 
         if estado == "aprobadas":
             visitas = visitas.filter(estado__in=ESTADOS_APROBADAS)
+        elif estado in ["en_revision_documentos", "pendiente_revision"]:
+            visitas = visitas.filter(
+                estado__in=["documentos_enviados", "en_revision_documentos"]
+            )
         elif estado != "todos":
             visitas = visitas.filter(estado=estado)
 
@@ -496,6 +703,10 @@ def api_listar_visitas(request):
 
         if estado == "aprobadas":
             visitas = visitas.filter(estado__in=ESTADOS_APROBADAS)
+        elif estado in ["en_revision_documentos", "pendiente_revision"]:
+            visitas = visitas.filter(
+                estado__in=["documentos_enviados", "en_revision_documentos"]
+            )
         elif estado != "todos":
             visitas = visitas.filter(estado=estado)
 
@@ -998,7 +1209,11 @@ def api_accion_visita(request, tipo, visita_id, accion):
         )
 
     elif accion == "rechazar":
-        observaciones = request.POST.get("observaciones", "")
+        observaciones = sanitize_text(
+            request.POST.get("observaciones", ""),
+            max_length=1000,
+            allow_newlines=True,
+        )
 
         if es_coordinador(request.user):
             if visita.estado != "enviada_coordinacion":
@@ -1187,7 +1402,11 @@ def api_revisar_autorizacion_padres(request, tipo, asistente_id, accion):
             }
         )
 
-    observaciones = request.POST.get("observaciones", "")
+    observaciones = sanitize_text(
+        request.POST.get("observaciones", ""),
+        max_length=1000,
+        allow_newlines=True,
+    )
 
     if asistente.estado_autorizacion_padres != "pendiente":
         return JsonResponse(
@@ -1266,7 +1485,11 @@ def api_revisar_documento_asistente(request, tipo, asistente_id, accion):
     else:
         asistente = get_object_or_404(AsistenteVisitaExterna, pk=asistente_id)
 
-    observaciones = request.POST.get("observaciones", "")
+    observaciones = sanitize_text(
+        request.POST.get("observaciones", ""),
+        max_length=1000,
+        allow_newlines=True,
+    )
 
     if accion == "aprobar":
         documentos_actuales = _documentos_subidos_actuales(asistente)
@@ -1383,7 +1606,7 @@ def api_visitas_aprobadas(request):
     if not es_administrador_panel(request.user):
         return JsonResponse({"success": False, "error": "No autorizado"}, status=403)
 
-    tipo = request.GET.get("tipo", "internas")
+    tipo = sanitize_token(request.GET.get("tipo", "internas"), max_length=20) or "internas"
     visitas_data = []
 
     if tipo == "internas":
@@ -1440,8 +1663,8 @@ def api_documentos_revision(request):
     if not es_administrador_panel(request.user):
         return JsonResponse({"success": False, "error": "No autorizado"}, status=403)
 
-    tipo = request.GET.get("tipo", "internas")
-    estado_asistente = request.GET.get("estado_asistente", "")
+    tipo = sanitize_token(request.GET.get("tipo", "internas"), max_length=20) or "internas"
+    estado_asistente = sanitize_token(request.GET.get("estado_asistente", ""), max_length=40)
 
     documentos_data = []
 

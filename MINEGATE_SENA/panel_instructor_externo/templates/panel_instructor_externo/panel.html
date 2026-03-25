@@ -143,6 +143,7 @@
           {% if visita.estado == 'pendiente' %}<i class="fas fa-clock me-1"></i>Pendiente
           {% elif visita.estado == 'enviada_coordinacion' %}<i class="fas fa-paper-plane me-1"></i>En Coordinación
           {% elif visita.estado == 'aprobada_inicial' %}<i class="fas fa-check me-1"></i>Aprobada
+          {% elif visita.estado == 'documentos_enviados' %}<i class="fas fa-file-upload me-1"></i>Documentos enviados
           {% elif visita.estado == 'confirmada' %}<i class="fas fa-check-double me-1"></i>Confirmada
           {% elif visita.estado == 'rechazada' %}<i class="fas fa-times me-1"></i>Rechazada
           {% else %}{{ visita.get_estado_display }}{% endif %}

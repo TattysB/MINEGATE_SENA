@@ -94,8 +94,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'sicam_db',
-        'USER': 'tu usuario',
-        'PASSWORD': 'tu contraseña',
+        'USER': 'posgrets',
+        'PASSWORD': '12345',
         'HOST': 'localhost',
         'PORT': '5432',
     }
@@ -235,3 +235,8 @@ if (
     and RECAPTCHA_PRIVATE_KEY == "6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe"
 ):
     SILENCED_SYSTEM_CHECKS = ["django_recaptcha.recaptcha_test_key_error"]
+
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://randall-nival-fredda.ngrok-free.dev"
+]

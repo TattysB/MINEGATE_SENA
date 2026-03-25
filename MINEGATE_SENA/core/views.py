@@ -734,6 +734,7 @@ def _agregar_contexto_panel_principal(context):
                     "responsable": visita.responsable,
                     "entidad": visita.nombre_programa,
                     "estado": visita.estado,
+                    "estado_label": visita.estado.replace("_", " ").capitalize(),
                     "fecha_solicitud": visita.fecha_solicitud,
                 }
             )
@@ -746,6 +747,7 @@ def _agregar_contexto_panel_principal(context):
                     "responsable": visita.nombre_responsable,
                     "entidad": visita.nombre,
                     "estado": visita.estado,
+                    "estado_label": visita.estado.replace("_", " ").capitalize(),
                     "fecha_solicitud": visita.fecha_solicitud,
                 }
             )
@@ -846,7 +848,7 @@ def _render_panel_administrativo(
         "solo_sst": usuario_sst,
         "perfil": getattr(request.user, "perfil", None),
         "perfil_panel": getattr(request.user, "perfil", None),
-        "panel_role_label": "Superusuario" if request.user.is_superuser else "SST",
+        "panel_role_label": "Administrador" if request.user.is_superuser else "SST",
         "seccion_activa": seccion_activa,
     }
 
