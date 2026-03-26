@@ -94,8 +94,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'sicam_db',
-        'USER': 'tu usuario',
-        'PASSWORD': 'tu contraseña',
+        'USER': 'postgres',
+        'PASSWORD': '12345',
         'HOST': 'localhost',
         'PORT': '5432',
     }
@@ -238,5 +238,5 @@ if (
 
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://randall-nival-fredda.ngrok-free.dev"
+    "https://unstout-kizzie-superbrave.ngrok-free.dev",
 ]

@@ -287,6 +287,88 @@ body {
   white-space: nowrap;
 }
 
+@media (max-width: 1024px) {
+  .topbar {
+    padding: 0 1rem;
+  }
+  .brand-sub {
+    display: none;
+  }
+  .topbar-actions {
+    gap: 0.8rem;
+  }
+  .user-profile-btn {
+    padding-right: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --topbar-height: 78px;
+  }
+  .topbar {
+    padding: 0 0.7rem;
+  }
+  .topbar-logo-container {
+    gap: 0.5rem;
+  }
+  .topbar-logo-img {
+    height: 40px;
+  }
+  .brand-main {
+    font-size: 1.05rem;
+  }
+  .brand-divider,
+  .brand-sub,
+  .topbar-role-label {
+    display: none;
+  }
+  .user-profile-photo-container {
+    width: 46px;
+    height: 46px;
+  }
+  .user-profile-btn {
+    padding: 3px;
+    border-radius: 999px;
+    min-width: 52px;
+    justify-content: center;
+  }
+  .notification-btn {
+    min-width: 40px !important;
+    min-height: 36px !important;
+    padding: 6px !important;
+  }
+  .notification-icon {
+    font-size: 18px !important;
+  }
+  .admin-notif-dropdown.coord-style {
+    right: 0 !important;
+    width: min(92vw, 350px) !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .topbar {
+    padding: 0 0.45rem;
+  }
+  .topbar-actions {
+    gap: 0.45rem;
+  }
+  .topbar-logo-img {
+    height: 34px;
+  }
+  .brand-main {
+    font-size: 0.95rem;
+  }
+  .notification-badge {
+    min-width: 18px;
+    height: 18px;
+    line-height: 18px;
+    font-size: 11px;
+    margin-left: 4px !important;
+  }
+}
+
 
 /* ========================================
    SIDEBAR - BARRA LATERAL
@@ -984,51 +1066,50 @@ main {
     right: 4px !important;
   }
 
-
-  @media (max-width: 1024px) {
-    #adminNotifDropdown {
-      position: absolute !important;
-      left: auto !important;
-      right: 0 !important;
-      width: min(360px, calc(100vw - 12px)) !important;
-      max-width: min(360px, calc(100vw - 12px)) !important;
-      z-index: 3000 !important;
-    }
-  }
-
-  @media (max-width: 480px) {
-    #adminNotifDropdown {
-      position: fixed !important;
-      left: 8px !important;
-      right: 8px !important;
-      top: calc(var(--topbar-height) + 6px) !important;
-      width: calc(100vw - 16px) !important;
-      max-width: calc(100vw - 16px) !important;
-      max-height: calc(100vh - var(--topbar-height) - 12px) !important;
-      border-radius: 12px !important;
-      z-index: 4000 !important;
-    }
-
-    #adminNotifDropdown>div:nth-child(1) {
-      padding: 12px !important;
-    }
-
-    #adminNotifDropdown>div:nth-child(2) .notif-filter {
-      font-size: 12px !important;
-      padding: 6px 8px !important;
-    }
-
-    #adminNotifDropdown>div:nth-child(3) {
-      max-height: calc(100vh - var(--topbar-height) - 150px) !important;
-    }
-  }
-
   .brand-divider {
     display: none;
   }
 
   main {
     padding: 1rem;
+  }
+}
+
+@media (max-width: 1024px) {
+  #adminNotifDropdown {
+    position: absolute !important;
+    left: auto !important;
+    right: 0 !important;
+    width: min(360px, calc(100vw - 12px)) !important;
+    max-width: min(360px, calc(100vw - 12px)) !important;
+    z-index: 3000 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  #adminNotifDropdown {
+    position: fixed !important;
+    left: 8px !important;
+    right: 8px !important;
+    top: calc(var(--topbar-height) + 6px) !important;
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+    max-height: calc(100vh - var(--topbar-height) - 12px) !important;
+    border-radius: 12px !important;
+    z-index: 4000 !important;
+  }
+
+  #adminNotifDropdown>div:nth-child(1) {
+    padding: 12px !important;
+  }
+
+  #adminNotifDropdown>div:nth-child(2) .notif-filter {
+    font-size: 12px !important;
+    padding: 6px 8px !important;
+  }
+
+  #adminNotifDropdown>div:nth-child(3) {
+    max-height: calc(100vh - var(--topbar-height) - 150px) !important;
   }
 }
 
