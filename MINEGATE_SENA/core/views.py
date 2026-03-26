@@ -544,7 +544,6 @@ def panel_copias_seguridad(request):
 
     contexto_backups = {
         "backups_disponibles": _listar_backups_disponibles(),
-        "ruta_backups": str(_obtener_directorio_backups()),
         "config_backup_auto": config_backup_auto,
         "frecuencias_backup_auto": frecuencias_backup,
         "proxima_ejecucion_backup": proxima_ejecucion,

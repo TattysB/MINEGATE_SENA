@@ -13,19 +13,19 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.85rem 1.5rem;
-    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    background: linear-gradient(135deg, #00b000 0%, #185027 100%);
     color: white;
     text-decoration: none;
     border-radius: 10px;
     font-weight: 600;
     font-size: 1rem;
-    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 176, 0, 0.28);
     transition: all 0.3s ease;
   }
   
   .btn-crear-usuario:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+    box-shadow: 0 6px 20px rgba(24, 80, 39, 0.35);
     color: white;
   }
   
@@ -141,6 +141,10 @@
   .btn-eliminar:hover {
     background: #ffdce1;
     color: #912018;
+  }
+
+  .tabla-usuarios thead {
+    background: linear-gradient(135deg, #00b000 0%, #185027 100%) !important;
   }
   
   /* Iconos en botones */
@@ -352,13 +356,14 @@
   <!-- Botón Crear Usuario -->
   <div class="seccion-acciones-principales" style="margin-bottom: 1.5rem; display: flex; justify-content: flex-end;">
     <a href="{% url 'usuarios:crear_usuario_permisos' %}" class="btn-crear-usuario">
-      ➕ Crear Nuevo Usuario
+      <i class="ri-user-add-line"></i>
+      <span>Crear Nuevo Usuario</span>
     </a>
   </div>
 
   <!-- Tarjetas de Estadísticas -->
   <div class="seccion-estadisticas">
-    <div class="titulo-seccion">📈 Estadísticas de Usuarios</div>
+    <div class="titulo-seccion">Estadísticas de Usuarios</div>
     <div class="grid-estadisticas">
       <div class="tarjeta-estadistica total">
         <div class="numero-estadistica">{{ total_usuarios }}</div>
@@ -377,7 +382,7 @@
 
   <!-- Filtros y Búsqueda -->
   <div class="seccion-filtros">
-    <div class="titulo-seccion">🔍 Filtros</div>
+    <div class="titulo-seccion">Filtros</div>
     <form
       id="formFiltros"
       class="formulario-filtros"
@@ -425,7 +430,7 @@
             name="filtro"
             value="{{ filtro_actual|default:'todos' }}"
           />
-          <button type="submit" class="btn-buscar">🔍 Buscar</button>
+          <button type="submit" class="btn-buscar">Buscar</button>
           <button type="button" class="btn-limpiar" onclick="limpiarBusqueda()">
             Limpiar
           </button>
@@ -437,7 +442,7 @@
   <!-- Tabla de Usuarios -->
   <div class="seccion-tabla">
     <div class="titulo-seccion">
-      👥 Lista de Usuarios{% if perfiles %} ({{ perfiles.count }}){% endif %}
+      Lista de Usuarios{% if perfiles %} ({{ perfiles.count }}){% endif %}
     </div>
     {% if perfiles %}
     <div class="tabla-responsiva">
@@ -758,7 +763,7 @@
             '<div class="sin-resultados"><p>📋 No se encontraron usuarios con los criterios seleccionados.</p></div>';
         }
         if (tituloSeccion) {
-          tituloSeccion.textContent = "👥 Lista de Usuarios (0)";
+          tituloSeccion.textContent = "Lista de Usuarios (0)";
         }
         return;
       }
@@ -771,7 +776,7 @@
 
       // Actualizar título
       if (tituloSeccion) {
-        tituloSeccion.textContent = `👥 Lista de Usuarios (${usuarios.length})`;
+        tituloSeccion.textContent = `Lista de Usuarios (${usuarios.length})`;
       }
 
       // Limpiar la tabla primero
@@ -1011,7 +1016,7 @@
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
               <div style="background:#f8fafc;padding:1rem;border-radius:10px;border:1px solid #e2e8f0;">
-                <p style="font-size:0.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin:0 0 0.6rem;">👤 Personal</p>
+                <p style="font-size:0.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin:0 0 0.6rem;">Personal</p>
                 ${campoDetalle('Nombre', u.first_name)}
                 ${campoDetalle('Apellido', u.last_name)}
                 ${campoDetalle('Documento', u.documento || u.username)}
