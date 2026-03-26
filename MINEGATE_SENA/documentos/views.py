@@ -27,6 +27,17 @@ def _get_docsubido_aprendiz_model():
     return DocumentoSubidoAprendiz
 
 
+def _sesion_responsable_valida(request):
+    """Valida sesión autenticada de responsable (interno/externo)."""
+    if not request.session.get("responsable_autenticado"):
+        return False
+
+    rol = request.session.get("responsable_rol")
+    correo = request.session.get("responsable_correo")
+    documento = request.session.get("responsable_documento")
+    return bool(rol in {"interno", "externo"} and correo and documento)
+
+
 def devolver_visita_a_agendador(visita):
     """Retorna la visita a estado editable para permitir correcciones y reenvío."""
     if visita and visita.estado in ["documentos_enviados", "en_revision_documentos"]:
@@ -618,13 +629,23 @@ def eliminar_documento_api(request, documento_id):
     )
 
 
-@login_required(login_url="usuarios:login")
 @xframe_options_exempt
 def descargar_documento(request, documento_id):
     """Descarga o sirve un documento para visualización."""
     import logging
 
     logger = logging.getLogger(__name__)
+
+    user = getattr(request, "user", None)
+    acceso_admin = bool(user and user.is_authenticated)
+    acceso_responsable = _sesion_responsable_valida(request)
+
+    if not (acceso_admin or acceso_responsable):
+        messages.warning(
+            request,
+            "Debes iniciar sesión para descargar este documento.",
+        )
+        return redirect("panel_visitante:login_responsable")
 
     logger.info(
         f"Intentando servir documento {documento_id} para usuario {request.user}"

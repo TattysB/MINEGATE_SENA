@@ -147,12 +147,66 @@
   .btn-accion i {
     font-size: 0.95rem;
   }
+
+  /* Tabla más compacta */
+  .tabla-usuarios {
+    table-layout: auto;
+  }
+
+  .tabla-usuarios th,
+  .tabla-usuarios td {
+    padding: 0.7rem 0.75rem;
+  }
+
+  .tabla-usuarios th:nth-child(1) { width: 22%; }
+  .tabla-usuarios th:nth-child(2) { width: 12%; }
+  .tabla-usuarios th:nth-child(3) { width: 20%; }
+  .tabla-usuarios th:nth-child(4) { width: 12%; }
+  .tabla-usuarios th:nth-child(5) { width: 14%; }
+  .tabla-usuarios th:nth-child(6) { width: 10%; }
+  .tabla-usuarios th:nth-child(7) { width: 10%; }
+
+  .datos-usuario {
+    min-width: 150px;
+  }
+
+  .nombre-usuario {
+    font-size: 0.9rem;
+  }
+
+  .username,
+  .documento,
+  .email,
+  .fecha {
+    font-size: 0.8rem;
+  }
+
+  .btn-accion {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* Badge de rol simple en verde */
+  .badge-rol-tabla {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.28rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: #166534;
+    background: #dcfce7;
+    border: 1px solid #86efac;
+    text-transform: none;
+    animation: none;
+  }
   
   /* Ajuste columnas de tabla */
-  .tabla-usuarios th:nth-child(5),
-  .tabla-usuarios td:nth-child(5),
   .tabla-usuarios th:nth-child(6),
-  .tabla-usuarios td:nth-child(6) {
+  .tabla-usuarios td:nth-child(6),
+  .tabla-usuarios th:nth-child(7),
+  .tabla-usuarios td:nth-child(7) {
     text-align: center;
   }
   
@@ -238,17 +292,18 @@
     .tabla-usuarios tr.fila-usuario td:nth-child(1)::before { content: 'Usuario'; }
     .tabla-usuarios tr.fila-usuario td:nth-child(2)::before { content: 'Documento'; }
     .tabla-usuarios tr.fila-usuario td:nth-child(3)::before { content: 'Email'; }
-    .tabla-usuarios tr.fila-usuario td:nth-child(4)::before { content: 'Registro'; }
-    .tabla-usuarios tr.fila-usuario td:nth-child(5)::before { content: 'Estado'; }
-    .tabla-usuarios tr.fila-usuario td:nth-child(6)::before { content: 'Acciones'; }
+    .tabla-usuarios tr.fila-usuario td:nth-child(4)::before { content: 'Rol'; }
+    .tabla-usuarios tr.fila-usuario td:nth-child(5)::before { content: 'Registro'; }
+    .tabla-usuarios tr.fila-usuario td:nth-child(6)::before { content: 'Estado'; }
+    .tabla-usuarios tr.fila-usuario td:nth-child(7)::before { content: 'Acciones'; }
 
-    .tabla-usuarios tr.fila-usuario td:nth-child(6) .acciones-usuario {
+    .tabla-usuarios tr.fila-usuario td:nth-child(7) .acciones-usuario {
       justify-content: flex-start;
       flex-wrap: wrap;
       gap: 6px;
     }
 
-    .tabla-usuarios tr.fila-usuario td:nth-child(6) .btn-accion {
+    .tabla-usuarios tr.fila-usuario td:nth-child(7) .btn-accion {
       flex: 1 1 44px;
     }
 
@@ -392,6 +447,7 @@
             <th>Usuario</th>
             <th>Documento</th>
             <th>Email</th>
+            <th>Rol</th>
             <th>Fecha Registro</th>
             <th>Estado</th>
             <th>Acciones</th>
@@ -414,6 +470,9 @@
             </td>
             <td>
               <span class="email">{{ perfil_usuario.user.email }}</span>
+            </td>
+            <td>
+              <span class="badge-rol-tabla">{{ perfil_usuario.rol_label }}</span>
             </td>
             <td>
               <span class="fecha"
@@ -746,6 +805,11 @@
         const tdEmail = document.createElement("td");
         tdEmail.innerHTML = `<span class="email">${escaparHTML(usuario.email || "")}</span>`;
         tr.appendChild(tdEmail);
+
+        // Celda de rol
+        const tdRol = document.createElement("td");
+        tdRol.innerHTML = `<span class="badge-rol-tabla">${escaparHTML(usuario.rol || "Usuario")}</span>`;
+        tr.appendChild(tdRol);
 
         // Celda de fecha
         const tdFecha = document.createElement("td");

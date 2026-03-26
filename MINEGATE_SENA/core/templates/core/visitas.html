@@ -43,52 +43,50 @@
         </div>
     </div>
 
-    <!-- Sección para crear una nueva visita -->
-    <div class="p-4 p-lg-5 rounded-4 shadow-sm border mt-4 bg-white action-card action-card-primary">
-        <div class="row align-items-center g-3">
-            <div class="col-lg-7">
+    <div class="row g-4 mt-1">
+        <!-- Sección para crear una nueva visita -->
+        <div class="col-12 col-lg-6">
+            <div class="p-4 p-lg-5 rounded-4 shadow-sm border action-card action-card-primary h-100 d-flex flex-column">
                 <div class="d-flex align-items-center mb-3">
-                    <i class="fas fa-route fa-2x text-primary me-3"></i>
+                    <i class="fas fa-route action-heading-icon me-3"></i>
                     <div>
                         <h4 class="fw-bold mb-1">Realizar mi visita</h4>
                         <p class="text-muted mb-0">Inicie aquí su solicitud y avance paso a paso hasta dejarla lista para revisión.</p>
                     </div>
                 </div>
-                <ul class="list-unstyled ms-0 ms-md-5 text-muted mb-0">
-                    <li><i class="fas fa-check-circle text-primary me-2"></i>Complete la información del responsable y del grupo visitante</li>
-                    <li><i class="fas fa-check-circle text-primary me-2"></i>Diligencie los formularios solicitados del proceso</li>
-                    <li><i class="fas fa-check-circle text-primary me-2"></i>Suba su documentación para agilizar la aprobación</li>
+                <ul class="list-unstyled action-list text-muted mb-4">
+                    <li><i class="fas fa-check-circle me-2"></i>Complete la información del responsable y del grupo visitante</li>
+                    <li><i class="fas fa-check-circle me-2"></i>Diligencie los formularios solicitados del proceso</li>
+                    <li><i class="fas fa-check-circle me-2"></i>Suba su documentación para agilizar la aprobación</li>
                 </ul>
-            </div>
-            <div class="col-lg-5 text-center text-lg-end mt-3 mt-lg-0">
-                <a href="{% url 'panel_visitante:registro_visita' %}" class="btn btn-primary btn-lg px-5 shadow-sm">
-                    <i class="fas fa-calendar-plus me-2"></i>Realizar mi visita
-                </a>
+                <div class="mt-auto">
+                    <a href="{% url 'panel_visitante:registro_visita' %}" class="btn action-btn btn-lg px-4 px-md-5 shadow-sm">
+                        <i class="fas fa-calendar-plus me-2"></i>Realizar mi visita
+                    </a>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Sección de acceso para visitas ya agendadas -->
-    <div class="p-4 p-lg-5 rounded-4 shadow-sm border mt-4 bg-white action-card action-card-secondary">
-        <div class="row align-items-center g-3">
-            <div class="col-lg-7">
+        <!-- Sección de acceso para visitas ya agendadas -->
+        <div class="col-12 col-lg-6">
+            <div class="p-4 p-lg-5 rounded-4 shadow-sm border action-card action-card-secondary h-100 d-flex flex-column">
                 <div class="d-flex align-items-center mb-3">
-                    <i class="fas fa-user-check fa-2x text-success me-3"></i>
+                    <i class="fas fa-user-check action-heading-icon me-3"></i>
                     <div>
                         <h4 class="fw-bold mb-1">¿Ya tiene una visita agendada?</h4>
                         <p class="text-muted mb-0">Acceda a su panel para consultar estado, completar asistentes y continuar el proceso.</p>
                     </div>
                 </div>
-                <ul class="list-unstyled ms-0 ms-md-5 text-muted mb-0">
-                    <li><i class="fas fa-check text-success me-2"></i>Consulte el estado de su solicitud</li>
-                    <li><i class="fas fa-check text-success me-2"></i>Registre asistentes cuando su visita sea aprobada</li>
-                    <li><i class="fas fa-check text-success me-2"></i>Gestione y actualice sus visitas programadas</li>
+                <ul class="list-unstyled action-list text-muted mb-4">
+                    <li><i class="fas fa-check me-2"></i>Consulte el estado de su solicitud</li>
+                    <li><i class="fas fa-check me-2"></i>Registre asistentes cuando su visita sea aprobada</li>
+                    <li><i class="fas fa-check me-2"></i>Gestione y actualice sus visitas programadas</li>
                 </ul>
-            </div>
-            <div class="col-lg-5 text-center text-lg-end mt-3 mt-lg-0">
-                <a href="{% url 'panel_visitante:login_responsable' %}" class="btn btn-success btn-lg px-5 shadow-sm">
-                    <i class="fas fa-sign-in-alt me-2"></i>Acceder como Responsable
-                </a>
+                <div class="mt-auto">
+                    <a href="{% url 'panel_visitante:login_responsable' %}" class="btn action-btn btn-lg px-4 px-md-5 shadow-sm">
+                        <i class="fas fa-sign-in-alt me-2"></i>Acceder como Responsable
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -96,11 +94,13 @@
 
 <style>
     :root {
-        --visitas-primary: #0c63e7;
-        --visitas-primary-soft: #e8f1ff;
-        --visitas-success: #198754;
-        --visitas-success-soft: #eefaf3;
-        --visitas-highlight: #5db700;
+        --visitas-primary: #0b784d;
+        --visitas-primary-soft: #ecf8f1;
+        --visitas-success: #0b784d;
+        --visitas-success-soft: #edf8f2;
+        --visitas-highlight: #42b300;
+        --visitas-border: #d6e4dc;
+        --visitas-text-soft: #5f6f66;
     }
 
     .visitas-wrap {
@@ -158,6 +158,8 @@
 
     .action-card {
         transition: transform 0.25s ease, box-shadow 0.25s ease;
+        border-color: var(--visitas-border) !important;
+        background: #f6faf7 !important;
     }
 
     .action-card:hover {
@@ -166,13 +168,46 @@
     }
 
     .action-card-primary {
-        border-color: rgba(12, 99, 231, 0.2) !important;
-        background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%) !important;
+        background: #f3f8f5 !important;
     }
 
     .action-card-secondary {
-        border-color: rgba(25, 135, 84, 0.18) !important;
-        background: linear-gradient(180deg, #ffffff 0%, #f8fcfa 100%) !important;
+        background: #f3f8f5 !important;
+    }
+
+    .action-heading-icon {
+        font-size: 2rem;
+        color: #108553;
+    }
+
+    .action-list {
+        padding-left: 0;
+        color: var(--visitas-text-soft) !important;
+    }
+
+    .action-list li {
+        font-size: 1.15rem;
+        line-height: 1.55;
+        margin-bottom: 0.2rem;
+    }
+
+    .action-list i {
+        color: #12a05f;
+    }
+
+    .action-btn {
+        background: linear-gradient(180deg, #1ba25f 0%, #138a52 100%);
+        color: #fff;
+        border: none;
+        border-radius: 999px;
+        font-weight: 700;
+        min-width: 280px;
+    }
+
+    .action-btn:hover,
+    .action-btn:focus {
+        color: #fff;
+        background: linear-gradient(180deg, #189557 0%, #107849 100%);
     }
 
     @media (max-width: 767.98px) {
@@ -190,6 +225,14 @@
             height: 76px;
             border-radius: 20px;
             font-size: 1.6rem;
+        }
+
+        .action-list li {
+            font-size: 1.05rem;
+        }
+
+        .action-btn {
+            min-width: 100%;
         }
     }
 </style>
