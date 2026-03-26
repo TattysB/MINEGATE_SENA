@@ -12,13 +12,13 @@ class ChatbotEndpointTests(TestCase):
 	def test_responde_pregunta_conocida(self):
 		response = self.client.post(
 			self.url,
-			data=json.dumps({"mensaje": "Que es SICAM y para que sirve?"}),
+			data=json.dumps({"mensaje": "Como agendo una visita en la plataforma?"}),
 			content_type="application/json",
 		)
 		self.assertEqual(response.status_code, 200)
 		payload = response.json()
 		self.assertTrue(payload["ok"])
-		self.assertIn("SICAM", payload["respuesta"])
+		self.assertIn("pagina principal", payload["respuesta"])
 
 	def test_respuesta_fallback_cuando_no_hay_match(self):
 		response = self.client.post(
@@ -30,3 +30,14 @@ class ChatbotEndpointTests(TestCase):
 		payload = response.json()
 		self.assertTrue(payload["ok"])
 		self.assertIn("Aun no tengo", payload["respuesta"])
+
+	def test_bloquea_preguntas_sobre_modulos_admin(self):
+		response = self.client.post(
+			self.url,
+			data=json.dumps({"mensaje": "Como entro al modulo de reportes del admin?"}),
+			content_type="application/json",
+		)
+		self.assertEqual(response.status_code, 200)
+		payload = response.json()
+		self.assertTrue(payload["ok"])
+		self.assertIn("modulos administrativos", payload["respuesta"])

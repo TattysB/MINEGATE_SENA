@@ -1,203 +1,355 @@
-<div id="seccion-reportes" class="contenido-seccion" style="display:block;">
-  <style>
-    #seccion-reportes {
-      max-width: 100%;
-    }
+<style>
+#seccion-reportes {
+  max-width: 100%;
+}
 
-    .rp-tabla-card {
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      overflow: hidden;
-      max-width: 100%;
-    }
+.rp-contenedor {
+  padding: 20px;
+}
 
-    .rp-tabla-scroll {
-      overflow-x: auto;
-      overflow-y: auto;
-      max-height: 420px;
-      -webkit-overflow-scrolling: touch;
-    }
+.rp-filtros {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  margin-bottom: 20px;
+}
 
-    .rp-tabla {
-      width: 100%;
-      min-width: 0;
-      table-layout: fixed;
-      border-collapse: collapse;
-    }
+.rp-filtros-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 14px;
+}
 
-    .rp-tabla th,
-    .rp-tabla td {
-      white-space: normal;
-      vertical-align: middle;
-      word-break: break-word;
-      overflow-wrap: anywhere;
-      font-size: 13px;
-    }
+.rp-filtro-grupo {
+  display: flex;
+  flex-direction: column;
+}
 
-    .rp-tabla th {
-      line-height: 1.2;
-      word-break: normal;
-      overflow-wrap: anywhere;
-      hyphens: none;
-      vertical-align: middle;
-      position: sticky;
-      top: 0;
-      z-index: 2;
-      background: #f3f4f6;
-    }
+.rp-filtro-label {
+  display: block;
+  font-size: 13px;
+  color: #374151;
+  margin-bottom: 6px;
+}
 
-    .rp-tabla th:nth-child(1), .rp-tabla td:nth-child(1) { width: 6%; }
-    .rp-tabla th:nth-child(2), .rp-tabla td:nth-child(2) { width: 5%; }
-    .rp-tabla th:nth-child(3), .rp-tabla td:nth-child(3) { width: 14%; }
-    .rp-tabla th:nth-child(4), .rp-tabla td:nth-child(4) { width: 14%; }
-    .rp-tabla th:nth-child(5), .rp-tabla td:nth-child(5) { width: 10%; }
-    .rp-tabla th:nth-child(6), .rp-tabla td:nth-child(6) { width: 13%; }
-    .rp-tabla th:nth-child(7), .rp-tabla td:nth-child(7) { width: 8%; }
-    .rp-tabla th:nth-child(8), .rp-tabla td:nth-child(8) { width: 10%; }
-    .rp-tabla th:nth-child(9), .rp-tabla td:nth-child(9) { width: 8%; }
-    .rp-tabla th:nth-child(10), .rp-tabla td:nth-child(10) { width: 7%; }
-    .rp-tabla th:nth-child(11), .rp-tabla td:nth-child(11) { width: 110px; }
+.rp-filtro-select,
+.rp-filtro-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 13px;
+}
 
-    .rp-acciones-export {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-      margin-top: 14px;
-    }
+.rp-filtro-btn {
+  padding: 10px 14px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 
-    .rp-contador {
-      margin-left: auto;
-      background: #e5e7eb;
-      color: #111827;
-      padding: 6px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 700;
-    }
+.rp-filtro-btn:hover {
+  background: #1d4ed8;
+}
 
-    .rp-celda-acciones {
-      text-align: center;
-      min-width: 110px;
-      white-space: nowrap !important;
-    }
+.rp-btn-pdf {
+  padding: 10px 14px;
+  background: #dc2626;
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 
-    .rp-acciones-fila {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      white-space: nowrap;
-    }
+.rp-btn-pdf:hover {
+  background: #b91c1c;
+}
 
-    @media (max-width: 768px) {
-      .rp-tabla {
-        min-width: 920px;
-      }
+.rp-btn-excel {
+  padding: 10px 14px;
+  background: #16a34a;
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 
-      .rp-contador {
-        margin-left: 0;
-      }
+.rp-btn-excel:hover {
+  background: #15803d;
+}
 
-      .rp-acciones-export {
-        align-items: stretch;
-      }
-    }
+.rp-tabla-header {
+  background: #f3f4f6;
+}
 
-    @media (max-width: 700px) {
-      .rp-tabla-scroll {
-        overflow-x: visible;
-      }
+.rp-tabla-header th {
+  padding: 12px 14px;
+  text-align: left;
+}
 
-      .rp-tabla {
-        min-width: 0;
-      }
+.rp-tabla-row {
+  border-top: 1px solid #e5e7eb;
+}
 
-      .rp-tabla thead {
-        display: none;
-      }
+.rp-tabla-row td {
+  padding: 10px 14px;
+}
 
-      .rp-tabla,
-      .rp-tabla tbody,
-      .rp-tabla tr,
-      .rp-tabla td {
-        display: block;
-        width: 100% !important;
-      }
+.rp-tabla-empty {
+  padding: 30px;
+  text-align: center;
+  color: #6b7280;
+}
 
-      .rp-tabla tbody tr {
-        border: 1px solid #e5e7eb;
-        border-radius: 10px;
-        margin-bottom: 10px;
-        padding: 10px;
-        background: #fff;
-      }
+.rp-link-pdf {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid #dc2626;
+  color: #dc2626;
+  text-decoration: none;
+}
 
-      .rp-tabla tbody tr td {
-        border: 0;
-        border-bottom: 1px dashed #e5e7eb;
-        padding: 8px 0 !important;
-        display: grid;
-        grid-template-columns: minmax(95px, 38%) minmax(0, 1fr);
-        gap: 10px;
-        align-items: start;
-        text-align: left !important;
-      }
+.rp-link-pdf:hover {
+  background: #fecaca;
+}
 
-      .rp-tabla tbody tr td:last-child {
-        border-bottom: 0;
-        padding-bottom: 0 !important;
-      }
+.rp-link-excel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid #16a34a;
+  color: #16a34a;
+  text-decoration: none;
+}
 
-      .rp-tabla tbody tr td::before {
-        grid-column: 1;
-        font-size: 11px;
-        font-weight: 700;
-        color: #4b5563;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-      }
+.rp-link-excel:hover {
+  background: #bbf7d0;
+}
 
-      .rp-tabla tbody tr td > * {
-        grid-column: 2;
-        min-width: 0;
-        word-break: break-word;
-        overflow-wrap: anywhere;
-      }
+.rp-aviso-registros {
+  margin-top: 10px;
+  color: #6b7280;
+  font-size: 12px;
+}
 
-      .rp-tabla tbody tr td:nth-child(1)::before { content: 'Tipo'; }
-      .rp-tabla tbody tr td:nth-child(2)::before { content: 'ID'; }
-      .rp-tabla tbody tr td:nth-child(3)::before { content: 'Nombre'; }
-      .rp-tabla tbody tr td:nth-child(4)::before { content: 'Responsable'; }
-      .rp-tabla tbody tr td:nth-child(5)::before { content: 'Documento'; }
-      .rp-tabla tbody tr td:nth-child(6)::before { content: 'Correo'; }
-      .rp-tabla tbody tr td:nth-child(7)::before { content: 'Cantidad'; }
-      .rp-tabla tbody tr td:nth-child(8)::before { content: 'Solicitud'; }
-      .rp-tabla tbody tr td:nth-child(9)::before { content: 'Visita'; }
-      .rp-tabla tbody tr td:nth-child(10)::before { content: 'Estado'; }
-      .rp-tabla tbody tr td:nth-child(11)::before { content: 'Descargar'; }
+.rp-tabla-card {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  max-width: 100%;
+}
 
-      .rp-celda-acciones {
-        min-width: 0;
-      }
+.rp-tabla-scroll {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 420px;
+  -webkit-overflow-scrolling: touch;
+}
 
-      .rp-acciones-fila {
-        justify-content: flex-start;
-      }
+.rp-tabla {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
 
-      .rp-tabla tbody tr td[colspan] {
-        display: block;
-        text-align: center !important;
-        border-bottom: 0;
-      }
+.rp-tabla th,
+.rp-tabla td {
+  white-space: normal;
+  vertical-align: middle;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
 
-      .rp-tabla tbody tr td[colspan]::before {
-        content: none;
-      }
-    }
-  </style>
-  <div style="padding:20px;">
+.rp-tabla th {
+  line-height: 1.2;
+  word-break: normal;
+  overflow-wrap: anywhere;
+  hyphens: none;
+  vertical-align: middle;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f3f4f6;
+}
+
+.rp-tabla th:nth-child(1), .rp-tabla td:nth-child(1) { width: 6%; }
+.rp-tabla th:nth-child(2), .rp-tabla td:nth-child(2) { width: 5%; }
+.rp-tabla th:nth-child(3), .rp-tabla td:nth-child(3) { width: 14%; }
+.rp-tabla th:nth-child(4), .rp-tabla td:nth-child(4) { width: 14%; }
+.rp-tabla th:nth-child(5), .rp-tabla td:nth-child(5) { width: 10%; }
+.rp-tabla th:nth-child(6), .rp-tabla td:nth-child(6) { width: 13%; }
+.rp-tabla th:nth-child(7), .rp-tabla td:nth-child(7) { width: 8%; }
+.rp-tabla th:nth-child(8), .rp-tabla td:nth-child(8) { width: 10%; }
+.rp-tabla th:nth-child(9), .rp-tabla td:nth-child(9) { width: 8%; }
+.rp-tabla th:nth-child(10), .rp-tabla td:nth-child(10) { width: 7%; }
+.rp-tabla th:nth-child(11), .rp-tabla td:nth-child(11) { width: 110px; }
+
+.rp-acciones-export {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.rp-contador {
+  margin-left: auto;
+  background: #e5e7eb;
+  color: #111827;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.rp-celda-acciones {
+  text-align: center;
+  min-width: 110px;
+  white-space: nowrap !important;
+}
+
+.rp-acciones-fila {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .rp-tabla {
+    min-width: 920px;
+  }
+
+  .rp-contador {
+    margin-left: 0;
+  }
+
+  .rp-acciones-export {
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 700px) {
+  .rp-tabla-scroll {
+    overflow-x: visible;
+  }
+
+  .rp-tabla {
+    min-width: 0;
+  }
+
+  .rp-tabla thead {
+    display: none;
+  }
+
+  .rp-tabla,
+  .rp-tabla tbody,
+  .rp-tabla tr,
+  .rp-tabla td {
+    display: block;
+    width: 100% !important;
+  }
+
+  .rp-tabla tbody tr {
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    padding: 10px;
+    background: #fff;
+  }
+
+  .rp-tabla tbody tr td {
+    border: 0;
+    border-bottom: 1px dashed #e5e7eb;
+    padding: 8px 0 !important;
+    display: grid;
+    grid-template-columns: minmax(95px, 38%) minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+    text-align: left !important;
+  }
+
+  .rp-tabla tbody tr td:last-child {
+    border-bottom: 0;
+    padding-bottom: 0 !important;
+  }
+
+  .rp-tabla tbody tr td::before {
+    grid-column: 1;
+    font-size: 11px;
+    font-weight: 700;
+    color: #4b5563;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .rp-tabla tbody tr td > * {
+    grid-column: 2;
+    min-width: 0;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .rp-tabla tbody tr td:nth-child(1)::before { content: 'Tipo'; }
+  .rp-tabla tbody tr td:nth-child(2)::before { content: 'ID'; }
+  .rp-tabla tbody tr td:nth-child(3)::before { content: 'Nombre'; }
+  .rp-tabla tbody tr td:nth-child(4)::before { content: 'Responsable'; }
+  .rp-tabla tbody tr td:nth-child(5)::before { content: 'Documento'; }
+  .rp-tabla tbody tr td:nth-child(6)::before { content: 'Correo'; }
+  .rp-tabla tbody tr td:nth-child(7)::before { content: 'Cantidad'; }
+  .rp-tabla tbody tr td:nth-child(8)::before { content: 'Solicitud'; }
+  .rp-tabla tbody tr td:nth-child(9)::before { content: 'Visita'; }
+  .rp-tabla tbody tr td:nth-child(10)::before { content: 'Estado'; }
+  .rp-tabla tbody tr td:nth-child(11)::before { content: 'Descargar'; }
+
+  .rp-celda-acciones {
+    min-width: 0;
+  }
+
+  .rp-acciones-fila {
+    justify-content: flex-start;
+  }
+
+  .rp-tabla tbody tr td[colspan] {
+    display: block;
+    text-align: center !important;
+    border-bottom: 0;
+  }
+
+  .rp-tabla tbody tr td[colspan]::before {
+    content: none;
+  }
+}
+</style>
+
+<div id="seccion-reportes" class="contenido-seccion">
+  <div class="rp-contenedor">
     <div class="pg-hero">
       <div class="pg-hero-left">
         <span class="pg-hero-icon"><i class="ri-bar-chart-line"></i></span>
@@ -208,20 +360,20 @@
       </div>
     </div>
 
-    <div style="background:white;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,0.1);padding:16px;margin-bottom:20px;">
-      <form method="get" action="{% url 'core:panel_administrativo_seccion' 'reportes' %}" data-reportes-filter style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;align-items:end;">
-        <div>
-          <label style="display:block;font-size:13px;color:#374151;margin-bottom:6px;">Tipo de visita</label>
-          <select name="tipo" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;">
+    <div class="rp-filtros">
+      <form method="get" action="{% url 'core:panel_administrativo_seccion' 'reportes' %}" data-reportes-filter class="rp-filtros-form">
+        <div class="rp-filtro-grupo">
+          <label class="rp-filtro-label">Tipo de visita</label>
+          <select name="tipo" class="rp-filtro-select">
             <option value="todas" {% if filtros_reportes.tipo == 'todas' %}selected{% endif %}>Todas</option>
             <option value="interna" {% if filtros_reportes.tipo == 'interna' %}selected{% endif %}>Internas</option>
             <option value="externa" {% if filtros_reportes.tipo == 'externa' %}selected{% endif %}>Externas</option>
           </select>
         </div>
 
-        <div>
-          <label style="display:block;font-size:13px;color:#374151;margin-bottom:6px;">Estado</label>
-          <select name="estado" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;">
+        <div class="rp-filtro-grupo">
+          <label class="rp-filtro-label">Estado</label>
+          <select name="estado" class="rp-filtro-select">
             <option value="">Todos</option>
             {% for valor, nombre in estados_reportes %}
             <option value="{{ valor }}" {% if filtros_reportes.estado == valor %}selected{% endif %}>{{ nombre }}</option>
@@ -229,26 +381,26 @@
           </select>
         </div>
 
-        <div>
-          <label style="display:block;font-size:13px;color:#374151;margin-bottom:6px;">Desde</label>
-          <input type="date" name="fecha_desde" value="{{ filtros_reportes.fecha_desde_raw }}" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;">
+        <div class="rp-filtro-grupo">
+          <label class="rp-filtro-label">Desde</label>
+          <input type="date" name="fecha_desde" value="{{ filtros_reportes.fecha_desde_raw }}" class="rp-filtro-input">
         </div>
 
-        <div>
-          <label style="display:block;font-size:13px;color:#374151;margin-bottom:6px;">Hasta</label>
-          <input type="date" name="fecha_hasta" value="{{ filtros_reportes.fecha_hasta_raw }}" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;">
+        <div class="rp-filtro-grupo">
+          <label class="rp-filtro-label">Hasta</label>
+          <input type="date" name="fecha_hasta" value="{{ filtros_reportes.fecha_hasta_raw }}" class="rp-filtro-input">
         </div>
 
-        <button type="submit" style="padding:10px 14px;background:#2563eb;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;">
+        <button type="submit" class="rp-filtro-btn">
           <i class="ri-filter-3-line"></i> Filtrar
         </button>
       </form>
 
       <div class="rp-acciones-export">
-        <a href="{% url 'reportes:descargar_pdf' %}{% if query_string_reportes %}?{{ query_string_reportes }}{% endif %}" style="padding:10px 14px;background:#dc2626;color:white;text-decoration:none;border-radius:8px;font-weight:600;display:inline-flex;align-items:center;gap:6px;">
+        <a href="{% url 'reportes:descargar_pdf' %}{% if query_string_reportes %}?{{ query_string_reportes }}{% endif %}" class="rp-btn-pdf">
           <i class="ri-file-pdf-line"></i> Descargar PDF
         </a>
-        <a href="{% url 'reportes:descargar_excel' %}{% if query_string_reportes %}?{{ query_string_reportes }}{% endif %}" style="padding:10px 14px;background:#16a34a;color:white;text-decoration:none;border-radius:8px;font-weight:600;display:inline-flex;align-items:center;gap:6px;">
+        <a href="{% url 'reportes:descargar_excel' %}{% if query_string_reportes %}?{{ query_string_reportes }}{% endif %}" class="rp-btn-excel">
           <i class="ri-file-excel-2-line"></i> Descargar Excel
         </a>
         <span class="rp-contador">
@@ -261,39 +413,39 @@
       <div class="rp-tabla-scroll">
         <table class="rp-tabla">
           <thead>
-            <tr style="background:#f3f4f6;">
-              <th style="padding:12px 14px;text-align:left;">Tipo</th>
-              <th style="padding:12px 14px;text-align:left;">ID</th>
-              <th style="padding:12px 14px;text-align:left;">Nombre /<br>Programa</th>
-              <th style="padding:12px 14px;text-align:left;">Responsable</th>
-              <th style="padding:12px 14px;text-align:left;">Nro.<br>Documento</th>
-              <th style="padding:12px 14px;text-align:left;">Correo<br>electrónico</th>
-              <th style="padding:12px 14px;text-align:left;">Cantidad de<br>visitantes</th>
-              <th style="padding:12px 14px;text-align:left;">Fecha de<br>solicitud</th>
-              <th style="padding:12px 14px;text-align:left;">Fecha de<br>visita</th>
-              <th style="padding:12px 14px;text-align:left;">Estado</th>
-              <th style="padding:12px 14px;text-align:center;">Descargar</th>
+            <tr class="rp-tabla-header">
+              <th>Tipo</th>
+              <th>ID</th>
+              <th>Nombre /<br>Programa</th>
+              <th>Responsable</th>
+              <th>Nro.<br>Documento</th>
+              <th>Correo<br>electrónico</th>
+              <th>Cantidad de<br>visitantes</th>
+              <th>Fecha de<br>solicitud</th>
+              <th>Fecha de<br>visita</th>
+              <th>Estado</th>
+              <th>Descargar</th>
             </tr>
           </thead>
           <tbody>
             {% for fila in filas_reportes %}
-            <tr style="border-top:1px solid #e5e7eb;">
-              <td style="padding:10px 14px;">{{ fila.tipo }}</td>
-              <td style="padding:10px 14px;">#{{ fila.id }}</td>
-              <td style="padding:10px 14px;">{{ fila.nombre }}</td>
-              <td style="padding:10px 14px;">{{ fila.responsable }}</td>
-              <td style="padding:10px 14px;">{{ fila.documento }}</td>
-              <td style="padding:10px 14px;">{{ fila.correo }}</td>
-              <td style="padding:10px 14px;">{{ fila.cantidad }}</td>
-              <td style="padding:10px 14px;">{{ fila.fecha_solicitud|date:'d/m/Y H:i' }}</td>
-              <td style="padding:10px 14px;">{% if fila.fecha_visita %}{{ fila.fecha_visita|date:'d/m/Y' }}{% else %}-{% endif %}</td>
-              <td style="padding:10px 14px;">{{ fila.estado }}</td>
-              <td class="rp-celda-acciones" style="padding:10px 14px;">
+            <tr class="rp-tabla-row">
+              <td>{{ fila.tipo }}</td>
+              <td>#{{ fila.id }}</td>
+              <td>{{ fila.nombre }}</td>
+              <td>{{ fila.responsable }}</td>
+              <td>{{ fila.documento }}</td>
+              <td>{{ fila.correo }}</td>
+              <td>{{ fila.cantidad }}</td>
+              <td>{{ fila.fecha_solicitud|date:'d/m/Y H:i' }}</td>
+              <td>{% if fila.fecha_visita %}{{ fila.fecha_visita|date:'d/m/Y' }}{% else %}-{% endif %}</td>
+              <td>{{ fila.estado }}</td>
+              <td class="rp-celda-acciones">
                 <div class="rp-acciones-fila">
-                  <a href="{% url 'reportes:descargar_pdf_individual' fila.tipo|lower fila.id %}" title="Descargar PDF" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:6px;border:1px solid #dc2626;color:#dc2626;text-decoration:none;">
+                  <a href="{% url 'reportes:descargar_pdf_individual' fila.tipo|lower fila.id %}" title="Descargar PDF" class="rp-link-pdf">
                     <i class="ri-file-pdf-line"></i>
                   </a>
-                  <a href="{% url 'reportes:descargar_excel_individual' fila.tipo|lower fila.id %}" title="Descargar Excel" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:6px;border:1px solid #16a34a;color:#16a34a;text-decoration:none;">
+                  <a href="{% url 'reportes:descargar_excel_individual' fila.tipo|lower fila.id %}" title="Descargar Excel" class="rp-link-excel">
                     <i class="ri-file-excel-2-line"></i>
                   </a>
                 </div>
@@ -301,7 +453,7 @@
             </tr>
             {% empty %}
             <tr>
-              <td colspan="11" style="padding:30px;text-align:center;color:#6b7280;">No hay visitas para los filtros seleccionados.</td>
+              <td colspan="11" class="rp-tabla-empty">No hay visitas para los filtros seleccionados.</td>
             </tr>
             {% endfor %}
           </tbody>
@@ -310,7 +462,7 @@
     </div>
 
     {% if total_filas_reportes > 100 %}
-    <p style="margin-top:10px;color:#6b7280;font-size:12px;">Se muestran 100 registros en pantalla. Las descargas incluyen todos los resultados filtrados.</p>
+    <p class="rp-aviso-registros">Se muestran 100 registros en pantalla. Las descargas incluyen todos los resultados filtrados.</p>
     {% endif %}
   </div>
 </div>
@@ -327,6 +479,7 @@
 
       const desdeInput = form.querySelector('input[name="fecha_desde"]');
       const hastaInput = form.querySelector('input[name="fecha_hasta"]');
+      const controlesFiltro = form.querySelectorAll('select, input[type="date"]');
 
       const syncFechaHastaMin = () => {
         if (!desdeInput || !hastaInput) return;
@@ -343,20 +496,15 @@
         hastaInput.addEventListener('change', syncFechaHastaMin);
       }
 
-      form.addEventListener('submit', async function (event) {
+      const ejecutarFiltro = async () => {
         if (desdeInput && hastaInput && desdeInput.value && hastaInput.value && hastaInput.value < desdeInput.value) {
-          event.preventDefault();
           hastaInput.value = desdeInput.value;
           hastaInput.reportValidity();
           return;
         }
 
-        event.preventDefault();
         const params = new URLSearchParams(new FormData(form));
         const url = `${form.action}?${params.toString()}`;
-
-        root.style.opacity = '0.65';
-        root.style.transition = 'opacity .15s ease';
 
         try {
           const response = await fetch(url, {
@@ -383,12 +531,18 @@
           initReportesFilter();
         } catch (error) {
           window.location.href = url;
-        } finally {
-          const currentRoot = document.getElementById('seccion-reportes');
-          if (currentRoot) {
-            currentRoot.style.opacity = '1';
-          }
         }
+      };
+
+      controlesFiltro.forEach((control) => {
+        control.addEventListener('change', () => {
+          ejecutarFiltro();
+        });
+      });
+
+      form.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        await ejecutarFiltro();
       });
     };
 

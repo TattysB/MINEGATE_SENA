@@ -11,6 +11,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.db.models import Q
@@ -433,6 +434,7 @@ def _aplicar_recorte_desde_request(request, prefijo, ruta_archivo):
     return _aplicar_recorte_imagen(ruta_archivo, x, y, ancho_recorte, alto_recorte)
 
 
+@ensure_csrf_cookie
 def index(request):
     contenido_pagina = None
     elementos_galeria = []
@@ -542,7 +544,6 @@ def panel_copias_seguridad(request):
 
     contexto_backups = {
         "backups_disponibles": _listar_backups_disponibles(),
-        "ruta_backups": str(_obtener_directorio_backups()),
         "config_backup_auto": config_backup_auto,
         "frecuencias_backup_auto": frecuencias_backup,
         "proxima_ejecucion_backup": proxima_ejecucion,
@@ -942,8 +943,12 @@ def _agregar_contexto_pagina_informativa(request, context):
 
     try:
         contenido = ContenidoPaginaInformativa.obtener()
-        elementos_encabezado = list(ElementoEncabezadoInformativo.objects.all())
-        elementos_galeria = list(ElementoGaleriaInformativa.objects.all())
+        elementos_encabezado = list(
+            ElementoEncabezadoInformativo.objects.all().order_by("orden", "id")
+        )
+        elementos_galeria = list(
+            ElementoGaleriaInformativa.objects.all().order_by("orden", "id")
+        )
     except (OperationalError, ProgrammingError):
         context["error_gestion_pagina"] = (
             "Falta aplicar migraciones del módulo de página informativa. Ejecuta: python manage.py migrate"
@@ -1213,8 +1218,23 @@ def _agregar_contexto_pagina_informativa(request, context):
             )
 
     # Refresca listas desde BD para evitar que el render use datos antiguos.
-    elementos_encabezado = list(ElementoEncabezadoInformativo.objects.all())
-    elementos_galeria = list(ElementoGaleriaInformativa.objects.all())
+    elementos_encabezado = list(
+        ElementoEncabezadoInformativo.objects.all().order_by("orden", "id")
+    )
+    elementos_galeria = list(
+        ElementoGaleriaInformativa.objects.all().order_by("orden", "id")
+    )
+
+    galeria_con_archivo = [
+        item for item in elementos_galeria if getattr(item, "archivo", None)
+    ]
+    galeria_activa_con_archivo = [item for item in galeria_con_archivo if item.activo]
+    galeria_base_preview = (
+        galeria_en_edicion
+        or (galeria_activa_con_archivo[0] if galeria_activa_con_archivo else None)
+        or (galeria_con_archivo[0] if galeria_con_archivo else None)
+        or (elementos_galeria[0] if elementos_galeria else None)
+    )
 
     context.update(
         {
@@ -1230,10 +1250,7 @@ def _agregar_contexto_pagina_informativa(request, context):
                 slide_en_edicion
                 or (elementos_encabezado[0] if elementos_encabezado else None)
             ),
-            "galeria_base_preview": (
-                galeria_en_edicion
-                or (elementos_galeria[0] if elementos_galeria else None)
-            ),
+            "galeria_base_preview": galeria_base_preview,
         }
     )
 
