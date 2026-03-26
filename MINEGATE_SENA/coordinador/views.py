@@ -442,7 +442,7 @@ def api_accion_coordinacion(request, tipo, visita_id, accion):
         visita.estado = "pendiente"
         visita.save(update_fields=["estado"])
         registrar(
-            f"Solicitud aprobada por coordinación ({request.user.username}). Pendiente aprobación administrativa."
+            f"Solicitud aprobada por coordinación ({request.user.username}) y enviada al administrador para validación final."
         )
         # Registrar en el log de aprobaciones para el panel de Registro
         try:
@@ -472,7 +472,7 @@ def api_accion_coordinacion(request, tipo, visita_id, accion):
         return JsonResponse(
             {
                 "success": True,
-                "message": "✅ Solicitud aprobada. Enviada al administrador para la segunda aprobación.",
+                "message": "✅ Solicitud aprobada y enviada al administrador para validación final.",
             }
         )
 
