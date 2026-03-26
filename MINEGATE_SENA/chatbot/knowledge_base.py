@@ -1,111 +1,99 @@
 BASE_FAQ = [
     {
-        "pregunta": "Que es SICAM y para que sirve?",
+        "pregunta": "Que es SICAM?",
         "respuesta": (
-            "SICAM es el Sistema Informativo del Control y Acceso a la Mina. "
-            "Sirve para registrar visitas, controlar ingresos y salidas, "
-            "y organizar procesos de seguridad del Centro Minero de Morca."
+            "SICAM es la plataforma del Centro Minero para gestionar solicitudes y el "
+            "seguimiento de visitas de forma organizada y digital."
         ),
-        "palabras_clave": "sicam sistema control acceso mina",
+        "palabras_clave": "sicam plataforma sistema visitas",
         "prioridad": 10,
     },
     {
-        "pregunta": "Como registro una visita en la plataforma?",
+        "pregunta": "Para que sirve SICAM?",
         "respuesta": (
-            "En la pagina principal puedes usar el boton Registrar Visita. "
-            "Debes diligenciar los datos del responsable, la fecha y la informacion de asistentes."
+            "SICAM sirve para registrar, consultar y dar seguimiento al proceso de "
+            "agendamiento de visitas en el Centro Minero."
         ),
-        "palabras_clave": "registrar visita formulario responsable",
+        "palabras_clave": "sicam para que sirve agendamiento visitas",
         "prioridad": 9,
     },
     {
-        "pregunta": "Que tipos de visitas se pueden gestionar?",
+        "pregunta": "Como agendo una visita en la plataforma?",
         "respuesta": (
-            "El sistema maneja visitas internas y externas, cada una con sus formularios "
-            "y flujos de aprobacion correspondientes."
+            "Desde la pagina principal puedes registrar tu visita diligenciando el formulario "
+            "con datos del responsable, fecha propuesta y asistentes."
         ),
-        "palabras_clave": "visitas internas externas tipos",
-        "prioridad": 8,
+        "palabras_clave": "agendar visita registrar formulario responsable",
+        "prioridad": 10,
     },
     {
-        "pregunta": "Que requisitos de seguridad debo cumplir para entrar?",
+        "pregunta": "Que tipos de visitas puedo agendar?",
         "respuesta": (
-            "Debes cumplir los protocolos de seguridad: uso de EPP, induccion previa, "
-            "y seguimiento de instrucciones de guias autorizados."
+            "Puedes agendar visitas internas o externas, cada una con su formulario y validaciones correspondientes."
         ),
-        "palabras_clave": "seguridad epp casco botas protocolo",
+        "palabras_clave": "tipos visitas interna externa agendar",
         "prioridad": 9,
     },
     {
-        "pregunta": "Como funciona el calendario de disponibilidad?",
+        "pregunta": "Como reviso fechas y horarios disponibles?",
         "respuesta": (
-            "El calendario muestra fechas y horarios habilitados para visitas. "
-            "Permite verificar disponibilidad antes de reservar."
+            "Antes de enviar la solicitud, revisa el calendario de disponibilidad para elegir "
+            "una fecha y franja horaria habilitada."
         ),
-        "palabras_clave": "calendario disponibilidad horarios reservar",
-        "prioridad": 7,
-    },
-    {
-        "pregunta": "Puedo cargar documentos de asistentes?",
-        "respuesta": (
-            "Si. El modulo de documentos permite registrar y consultar archivos de soporte "
-            "de visitantes y asistentes segun el flujo de la visita."
-        ),
-        "palabras_clave": "documentos asistentes cargar archivos",
-        "prioridad": 7,
-    },
-    {
-        "pregunta": "Como ingreso al panel administrativo?",
-        "respuesta": (
-            "Debes autenticarte con una cuenta con permisos. Luego puedes acceder a las secciones "
-            "de gestion como calendario, visitas, documentos y reportes."
-        ),
-        "palabras_clave": "panel administrativo login permisos",
+        "palabras_clave": "calendario disponibilidad fecha hora horario",
         "prioridad": 8,
     },
     {
-        "pregunta": "El sistema genera reportes?",
+        "pregunta": "Que datos necesito para agendar la visita?",
         "respuesta": (
-            "Si. El modulo de reportes permite consultar informacion consolidada de visitas "
-            "para seguimiento y control operativo."
+            "Normalmente se solicita informacion del responsable, contacto, tipo de visita, "
+            "fecha tentativa y lista de asistentes."
         ),
-        "palabras_clave": "reportes estadisticas visitas",
+        "palabras_clave": "datos requisitos responsable asistentes contacto",
+        "prioridad": 9,
+    },
+    {
+        "pregunta": "Puedo reprogramar una visita ya solicitada?",
+        "respuesta": (
+            "Si, puedes solicitar reprogramacion cuando aplique. "
+            "La nueva fecha depende de la disponibilidad del calendario."
+        ),
+        "palabras_clave": "reprogramar cambio fecha visita",
+        "prioridad": 7,
+    },
+    {
+        "pregunta": "Puedo cancelar una solicitud de visita?",
+        "respuesta": (
+            "Si, puedes cancelar la solicitud y volver a registrar una nueva fecha si lo necesitas."
+        ),
+        "palabras_clave": "cancelar solicitud visita",
+        "prioridad": 7,
+    },
+    {
+        "pregunta": "Como consulto el estado de mi solicitud?",
+        "respuesta": (
+            "El estado se actualiza segun la validacion del proceso de visita. "
+            "Revisa los medios de contacto registrados para notificaciones."
+        ),
+        "palabras_clave": "estado solicitud aprobada pendiente visita",
+        "prioridad": 8,
+    },
+    {
+        "pregunta": "Con cuanta anticipacion debo agendar la visita?",
+        "respuesta": (
+            "Te recomendamos agendar con anticipacion para encontrar cupos disponibles "
+            "en la fecha y horario que necesitas."
+        ),
+        "palabras_clave": "anticipacion agendar cupos disponibilidad",
         "prioridad": 6,
     },
     {
-        "pregunta": "Que hago si olvido mi contrasena?",
+        "pregunta": "Que recomendaciones debo tener para el dia de la visita?",
         "respuesta": (
-            "Usa la opcion de recuperacion de contrasena en el acceso. "
-            "El sistema enviara instrucciones al correo registrado."
+            "Verifica previamente la fecha confirmada, llega puntual y sigue las indicaciones "
+            "de ingreso y seguridad del Centro Minero."
         ),
-        "palabras_clave": "olvide contrasena recuperar cuenta",
+        "palabras_clave": "recomendaciones dia visita ingreso seguridad",
         "prioridad": 6,
-    },
-    {
-        "pregunta": "Como entreno el chatbot con nuevas preguntas?",
-        "respuesta": (
-            "Puedes entrenarlo agregando nuevas Preguntas Frecuentes en el administrador Django, "
-            "en la seccion Chatbot > Preguntas frecuentes."
-        ),
-        "palabras_clave": "entrenar chatbot admin preguntas frecuentes",
-        "prioridad": 10,
-    },
-    {
-        "pregunta": "El chatbot usa internet o APIs externas?",
-        "respuesta": (
-            "No. Este chatbot funciona de manera local con base de conocimiento interna "
-            "y preguntas frecuentes administrables en tu propio sistema."
-        ),
-        "palabras_clave": "api externa internet tokens local",
-        "prioridad": 10,
-    },
-    {
-        "pregunta": "Con quien contacto soporte del sistema?",
-        "respuesta": (
-            "Puedes contactar al equipo administrador de SICAM del Centro Minero. "
-            "Tambien puedes revisar la seccion de contacto visible en la pagina principal."
-        ),
-        "palabras_clave": "soporte contacto ayuda",
-        "prioridad": 5,
     },
 ]

@@ -165,23 +165,21 @@
         </div>
 
     <!-- Publicidad / Características -->
-    <div class="container mt-5 mb-4">
+    <div class="container mt-5 mb-4 safety-info-wrap">
         <div class="row g-4">
             <!-- Control de Acceso -->
             <div class="col-12 col-md-6 col-lg-4">
-                <div class="card h-100 shadow-sm border-0 border-top border-primary border-4 rounded-3 p-2">
+                <div class="card h-100 shadow-sm border-0 rounded-4 p-2 safety-info-card">
                     <div class="card-body">
                         <div class="d-flex align-items-center mb-4">
-                            <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3"
-                                style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
-                                <i class="fas fa-barcode text-primary fa-lg"></i>
+                            <div class="safety-info-icon safety-info-icon-access me-3">
+                                <i class="fas fa-barcode"></i>
                             </div>
                             <h4 class="card-title fw-bold mb-0"
                                 style="font-family: 'Work Sans', sans-serif; color: #1a1a1a;">Control de Acceso</h4>
                         </div>
-                        <p class="card-text text-secondary mb-4">Uso de lectores de código de barras y QR integrados
-                            para una trazabilidad total.</p>
-                        <div class="d-flex align-items-center text-success small fw-semibold">
+                        <p class="card-text text-secondary mb-4">Se usa lector de código QR enviado al momento de agendar la visita para el control de acceso.</p>
+                        <div class="d-flex align-items-center text-success fw-semibold safety-inline-note">
                             <i class="fas fa-check me-2"></i>
                             <span>Validación de credenciales</span>
                         </div>
@@ -191,33 +189,28 @@
 
             <!-- Equipo EPP -->
             <div class="col-12 col-md-6 col-lg-4">
-                <div class="card h-100 shadow-sm border-0 border-top border-warning border-4 rounded-3 p-2">
+                <div class="card h-100 shadow-sm border-0 rounded-4 p-2 safety-info-card">
                     <div class="card-body">
                         <div class="d-flex align-items-center mb-4">
-                            <div class="bg-warning bg-opacity-10 p-3 rounded-circle me-3"
-                                style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
-                                <i class="fas fa-hard-hat text-warning fa-lg"></i>
+                            <div class="safety-info-icon safety-info-icon-epp me-3">
+                                <i class="fas fa-hard-hat"></i>
                             </div>
                             <h4 class="card-title fw-bold mb-0"
-                                style="font-family: 'Work Sans', sans-serif; color: #1a1a1a;">Equipo EPP</h4>
+                                style="font-family: 'Work Sans', sans-serif; color: #1a1a1a;">Equipo de protección personal (EPP)</h4>
                         </div>
                         <p class="card-text text-secondary mb-4">Requisitos mínimos obligatorios para ingreso y
                             permanencia en zona.</p>
-                        <div class="d-flex flex-wrap gap-2">
-                            <span class="badge bg-light text-dark border-0 px-3 py-2 rounded-2 shadow-sm"
-                                style="font-size: 0.85rem;">
+                        <div class="d-flex flex-wrap gap-2 safety-chip-group">
+                            <span class="badge bg-light text-dark border-0 px-3 py-2 rounded-2 shadow-sm safety-chip">
                                 <i class="fas fa-helmet-safety me-2 opacity-75"></i> Casco
                             </span>
-                            <span class="badge bg-light text-dark border-0 px-3 py-2 rounded-2 shadow-sm"
-                                style="font-size: 0.85rem;">
+                            <span class="badge bg-light text-dark border-0 px-3 py-2 rounded-2 shadow-sm safety-chip">
                                 <i class="fas fa-boot me-2 opacity-75"></i> Botas
                             </span>
-                            <span class="badge bg-light text-dark border-0 px-3 py-2 rounded-2 shadow-sm"
-                                style="font-size: 0.85rem;">
+                            <span class="badge bg-light text-dark border-0 px-3 py-2 rounded-2 shadow-sm safety-chip">
                                 <i class="fas fa-vest me-2 opacity-75"></i> Chaleco
                             </span>
-                            <span class="badge bg-light text-dark border-0 px-3 py-2 rounded-2 shadow-sm"
-                                style="font-size: 0.85rem;">
+                            <span class="badge bg-light text-dark border-0 px-3 py-2 rounded-2 shadow-sm safety-chip">
                                 <i class="fas fa-mitten me-2 opacity-75"></i> Guantes
                             </span>
                         </div>
@@ -225,28 +218,22 @@
                 </div>
             </div>
 
-            <!-- Reportes -->
+            <!-- Notificaciones -->
             <div class="col-12 col-md-6 col-lg-4">
-                <div class="card h-100 shadow-sm border-0 border-top border-success border-4 rounded-3 p-2">
+                <div class="card h-100 shadow-sm border-0 rounded-4 p-2 safety-info-card">
                     <div class="card-body">
                         <div class="d-flex align-items-center mb-4">
-                            <div class="bg-success bg-opacity-10 p-3 rounded-circle me-3"
-                                style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
-                                <i class="fas fa-file-invoice text-success fa-lg"></i>
+                            <div class="safety-info-icon safety-info-icon-reports me-3">
+                                <i class="fas fa-file-lines"></i>
                             </div>
                             <h4 class="card-title fw-bold mb-0"
-                                style="font-family: 'Work Sans', sans-serif; color: #1a1a1a;">Reportes</h4>
+                                style="font-family: 'Work Sans', sans-serif; color: #1a1a1a;">Notificaciones</h4>
                         </div>
-                        <p class="card-text text-secondary mb-4">Exportación de datos y respaldos automatizados en la
-                            nube.</p>
+                        <p class="card-text text-secondary mb-4">Se mantiene informado a través de correos y del panel del visitante sobre el estado de su visita.</p>
                         <div class="mt-auto">
-                            <div class="d-flex align-items-center text-danger small fw-semibold mb-2">
-                                <i class="fas fa-file-pdf me-2"></i>
-                                <span>Formatos PDF y CSV</span>
-                            </div>
-                            <div class="d-flex align-items-center text-primary small fw-semibold">
-                                <i class="fas fa-envelope-open-text me-2"></i>
-                                <span>Alertas por Email</span>
+                            <div class="d-flex align-items-center text-primary fw-semibold safety-inline-note">
+                                <i class="fas fa-inbox me-2"></i>
+                                <span>Correos y panel del visitante</span>
                             </div>
                         </div>
                     </div>
@@ -403,7 +390,7 @@
                     <span class="text-muted small"><i class="fas fa-info-circle me-1"></i> Mapa interactivo
                         proporcionado
                         por Google Maps</span>
-                    <a href="https://maps.app.goo.gl/w59QYF3s1F7aUUXS7" target="_blank"
+                    <a href="https://www.google.com/maps/place/Centro+Nacional+Minero+SENA/@5.7305793,-72.8945999,17z/data=!3m1!4b1!4m6!3m5!1s0x8e6a48a8ae9bc4e7:0x4577dc8f78e0764b!8m2!3d5.7305793!4d-72.8945999!16s%2Fg%2F1td26h9m?hl=es&entry=ttu&g_ep=EgoyMDI2MDMyMy4xIKXMDSoASAFQAw%3D%3D" target="_blank"
                         class="btn btn-outline-success btn-sm rounded-pill px-3">
                         <i class="fas fa-external-link-alt me-1"></i> Abrir en Maps
                     </a>
@@ -435,13 +422,13 @@
 
                 <div class="minero-chatbot-body" data-chatbot-body>
                     <div class="minero-msg bot">
-                        Hola, soy Chat Bot Minero. Te ayudo con dudas sobre SICAM, visitas,
-                        seguridad, calendario y documentos.
+                        Hola, soy Chat Bot Minero. Te ayudo con preguntas frecuentes sobre
+                        SICAM y agendamiento de visitas.
                     </div>
                     <div class="minero-chatbot-chips" data-chatbot-chips>
-                        <button type="button" class="minero-chatbot-chip">Como registro una visita?</button>
-                        <button type="button" class="minero-chatbot-chip">Que requisitos de seguridad hay?</button>
-                        <button type="button" class="minero-chatbot-chip">Como entreno el chatbot?</button>
+                        <button type="button" class="minero-chatbot-chip">Que es SICAM?</button>
+                        <button type="button" class="minero-chatbot-chip">Como agendo una visita?</button>
+                        <button type="button" class="minero-chatbot-chip">Como consulto el estado de mi solicitud?</button>
                     </div>
                 </div>
 

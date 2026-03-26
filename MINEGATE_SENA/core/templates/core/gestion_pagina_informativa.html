@@ -664,7 +664,7 @@
 
       const galleryData = [
         {% for item in elementos_galeria_admin %}
-          {% if item.activo and item.archivo %}
+          {% if item.archivo %}
           {
             tipo: '{{ item.tipo }}',
             mime: '{{ item.mime_type|default_if_none:""|escapejs }}',

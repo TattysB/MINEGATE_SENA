@@ -52,6 +52,21 @@ def _contexto_rol_panel(user):
     }
 
 
+def _etiqueta_rol_usuario(user):
+    """Retorna una etiqueta legible del rol principal del usuario."""
+    if user.is_superuser:
+        return "Administrador"
+    if user.groups.filter(name="coordinador").exists():
+        return "Coordinador"
+    if user.groups.filter(name="instructor_interno").exists():
+        return "Instructor Interno"
+    if user.groups.filter(name="instructor_externo").exists():
+        return "Instructor Externo"
+    if user.groups.filter(name="sst").exists() or user.is_staff:
+        return "SST"
+    return "Usuario"
+
+
 @csrf_protect
 @never_cache
 def login_view(request):
@@ -161,7 +176,7 @@ def logout_view(request):
         f"¡Hasta pronto, {username}! Tu sesión fue cerrada correctamente.",
         extra_tags=AUTH_ADMIN_MESSAGE_TAG,
     )
-    return redirect("core:index")
+    return redirect("usuarios:login")
 
 
 # ==================== PANEL DE ADMINISTRACIÓN ====================
@@ -655,6 +670,10 @@ def gestionar_permisos_view(request):
     # Ordenar por fecha de registro
     perfiles = perfiles.order_by("-user__date_joined")
 
+    # Agregar etiqueta de rol para mostrar en la tabla.
+    for perfil in perfiles:
+        perfil.rol_label = _etiqueta_rol_usuario(perfil.user)
+
     # Estadísticas
     total_usuarios = PerfilUsuario.objects.exclude(user__is_superuser=True).count()
     usuarios_activos = (
@@ -782,6 +801,7 @@ def gestionar_permisos_ajax_view(request):
                 "username": perfil.user.username,
                 "documento": perfil.documento,
                 "email": perfil.user.email,
+                "rol": _etiqueta_rol_usuario(perfil.user),
                 "telefono": perfil.telefono or "No especificado",
                 "fecha_registro": perfil.user.date_joined.strftime("%d/%m/%Y %H:%M"),
                 "is_active": perfil.user.is_active,
