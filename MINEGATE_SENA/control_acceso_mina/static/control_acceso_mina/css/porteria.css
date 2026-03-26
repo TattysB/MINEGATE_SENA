@@ -70,7 +70,7 @@
   width: 180px;
   height: 180px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .porteria-header-left {
@@ -85,11 +85,11 @@
   width: 72px;
   height: 72px;
   border-radius: 18px;
-  background: rgba(255,255,255,0.14);
+  background: rgba(255, 255, 255, 0.14);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .porteria-icon {
@@ -143,7 +143,7 @@
   gap: 6px;
   border-radius: 999px;
   padding: 7px 12px;
-  background: rgba(255,255,255,0.14);
+  background: rgba(255, 255, 255, 0.14);
   color: #fff;
   font-size: 0.8rem;
   font-weight: 700;
@@ -154,8 +154,8 @@
 }
 
 .porteria-live-box {
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 16px;
   padding: 10px 14px;
   min-width: 210px;
@@ -847,13 +847,23 @@
 }
 
 @keyframes rowHighlightInside {
-  0% { background: #ffe4ea; }
-  100% { background: transparent; }
+  0% {
+    background: #ffe4ea;
+  }
+
+  100% {
+    background: transparent;
+  }
 }
 
 @keyframes rowHighlightOutside {
-  0% { background: #dcfce7; }
-  100% { background: transparent; }
+  0% {
+    background: #dcfce7;
+  }
+
+  100% {
+    background: transparent;
+  }
 }
 
 .porteria-error-state {
@@ -935,6 +945,137 @@
 
   .scanner-input-wrapper {
     padding-left: 14px;
+  }
+}
+
+@media (max-width: 700px) {
+  .porteria-table-wrapper {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .porteria-table thead {
+    display: none;
+  }
+
+  .porteria-table,
+  .porteria-table tbody,
+  .porteria-table tr,
+  .porteria-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .porteria-table tbody tr {
+    border: 1px solid #d9e6f2;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    padding: 10px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  }
+
+  .porteria-table tbody td {
+    border-bottom: 1px dashed #e2e8f0;
+    padding: 8px 0;
+    display: grid;
+    grid-template-columns: minmax(90px, 38%) minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+  }
+
+  .porteria-table tbody td:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .porteria-table tbody td::before {
+    grid-column: 1;
+    font-size: 11px;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .porteria-table tbody td>* {
+    grid-column: 2;
+    min-width: 0;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  #tablaVisitasHoy tbody td:nth-child(1)::before {
+    content: 'Tipo';
+  }
+
+  #tablaVisitasHoy tbody td:nth-child(2)::before {
+    content: 'Visita';
+  }
+
+  #tablaVisitasHoy tbody td:nth-child(3)::before {
+    content: 'Responsable';
+  }
+
+  #tablaVisitasHoy tbody td:nth-child(4)::before {
+    content: 'Horario';
+  }
+
+  #tablaVisitasHoy tbody td:nth-child(5)::before {
+    content: 'Aprobados';
+  }
+
+  #tablaVisitasHoy tbody td:nth-child(6)::before {
+    content: 'Abrir';
+  }
+
+  #tablaAsistentes tbody td:nth-child(1)::before {
+    content: 'Documento';
+  }
+
+  #tablaAsistentes tbody td:nth-child(2)::before {
+    content: 'Nombre';
+  }
+
+  #tablaIngresos tbody td:nth-child(1)::before,
+  #tablaSalidas tbody td:nth-child(1)::before {
+    content: 'ID';
+  }
+
+  #tablaIngresos tbody td:nth-child(2)::before,
+  #tablaSalidas tbody td:nth-child(2)::before {
+    content: 'Hora';
+  }
+
+  #tablaIngresos tbody td:nth-child(3)::before,
+  #tablaSalidas tbody td:nth-child(3)::before {
+    content: 'Documento';
+  }
+
+  #tablaIngresos tbody td:nth-child(4)::before,
+  #tablaSalidas tbody td:nth-child(4)::before {
+    content: 'Nombre';
+  }
+
+  #tablaIngresos tbody td:nth-child(5)::before,
+  #tablaSalidas tbody td:nth-child(5)::before {
+    content: 'Categoria';
+  }
+
+  .porteria-table .empty-row td {
+    text-align: center;
+    display: block;
+    border-bottom: 0;
+    padding: 16px 8px;
+  }
+
+  .porteria-table .empty-row td::before {
+    content: none;
+  }
+
+  .btn-open-visita {
+    width: 100%;
+    justify-content: center;
   }
 }
 

@@ -31,6 +31,27 @@ def resolver_panel_por_rol(user):
     return "core:index"
 
 
+def _contexto_rol_panel(user):
+    es_coordinador = user.groups.filter(name="coordinador").exists()
+    solo_sst = user.is_staff and not user.is_superuser and not es_coordinador
+
+    if user.is_superuser:
+        panel_role_label = "Administrador"
+    elif es_coordinador:
+        panel_role_label = "Coordinador"
+    elif solo_sst:
+        panel_role_label = "SST"
+    else:
+        panel_role_label = "Usuario"
+
+    return {
+        "es_superusuario": user.is_superuser,
+        "solo_sst": solo_sst,
+        "solo_coordinador": es_coordinador,
+        "panel_role_label": panel_role_label,
+    }
+
+
 @csrf_protect
 @never_cache
 def login_view(request):
@@ -359,6 +380,7 @@ def perfil_view(request):
         "usuario": usuario,
         "es_perfil_propio": True,
     }
+    context.update(_contexto_rol_panel(usuario))
     return render(request, "usuarios/editar_usuario.html", context)
 
 
@@ -372,6 +394,7 @@ def configuracion_perfil_view(request):
         "titulo": "Configuración de Perfil",
         "perfil": perfil,
     }
+    context.update(_contexto_rol_panel(request.user))
     return render(request, "usuarios/configuracion_perfil.html", context)
 
 
@@ -398,6 +421,7 @@ def cambiar_contraseña_view(request):
         "titulo": "Cambiar Contraseña",
         "form": form,
     }
+    context.update(_contexto_rol_panel(request.user))
     return render(request, "usuarios/cambiar_contrasena.html", context)
 
 
@@ -654,7 +678,7 @@ def gestionar_permisos_view(request):
         "es_superusuario": request.user.is_superuser,
         "perfil": getattr(request.user, "perfil", None),
         "perfil_panel": getattr(request.user, "perfil", None),
-        "panel_role_label": "Superusuario",
+        "panel_role_label": "Administrador",
     }
 
     return render(request, "usuarios/gestionar_permisos.html", context)
@@ -855,7 +879,7 @@ def crear_usuario_permisos_view(request):
         "es_superusuario": request.user.is_superuser,
         "perfil": getattr(request.user, "perfil", None),
         "perfil_panel": getattr(request.user, "perfil", None),
-        "panel_role_label": "Superusuario",
+        "panel_role_label": "Administrador",
         "rol_actual": (
             request.POST.get("rol_usuario", "sst")
             if request.method == "POST"
@@ -924,7 +948,7 @@ def detalle_usuario_permisos_view(request, usuario_id):
         "usuario": usuario,
         "perfil": perfil,
         "perfil_panel": getattr(request.user, "perfil", None),
-        "panel_role_label": "Superusuario",
+        "panel_role_label": "Administrador",
         "titulo": f"Detalles de {usuario.get_full_name() or usuario.username}",
     }
     return render(request, "usuarios/detalle_usuario_permisos.html", context)

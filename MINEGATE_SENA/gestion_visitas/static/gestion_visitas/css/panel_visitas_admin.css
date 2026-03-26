@@ -1,16 +1,449 @@
-/* Ajustes visuales para alinear Gestion de Visitas con la tabla de Gestion de Documentos */
+:root {
+  --gv-primary: #22c55e;
+  --gv-primary-dark: #16a34a;
+  --gv-bg: #f4fbf6;
+  --gv-card: #ffffff;
+  --gv-border: #d6ecd9;
+  --gv-text: #1f2937;
+  --gv-muted: #64748b;
+}
+
+.pg-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 18px 24px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #2fae10, #47c934);
+  color: #fff;
+  box-shadow: 0 14px 34px rgba(57, 169, 0, 0.22);
+  position: relative;
+  overflow: hidden;
+}
+
+.pg-hero::after {
+  content: '';
+  position: absolute;
+  right: -52px;
+  top: -52px;
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.pg-hero-left,
+.pg-hero-right {
+  position: relative;
+  z-index: 1;
+}
+
+.pg-hero-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.pg-hero-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+}
+
+.pg-hero-title {
+  margin: 0;
+  font-size: clamp(1.35rem, 2.1vw, 2.15rem);
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.pg-hero-subtitle {
+  margin: 6px 0 0;
+  font-size: 0.98rem;
+  opacity: 0.93;
+}
+
+.pg-hero-right {
+  display: flex;
+  align-items: center;
+}
+
+.pg-hero-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  font-size: 0.96rem;
+  font-weight: 700;
+}
+
+#seccion-gestion-visitas {
+  background: radial-gradient(circle at 15% -10%, #d9fbe7 0%, transparent 42%),
+    radial-gradient(circle at 90% 0%, #e0f2fe 0%, transparent 35%),
+    var(--gv-bg);
+}
+
+#seccion-gestion-visitas .gv-layout {
+  padding: 18px;
+}
+
+#seccion-gestion-visitas .gv-hero {
+  background: linear-gradient(120deg, #27b941 0%, #31c74e 45%, #46d768 100%);
+  border-radius: 18px;
+  padding: 18px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  color: #fff;
+  box-shadow: 0 16px 34px rgba(34, 197, 94, 0.22);
+  margin-bottom: 14px;
+}
+
+#seccion-gestion-visitas .gv-hero-main {
+  min-width: 220px;
+}
+
+#seccion-gestion-visitas .gv-title {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 32px;
+  line-height: 1;
+  letter-spacing: 0.1px;
+}
+
+#seccion-gestion-visitas .gv-title-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  font-size: 23px;
+}
+
+#seccion-gestion-visitas .gv-subtitle {
+  margin: 5px 0 0;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+#seccion-gestion-visitas .gv-hero-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+#seccion-gestion-visitas .gv-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+#seccion-gestion-visitas .gv-meta-user {
+  width: 40px;
+  justify-content: center;
+  padding: 10px 0;
+}
+
+#seccion-gestion-visitas .gv-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+#seccion-gestion-visitas .gv-stat-card {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid var(--gv-border);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  position: relative;
+}
+
+#seccion-gestion-visitas .gv-stat-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+}
+
+#seccion-gestion-visitas .gv-stat-card.gv-active-filter {
+  border-color: #65c986;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.15), 0 10px 22px rgba(15, 23, 42, 0.08);
+}
+
+#seccion-gestion-visitas .gv-stat-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+#seccion-gestion-visitas .gv-stat-number {
+  font-size: 35px;
+  line-height: 1;
+  font-weight: 700;
+  color: var(--gv-text);
+}
+
+#seccion-gestion-visitas .gv-stat-label {
+  margin-top: 3px;
+  font-size: 14px;
+  color: var(--gv-muted);
+  font-weight: 600;
+}
+
+#seccion-gestion-visitas .gv-stat-sub {
+  margin-top: 2px;
+  font-size: 11px;
+  color: #64748b;
+}
+
+#seccion-gestion-visitas .gv-stat-total .gv-stat-icon {
+  color: #65a30d;
+  background: #ecfccb;
+}
+
+#seccion-gestion-visitas .gv-stat-pendiente .gv-stat-icon {
+  color: #d97706;
+  background: #ffedd5;
+}
+
+#seccion-gestion-visitas .gv-stat-aprobada .gv-stat-icon {
+  color: #16a34a;
+  background: #dcfce7;
+}
+
+#seccion-gestion-visitas .gv-stat-revision .gv-stat-icon {
+  color: #2563eb;
+  background: #dbeafe;
+}
+
+#seccion-gestion-visitas .gv-stat-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+#seccion-gestion-visitas .gv-panel-shell {
+  border: 1px solid var(--gv-border);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+}
+
+#seccion-gestion-visitas .gv-toolbar {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-bottom: 1px solid #e6f4e8;
+}
+
+#seccion-gestion-visitas .gv-tab-group {
+  display: inline-flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+#seccion-gestion-visitas .gv-tab-button {
+  border: 1px solid #cae7d2;
+  background: #f7faf8;
+  color: #46586d;
+  border-radius: 12px;
+  padding: 9px 14px;
+  font-weight: 600;
+  font-size: 14px;
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#seccion-gestion-visitas .gv-tab-button.active {
+  background: linear-gradient(130deg, var(--gv-primary-dark), var(--gv-primary));
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(22, 163, 74, 0.26);
+}
+
+#seccion-gestion-visitas .gv-filters {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+#seccion-gestion-visitas .gv-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 240px;
+}
+
+#seccion-gestion-visitas .gv-search-wrap i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+}
+
+#seccion-gestion-visitas #buscarVisita,
+#seccion-gestion-visitas #filtroEstadoVisita {
+  height: 42px;
+  border: 1px solid #dbe7de;
+  border-radius: 12px;
+  padding: 0 14px;
+  color: #1e293b;
+  background: #fff;
+  font-size: 14px;
+}
+
+#seccion-gestion-visitas #buscarVisita {
+  width: 100%;
+  padding-left: 38px;
+}
+
+#seccion-gestion-visitas #filtroEstadoVisita {
+  min-width: 250px;
+}
+
+#seccion-gestion-visitas .gv-refresh-btn {
+  height: 42px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(130deg, #16a34a, #22c55e);
+  color: #fff;
+  font-weight: 600;
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  cursor: pointer;
+}
 
 .gv-tabla-contenedor {
   margin-top: 4px;
+  width: 100%;
+}
+
+.gv-contenido {
+  width: 100%;
+  min-width: 0;
+}
+
+.gv-header-row,
+.gv-tabs,
+.gv-filtros,
+.gv-stats {
+  width: 100%;
+  min-width: 0;
+}
+
+.gv-tabs {
+  flex-wrap: wrap;
+}
+
+.gv-tabs .tab-visita {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.gv-filtros {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.gv-select {
+  flex: 1 1 230px;
+  min-width: 180px;
+}
+
+.gv-buscador {
+  flex: 2 1 320px;
+  min-width: 220px;
+  width: auto !important;
+}
+
+.gv-refresh {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+#seccion-gestion-visitas .docs-tabla-scroll {
+  max-height: 500px;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+#seccion-gestion-visitas .gv-tabla thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.gv-tabla thead th {
+  background: #d5ebd8;
+  color: #1f5131;
+  font-size: 12px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  border-bottom: 1px solid #b8d8be;
 }
 
 .gv-tabla td {
   vertical-align: middle;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .gv-fila td {
-  border-bottom: 1px solid #d8f0be;
+  border-bottom: 1px solid #e2f0e4;
 }
 
 .gv-celda-id {
@@ -26,8 +459,8 @@
 
 .gv-celda-cantidad {
   text-align: center;
-  font-weight: 600;
-  color: #334155;
+  font-weight: 700;
+  color: #2f6f3e;
 }
 
 .gv-celda-acciones {
@@ -47,15 +480,15 @@
 }
 
 .gv-tipo-badge.interna {
-  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-  color: #1e3a8a;
-  border-color: #93c5fd;
+  background: #dcfce7;
+  color: #166534;
+  border-color: #86efac;
 }
 
 .gv-tipo-badge.externa {
-  background: linear-gradient(135deg, #ede9fe, #ddd6fe);
-  color: #5b21b6;
-  border-color: #c4b5fd;
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #fcd34d;
 }
 
 .gv-estado-pill {
@@ -70,6 +503,23 @@
   white-space: nowrap;
 }
 
+.gv-estado-multiline {
+  align-items: flex-start;
+}
+
+.gv-estado-copy {
+  display: inline-flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.gv-estado-copy small {
+  font-size: 9px;
+  font-weight: 600;
+  opacity: 0.88;
+  margin-top: 2px;
+}
+
 .gv-estado-enviada {
   background: #dcfce7;
   color: #166534;
@@ -77,9 +527,9 @@
 }
 
 .gv-estado-pendiente {
-  background: #fef3c7;
-  color: #92400e;
-  border-color: #fcd34d;
+  background: #ffedd5;
+  color: #9a3412;
+  border-color: #fdba74;
 }
 
 .gv-estado-aprobada {
@@ -95,15 +545,15 @@
 }
 
 .gv-estado-revision {
-  background: #fef3c7;
-  color: #92400e;
-  border-color: #fcd34d;
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-color: #93c5fd;
 }
 
 .gv-estado-reprogramacion {
-  background: #fee2e2;
-  color: #9f1239;
-  border-color: #fca5a5;
+  background: #fce7f3;
+  color: #9d174d;
+  border-color: #f9a8d4;
 }
 
 .gv-estado-confirmada {
@@ -123,57 +573,113 @@
   flex-wrap: wrap;
 }
 
-.gv-btn-base,
-.gv-btn-approve,
-.gv-btn-reject,
-.gv-btn-reschedule,
-.gv-btn-docs,
-.gv-btn-review,
-.gv-btn-confirm {
-  min-height: 31px;
-  padding: 7px 11px;
+#seccion-gestion-visitas .gv-celda-acciones .docs-btn-accion {
+  width: 34px !important;
+  min-width: 34px !important;
+  max-width: 34px !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  max-height: 34px !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  border-radius: 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease !important;
+  font-size: 0 !important;
+  overflow: hidden !important;
 }
 
-.gv-btn-base {
-  min-width: 74px;
+#seccion-gestion-visitas .gv-celda-acciones .docs-btn-accion i {
+  font-size: 16px !important;
+  margin: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
-.gv-btn-approve {
-  background: linear-gradient(135deg, #10b981, #059669);
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+#seccion-gestion-visitas .gv-celda-acciones .docs-btn-accion:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.1) !important;
 }
 
-.gv-btn-reject {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
-  min-width: 34px;
-  justify-content: center;
-  padding-left: 9px;
-  padding-right: 9px;
+#seccion-gestion-visitas .gv-celda-acciones .docs-btn-accion:active {
+  transform: translateY(0) scale(0.95) !important;
 }
 
-.gv-btn-reschedule {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+/* Botones solo con ícono (icon-only) */
+#seccion-gestion-visitas .gv-celda-acciones .docs-btn-accion.gv-btn-icon-only {
+  width: 34px !important;
+  min-width: 34px !important;
+  max-width: 34px !important;
+  height: 34px !important;
+  padding: 0 !important;
+  font-size: 0 !important;
 }
 
-.gv-btn-docs {
-  background: linear-gradient(135deg, #f59e0b, #f97316);
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+#seccion-gestion-visitas .gv-celda-acciones .docs-btn-accion.gv-btn-icon-only i {
+  font-size: 16px !important;
 }
 
-.gv-btn-review {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+#seccion-gestion-visitas .gv-btn-base,
+#seccion-gestion-visitas .gv-btn-approve,
+#seccion-gestion-visitas .gv-btn-reject,
+#seccion-gestion-visitas .gv-btn-reschedule,
+#seccion-gestion-visitas .gv-btn-docs,
+#seccion-gestion-visitas .gv-btn-review,
+#seccion-gestion-visitas .gv-btn-confirm {
+  min-height: 34px !important;
+  padding: 0 !important;
 }
 
-.gv-btn-confirm {
-  background: linear-gradient(135deg, #22c55e, #16a34a);
-  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+#seccion-gestion-visitas .gv-btn-base {
+  background: #ecfdf5 !important;
+  color: #15803d !important;
+  border-color: #bbf7d0 !important;
 }
 
-.gv-btn-disabled {
-  opacity: 0.55;
+#seccion-gestion-visitas .gv-btn-approve {
+  background: #dcfce7 !important;
+  color: #16a34a !important;
+  border-color: #86efac !important;
+}
+
+#seccion-gestion-visitas .gv-btn-reject {
+  background: #fee2e2 !important;
+  color: #dc2626 !important;
+  border-color: #fca5a5 !important;
+}
+
+#seccion-gestion-visitas .gv-btn-reschedule {
+  background: #ffedd5 !important;
+  color: #ea580c !important;
+  border-color: #fdba74 !important;
+}
+
+#seccion-gestion-visitas .gv-btn-docs {
+  background: #dbeafe !important;
+  color: #2563eb !important;
+  border-color: #93c5fd !important;
+}
+
+#seccion-gestion-visitas .gv-btn-review {
+  background: #e0f2fe !important;
+  color: #0284c7 !important;
+  border-color: #7dd3fc !important;
+}
+
+#seccion-gestion-visitas .gv-btn-confirm {
+  background: #ede9fe !important;
+  color: #7c3aed !important;
+  border-color: #c4b5fd !important;
+}
+
+#seccion-gestion-visitas .gv-btn-disabled {
+  opacity: 0.45 !important;
+  filter: grayscale(0.2) !important;
 }
 
 .gv-btn-disabled:hover {
@@ -203,6 +709,31 @@
   border: 1px solid #fca5a5;
 }
 
+@media (max-width: 980px) {
+  .pg-hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  #seccion-gestion-visitas .gv-hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  #seccion-gestion-visitas .gv-title {
+    font-size: 28px;
+  }
+
+  #seccion-gestion-visitas .gv-hero-meta {
+    justify-content: flex-start;
+  }
+
+  #seccion-gestion-visitas #filtroEstadoVisita {
+    min-width: 210px;
+    flex: 1;
+  }
+}
+
 @media (max-width: 900px) {
   .gv-celda-acciones {
     min-width: 240px;
@@ -215,5 +746,262 @@
   .gv-acciones .docs-btn-accion {
     font-size: 11px;
     padding: 6px 10px;
+  }
+
+  .gv-contenido {
+    padding: 16px !important;
+  }
+
+  .gv-tabs .tab-visita {
+    flex: 1 1 calc(50% - 8px);
+  }
+
+  .gv-select,
+  .gv-buscador {
+    flex: 1 1 calc(50% - 8px);
+    min-width: 0;
+  }
+
+  .gv-refresh {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 640px) {
+  #seccion-gestion-visitas {
+    overflow-x: clip;
+  }
+
+  .gv-contenido {
+    padding: 12px !important;
+  }
+
+  .gv-tabs {
+    gap: 8px !important;
+  }
+
+  .gv-tabs .tab-visita {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .gv-filtros {
+    gap: 10px !important;
+  }
+
+  .gv-select,
+  .gv-buscador,
+  .gv-refresh {
+    width: 100%;
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+
+  .gv-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .gv-stats>div {
+    padding: 12px !important;
+  }
+
+  .gv-tabla td,
+  .gv-tabla th {
+    padding: 10px 12px;
+  }
+
+  .docs-tabla-scroll {
+    overflow-x: visible;
+  }
+
+  .gv-tabla {
+    min-width: 0;
+  }
+
+  .gv-tabla thead {
+    display: none;
+  }
+
+  .gv-tabla,
+  .gv-tabla tbody,
+  .gv-tabla tr,
+  .gv-tabla td {
+    display: block;
+    width: 100%;
+  }
+
+  .gv-tabla tr.docs-fila {
+    border: 1px solid #d8f0be;
+    border-radius: 10px;
+    margin: 0 0 10px;
+    padding: 10px;
+    background: #fff;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  .gv-tabla tr.docs-fila:nth-child(even) {
+    background: #f8fcf3;
+  }
+
+  .gv-tabla tr.docs-fila:hover {
+    box-shadow: 0 4px 14px rgba(79, 191, 38, 0.2);
+  }
+
+  .gv-tabla tr.docs-fila td {
+    border: 0;
+    border-bottom: 1px dashed #e5e7eb;
+    padding: 8px 0;
+    display: grid;
+    grid-template-columns: minmax(95px, 42%) minmax(0, 1fr);
+    align-items: start;
+    gap: 10px;
+    text-align: right;
+  }
+
+  .gv-tabla tr.docs-fila td>* {
+    grid-column: 2;
+    min-width: 0;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .gv-tabla tr.docs-fila td:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .gv-tabla tr.docs-fila td::before {
+    font-size: 11px;
+    font-weight: 700;
+    color: #4b5563;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    grid-column: 1;
+    text-align: left;
+  }
+
+  .gv-tabla tr.docs-fila td:nth-child(1)::before {
+    content: 'ID';
+  }
+
+  .gv-tabla tr.docs-fila td:nth-child(2)::before {
+    content: 'Tipo';
+  }
+
+  .gv-tabla tr.docs-fila td:nth-child(3)::before {
+    content: 'Responsable';
+  }
+
+  .gv-tabla tr.docs-fila td:nth-child(4)::before {
+    content: 'Institucion';
+  }
+
+  .gv-tabla tr.docs-fila td:nth-child(5)::before {
+    content: 'Fecha';
+  }
+
+  .gv-tabla tr.docs-fila td:nth-child(6)::before {
+    content: 'Cantidad';
+  }
+
+  .gv-tabla tr.docs-fila td:nth-child(7)::before {
+    content: 'Estado';
+  }
+
+  .gv-tabla tr.docs-fila td:nth-child(8)::before {
+    content: 'Acciones';
+  }
+
+  .gv-tabla .docs-cargando,
+  .gv-tabla .docs-vacio,
+  .gv-tabla .docs-error {
+    display: block;
+    text-align: center;
+    padding: 20px 10px;
+  }
+
+  .gv-tabla .docs-cargando::before,
+  .gv-tabla .docs-vacio::before,
+  .gv-tabla .docs-error::before {
+    content: none;
+  }
+
+  .gv-celda-acciones {
+    min-width: 0;
+  }
+
+  .gv-tabla tr.docs-fila td:nth-child(3) .gv-responsable {
+    font-size: 13px;
+    line-height: 1.3;
+  }
+
+  .gv-tabla tr.docs-fila td:nth-child(3) .docs-celda-texto {
+    margin-top: 3px;
+    font-size: 12px;
+  }
+
+  .gv-tabla tr.docs-fila td:nth-child(8) {
+    grid-template-columns: minmax(95px, 42%) minmax(0, 1fr);
+  }
+
+  .gv-tabla tr.docs-fila td:nth-child(8) .gv-acciones {
+    justify-content: flex-start;
+    gap: 6px;
+  }
+
+  .gv-tabla tr.docs-fila td:nth-child(8) .docs-btn-accion {
+    flex: 1 1 120px;
+    justify-content: center;
+  }
+
+  .gv-acciones {
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 420px) {
+  .gv-stats {
+    grid-template-columns: 1fr !important;
+  }
+
+  .gv-tabla-contenedor {
+    border-radius: 8px;
+  }
+}
+  #seccion-gestion-visitas .gv-layout {
+    padding: 12px;
+  }
+
+  #seccion-gestion-visitas .gv-title {
+    font-size: 24px;
+  }
+
+  #seccion-gestion-visitas .gv-subtitle {
+    font-size: 12px;
+  }
+
+  #seccion-gestion-visitas .gv-stat-number {
+    font-size: 29px;
+  }
+
+  #seccion-gestion-visitas .gv-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #seccion-gestion-visitas .gv-refresh-btn,
+  #seccion-gestion-visitas #filtroEstadoVisita {
+    width: 100%;
+  }
+
+  #seccion-gestion-visitas .gv-tab-group {
+    width: 100%;
+  }
+
+  #seccion-gestion-visitas .gv-tab-button {
+    flex: 1;
+    justify-content: center;
   }
 }

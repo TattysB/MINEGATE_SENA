@@ -5,10 +5,15 @@
 
 <div class="calendar-page admin-calendar-page">
 
-  <header class="calendar-header">
-    <h1>Sistema de Gestión de Visitas</h1>
-    <p class="subtitle">SENA - CENTRO MINERO</p>
-  </header>
+  <div class="pg-hero">
+    <div class="pg-hero-left">
+      <span class="pg-hero-icon"><i class="ri-calendar-line"></i></span>
+      <div>
+        <h2 class="pg-hero-title">Gestión de Calendario</h2>
+        <p class="pg-hero-subtitle">Configura fechas y horarios disponibles para visitas</p>
+      </div>
+    </div>
+  </div>
 
   <section class="calendar-layout" data-summary-base="{% url 'calendario:index' %}day/summary/" data-slots-base="{% url 'calendario:index' %}horarios/" data-gestion-url="{% url 'core:panel_administrativo_seccion' 'gestion_visitas' %}">
     <main class="calendar-card" data-year="{{ year }}" data-month="{{ month }}">

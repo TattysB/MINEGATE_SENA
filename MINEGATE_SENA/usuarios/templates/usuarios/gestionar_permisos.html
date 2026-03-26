@@ -1,7 +1,7 @@
 {% extends "core/panel_administrativo.html" %}
 {% load static %}
  {% block content %} 
-<link rel="stylesheet" href="{% static 'css/gestionar_permisos.css' %}" />
+<link rel="stylesheet" href="{% static 'css/gestionar_permisos.css' %}?v=20260325a" />
 <link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}?v=20260320a">
 
 <style>
@@ -172,9 +172,110 @@
       justify-content: center;
     }
   }
+
+  @media (max-width: 700px) {
+    .seccion-tabla {
+      overflow: hidden;
+    }
+
+    .tabla-responsiva {
+      overflow-x: visible;
+    }
+
+    .tabla-usuarios thead {
+      display: none;
+    }
+
+    .tabla-usuarios,
+    .tabla-usuarios tbody,
+    .tabla-usuarios tr,
+    .tabla-usuarios td {
+      display: block;
+      width: 100%;
+    }
+
+    .tabla-usuarios tr.fila-usuario {
+      border: 1px solid #dbe7dc;
+      border-radius: 10px;
+      margin: 0 0 12px;
+      padding: 10px;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+    }
+
+    .tabla-usuarios tr.fila-usuario td {
+      border: 0;
+      border-bottom: 1px dashed #e2e8f0;
+      padding: 8px 0;
+      display: grid;
+      grid-template-columns: minmax(98px, 40%) minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      text-align: left !important;
+    }
+
+    .tabla-usuarios tr.fila-usuario td:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .tabla-usuarios tr.fila-usuario td::before {
+      grid-column: 1;
+      font-size: 11px;
+      font-weight: 700;
+      color: #4b5563;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .tabla-usuarios tr.fila-usuario td > * {
+      grid-column: 2;
+      min-width: 0;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .tabla-usuarios tr.fila-usuario td:nth-child(1)::before { content: 'Usuario'; }
+    .tabla-usuarios tr.fila-usuario td:nth-child(2)::before { content: 'Documento'; }
+    .tabla-usuarios tr.fila-usuario td:nth-child(3)::before { content: 'Email'; }
+    .tabla-usuarios tr.fila-usuario td:nth-child(4)::before { content: 'Registro'; }
+    .tabla-usuarios tr.fila-usuario td:nth-child(5)::before { content: 'Estado'; }
+    .tabla-usuarios tr.fila-usuario td:nth-child(6)::before { content: 'Acciones'; }
+
+    .tabla-usuarios tr.fila-usuario td:nth-child(6) .acciones-usuario {
+      justify-content: flex-start;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tabla-usuarios tr.fila-usuario td:nth-child(6) .btn-accion {
+      flex: 1 1 44px;
+    }
+
+    .tabla-usuarios td[colspan] {
+      display: block;
+      border-bottom: 0;
+      text-align: center !important;
+      padding: 18px 10px !important;
+    }
+
+    .tabla-usuarios td[colspan]::before {
+      content: none;
+    }
+  }
 </style>
 
 <div class="contenedor-permisos">
+  <div class="pg-hero">
+    <div class="pg-hero-left">
+      <span class="pg-hero-icon"><i class="ri-shield-user-line"></i></span>
+      <div>
+        <h2 class="pg-hero-title">Gestión de Permisos</h2>
+        <p class="pg-hero-subtitle">Administra roles, estados y accesos de los usuarios</p>
+      </div>
+    </div>
+  </div>
+
   <!-- Mensajes -->
   {% if messages %}
   <div class="mensajes">

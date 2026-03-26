@@ -547,6 +547,7 @@ body {
    ======================================== */
 main {
   flex: 1;
+  min-width: 0;
   margin-left: var(--sidebar-width);
   margin-top: var(--topbar-height);
   padding: 0.75rem 2rem 2rem;
@@ -797,6 +798,124 @@ main {
     left: 0 !important;
     padding: 0 1rem 0 5rem;
     width: 100% !important;
+    overflow: visible;
+  }
+
+  .topbar-left,
+  .topbar-right {
+    min-width: 0;
+  }
+
+  .topbar-right {
+    margin-left: auto;
+  }
+
+  .topbar-actions {
+    gap: 0.45rem;
+  }
+
+  .notification-wrapper,
+  .notification-wrapper:hover {
+    transform: none !important;
+  }
+
+  #adminNotifBtn {
+    min-width: 38px !important;
+    min-height: 36px !important;
+    padding: 6px !important;
+    border-radius: 9px !important;
+  }
+
+  #adminNotifBtn .notification-icon {
+    font-size: 19px !important;
+  }
+
+  #adminNotifBtn #adminNotifBadge {
+    margin-left: 5px !important;
+  }
+
+  .topbar-logo-container {
+    min-width: 0;
+    gap: 0.6rem;
+  }
+
+  .topbar-logo-img {
+    height: 42px;
+  }
+
+  .topbar-brand {
+    min-width: 0;
+    overflow: visible;
+    gap: 0.35rem;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.05;
+  }
+
+  .brand-main {
+    font-size: 1.1rem;
+    white-space: nowrap;
+    line-height: 1;
+  }
+
+  .brand-sub {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 170px;
+    font-size: 0.63rem;
+    line-height: 1.18;
+    opacity: 0.9;
+  }
+
+  .brand-divider {
+    display: none;
+  }
+
+  #adminNotifDropdown {
+    position: fixed !important;
+    left: 6px !important;
+    right: 6px !important;
+    top: calc(var(--topbar-height) + 4px) !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: calc(100vh - var(--topbar-height) - 12px);
+    overflow: hidden;
+    z-index: 3000 !important;
+  }
+
+  #adminNotifDropdown>div:nth-child(2) {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 6px !important;
+    padding: 8px 10px !important;
+  }
+
+  #adminNotifDropdown>div:nth-child(2) .notif-filter {
+    flex: 1 1 90px;
+    justify-content: center;
+  }
+
+  #adminNotifDropdown>div:nth-child(3) {
+    max-height: min(46vh, 340px) !important;
+    overflow: auto !important;
+  }
+
+  .user-profile-btn {
+    padding: 3px 8px 3px 3px;
+    gap: 6px;
+  }
+
+  .user-profile-photo-container {
+    width: 40px;
+    height: 40px;
+    border-width: 2px;
+  }
+
+  .topbar-role-label {
+    display: none;
   }
 
   .topbar-logo h1 {
@@ -832,6 +951,80 @@ main {
   .topbar-logo h1 {
     font-size: 1.1rem;
     letter-spacing: 1px;
+  }
+
+  .topbar {
+    padding-right: 0.6rem;
+  }
+
+  .topbar {
+    padding-left: 4.2rem !important;
+  }
+
+  .topbar-brand {
+    max-width: 150px;
+  }
+
+  .topbar-logo-img {
+    height: 36px;
+  }
+
+  .brand-main {
+    font-size: 1.05rem;
+  }
+
+  .brand-sub {
+    -webkit-line-clamp: 1;
+    max-width: 145px;
+    font-size: 0.6rem;
+  }
+
+  #adminNotifDropdown {
+    left: 4px !important;
+    right: 4px !important;
+  }
+
+
+  @media (max-width: 1024px) {
+    #adminNotifDropdown {
+      position: absolute !important;
+      left: auto !important;
+      right: 0 !important;
+      width: min(360px, calc(100vw - 12px)) !important;
+      max-width: min(360px, calc(100vw - 12px)) !important;
+      z-index: 3000 !important;
+    }
+  }
+
+  @media (max-width: 480px) {
+    #adminNotifDropdown {
+      position: fixed !important;
+      left: 8px !important;
+      right: 8px !important;
+      top: calc(var(--topbar-height) + 6px) !important;
+      width: calc(100vw - 16px) !important;
+      max-width: calc(100vw - 16px) !important;
+      max-height: calc(100vh - var(--topbar-height) - 12px) !important;
+      border-radius: 12px !important;
+      z-index: 4000 !important;
+    }
+
+    #adminNotifDropdown>div:nth-child(1) {
+      padding: 12px !important;
+    }
+
+    #adminNotifDropdown>div:nth-child(2) .notif-filter {
+      font-size: 12px !important;
+      padding: 6px 8px !important;
+    }
+
+    #adminNotifDropdown>div:nth-child(3) {
+      max-height: calc(100vh - var(--topbar-height) - 150px) !important;
+    }
+  }
+
+  .brand-divider {
+    display: none;
   }
 
   main {
