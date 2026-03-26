@@ -13,19 +13,19 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.85rem 1.5rem;
-    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    background: linear-gradient(135deg, #00b000 0%, #185027 100%);
     color: white;
     text-decoration: none;
     border-radius: 10px;
     font-weight: 600;
     font-size: 1rem;
-    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 176, 0, 0.28);
     transition: all 0.3s ease;
   }
   
   .btn-crear-usuario:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+    box-shadow: 0 6px 20px rgba(24, 80, 39, 0.35);
     color: white;
   }
   
@@ -142,17 +142,75 @@
     background: #ffdce1;
     color: #912018;
   }
+
+  .tabla-usuarios thead {
+    background: linear-gradient(135deg, #00b000 0%, #185027 100%) !important;
+  }
   
   /* Iconos en botones */
   .btn-accion i {
     font-size: 0.95rem;
   }
+
+  /* Tabla más compacta */
+  .tabla-usuarios {
+    table-layout: auto;
+  }
+
+  .tabla-usuarios th,
+  .tabla-usuarios td {
+    padding: 0.7rem 0.75rem;
+  }
+
+  .tabla-usuarios th:nth-child(1) { width: 22%; }
+  .tabla-usuarios th:nth-child(2) { width: 12%; }
+  .tabla-usuarios th:nth-child(3) { width: 20%; }
+  .tabla-usuarios th:nth-child(4) { width: 12%; }
+  .tabla-usuarios th:nth-child(5) { width: 14%; }
+  .tabla-usuarios th:nth-child(6) { width: 10%; }
+  .tabla-usuarios th:nth-child(7) { width: 10%; }
+
+  .datos-usuario {
+    min-width: 150px;
+  }
+
+  .nombre-usuario {
+    font-size: 0.9rem;
+  }
+
+  .username,
+  .documento,
+  .email,
+  .fecha {
+    font-size: 0.8rem;
+  }
+
+  .btn-accion {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* Badge de rol simple en verde */
+  .badge-rol-tabla {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.28rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: #166534;
+    background: #dcfce7;
+    border: 1px solid #86efac;
+    text-transform: none;
+    animation: none;
+  }
   
   /* Ajuste columnas de tabla */
-  .tabla-usuarios th:nth-child(5),
-  .tabla-usuarios td:nth-child(5),
   .tabla-usuarios th:nth-child(6),
-  .tabla-usuarios td:nth-child(6) {
+  .tabla-usuarios td:nth-child(6),
+  .tabla-usuarios th:nth-child(7),
+  .tabla-usuarios td:nth-child(7) {
     text-align: center;
   }
   
@@ -238,17 +296,18 @@
     .tabla-usuarios tr.fila-usuario td:nth-child(1)::before { content: 'Usuario'; }
     .tabla-usuarios tr.fila-usuario td:nth-child(2)::before { content: 'Documento'; }
     .tabla-usuarios tr.fila-usuario td:nth-child(3)::before { content: 'Email'; }
-    .tabla-usuarios tr.fila-usuario td:nth-child(4)::before { content: 'Registro'; }
-    .tabla-usuarios tr.fila-usuario td:nth-child(5)::before { content: 'Estado'; }
-    .tabla-usuarios tr.fila-usuario td:nth-child(6)::before { content: 'Acciones'; }
+    .tabla-usuarios tr.fila-usuario td:nth-child(4)::before { content: 'Rol'; }
+    .tabla-usuarios tr.fila-usuario td:nth-child(5)::before { content: 'Registro'; }
+    .tabla-usuarios tr.fila-usuario td:nth-child(6)::before { content: 'Estado'; }
+    .tabla-usuarios tr.fila-usuario td:nth-child(7)::before { content: 'Acciones'; }
 
-    .tabla-usuarios tr.fila-usuario td:nth-child(6) .acciones-usuario {
+    .tabla-usuarios tr.fila-usuario td:nth-child(7) .acciones-usuario {
       justify-content: flex-start;
       flex-wrap: wrap;
       gap: 6px;
     }
 
-    .tabla-usuarios tr.fila-usuario td:nth-child(6) .btn-accion {
+    .tabla-usuarios tr.fila-usuario td:nth-child(7) .btn-accion {
       flex: 1 1 44px;
     }
 
@@ -297,13 +356,14 @@
   <!-- Botón Crear Usuario -->
   <div class="seccion-acciones-principales" style="margin-bottom: 1.5rem; display: flex; justify-content: flex-end;">
     <a href="{% url 'usuarios:crear_usuario_permisos' %}" class="btn-crear-usuario">
-      ➕ Crear Nuevo Usuario
+      <i class="ri-user-add-line"></i>
+      <span>Crear Nuevo Usuario</span>
     </a>
   </div>
 
   <!-- Tarjetas de Estadísticas -->
   <div class="seccion-estadisticas">
-    <div class="titulo-seccion">📈 Estadísticas de Usuarios</div>
+    <div class="titulo-seccion">Estadísticas de Usuarios</div>
     <div class="grid-estadisticas">
       <div class="tarjeta-estadistica total">
         <div class="numero-estadistica">{{ total_usuarios }}</div>
@@ -322,7 +382,7 @@
 
   <!-- Filtros y Búsqueda -->
   <div class="seccion-filtros">
-    <div class="titulo-seccion">🔍 Filtros</div>
+    <div class="titulo-seccion">Filtros</div>
     <form
       id="formFiltros"
       class="formulario-filtros"
@@ -370,7 +430,7 @@
             name="filtro"
             value="{{ filtro_actual|default:'todos' }}"
           />
-          <button type="submit" class="btn-buscar">🔍 Buscar</button>
+          <button type="submit" class="btn-buscar">Buscar</button>
           <button type="button" class="btn-limpiar" onclick="limpiarBusqueda()">
             Limpiar
           </button>
@@ -382,7 +442,7 @@
   <!-- Tabla de Usuarios -->
   <div class="seccion-tabla">
     <div class="titulo-seccion">
-      👥 Lista de Usuarios{% if perfiles %} ({{ perfiles.count }}){% endif %}
+      Lista de Usuarios{% if perfiles %} ({{ perfiles.count }}){% endif %}
     </div>
     {% if perfiles %}
     <div class="tabla-responsiva">
@@ -392,6 +452,7 @@
             <th>Usuario</th>
             <th>Documento</th>
             <th>Email</th>
+            <th>Rol</th>
             <th>Fecha Registro</th>
             <th>Estado</th>
             <th>Acciones</th>
@@ -414,6 +475,9 @@
             </td>
             <td>
               <span class="email">{{ perfil_usuario.user.email }}</span>
+            </td>
+            <td>
+              <span class="badge-rol-tabla">{{ perfil_usuario.rol_label }}</span>
             </td>
             <td>
               <span class="fecha"
@@ -699,7 +763,7 @@
             '<div class="sin-resultados"><p>📋 No se encontraron usuarios con los criterios seleccionados.</p></div>';
         }
         if (tituloSeccion) {
-          tituloSeccion.textContent = "👥 Lista de Usuarios (0)";
+          tituloSeccion.textContent = "Lista de Usuarios (0)";
         }
         return;
       }
@@ -712,7 +776,7 @@
 
       // Actualizar título
       if (tituloSeccion) {
-        tituloSeccion.textContent = `👥 Lista de Usuarios (${usuarios.length})`;
+        tituloSeccion.textContent = `Lista de Usuarios (${usuarios.length})`;
       }
 
       // Limpiar la tabla primero
@@ -746,6 +810,11 @@
         const tdEmail = document.createElement("td");
         tdEmail.innerHTML = `<span class="email">${escaparHTML(usuario.email || "")}</span>`;
         tr.appendChild(tdEmail);
+
+        // Celda de rol
+        const tdRol = document.createElement("td");
+        tdRol.innerHTML = `<span class="badge-rol-tabla">${escaparHTML(usuario.rol || "Usuario")}</span>`;
+        tr.appendChild(tdRol);
 
         // Celda de fecha
         const tdFecha = document.createElement("td");
@@ -947,7 +1016,7 @@
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
               <div style="background:#f8fafc;padding:1rem;border-radius:10px;border:1px solid #e2e8f0;">
-                <p style="font-size:0.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin:0 0 0.6rem;">👤 Personal</p>
+                <p style="font-size:0.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin:0 0 0.6rem;">Personal</p>
                 ${campoDetalle('Nombre', u.first_name)}
                 ${campoDetalle('Apellido', u.last_name)}
                 ${campoDetalle('Documento', u.documento || u.username)}

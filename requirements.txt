@@ -15,6 +15,8 @@ sqlparse==0.5.4
 typing_extensions==4.15.0
 tzdata==2025.2
 psycopg2-binary==2.9.11
+openpyxl==3.1.5
+pypdf==4.0.0
 
 # Para instalar los paquetes en el VENV 
 # pip install -r requirements.txt

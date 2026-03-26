@@ -9,13 +9,77 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="{% static 'core/css/nuevos_estilos.css' %}?v=16" />
+  <link rel="stylesheet" href="{% static 'core/css/nuevos_estilos.css' %}?v=20260326j" />
   <link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}?v=20260311d" />
   <link rel="stylesheet" href="{% static 'css/configuracion_perfil.css' %}?v=20260312a" />
-  <link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}" />
+  <link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}?v=20260326c" />
   <link rel="stylesheet" href="{% static 'calendario/css/calendario_seleccion.css' %}" />
   <link rel="stylesheet" href="{% static 'core/css/user_dropdown.css' %}" />
   <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
+  <style>
+    /* Notificaciones Coordinador - Responsive */
+    @media (max-width: 768px) {
+      #coordNotifDropdown {
+        width: min(96vw, 380px) !important;
+        max-width: calc(100vw - 8px) !important;
+      }
+      .admin-notif-head {
+        padding: 10px 12px !important;
+        min-height: 52px !important;
+        flex-wrap: wrap !important;
+      }
+      #coordNotifDropdown .notif-filter {
+        padding: 6px 10px !important;
+        font-size: 13px !important;
+        flex: 1;
+        min-width: 60px;
+      }
+      #coordNotifList {
+        padding: 6px !important;
+        max-height: calc(100vh - 260px) !important;
+        overflow-y: auto !important;
+      }
+      #coordNotifList li {
+        font-size: 0.88rem !important;
+        padding: 2px 0 !important;
+        list-style: none;
+      }
+      .admin-notif-item {
+        padding: 6px 4px !important;
+        border-radius: 8px !important;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      #coordNotifDropdown {
+        width: min(98vw, 340px) !important;
+        max-width: calc(100vw - 4px) !important;
+      }
+      .admin-notif-head {
+        padding: 10px 12px !important;
+        min-height: 50px !important;
+      }
+      #coordNotifDropdown .notif-filter {
+        padding: 6px 10px !important;
+        font-size: 12px !important;
+        flex: 1;
+        min-width: 55px;
+      }
+      #coordNotifList {
+        padding: 6px !important;
+        max-height: calc(100vh - 260px) !important;
+      }
+      #coordNotifList li {
+        font-size: 0.87rem !important;
+        padding: 2px 0 !important;
+        list-style: none;
+      }
+      .admin-notif-item {
+        padding: 6px 4px !important;
+        border-radius: 8px !important;
+      }
+    }
+  </style>
   {% block extra_css %}{% endblock %}
 </head>
 <body class="coordinador-page">
@@ -44,21 +108,20 @@
               <i class="ri-notification-3-line notification-icon" style="color:#10b981;font-size:20px;background:transparent;border-radius:0;display:block;"></i>
               <span id="coordNotifBadge" class="notification-badge" style="display:none;background:#ef4444;color:white;border-radius:50%;min-width:20px;height:20px;font-size:12px;font-weight:700;line-height:20px;text-align:center;padding:0 5px;margin-left:8px;">0</span>
             </button>
-            <div id="coordNotifDropdown" class="admin-notif-dropdown coord-style" aria-hidden="true" style="display:none;position:absolute;right:10px;top:48px;background:white;border:0;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.12);width:360px;z-index:1200;overflow:hidden;">
-              <div class="admin-notif-head" style="padding:12px 14px;background:#00af00;color:white;display:flex;align-items:center;justify-content:space-between;">
-                <div>
-                  <div style="font-weight:700;font-size:15px;">Notificaciones</div>
-                  <div id="coordNotifCountSmall" style="font-size:12px;opacity:0.95;margin-top:4px;">0 nuevas</div>
+            <div id="coordNotifDropdown" class="admin-notif-dropdown coord-style" aria-hidden="true" style="display:none;position:fixed;background:white;border:0;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.12);z-index:1200;overflow:hidden;max-height:85vh;">
+              <div class="admin-notif-head" style="padding:10px 12px;background:#00af00;color:white;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;min-height:56px;">
+                <div style="flex:1;min-width:120px;">
+                  <div style="font-weight:700;font-size:clamp(12px,2vw,15px);">Notificaciones</div>
+                  <div id="coordNotifCountSmall" style="font-size:clamp(10px,1.5vw,12px);opacity:0.95;margin-top:2px;">0 nuevas</div>
                 </div>
-                <div style="display:flex;gap:8px;align-items:center;">
-                </div>
+                <div style="display:flex;gap:6px;align-items:center;"></div>
               </div>
-              <div style="padding:10px 12px;background:#fff;display:flex;gap:8px;align-items:center;">
-                <button id="coordFilterAll" class="notif-filter active" data-filter="all" style="background:#eef2ff;color:#4c1d95;border:0;padding:6px 10px;border-radius:10px;font-weight:600;font-size:13px;">Todas</button>
-                <button id="coordFilterInternas" class="notif-filter" data-filter="internas" style="background:#f0fff4;color:#047857;border:0;padding:6px 10px;border-radius:10px;font-weight:600;font-size:13px;display:flex;align-items:center;gap:8px;"><span style="width:10px;height:10px;background:#00af00;border-radius:50%;display:inline-block;"></span>Internas</button>
-                <button id="coordFilterExternas" class="notif-filter" data-filter="externas" style="background:#fff7ed;color:#b45309;border:0;padding:6px 10px;border-radius:10px;font-weight:600;font-size:13px;display:flex;align-items:center;gap:8px;"><span style="width:10px;height:10px;background:#f59e0b;border-radius:50%;display:inline-block;"></span>Externas</button>
+              <div style="padding:8px 10px;background:#fff;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                <button id="coordFilterAll" class="notif-filter active" data-filter="all" style="background:#eef2ff;color:#4c1d95;border:0;padding:5px 8px;border-radius:8px;font-weight:600;font-size:clamp(11px,1.8vw,13px);flex:1;min-width:60px;">Todas</button>
+                <button id="coordFilterInternas" class="notif-filter" data-filter="internas" style="background:#f0fff4;color:#047857;border:0;padding:5px 8px;border-radius:8px;font-weight:600;font-size:clamp(11px,1.8vw,13px);display:flex;align-items:center;gap:6px;flex:1;min-width:70px;"><span style="width:8px;height:8px;background:#00af00;border-radius:50%;display:inline-block;flex-shrink:0;"></span>Internas</button>
+                <button id="coordFilterExternas" class="notif-filter" data-filter="externas" style="background:#fff7ed;color:#b45309;border:0;padding:5px 8px;border-radius:8px;font-weight:600;font-size:clamp(11px,1.8vw,13px);display:flex;align-items:center;gap:6px;flex:1;min-width:70px;"><span style="width:8px;height:8px;background:#f59e0b;border-radius:50%;display:inline-block;flex-shrink:0;"></span>Externas</button>
               </div>
-              <div style="max-height:320px;overflow:auto;background:white;padding:8px 6px;">
+              <div style="max-height:calc(80vh - 180px);overflow-y:auto;overflow-x:hidden;background:white;padding:6px;">
                 <ul id="coordNotifList" class="admin-notif-list" style="list-style:none;margin:0;padding:6px;">
                   <li class="admin-notif-empty" style="color:#6b7280;padding:12px;text-align:center">No hay notificaciones</li>
                 </ul>
@@ -90,7 +153,7 @@
                   </div>
                 </div>
                 <div class="user-dropdown-body">
-                  <a href="javascript:void(0)" onclick="abrirModalPerfil(event)" class="dropdown-item">
+                  <a href="{% url 'usuarios:perfil' %}" class="dropdown-item">
                     <i class="ri-user-line"></i>
                     <span>Mi Perfil</span>
                   </a>
@@ -467,21 +530,32 @@
         const a = document.createElement('a');
         a.href = `/coordinador/panel/?tipo=${tipo}&id=${v.id}`;
         a.className = 'admin-notif-item';
-        a.style.display='block'; a.style.color='#111827'; a.style.textDecoration='none';
+        a.style.display='block'; a.style.color='#111827'; a.style.textDecoration='none'; a.style.marginBottom='8px';
         const letter = tipo === 'internas' ? 'I' : 'E';
         const avatarBg = tipo === 'internas' ? 'linear-gradient(135deg,#00af00,#007a00)' : 'linear-gradient(135deg,#f59e0b,#d97706)';
+        
+        // Responsive sizing
+        const isMobile = window.innerWidth <= 480;
+        const isTablet = window.innerWidth <= 768;
+        const avatarSize = isMobile ? '36px' : isTablet ? '40px' : '44px';
+        const avatarFontSize = isMobile ? '14px' : isTablet ? '15px' : '16px';
+        const titleFontSize = isMobile ? '12px' : isTablet ? '13px' : '14px';
+        const timeFontSize = isMobile ? '10px' : isTablet ? '11px' : '12px';
+        const badgeFontSize = isMobile ? '10px' : isTablet ? '11px' : '12px';
+        const gap = isMobile ? '8px' : isTablet ? '10px' : '12px';
+        const padding = isMobile ? '6px 4px' : isTablet ? '7px 5px' : '8px 6px';
+        const motivoFontSize = isMobile ? '9px' : isTablet ? '10px' : '11px';
+        
         a.innerHTML = `
-          <div style="display:flex;align-items:center;gap:12px;padding:6px 4px;">
-            <div style="width:44px;height:44px;border-radius:50%;background:${avatarBg};display:flex;align-items:center;justify-content:center;color:white;font-weight:700;flex:0 0 44px;font-size:15px;">${letter}</div>
-            <div style="flex:1 1 auto;min-width:0;">
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                <div style="font-weight:700;font-size:14px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${titulo}</div>
-                <div style="font-size:12px;color:#6b7280;flex:0 0 auto;">${time}</div>
+          <div style="display:flex;align-items:flex-start;gap:${gap};padding:${padding};background:#f9fafb;border-radius:8px;border-left:3px solid ${tipo==='internas'?'#00af00':'#f59e0b'};">
+            <div style="width:${avatarSize};height:${avatarSize};border-radius:50%;background:${avatarBg};display:flex;align-items:center;justify-content:center;color:white;font-weight:700;flex-shrink:0;font-size:${avatarFontSize};">${letter}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:600;font-size:${titleFontSize};color:#0f172a;line-height:1.3;margin-bottom:2px;word-break:break-word;">${titulo}</div>
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;flex-wrap:wrap;">
+                <span style="background:${tipo==='internas'?'#d1fae5':'#fef3c7'};color:${tipo==='internas'?'#047857':'#92400e'};padding:2px 6px;border-radius:4px;font-size:${badgeFontSize};font-weight:600;flex-shrink:0;">${tipo==='internas'?'Interna':'Externa'}</span>
+                <span style="font-size:${timeFontSize};color:#9ca3af;flex-shrink:0;">${time}</span>
               </div>
-              <div style="margin-top:4px;display:flex;align-items:center;gap:8px;">
-                <span style="background:${tipo==='internas'?'#e6fff0':'#fff4e6'};color:${tipo==='internas'?'#047857':'#b45309'};padding:4px 8px;border-radius:8px;font-size:12px;font-weight:600;">${tipo==='internas'?'Visita Interna':'Visita Externa'}</span>
-                <div style="font-size:13px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${v.motivo||''}</div>
-              </div>
+              ${v.motivo ? `<div style="font-size:${motivoFontSize};color:#6b7280;line-height:1.3;word-break:break-word;">${v.motivo}</div>` : ''}
             </div>
           </div>`;
 
@@ -546,13 +620,65 @@
       }
 
       function setActiveFilterBtn(btn){ document.querySelectorAll('#coordNotifDropdown .notif-filter').forEach(b=>b.classList.remove('active')); if(btn) btn.classList.add('active'); }
+      
+      function posicionarDropdown() {
+        if (!dropdown || !btn) return;
+        const btnRect = btn.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        
+        // Calcular posición X
+        let left = btnRect.left - 10;
+        let width = 360;
+        
+        // En móvil, ajustar ancho
+        if (viewportWidth <= 480) {
+          width = Math.min(viewportWidth - 16, 360);
+          left = Math.max(8, (viewportWidth - width) / 2);
+        } else if (viewportWidth <= 768) {
+          width = Math.min(380, viewportWidth - 20);
+          left = Math.max(10, Math.min(left, viewportWidth - width - 10));
+        } else {
+          left = Math.max(10, Math.min(left, viewportWidth - width - 10));
+        }
+        
+        // Calcular posición Y
+        let top = btnRect.bottom + 8;
+        const topSpaceBelow = viewportHeight - btnRect.bottom - 20;
+        const topSpaceAbove = btnRect.top - 20;
+        let maxHeight = Math.max(220, topSpaceBelow - 20);
+        
+        // Si no hay espacio abajo, colocar arriba
+        if (topSpaceBelow < 300 && topSpaceAbove > topSpaceBelow) {
+          top = btnRect.top - maxHeight - 8;
+          maxHeight = Math.max(220, topSpaceAbove - 20);
+        }
+        
+        dropdown.style.left = left + 'px';
+        dropdown.style.top = top + 'px';
+        dropdown.style.width = width + 'px';
+        dropdown.style.maxHeight = maxHeight + 'px';
+      }
+      
       window._coordNotifCurrentFilter='all';
       if(filterAll) filterAll.addEventListener('click', function(){ window._coordNotifCurrentFilter='all'; setActiveFilterBtn(this); renderFilter('all'); });
       if(filterInternas) filterInternas.addEventListener('click', function(){ window._coordNotifCurrentFilter='internas'; setActiveFilterBtn(this); renderFilter('internas'); });
       if(filterExternas) filterExternas.addEventListener('click', function(){ window._coordNotifCurrentFilter='externas'; setActiveFilterBtn(this); renderFilter('externas'); });
 
-      if(btn) btn.addEventListener('click', function(e){ e.stopPropagation(); if(dropdown.getAttribute('aria-hidden')==='false'){ dropdown.setAttribute('aria-hidden','true'); dropdown.style.display='none'; } else { dropdown.setAttribute('aria-hidden','false'); dropdown.style.display='block'; refreshNotificaciones(); } });
+      if(btn) btn.addEventListener('click', function(e){ 
+        e.stopPropagation(); 
+        if(dropdown.getAttribute('aria-hidden')==='false'){ 
+          dropdown.setAttribute('aria-hidden','true'); 
+          dropdown.style.display='none'; 
+        } else { 
+          dropdown.setAttribute('aria-hidden','false'); 
+          dropdown.style.display='block'; 
+          posicionarDropdown();
+          refreshNotificaciones(); 
+        } 
+      });
       document.addEventListener('click', function(){ if(dropdown) { dropdown.setAttribute('aria-hidden','true'); dropdown.style.display='none'; } });
+      window.addEventListener('resize', posicionarDropdown);
 
       // initial
       refreshNotificaciones();

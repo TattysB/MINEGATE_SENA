@@ -116,6 +116,9 @@
     overflow: hidden;
     animation: fadeInCard 0.5s ease forwards;
     opacity: 0;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 6px rgba(15, 23, 42, 0.06);
 }
 .tarjeta-estadistica:nth-child(1) { animation-delay: 0.1s; }
 .tarjeta-estadistica:nth-child(2) { animation-delay: 0.2s; }
@@ -126,25 +129,26 @@
     content: '';
     position: absolute;
     top: 0; left: 0; right: 0;
-    height: 4px;
+    height: 2px;
     border-radius: var(--borde-radio) var(--borde-radio) 0 0;
+    background: #eef2f7;
 }
-.tarjeta-estadistica:hover { transform: translateY(-5px); box-shadow: var(--sombra-media); }
+.tarjeta-estadistica:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08); }
 
-.tarjeta-estadistica.total { background: linear-gradient(135deg, #e3f2fd, #bbdefb); border: 1px solid #90caf9; }
-.tarjeta-estadistica.total::before { background: linear-gradient(90deg, #1976d2, #42a5f5); }
+.tarjeta-estadistica.total { background: #ffffff; border-color: #e5e7eb; }
+.tarjeta-estadistica.total::before { background: #e9edf3; }
 .tarjeta-estadistica.total .numero-estadistica { color: #1565c0; }
 
-.tarjeta-estadistica.aprobado { background: linear-gradient(135deg, #e8f5e9, #c8e6c9); border: 1px solid #a5d6a7; }
-.tarjeta-estadistica.aprobado::before { background: linear-gradient(90deg, var(--sena-verde-oscuro), var(--sena-verde-primario)); }
+.tarjeta-estadistica.aprobado { background: #ffffff; border-color: #e5e7eb; }
+.tarjeta-estadistica.aprobado::before { background: #e9edf3; }
 .tarjeta-estadistica.aprobado .numero-estadistica { color: var(--color-aprobado); }
 
-.tarjeta-estadistica.pendiente { background: linear-gradient(135deg, #fff3e0, #ffe0b2); border: 1px solid #ffcc80; }
-.tarjeta-estadistica.pendiente::before { background: linear-gradient(90deg, #e65100, #ff9800); }
+.tarjeta-estadistica.pendiente { background: #ffffff; border-color: #e5e7eb; }
+.tarjeta-estadistica.pendiente::before { background: #e9edf3; }
 .tarjeta-estadistica.pendiente .numero-estadistica { color: var(--color-pendiente); }
 
-.tarjeta-estadistica.rechazado { background: linear-gradient(135deg, #ffebee, #ffcdd2); border: 1px solid #ef9a9a; }
-.tarjeta-estadistica.rechazado::before { background: linear-gradient(90deg, #b71c1c, #e53935); }
+.tarjeta-estadistica.rechazado { background: #ffffff; border-color: #e5e7eb; }
+.tarjeta-estadistica.rechazado::before { background: #e9edf3; }
 .tarjeta-estadistica.rechazado .numero-estadistica { color: var(--color-rechazado); }
 
 .numero-estadistica { font-size: 2.5rem; font-weight: 800; line-height: 1; margin-bottom: 0.5rem; }
