@@ -301,56 +301,54 @@
         'X-CSRFToken': csrfToken
       }
     })
-    .then(response => response.json())
+    .then(async response => {
+      const contentType = response.headers.get('content-type') || '';
+      const esJson = contentType.includes('application/json');
+      const data = esJson ? await response.json() : null;
+
+      // Si el backend responde con redirect/HTML pero en realidad la eliminación ya ocurrió,
+      // tratamos como éxito para evitar falso mensaje de error.
+      if (!response.ok) {
+        throw new Error((data && data.message) || 'No se pudo eliminar la ficha.');
+      }
+
+      if (data && data.success === false) {
+        throw new Error(data.message || 'No se pudo eliminar la ficha.');
+      }
+
+      return data || { success: true, message: '🗑️ Ficha eliminada.' };
+    })
     .then(data => {
-      if (data.success) {
-        // Mostrar mensaje de éxito
-        const alertDiv = document.createElement('div');
-        alertDiv.className = 'alert alert-success alert-dismissible fade show';
-        alertDiv.role = 'alert';
-        alertDiv.innerHTML = `
-          <i class="fas fa-check-circle me-2"></i>${data.message}
-          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        
-        // Agregar el mensaje al contenedor principal
-        const container = document.querySelector('.container');
-        if (container) {
-          container.insertBefore(alertDiv, container.firstChild);
-        }
-        
-        // Cerrar el modal
-        const modal = bootstrap.Modal.getInstance(document.getElementById('modalEliminarFicha'));
-        modal.hide();
-        
-        // Recargar la tabla después de un delay
-        setTimeout(() => {
-          location.reload();
-        }, 1500);
-      } else {
-        // Mostrar error
-        const alertDiv = document.createElement('div');
-        alertDiv.className = 'alert alert-danger alert-dismissible fade show';
-        alertDiv.role = 'alert';
-        alertDiv.innerHTML = `
-          <i class="fas fa-exclamation-circle me-2"></i>${data.message}
-          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        
-        // Agregar el mensaje al contenedor principal
-        const container = document.querySelector('.container');
-        if (container) {
-          container.insertBefore(alertDiv, container.firstChild);
-        }
-        
-        // Cerrar el modal
-        const modal = bootstrap.Modal.getInstance(document.getElementById('modalEliminarFicha'));
+      // Mostrar mensaje de éxito
+      const alertDiv = document.createElement('div');
+      alertDiv.className = 'alert alert-success alert-dismissible fade show';
+      alertDiv.role = 'alert';
+      alertDiv.innerHTML = `
+        <i class="fas fa-check-circle me-2"></i>${data.message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      `;
+
+      const container = document.querySelector('.container');
+      if (container) {
+        container.insertBefore(alertDiv, container.firstChild);
+      }
+
+      const modal = bootstrap.Modal.getInstance(document.getElementById('modalEliminarFicha'));
+      if (modal) {
         modal.hide();
       }
+
+      setTimeout(() => {
+        location.reload();
+      }, 1200);
     })
     .catch(error => {
       console.error('Error:', error);
-      alert('Error al eliminar el registro de ficha y programa. Intenta nuevamente.');
+      if (typeof window.mAlert === 'function') {
+        window.mAlert(error.message || 'Error al eliminar el registro de ficha y programa. Intenta nuevamente.', 'error');
+      } else {
+        alert(error.message || 'Error al eliminar el registro de ficha y programa. Intenta nuevamente.');
+      }
       btnEliminar.disabled = false;
       btnEliminar.innerHTML = '<i class="fas fa-trash me-2"></i>Eliminar';
     });
