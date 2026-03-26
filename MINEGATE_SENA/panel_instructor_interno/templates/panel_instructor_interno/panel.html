@@ -67,6 +67,139 @@
   .ep-en_revision_documentos { background:#ede9fe; color:#5b21b6; }
   .empty-state { text-align:center; padding:3rem; color:#9ca3af; }
   .empty-state i { font-size:3rem; opacity:0.3; margin-bottom:1rem; }
+
+  .perfil-modal-overlay { position: fixed; inset: 0; background: rgba(2, 22, 7, 0.55); display: none; align-items: center; justify-content: center; z-index: 11050; padding: 16px; }
+  .perfil-modal-card { width: min(1040px, 96vw); height: min(90vh, 860px); background: #fff; border-radius: 18px; box-shadow: 0 24px 60px rgba(0,0,0,0.34); overflow: hidden; border: 1px solid rgba(255,255,255,0.45); }
+  .perfil-modal-iframe { width: 100%; height: 100%; border: none; display: block; background: #f8fafc; }
+
+  /* ===== RESPONSIVE DESIGN ===== */
+  @media (max-width: 992px) {
+    .instructor-header { padding: 2.2rem 0 1.8rem; }
+    .instructor-header h1 { font-size: 1.6rem; }
+    .btn-logout-header { font-size: 0.88rem; padding: 8px 18px; }
+  }
+
+  @media (max-width: 768px) {
+    .container { padding: 0 12px; }
+    
+    .instructor-header { padding: 1.5rem 0 1rem; }
+    .instructor-header h1 { font-size: 1.35rem; margin: 0.3rem 0 0.1rem; line-height: 1.2; }
+    .instructor-header p { font-size: 0.8rem; margin: 0.15rem 0; }
+    .badge-rol { font-size: 0.68rem; padding: 3px 9px; }
+    .instructor-header .d-flex { flex-wrap: wrap; }
+    
+    div[style*="display: flex"][style*="gap: 10px"] {
+      width: 100%;
+      flex-wrap: wrap;
+    }
+    div[style*="display: flex"][style*="gap: 10px"] .btn-logout-header {
+      font-size: 0.78rem;
+      padding: 7px 15px;
+      width: 48%;
+      min-width: 145px;
+    }
+    
+    .stats-bar { padding: 0.75rem 0; }
+    .stats-bar .d-flex { flex-wrap: wrap; }
+    .stat-item { padding: 0.7rem 0.8rem; border-right: none !important; border-bottom: 1px solid #e9ecef; }
+    .stat-item:last-child { border-bottom: none; }
+    .stat-item .stat-num { font-size: 1.3rem; }
+    .stat-item .stat-label { font-size: 0.68rem; }
+    
+    .section-title { font-size: 0.88rem; letter-spacing: 0.55px; margin-bottom: 1rem; }
+    .section-title::after { height: 1px; }
+    
+    .module-card { margin-bottom: 0.75rem; }
+    .module-card-icon { padding: 1.4rem; font-size: 1.9rem; }
+    .module-card-body { padding: 0.95rem; }
+    .module-card-body h5 { font-size: 0.88rem; margin-bottom: 0.35rem; }
+    .module-card-body p { font-size: 0.76rem; }
+    .module-card-footer { padding: 0.65rem 0.95rem; font-size: 0.73rem; }
+    
+    .visita-card { padding: 0.75rem; margin-bottom: 0.5rem; flex-direction: column !important; align-items: flex-start !important; gap: 0.5rem; }
+    .visita-card:hover { transform: none; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .visita-info { width: 100%; }
+    .visita-info h6 { font-size: 0.82rem; margin: 0 0 2px; }
+    .visita-info small { font-size: 0.68rem; }
+    .estado-pill { font-size: 0.62rem; padding: 2px 7px; }
+    
+    .container.py-4 { padding-top: 1.2rem !important; padding-bottom: 1.2rem !important; }
+    
+    .btn-sm { font-size: 0.73rem; padding: 0.35rem 0.7rem; }
+    
+    .empty-state { padding: 1.8rem; }
+    .empty-state i { font-size: 2.3rem; }
+    
+    .alert { font-size: 0.8rem; padding: 0.7rem; margin-bottom: 0.7rem; }
+    
+    .perfil-modal-card { height: min(85vh, 750px); }
+  }
+
+  @media (max-width: 576px) {
+    .container { padding: 0 10px; }
+    
+    body { font-size: 13.5px; }
+    
+    .instructor-header { padding: 1.1rem 0 0.7rem; }
+    .instructor-header h1 { font-size: 1.1rem; margin: 0.2rem 0; font-weight: 700; }
+    .instructor-header p { font-size: 0.73rem; margin: 0.05rem 0; }
+    .badge-rol { font-size: 0.62rem; padding: 2px 8px; }
+    .instructor-header .d-flex { gap: 0.5rem !important; }
+    
+    div[style*="display: flex"][style*="gap: 10px"] {
+      gap: 0.5rem !important;
+    }
+    div[style*="display: flex"][style*="gap: 10px"] .btn-logout-header {
+      font-size: 0.7rem;
+      padding: 6px 12px;
+      width: 100%;
+      min-width: none;
+      margin-bottom: 0.4rem;
+    }
+    
+    .stats-bar { padding: 0.5rem 0; }
+    .stat-item { padding: 0.5rem 0.5rem; font-size: 0.7rem; }
+    .stat-item .stat-num { font-size: 1.1rem; }
+    .stat-item .stat-label { font-size: 0.58rem; }
+    
+    .section-title { font-size: 0.8rem; letter-spacing: 0.5px; margin-bottom: 0.8rem; }
+    
+    .module-card-icon { padding: 1.1rem; font-size: 1.6rem; }
+    .module-card-body { padding: 0.8rem; }
+    .module-card-body h5 { font-size: 0.8rem; margin-bottom: 0.25rem; }
+    .module-card-body p { font-size: 0.7rem; }
+    .module-card-footer { padding: 0.55rem 0.8rem; font-size: 0.65rem; }
+    
+    .visita-card { padding: 0.6rem; margin-bottom: 0.4rem; }
+    .visita-info h6 { font-size: 0.75rem; }
+    .visita-info small { font-size: 0.62rem; }
+    .estado-pill { font-size: 0.58rem; padding: 1px 5px; }
+    
+    .container.py-4 { padding-top: 0.8rem !important; padding-bottom: 0.8rem !important; }
+    
+    .row.g-4 { gap: 0.5rem !important; }
+    
+    .btn-sm { font-size: 0.65rem; padding: 0.3rem 0.6rem; }
+    
+    .empty-state { padding: 1.2rem; }
+    .empty-state i { font-size: 1.8rem; }
+    
+    .alert { font-size: 0.75rem; padding: 0.6rem; margin-bottom: 0.6rem; }
+    .alert .btn-close { padding: 0.35rem; }
+    
+    .perfil-modal-card { height: min(90vh, 650px); }
+  }
+
+  @media (min-width: 769px) and (max-width: 991px) {
+    .instructor-header h1 { font-size: 1.5rem; }
+    .module-card-icon { font-size: 2.1rem; }
+    .module-card-body h5 { font-size: 0.93rem; }
+  }
+
+  @media (min-width: 1025px) {
+    .instructor-header h1 { font-size: 1.9rem; }
+    .module-card-icon { font-size: 2.5rem; }
+  }
 </style>
 </head>
 <body>
@@ -81,7 +214,7 @@
         <p class="mb-0"><i class="fas fa-envelope me-2"></i>{{ correo }}</p>
       </div>
       <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-        <a href="{% url 'panel_visitante:actualizar_perfil' %}" class="btn-logout-header">
+        <a href="{% url 'panel_visitante:actualizar_perfil' %}" class="btn-logout-header" id="btnAbrirActualizarPerfilInterno">
           <i class="fas fa-user-edit"></i> Actualizar Perfil
         </a>
         <button type="button" class="btn-logout-header" onclick="confirmarCerrarSesion('{% url 'panel_visitante:logout_responsable' %}')">
@@ -110,8 +243,8 @@
   {% endif %}
 
   <div class="section-title"><i class="fas fa-th-large text-success"></i>Módulos Disponibles</div>
-  <div class="row g-4 mb-5">
-    <div class="col-md-6">
+  <div class="row g-4 mb-5" style="row-gap: 1rem;">
+    <div class="col-12 col-sm-12 col-md-6">
       <a href="{% url 'panel_instructor_interno:reservar_visita' %}" class="module-card">
         <div class="module-card-icon verde"><i class="fas fa-calendar-plus"></i></div>
         <div class="module-card-body">
@@ -121,7 +254,7 @@
         <div class="module-card-footer"><span>Nueva solicitud</span><i class="fas fa-arrow-right"></i></div>
       </a>
     </div>
-    <div class="col-md-6">
+    <div class="col-12 col-sm-12 col-md-6">
       <a href="{% url 'panel_instructor_interno:gestionar_fichas' %}" class="module-card">
         <div class="module-card-icon azul"><i class="fas fa-id-badge"></i></div>
         <div class="module-card-body">
@@ -133,7 +266,7 @@
     </div>
   </div>
 
-  <div class="d-flex justify-content-between align-items-center mb-3">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <div class="section-title mb-0"><i class="fas fa-history text-success"></i>Mis Últimas Visitas</div>
     <a href="{% url 'panel_instructor_interno:panel' %}" class="btn btn-sm btn-outline-success">Ver todas <i class="fas fa-arrow-right ms-1"></i></a>
   </div>
@@ -163,6 +296,13 @@
       <a href="{% url 'panel_instructor_interno:reservar_visita' %}" class="btn btn-success mt-2"><i class="fas fa-plus me-2"></i>Reservar primera visita</a>
     </div>
   {% endif %}
+</div>
+
+<!-- Modal de Perfil Embebido -->
+<div id="modalActualizarPerfilInterno" class="perfil-modal-overlay" onclick="if(event.target===this){cerrarModalActualizarPerfilInterno();}">
+  <div class="perfil-modal-card">
+    <iframe id="iframeActualizarPerfilInterno" class="perfil-modal-iframe" title="Actualizar Perfil"></iframe>
+  </div>
 </div>
 
 <!-- Modal de Confirmación de Cierre de Sesión -->
@@ -211,9 +351,53 @@
       modal.show();
     }
   }
+
+  function abrirModalActualizarPerfilInterno(url) {
+    const modal = document.getElementById('modalActualizarPerfilInterno');
+    const iframe = document.getElementById('iframeActualizarPerfilInterno');
+    if (!modal || !iframe) {
+      window.location.href = url;
+      return;
+    }
+
+    const sep = url.includes('?') ? '&' : '?';
+    iframe.src = url + sep + 'embed=1';
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function cerrarModalActualizarPerfilInterno() {
+    const modal = document.getElementById('modalActualizarPerfilInterno');
+    const iframe = document.getElementById('iframeActualizarPerfilInterno');
+    if (iframe) {
+      iframe.src = 'about:blank';
+    }
+    if (modal) {
+      modal.style.display = 'none';
+    }
+    document.body.style.overflow = '';
+  }
+
+  window.addEventListener('message', function(event) {
+    const data = event.data;
+    if (!data || typeof data !== 'object') {
+      return;
+    }
+    if (data.type === 'cerrarModalActualizarPerfil') {
+      cerrarModalActualizarPerfilInterno();
+    }
+  });
   
   // Auto-cerrar alertas después de 5 segundos
   document.addEventListener('DOMContentLoaded', function() {
+    const btnPerfil = document.getElementById('btnAbrirActualizarPerfilInterno');
+    if (btnPerfil) {
+      btnPerfil.addEventListener('click', function(event) {
+        event.preventDefault();
+        abrirModalActualizarPerfilInterno(btnPerfil.href);
+      });
+    }
+
     const alerts = document.querySelectorAll('.alert');
     alerts.forEach(function(alert) {
       setTimeout(function() {
@@ -222,6 +406,15 @@
         bsAlert.close();
       }, 5000); // 5000 milisegundos = 5 segundos
     });
+  });
+
+  document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+      const modal = document.getElementById('modalActualizarPerfilInterno');
+      if (modal && modal.style.display === 'flex') {
+        cerrarModalActualizarPerfilInterno();
+      }
+    }
   });
 </script>
 {% accessibility_widget %}

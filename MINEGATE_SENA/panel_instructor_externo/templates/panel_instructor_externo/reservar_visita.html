@@ -508,6 +508,25 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Validación antes de enviar
   btnEnviar.addEventListener('click', function(e) {
+    // Validar cantidad de visitantes
+    const cantidadInput = document.getElementById('id_cantidad_visitantes');
+    if (cantidadInput) {
+      const cantidad = parseInt(cantidadInput.value, 10);
+      if (isNaN(cantidad) || cantidad < 1) {
+        e.preventDefault();
+        alert('❌ Error: Debe registrar mínimo 1 visitante. La cantidad debe ser mayor a 0.');
+        cantidadInput.focus();
+        cantidadInput.scrollIntoView({ behavior: 'smooth' });
+        return false;
+      }
+      if (cantidad > 80) {
+        e.preventDefault();
+        alert('❌ Error: La cantidad de visitantes no puede exceder 80.');
+        cantidadInput.focus();
+        return false;
+      }
+    }
+
     if (!selectedDate || !selectedHorario) {
       e.preventDefault();
       alert('Por favor selecciona una fecha y un horario para la visita.');
@@ -544,6 +563,29 @@ document.addEventListener('DOMContentLoaded', function() {
     btnConfirmarEnvioFinal.addEventListener('click', function() {
       if (formSolicitud) {
         formSolicitud.submit();
+      }
+    });
+  }
+
+  // Validación en tiempo real para cantidad de visitantes
+  const cantidadInput = document.getElementById('id_cantidad_visitantes');
+  if (cantidadInput) {
+    cantidadInput.addEventListener('change', function() {
+      const cantidad = parseInt(this.value, 10);
+      if (isNaN(cantidad) || cantidad < 1) {
+        this.style.borderColor = '#dc3545';
+        this.style.backgroundColor = '#fff5f5';
+        if (!this.nextElementSibling || !this.nextElementSibling.classList.contains('cantidad-error')) {
+          const errorMsg = document.createElement('small');
+          errorMsg.className = 'cantidad-error text-danger d-block mt-1';
+          errorMsg.textContent = '⚠️ Mínimo 1 visitante requerido';
+          this.parentElement.appendChild(errorMsg);
+        }
+      } else {
+        this.style.borderColor = '';
+        this.style.backgroundColor = '';
+        const errorMsg = this.parentElement.querySelector('.cantidad-error');
+        if (errorMsg) errorMsg.remove();
       }
     });
   }

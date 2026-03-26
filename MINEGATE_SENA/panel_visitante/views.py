@@ -1101,6 +1101,15 @@ def registrar_asistentes(request, tipo, visita_id):
         messages.error(request, "Tipo de visita no válido.")
         return _redirect_segun_rol(request)
 
+    # Validación de seguridad: la visita debe tener al menos 1 asistente requerido
+    if max_asistentes < 1:
+        messages.error(
+            request,
+            "Error: Esta visita debe tener una cantidad válida de asistentes (mínimo 1). "
+            "No puede proceder con el registro.",
+        )
+        return _redirect_segun_rol(request)
+
     # Verificar que la visita esté aprobada inicialmente para registro de asistentes
     if visita.estado not in [
         "aprobada_inicial",

@@ -1523,6 +1523,27 @@ def detalle_aprendices_ficha(request, pk):
                 messages.error(request, mensaje)
                 return redirect("panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id)
 
+            # Validar que si el aprendiz tiene TI y faltan ambos documentos, AMBOS son obligatorios
+            falta_salud = not (bool(aprendiz.documento_adicional) or aprendiz.documentos_subidos.filter(
+                documento_requerido__categoria=CATEGORIA_DOC_SALUD
+            ).exists())
+            
+            falta_autorizacion = False
+            if aprendiz.tipo_documento == "TI":
+                falta_autorizacion = not any(
+                    "autorizacion padres" in _normalizar_categoria_texto(doc.documento_requerido.categoria)
+                    for doc in aprendiz.documentos_subidos.all()
+                )
+
+            # Si es TI con ambos faltantes, exigir ambos archivos
+            if aprendiz.tipo_documento == "TI" and falta_salud and falta_autorizacion:
+                if not archivo_salud or not archivo_autorizacion:
+                    mensaje = "Aprendiz con Tarjeta de Identidad: Debe subir AMBOS archivos (reporte de salud y autorización de padres)."
+                    if is_ajax:
+                        return JsonResponse({"success": False, "message": mensaje}, status=400)
+                    messages.error(request, mensaje)
+                    return redirect("panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id)
+
             def _validar_archivo(archivo):
                 extension = os.path.splitext(archivo.name)[1].lower()
                 if extension not in EXTENSIONES_DOCUMENTOS_APRENDIZ:
