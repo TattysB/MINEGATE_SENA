@@ -291,12 +291,15 @@ body {
   .topbar {
     padding: 0 1rem;
   }
+
   .brand-sub {
     display: none;
   }
+
   .topbar-actions {
     gap: 0.8rem;
   }
+
   .user-profile-btn {
     padding-right: 10px;
   }
@@ -306,41 +309,51 @@ body {
   :root {
     --topbar-height: 78px;
   }
+
   .topbar {
     padding: 0 0.7rem;
   }
+
   .topbar-logo-container {
     gap: 0.5rem;
   }
+
   .topbar-logo-img {
     height: 40px;
   }
+
   .brand-main {
     font-size: 1.05rem;
   }
+
   .brand-divider,
   .brand-sub,
   .topbar-role-label {
     display: none;
   }
+
   .user-profile-photo-container {
     width: 46px;
     height: 46px;
   }
+
   .user-profile-btn {
     padding: 3px;
     border-radius: 999px;
     min-width: 52px;
     justify-content: center;
   }
+
   .notification-btn {
     min-width: 40px !important;
     min-height: 36px !important;
     padding: 6px !important;
   }
+
   .notification-icon {
     font-size: 18px !important;
   }
+
   .admin-notif-dropdown.coord-style {
     right: 0 !important;
     width: min(92vw, 350px) !important;
@@ -351,15 +364,19 @@ body {
   .topbar {
     padding: 0 0.45rem;
   }
+
   .topbar-actions {
     gap: 0.45rem;
   }
+
   .topbar-logo-img {
     height: 34px;
   }
+
   .brand-main {
     font-size: 0.95rem;
   }
+
   .notification-badge {
     min-width: 18px;
     height: 18px;
