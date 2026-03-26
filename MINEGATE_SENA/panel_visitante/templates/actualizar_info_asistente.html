@@ -12,8 +12,8 @@
             --modal-primary: #39a900;
             --modal-primary-dark: #2d8600;
             --modal-success: #198754;
-            --modal-border: #cfe8be;
-            --modal-bg: #f6fdf2;
+            --modal-border: #ffffff;
+            --modal-bg: #ffffff;
         }
 
         * {
@@ -28,9 +28,9 @@
             background: transparent;
             {% else %}
             background:
-                radial-gradient(circle at 10% 10%, rgba(57, 169, 0, 0.2), transparent 36%),
-                radial-gradient(circle at 90% 20%, rgba(16, 185, 129, 0.16), transparent 40%),
-                #eef6e8;
+                radial-gradient(circle at 10% 10%, rgba(255, 255, 255, 0.2), transparent 36%),
+                radial-gradient(circle at 90% 20%, rgba(249, 251, 251, 0.16), transparent 40%),
+                #ffffff;
             {% endif %}
             display: flex;
             align-items: center;
@@ -87,7 +87,7 @@
         {% endif %}
 
         .floating-window {
-            background: linear-gradient(180deg, #f7fdf2 0%, #eef9e3 100%);
+            background: linear-gradient(180deg, #ffffff 0%, #ffffff 100%);
             border: 1px solid var(--modal-border);
             border-radius: 20px;
             overflow: hidden;
