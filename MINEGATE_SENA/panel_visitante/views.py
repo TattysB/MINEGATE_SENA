@@ -632,6 +632,22 @@ def _resumen_pendientes_correccion(visita, tipo):
     }
 
 
+def _auto_reenviar_a_revision_si_aplica(visita, tipo, resumen_pendientes):
+    """Reenvia automaticamente a revision cuando una correccion historica queda completa."""
+    if resumen_pendientes.get("pendientes_correccion", 0) != 0:
+        return False
+
+    if visita.estado != "aprobada_inicial":
+        return False
+
+    if not _solicitud_final_ya_enviada(visita, tipo):
+        return False
+
+    visita.estado = "documentos_enviados"
+    visita.save(update_fields=["estado"])
+    return True
+
+
 def login_responsable(request):
     """
     Login para responsables de visitas usando solo documento y contraseña.
@@ -1404,8 +1420,8 @@ def registrar_asistentes(request, tipo, visita_id):
                 for doc in docs:
                     archivo = request.FILES.get(f"archivo_final_{doc.id}")
                     if archivo:
-                        # Reemplazar la versión anterior para permitir nueva revisión
-                        DocumentoSubidoAsistente.objects.update_or_create(
+                        # Guardar una nueva versión para conservar historial de envíos.
+                        DocumentoSubidoAsistente.objects.create(
                             documento_requerido=doc,
                             asistente_interna=(
                                 primer_asistente if tipo == "interna" else None
@@ -1413,11 +1429,9 @@ def registrar_asistentes(request, tipo, visita_id):
                             asistente_externa=(
                                 primer_asistente if tipo == "externa" else None
                             ),
-                            defaults={
-                                "archivo": archivo,
-                                "estado": "pendiente",
-                                "observaciones_revision": "",
-                            },
+                            archivo=archivo,
+                            estado="pendiente",
+                            observaciones_revision="",
                         )
                         archivos_subidos.append(doc.titulo)
 
@@ -1429,6 +1443,9 @@ def registrar_asistentes(request, tipo, visita_id):
                     visita.save(update_fields=["estado"])
 
                 resumen_pendientes = _resumen_pendientes_correccion(visita, tipo)
+                auto_reenvio_aplicado = _auto_reenviar_a_revision_si_aplica(
+                    visita, tipo, resumen_pendientes
+                )
 
                 if es_ajax:
                     return JsonResponse(
@@ -1437,6 +1454,7 @@ def registrar_asistentes(request, tipo, visita_id):
                             "message": "Archivos finales corregidos y cargados correctamente.",
                             "archivos_subidos": archivos_subidos,
                             **resumen_pendientes,
+                            "auto_reenvio_aplicado": auto_reenvio_aplicado,
                             "listo_para_confirmar_envio": resumen_pendientes[
                                 "pendientes_correccion"
                             ]
@@ -1522,7 +1540,9 @@ def registrar_asistentes(request, tipo, visita_id):
                         "El numero de documento debe tener entre 5 y 10 digitos."
                     )
 
-            if correo_asistente:
+            if not correo_asistente:
+                errores_campos.append("El correo electronico es obligatorio.")
+            else:
                 try:
                     validate_email(correo_asistente)
                 except ValidationError:
@@ -1602,6 +1622,21 @@ def registrar_asistentes(request, tipo, visita_id):
                     f"Solo se permiten archivos PDF o Word (.doc, .docx). Revise: {docs_invalidos}.",
                 )
                 campos_ok = False
+
+            if tipo_doc == "TI":
+                tiene_autorizacion_ti = any(
+                    archivo
+                    for categoria, docs in documentos_registro_por_categoria.items()
+                    if categoria == "Formato Autorización Padres de Familia"
+                    for doc in docs
+                    for archivo in [archivos_dict.get(doc.id)]
+                )
+                if not tiene_autorizacion_ti:
+                    messages.error(
+                        request,
+                        "Para Tarjeta de Identidad (TI), la autorización de padres es obligatoria.",
+                    )
+                    campos_ok = False
 
             if campos_ok and archivos_ok:
                 try:
@@ -1900,6 +1935,12 @@ def enviar_solicitud_final(request, tipo, visita_id):
             )
         messages.error(request, "Tipo de visita no válido.")
         return _redirect_segun_rol(request)
+
+    # Hacer el endpoint idempotente cuando ya esta en revision o confirmada.
+    if visita.estado in ["documentos_enviados", "en_revision_documentos", "confirmada"]:
+        return respuesta_ok(
+            "La solicitud ya fue enviada y la visita se encuentra en proceso de revisión.",
+        )
 
     # Verificar que la visita esté en estado aprobada_inicial
     if visita.estado != "aprobada_inicial":
@@ -2323,16 +2364,28 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
         tipo_correccion = "documento"
 
     archivo_correccion = request.FILES.get("archivo_correccion")
+    archivo_autorizacion_correccion = request.FILES.get(
+        "archivo_autorizacion_correccion"
+    )
     if tipo_correccion == "autorizacion_padres":
         archivo_salud = request.FILES.get(f"documento_salud_{asistente_id}")
-        archivo_autorizacion = archivo_correccion or request.FILES.get(
+        archivo_autorizacion = (
+            archivo_autorizacion_correccion
+            or archivo_correccion
+            or request.FILES.get(
             f"formato_padres_{asistente_id}"
+            )
         )
     else:
-        archivo_salud = archivo_correccion or request.FILES.get(
-            f"documento_salud_{asistente_id}"
+        archivo_salud = (
+            archivo_correccion
+            or request.FILES.get("archivo_salud_correccion")
+            or request.FILES.get(f"documento_salud_{asistente_id}")
         )
-        archivo_autorizacion = request.FILES.get(f"formato_padres_{asistente_id}")
+        archivo_autorizacion = (
+            archivo_autorizacion_correccion
+            or request.FILES.get(f"formato_padres_{asistente_id}")
+        )
 
     if not archivo_salud and not archivo_autorizacion:
         error_msg = "Debe seleccionar al menos un archivo para corregir."
@@ -2448,6 +2501,9 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
         visita.save(update_fields=["estado"])
 
     resumen_pendientes = _resumen_pendientes_correccion(visita, tipo)
+    auto_reenvio_aplicado = _auto_reenviar_a_revision_si_aplica(
+        visita, tipo, resumen_pendientes
+    )
 
     success_msg = (
         f"Se actualizaron los archivos de {asistente.nombre_completo}. "
@@ -2459,6 +2515,7 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
                 "success": True,
                 "message": success_msg,
                 **resumen_pendientes,
+                "auto_reenvio_aplicado": auto_reenvio_aplicado,
                 "listo_para_confirmar_envio": resumen_pendientes[
                     "pendientes_correccion"
                 ]
