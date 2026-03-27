@@ -12,8 +12,8 @@
             --modal-primary: #39a900;
             --modal-primary-dark: #2d8600;
             --modal-success: #198754;
-            --modal-border: #cfe8be;
-            --modal-bg: #f6fdf2;
+            --modal-border: #ffffff;
+            --modal-bg: #ffffff;
         }
 
         * {
@@ -28,9 +28,9 @@
             background: transparent;
             {% else %}
             background:
-                radial-gradient(circle at 10% 10%, rgba(57, 169, 0, 0.2), transparent 36%),
-                radial-gradient(circle at 90% 20%, rgba(16, 185, 129, 0.16), transparent 40%),
-                #eef6e8;
+                radial-gradient(circle at 10% 10%, rgba(255, 255, 255, 0.2), transparent 36%),
+                radial-gradient(circle at 90% 20%, rgba(249, 251, 251, 0.16), transparent 40%),
+                #ffffff;
             {% endif %}
             display: flex;
             align-items: center;
@@ -43,7 +43,7 @@
             max-height: calc(100vh - 32px);
             border-radius: 20px;
             border: 1px solid rgba(255, 255, 255, 0.45);
-            background: rgba(245, 248, 255, 0.7);
+            background: rgba(247, 253, 242, 0.78);
             backdrop-filter: blur(8px);
             box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
             overflow: hidden;
@@ -87,7 +87,7 @@
         {% endif %}
 
         .floating-window {
-            background: linear-gradient(180deg, #f9fbff 0%, #f1f6ff 100%);
+            background: linear-gradient(180deg, #ffffff 0%, #ffffff 100%);
             border: 1px solid var(--modal-border);
             border-radius: 20px;
             overflow: hidden;
@@ -97,7 +97,7 @@
         }
 
         .floating-header {
-            background: linear-gradient(135deg, var(--modal-primary) 0%, #2563eb 45%, var(--modal-primary-dark) 100%);
+            background: linear-gradient(135deg, var(--modal-primary) 0%, #35920a 45%, var(--modal-primary-dark) 100%);
             color: #fff;
             padding: 16px 20px;
             display: flex;
@@ -167,22 +167,41 @@
         }
 
         .btn-save {
-            background: var(--modal-success);
-            border-color: var(--modal-success);
+            background: linear-gradient(135deg, var(--modal-primary) 0%, var(--modal-primary-dark) 100%);
+            border-color: var(--modal-primary-dark);
+            color: #fff;
             font-weight: 700;
             border-radius: 10px;
             min-width: 176px;
+            transition: all 0.2s ease;
         }
 
         .btn-save:hover {
-            background: #157347;
-            border-color: #157347;
+            background: linear-gradient(135deg, var(--modal-primary-dark) 0%, #1f5c00 100%);
+            border-color: #1f5c00;
+            color: #fff;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 16px rgba(45, 134, 0, 0.3);
         }
 
         .btn-cancel {
             border-radius: 10px;
             min-width: 130px;
             font-weight: 600;
+            border: 1.5px solid var(--modal-primary);
+            color: var(--modal-primary);
+            background: transparent;
+            transition: all 0.2s ease;
+        }
+
+        .btn-cancel:hover {
+            background: rgba(57, 169, 0, 0.1);
+            border-color: var(--modal-primary-dark);
+            color: var(--modal-primary-dark);
+        }
+
+        .btn-cancel:active {
+            background: rgba(57, 169, 0, 0.15);
         }
 
         @keyframes modalIn {

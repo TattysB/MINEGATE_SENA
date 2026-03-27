@@ -244,11 +244,19 @@ class VisitaExternaInstructorForm(forms.ModelForm):
         return validar_telefono(self.cleaned_data.get('telefono_responsable', ''))
     
     def clean_cantidad_visitantes(self):
-        """Validación de cantidad."""
+        """Validación de cantidad - entre 1 y 80 visitantes."""
         cantidad = self.cleaned_data.get('cantidad_visitantes')
         if cantidad is None or cantidad == '':
             raise ValidationError('La cantidad de visitantes es obligatoria.')
-        return validar_cantidad_minima(cantidad)
+        try:
+            cantidad_int = int(cantidad)
+            if cantidad_int < 1:
+                raise ValidationError('Debe registrar mínimo 1 visitante.')
+            if cantidad_int > 80:
+                raise ValidationError('La cantidad de visitantes no puede exceder 80.')
+        except (ValueError, TypeError):
+            raise ValidationError('La cantidad debe ser un número válido.')
+        return cantidad
     
     def clean_observacion(self):
         """Validación de observaciones."""

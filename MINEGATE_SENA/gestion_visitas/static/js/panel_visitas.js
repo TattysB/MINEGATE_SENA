@@ -19,6 +19,35 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+function formatearEstadoLegible(estado) {
+  const valor = String(estado || '').trim();
+  if (!valor) return '';
+
+  const mapa = {
+    pendiente: 'Pendiente',
+    enviada_coordinacion: 'Pendiente coordinacion',
+    aprobada_inicial: 'Aprobada inicial',
+    documentos_enviados: 'Documentos enviados',
+    en_revision_documentos: 'En revision de documentos',
+    reprogramacion_solicitada: 'Reprogramacion solicitada',
+    confirmada: 'Confirmada',
+    rechazada: 'Rechazada',
+    pendiente_documentos: 'Pendiente',
+    documentos_aprobados: 'Aprobados',
+    documentos_rechazados: 'Rechazados',
+  };
+
+  if (mapa[valor]) {
+    return mapa[valor];
+  }
+
+  return valor
+    .split('_')
+    .filter(Boolean)
+    .map((parte) => parte.charAt(0).toUpperCase() + parte.slice(1))
+    .join(' ');
+}
+
 function getObservationTheme(observacion) {
   const texto = String(observacion || '').toLowerCase();
 
@@ -281,12 +310,12 @@ function getEstadoBadge(estado) {
     'pendiente': '<span class="gv-estado-pill gv-estado-pendiente"><i class="ri-hourglass-line"></i> Pendiente</span>',
     'aprobada_inicial': '<span class="gv-estado-pill gv-estado-aprobada"><i class="ri-check-double-line"></i> Aprobada inicial</span>',
     'documentos_enviados': '<span class="gv-estado-pill gv-estado-docs gv-estado-multiline"><i class="ri-file-upload-line"></i><span class="gv-estado-copy"><span>Docs enviados</span><small>Pendiente de revision</small></span></span>',
-    'en_revision_documentos': '<span class="gv-estado-pill gv-estado-revision"><i class="ri-search-eye-line"></i> En revisión</span>',
+    'en_revision_documentos': '<span class="gv-estado-pill gv-estado-docs gv-estado-multiline"><i class="ri-file-upload-line"></i><span class="gv-estado-copy"><span>Docs enviados</span><small>Pendiente de revision</small></span></span>',
     'reprogramacion_solicitada': '<span class="gv-estado-pill gv-estado-reprogramacion"><i class="ri-calendar-2-line"></i> Reprogramación solicitada</span>',
     'confirmada': '<span class="gv-estado-pill gv-estado-confirmada"><i class="ri-verified-badge-line"></i> Confirmada</span>',
     'rechazada': '<span class="gv-estado-pill gv-estado-rechazada"><i class="ri-close-circle-line"></i> Rechazada</span>',
   };
-  return badges[estado] || `<span class="gv-estado-pill">${estado}</span>`;
+  return badges[estado] || `<span class="gv-estado-pill">${escapeHtml(formatearEstadoLegible(estado))}</span>`;
 }
 
 function puedeSolicitarReprogramacionAdmin(estado) {
@@ -303,7 +332,7 @@ function getEstadoDocumentoBadge(estado) {
     'documentos_aprobados': '<span style="background:#d1fae5;color:#065f46;padding:3px 8px;border-radius:15px;font-size:10px;">Aprobados</span>',
     'documentos_rechazados': '<span style="background:#fee2e2;color:#991b1b;padding:3px 8px;border-radius:15px;font-size:10px;">Rechazado</span>',
   };
-  return badges[estado] || estado;
+  return badges[estado] || formatearEstadoLegible(estado);
 }
 
 function getBadgeRevisionDocumento(ds, opts = {}) {
@@ -321,12 +350,55 @@ function getBadgeRevisionDocumento(ds, opts = {}) {
     badges.push(`<span style="background:#fee2e2;color:#991b1b;font-size:${fontSize};padding:${padding};border-radius:${borderRadius};margin-left:${marginLeft};">Rechazado</span>`);
   }
 
-  if (ds.es_reenvio) {
-    const versiones = parseInt(ds.versiones_envio || 2, 10);
-    badges.push(`<span style="background:#e0f2fe;color:#075985;font-size:${fontSize};padding:${padding};border-radius:${borderRadius};margin-left:${marginLeft};" title="Documento reenviado ${versiones} veces">Reenvio</span>`);
-  }
-
   return badges.join('');
+}
+
+function renderHistorialVersiones(ds, habilitado = true) {
+  if (!habilitado) return '';
+
+  const historial = Array.isArray(ds && ds.historial_versiones)
+    ? ds.historial_versiones
+    : [];
+
+  if (historial.length <= 1) return '';
+
+  const filas = historial.map((version, index) => {
+    const total = historial.length;
+    const numeroEnvio = total - index;
+    const tituloBase = String(ds && ds.titulo ? ds.titulo : 'Documento').replace(/'/g, "\\'");
+    const tituloVersion = `${tituloBase} - Envio #${numeroEnvio}`;
+    const nombreArchivo = String(version && version.nombre_archivo ? version.nombre_archivo : '').replace(/'/g, '');
+    const badgeVersion = getBadgeRevisionDocumento(version, {
+      fontSize: '10px',
+      padding: '2px 8px',
+      borderRadius: '999px',
+      marginLeft: '0px'
+    });
+
+    return `
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-top:1px dashed #e5e7eb;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:11px;color:#475569;font-weight:600;">Envio #${numeroEnvio}</span>
+          <span style="font-size:11px;color:#64748b;">${version.fecha_subida || 'Sin fecha'}</span>
+          ${badgeVersion}
+        </div>
+        <div style="display:flex;gap:4px;align-items:center;">
+          <button onclick="visualizarDocumento('${version.url}', '${tituloVersion}', {id: ${version.id}, estado: '${version.estado}', nombre_archivo: '${nombreArchivo}'})"
+                  style="background:#e2e8f0;color:#1e293b;padding:4px 8px;border-radius:6px;border:none;cursor:pointer;font-size:10px;font-weight:600;display:inline-flex;align-items:center;gap:4px;">
+            <i class="ri-eye-line"></i> Ver
+          </button>
+          <a href="${version.download_url || version.url}" download style="background:#f8fafc;color:#334155;padding:4px 8px;border-radius:6px;text-decoration:none;font-size:10px;display:inline-flex;align-items:center;border:1px solid #e2e8f0;" title="Descargar versión">
+            <i class="ri-download-2-line"></i>
+          </a>
+        </div>
+      </div>`;
+  }).join('');
+
+  return `
+    <details style="margin-top:6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:0 10px;">
+      <summary style="cursor:pointer;padding:8px 0;font-size:11px;font-weight:700;color:#334155;">Historial de envios (${historial.length})</summary>
+      <div style="padding-bottom:6px;">${filas}</div>
+    </details>`;
 }
 
 function normalizarCategoriaTexto(value) {
@@ -633,6 +705,7 @@ function mostrarDocumentosPorEstado(filtro) {
             const observacionFinal = ds.estado === 'rechazado' && ds.observaciones_revision
               ? `<div style="margin-top:4px;padding:6px 10px;background:#fff7ed;border:1px solid #fdba74;border-radius:6px;color:#9a3412;font-size:11px;display:flex;align-items:flex-start;gap:5px;"><i class="ri-error-warning-line" style="flex-shrink:0;"></i><span>${ds.observaciones_revision}</span></div>`
               : '';
+            const historialFinal = renderHistorialVersiones(ds, visita.tipo === 'interna');
 
             html += `
               <div>
@@ -649,6 +722,7 @@ function mostrarDocumentosPorEstado(filtro) {
                   ${badgeDoc}
                 </div>
                 ${observacionFinal}
+                ${historialFinal}
               </div>`;
           });
 
@@ -693,7 +767,7 @@ function mostrarDocumentosPorEstado(filtro) {
           }
 
           let botonesDoc = '';
-          if (a.documento_adicional) {
+          if (!tieneRechazosPersonales && a.documento_adicional) {
             botonesDoc += `
                   <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
                     <div style="display:flex;gap:4px;align-items:center;">
@@ -714,9 +788,17 @@ function mostrarDocumentosPorEstado(filtro) {
               !esCategoriaArchivoFinal(ds.categoria)
             );
 
+            const documentos_personales_mostrar = tieneRechazosPersonales
+              ? documentos_personales.filter(ds => ds.estado === 'rechazado')
+              : documentos_personales;
+
             // Mostrar solo documentos personales del asistente (no los finales)
-            documentos_personales.forEach(ds => {
+            documentos_personales_mostrar.forEach(ds => {
               const badgeDoc = getBadgeRevisionDocumento(ds);
+              const observacionDoc = ds.observaciones_revision
+                ? `<div style="font-size:11px;color:#991b1b;margin-left:4px;margin-top:4px;margin-bottom:2px;display:flex;align-items:flex-start;gap:5px;"><i class="ri-close-circle-fill" style="flex-shrink:0;margin-top:1px;"></i><span>${ds.observaciones_revision}</span></div>`
+                : '';
+              const historialDoc = renderHistorialVersiones(ds, visita.tipo === 'interna');
 
               botonesDoc += `
                   <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
@@ -730,7 +812,9 @@ function mostrarDocumentosPorEstado(filtro) {
                       </a>
                     </div>
                     ${badgeDoc}
-                  </div>`;
+                  </div>
+                  ${observacionDoc}
+                  ${historialDoc}`;
             });
           }
 
@@ -1203,6 +1287,7 @@ function verDetalleVisita(tipo, id) {
           const observacionFinal = ds.estado === 'rechazado' && ds.observaciones_revision
             ? `<div style="margin-top:6px;padding:8px 10px;background:#fff7ed;border:1px solid #fdba74;border-radius:6px;color:#9a3412;font-size:11px;display:flex;align-items:flex-start;gap:6px;"><i class="ri-error-warning-line" style="flex-shrink:0;margin-top:1px;"></i><span>${ds.observaciones_revision}</span></div>`
             : '';
+          const historialFinal = renderHistorialVersiones(ds, tipo === 'interna');
           if (!badgeDoc) {
             badgeDoc = '<span style="background:#fef3c7;color:#92400e;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Pendiente</span>';
           }
@@ -1222,6 +1307,7 @@ function verDetalleVisita(tipo, id) {
                   ${badgeDoc}
                 </div>
                 ${observacionFinal}
+                ${historialFinal}
               </div>`;
         });
 
@@ -1252,7 +1338,7 @@ function verDetalleVisita(tipo, id) {
 
           let botonesDoc = '';
           let tieneDocs = false;
-          if (a.documento_identidad) {
+          if (!tieneRechazosPersonales && a.documento_identidad) {
             tieneDocs = true;
             botonesDoc += `
                   <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
@@ -1268,7 +1354,7 @@ function verDetalleVisita(tipo, id) {
                     ${a.estado === 'documentos_aprobados' ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Aprobado</span>' : (tieneRechazosPersonales ? '<span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;">Rechazado</span>' : '')}
                   </div>`;
           }
-          if (a.documento_adicional) {
+          if (!tieneRechazosPersonales && a.documento_adicional) {
             tieneDocs = true;
             botonesDoc += `
                   <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
@@ -1285,8 +1371,10 @@ function verDetalleVisita(tipo, id) {
                   </div>`;
           }
           if (a.formato_autorizacion_padres) {
-            tieneDocs = true;
             let estadoAutPadres = a.estado_autorizacion_padres || 'pendiente';
+            const mostrarAutorizacion = true;
+            if (mostrarAutorizacion) {
+              tieneDocs = true;
             let badgeAutPadres = '';
 
             if (estadoAutPadres === 'aprobado') {
@@ -1314,6 +1402,7 @@ function verDetalleVisita(tipo, id) {
                     </div>
                     ${a.observaciones_autorizacion_padres ? `<div style="font-size:11px;color:#991b1b;margin-top:6px;display:flex;align-items:flex-start;gap:5px;"><i class="ri-close-circle-fill" style="flex-shrink:0;margin-top:1px;"></i><span>${a.observaciones_autorizacion_padres}</span></div>` : ''}
                   </div>`;
+            }
           }
           if (a.documentos_subidos && a.documentos_subidos.length > 0) {
             // Filtrar SOLO documentos que NO sean los archivos finales
@@ -1321,16 +1410,21 @@ function verDetalleVisita(tipo, id) {
               !esCategoriaArchivoFinal(ds.categoria)
             );
 
-            if (documentos_personales.length > 0) {
+            const documentos_personales_mostrar = tieneRechazosPersonales
+              ? documentos_personales.filter(ds => ds.estado === 'rechazado')
+              : documentos_personales;
+
+            if (documentos_personales_mostrar.length > 0) {
               tieneDocs = true;
             }
 
-            documentos_personales.forEach(ds => {
+            documentos_personales_mostrar.forEach(ds => {
               const badgeDoc = getBadgeRevisionDocumento(ds);
               const textoDoc = `${ds.titulo || ''} ${ds.categoria || ''}`.toLowerCase();
               const esAutorizacionPadres = textoDoc.includes('autorizacion padres') || textoDoc.includes('autorización padres');
 
               if (esAutorizacionPadres) {
+                const historialDoc = renderHistorialVersiones(ds, tipo === 'interna');
                 botonesDoc += `
                   <div style="background:#fef3c7;padding:8px;border-radius:6px;border:2px solid #f59e0b;margin-bottom:6px;width:100%;box-sizing:border-box;">
                     <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
@@ -1349,9 +1443,12 @@ function verDetalleVisita(tipo, id) {
                       </div>
                     </div>
                     ${ds.observaciones_revision ? `<div style="font-size:11px;color:#991b1b;margin-left:4px;margin-top:6px;margin-bottom:2px;display:flex;align-items:flex-start;gap:5px;"><i class="ri-close-circle-fill" style="flex-shrink:0;margin-top:1px;"></i><span>${ds.observaciones_revision}</span></div>` : ''}
+                    ${historialDoc}
                   </div>`;
                 return;
               }
+
+              const historialDoc = renderHistorialVersiones(ds, tipo === 'interna');
 
               botonesDoc += `
                   <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;">
@@ -1366,7 +1463,8 @@ function verDetalleVisita(tipo, id) {
                     </div>
                     ${badgeDoc}
                   </div>
-                  ${ds.observaciones_revision ? `<div style="font-size:11px;color:#991b1b;margin-left:4px;margin-top:4px;margin-bottom:2px;display:flex;align-items:flex-start;gap:5px;"><i class="ri-close-circle-fill" style="flex-shrink:0;margin-top:1px;"></i><span>${ds.observaciones_revision}</span></div>` : ''}`;
+                  ${ds.observaciones_revision ? `<div style="font-size:11px;color:#991b1b;margin-left:4px;margin-top:4px;margin-bottom:2px;display:flex;align-items:flex-start;gap:5px;"><i class="ri-close-circle-fill" style="flex-shrink:0;margin-top:1px;"></i><span>${ds.observaciones_revision}</span></div>` : ''}
+                  ${historialDoc}`;
             });
           }
 

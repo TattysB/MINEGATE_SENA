@@ -324,7 +324,7 @@
                   <button
                     type="button"
                     class="btn btn-sm btn-subir-salud"
-                    onclick="abrirModalCargaSaludPendiente('{{ pendiente.id }}', '{{ pendiente.nombre|escapejs }}', {{ pendiente.falta_salud|yesno:'true,false' }}, {{ pendiente.falta_autorizacion_padres|yesno:'true,false' }})"
+                    onclick="abrirModalCargaSaludPendiente('{{ pendiente.id }}', '{{ pendiente.nombre|escapejs }}', {{ pendiente.falta_salud|yesno:'true,false' }}, {{ pendiente.falta_autorizacion_padres|yesno:'true,false' }}, '{{ pendiente.tipo_documento }}')"
                   >Suba aquí</button>
                 </div>
                 {% for faltante in pendiente.faltantes %}
@@ -362,18 +362,22 @@
               Aprendiz: <strong id="nombreAprendizPendiente"></strong>
             </p>
 
+            <div id="alertaBosObligatorios" style="display:none; padding:10px; border-radius:8px; background:#fee2e2; border-left:4px solid #dc2626; margin-bottom:12px;">
+              <small style="color:#991b1b; font-weight:600;"><i class="fas fa-exclamation-circle me-1"></i>⚠️ Ambos documentos son obligatorios para Tarjeta de Identidad</small>
+            </div>
+
             <div id="bloqueDocumentoSaludPendiente" style="margin-bottom:14px;">
-              <label class="form-label fw-semibold">Archivo del reporte de salud</label>
+              <label class="form-label fw-semibold">Archivo del reporte de salud <span id="etiquetaObligatorioSalud"></span></label>
               <input type="file" class="form-control" name="documento_salud" id="inputDocumentoSaludPendiente" accept=".pdf,.doc,.docx">
             </div>
 
             <div id="bloqueAutorizacionPadresPendiente" style="margin-bottom:14px; display:none;">
-              <label class="form-label fw-semibold">Autorización de padres</label>
+              <label class="form-label fw-semibold">Autorización de padres <span id="etiquetaObligatorioAutorizacion"></span></label>
               <input type="file" class="form-control" name="documento_autorizacion_padres" id="inputDocumentoAutorizacionPendiente" accept=".pdf,.doc,.docx">
             </div>
 
             <small style="display:block; margin-top:6px; color:#6b7280;">Formatos permitidos: PDF, DOC, DOCX. Tamaño máximo: 10MB por archivo.</small>
-            <small style="display:block; margin-top:4px; color:#6b7280;">Puedes cargar uno o varios documentos en el mismo envío.</small>
+            <small id="instruccionesArchivos" style="display:block; margin-top:4px; color:#6b7280;">Puedes cargar uno o varios documentos en el mismo envío.</small>
           </div>
           <div class="modal-footer" style="border-top:1px solid #eef2f7;">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -760,7 +764,7 @@ document.addEventListener('keydown', function(event) {
   }
 });
 
-function abrirModalCargaSaludPendiente(aprendizId, nombreAprendiz, faltaSalud, faltaAutorizacion) {
+function abrirModalCargaSaludPendiente(aprendizId, nombreAprendiz, faltaSalud, faltaAutorizacion, tipoDocumento) {
   document.getElementById('inputAprendizPendienteId').value = aprendizId;
   document.getElementById('inputFaltaSaludPendiente').value = faltaSalud ? 'true' : 'false';
   document.getElementById('inputFaltaAutorizacionPendiente').value = faltaAutorizacion ? 'true' : 'false';
@@ -770,6 +774,10 @@ function abrirModalCargaSaludPendiente(aprendizId, nombreAprendiz, faltaSalud, f
   const inputAutorizacion = document.getElementById('inputDocumentoAutorizacionPendiente');
   const bloqueSalud = document.getElementById('bloqueDocumentoSaludPendiente');
   const bloqueAutorizacion = document.getElementById('bloqueAutorizacionPadresPendiente');
+  const alertaObligatorios = document.getElementById('alertaBosObligatorios');
+  const etiquetaSalud = document.getElementById('etiquetaObligatorioSalud');
+  const etiquetaAutorizacion = document.getElementById('etiquetaObligatorioAutorizacion');
+  const instrucciones = document.getElementById('instruccionesArchivos');
 
   if (inputSalud) {
     inputSalud.value = '';
@@ -780,6 +788,10 @@ function abrirModalCargaSaludPendiente(aprendizId, nombreAprendiz, faltaSalud, f
     inputAutorizacion.required = false;
   }
 
+  // Limpiar etiquetas
+  if (etiquetaSalud) etiquetaSalud.innerHTML = '';
+  if (etiquetaAutorizacion) etiquetaAutorizacion.innerHTML = '';
+
   if (bloqueSalud) {
     bloqueSalud.style.display = faltaSalud ? '' : 'none';
   }
@@ -787,11 +799,30 @@ function abrirModalCargaSaludPendiente(aprendizId, nombreAprendiz, faltaSalud, f
     bloqueAutorizacion.style.display = faltaAutorizacion ? '' : 'none';
   }
 
-  if (faltaSalud && !faltaAutorizacion && inputSalud) {
-    inputSalud.required = true;
-  }
-  if (faltaAutorizacion && !faltaSalud && inputAutorizacion) {
-    inputAutorizacion.required = true;
+  // Si es TI (Tarjeta de Identidad) y faltan AMBOS documentos, ambos son obligatorios
+  const esTI = tipoDocumento === 'TI';
+  const faltan_ambos = faltaSalud && faltaAutorizacion;
+
+  if (faltan_ambos && esTI) {
+    // Ambos son obligatorios para TI
+    if (inputSalud) inputSalud.required = true;
+    if (inputAutorizacion) inputAutorizacion.required = true;
+    if (alertaObligatorios) alertaObligatorios.style.display = 'block';
+    if (etiquetaSalud) etiquetaSalud.innerHTML = '<span style="color:#dc2626; font-weight:900;">*</span>';
+    if (etiquetaAutorizacion) etiquetaAutorizacion.innerHTML = '<span style="color:#dc2626; font-weight:900;">*</span>';
+    if (instrucciones) instrucciones.textContent = 'AMBOS archivos son obligatorios para aprendices con Tarjeta de Identidad.';
+  } else {
+    if (alertaObligatorios) alertaObligatorios.style.display = 'none';
+    if (instrucciones) instrucciones.textContent = 'Puedes cargar uno o varios documentos en el mismo envío.';
+    
+    if (faltaSalud && !faltaAutorizacion && inputSalud) {
+      inputSalud.required = true;
+      if (etiquetaSalud) etiquetaSalud.innerHTML = '<span style="color:#dc2626; font-weight:900;">*</span>';
+    }
+    if (faltaAutorizacion && !faltaSalud && inputAutorizacion) {
+      inputAutorizacion.required = true;
+      if (etiquetaAutorizacion) etiquetaAutorizacion.innerHTML = '<span style="color:#dc2626; font-weight:900;">*</span>';
+    }
   }
 
   const modalEl = document.getElementById('modalCargaSaludPendiente');
