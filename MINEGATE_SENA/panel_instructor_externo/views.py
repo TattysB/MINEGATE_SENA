@@ -72,6 +72,8 @@ def construir_reporte_documental_visita(visita, tipo_visita):
     )
     for asistente in asistentes:
         incidencias = []
+        tiene_documento_rechazado = False
+        tiene_autorizacion_rechazada = False
         # Tomar solo la version vigente (ultima subida) por documento requerido.
         latest_por_documento = {}
         for ds in asistente.documentos_subidos.all():
@@ -102,8 +104,19 @@ def construir_reporte_documental_visita(visita, tipo_visita):
                 }
             )
 
+        if asistente.tipo_documento == "TI" and not getattr(
+            asistente, "formato_autorizacion_padres", None
+        ):
+            incidencias.append(
+                {
+                    "tipo": "faltante",
+                    "detalle": "Falta la autorización de padres para visitante con TI.",
+                }
+            )
+
         for doc_subido in documentos_personales:
             if doc_subido.estado == "rechazado":
+                tiene_documento_rechazado = True
                 incidencias.append(
                     {
                         "tipo": "rechazado",
@@ -121,6 +134,7 @@ def construir_reporte_documental_visita(visita, tipo_visita):
         ) == "rechazado" and getattr(
             asistente, "observaciones_autorizacion_padres", ""
         ):
+            tiene_autorizacion_rechazada = True
             incidencias.append(
                 {
                     "tipo": "rechazado",
@@ -139,6 +153,8 @@ def construir_reporte_documental_visita(visita, tipo_visita):
                     "nombre": asistente.nombre_completo,
                     "documento": f"{asistente.get_tipo_documento_display()} {asistente.numero_documento}",
                     "incidencias": incidencias,
+                    "tiene_documento_rechazado": tiene_documento_rechazado,
+                    "tiene_autorizacion_rechazada": tiene_autorizacion_rechazada,
                 }
             )
 
@@ -454,10 +470,12 @@ def detalle_visita_externa(request, pk):
     )
 
     solicitud_final_historica = _solicitud_final_historica_externa(visita)
-    # En externo se permite actualizar datos mientras la visita siga editable
-    # en el estado actual, incluso si hubo un envio final historico.
-    permite_editar_asistentes = visita.estado == "aprobada_inicial"
-    permite_eliminar_asistentes = visita.estado == "aprobada_inicial"
+    permite_editar_asistentes = (
+        visita.estado == "aprobada_inicial" and not solicitud_final_historica
+    )
+    permite_eliminar_asistentes = (
+        visita.estado == "aprobada_inicial" and not solicitud_final_historica
+    )
 
     return render(
         request,

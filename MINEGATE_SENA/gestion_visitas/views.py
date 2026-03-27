@@ -256,10 +256,12 @@ def _documentos_subidos_actuales(asistente):
     )
     latest_por_documento = {}
     conteo_por_documento = {}
+    historial_por_documento = {}
     for ds in docs:
         conteo_por_documento[ds.documento_requerido_id] = (
             conteo_por_documento.get(ds.documento_requerido_id, 0) + 1
         )
+        historial_por_documento.setdefault(ds.documento_requerido_id, []).append(ds)
         if ds.documento_requerido_id not in latest_por_documento:
             latest_por_documento[ds.documento_requerido_id] = ds
 
@@ -271,6 +273,7 @@ def _documentos_subidos_actuales(asistente):
                 "ds": ds,
                 "versiones_envio": versiones_envio,
                 "es_reenvio": versiones_envio > 1,
+                "historial_versiones": historial_por_documento.get(doc_id, [ds]),
             }
         )
     return documentos_actuales
@@ -299,7 +302,30 @@ def _es_categoria_archivo_final(categoria):
     }
 
 
-def _serializar_documento_subido(ds, versiones_envio=1, es_reenvio=False):
+def _serializar_documento_subido(
+    ds,
+    versiones_envio=1,
+    es_reenvio=False,
+    historial_versiones=None,
+):
+    historial_serializado = []
+    for version in historial_versiones or [ds]:
+        historial_serializado.append(
+            {
+                "id": version.id,
+                "url": f"/documentos/ver-asistente/{version.id}/",
+                "download_url": f"/documentos/descargar-asistente/{version.id}/",
+                "estado": version.estado,
+                "observaciones_revision": version.observaciones_revision or "",
+                "nombre_archivo": version.nombre_archivo,
+                "fecha_subida": (
+                    version.fecha_subida.strftime("%d/%m/%Y %H:%M")
+                    if version.fecha_subida
+                    else None
+                ),
+            }
+        )
+
     return {
         "id": ds.id,
         "titulo": ds.documento_requerido.titulo,
@@ -314,6 +340,7 @@ def _serializar_documento_subido(ds, versiones_envio=1, es_reenvio=False):
         ),
         "versiones_envio": versiones_envio,
         "es_reenvio": es_reenvio,
+        "historial_versiones": historial_serializado,
     }
 
 
@@ -458,6 +485,13 @@ def api_listar_visitas(request):
             estados_revision = ["documentos_enviados", "en_revision_documentos"]
             visitas_internas = visitas_internas.filter(estado__in=estados_revision)
             visitas_externas = visitas_externas.filter(estado__in=estados_revision)
+        elif estado == "pendiente":
+            visitas_internas = visitas_internas.filter(
+                estado__in=["pendiente", "enviada_coordinacion"]
+            )
+            visitas_externas = visitas_externas.filter(
+                estado__in=["pendiente", "enviada_coordinacion"]
+            )
         elif estado != "todos":
             visitas_internas = visitas_internas.filter(estado=estado)
             visitas_externas = visitas_externas.filter(estado=estado)
@@ -565,8 +599,12 @@ def api_listar_visitas(request):
 
         stats = {
             "pendientes": (
-                VisitaInterna.objects.filter(estado="pendiente").count()
-                + VisitaExterna.objects.filter(estado="pendiente").count()
+                VisitaInterna.objects.filter(
+                    estado__in=["pendiente", "enviada_coordinacion"]
+                ).count()
+                + VisitaExterna.objects.filter(
+                    estado__in=["pendiente", "enviada_coordinacion"]
+                ).count()
             ),
             "aprobadas_inicial": (
                 VisitaInterna.objects.filter(estado="aprobada_inicial").count()
@@ -624,6 +662,8 @@ def api_listar_visitas(request):
             visitas = visitas.filter(
                 estado__in=["documentos_enviados", "en_revision_documentos"]
             )
+        elif estado == "pendiente":
+            visitas = visitas.filter(estado__in=["pendiente", "enviada_coordinacion"])
         elif estado != "todos":
             visitas = visitas.filter(estado=estado)
 
@@ -676,7 +716,9 @@ def api_listar_visitas(request):
             visita__estado__in=["aprobada_inicial", "pendiente", "enviada_coordinacion"]
         )
         stats = {
-            "pendientes": VisitaInterna.objects.filter(estado="pendiente").count(),
+            "pendientes": VisitaInterna.objects.filter(
+                estado__in=["pendiente", "enviada_coordinacion"]
+            ).count(),
             "aprobadas_inicial": VisitaInterna.objects.filter(
                 estado="aprobada_inicial"
             ).count(),
@@ -707,6 +749,8 @@ def api_listar_visitas(request):
             visitas = visitas.filter(
                 estado__in=["documentos_enviados", "en_revision_documentos"]
             )
+        elif estado == "pendiente":
+            visitas = visitas.filter(estado__in=["pendiente", "enviada_coordinacion"])
         elif estado != "todos":
             visitas = visitas.filter(estado=estado)
 
@@ -759,7 +803,9 @@ def api_listar_visitas(request):
             visita__estado__in=["aprobada_inicial", "pendiente", "enviada_coordinacion"]
         )
         stats = {
-            "pendientes": VisitaExterna.objects.filter(estado="pendiente").count(),
+            "pendientes": VisitaExterna.objects.filter(
+                estado__in=["pendiente", "enviada_coordinacion"]
+            ).count(),
             "aprobadas_inicial": VisitaExterna.objects.filter(
                 estado="aprobada_inicial"
             ).count(),
@@ -889,6 +935,7 @@ def api_detalle_visita(request, tipo, visita_id):
                                 doc_actual["ds"],
                                 versiones_envio=doc_actual["versiones_envio"],
                                 es_reenvio=doc_actual["es_reenvio"],
+                                historial_versiones=doc_actual["historial_versiones"],
                             )
                             for doc_actual in documentos_actuales
                         ],
@@ -1008,6 +1055,16 @@ def api_detalle_visita(request, tipo, visita_id):
                             if a.formato_autorizacion_padres
                             else None
                         ),
+                        "estado_autorizacion_padres": (
+                            a.estado_autorizacion_padres
+                            if a.formato_autorizacion_padres
+                            else None
+                        ),
+                        "observaciones_autorizacion_padres": (
+                            a.observaciones_autorizacion_padres
+                            if a.formato_autorizacion_padres
+                            else None
+                        ),
                         "observaciones_revision": (
                             a.observaciones_revision
                             if revision["estado"] == "documentos_rechazados"
@@ -1020,6 +1077,7 @@ def api_detalle_visita(request, tipo, visita_id):
                                 doc_actual["ds"],
                                 versiones_envio=doc_actual["versiones_envio"],
                                 es_reenvio=doc_actual["es_reenvio"],
+                                historial_versiones=doc_actual["historial_versiones"],
                             )
                             for doc_actual in documentos_actuales
                         ],
@@ -1463,7 +1521,11 @@ def api_revisar_autorizacion_padres(request, tipo, asistente_id, accion):
         return JsonResponse(
             {
                 "success": True,
-                "message": f"❌ Autorización de padres rechazada para {asistente.nombre_completo}. Queda pendiente de corrección.",
+                "message": (
+                    "Documento rechazado. Queda pendiente de corrección."
+                    if tipo == "externa"
+                    else f"❌ Documentos de {asistente.nombre_completo} rechazados (Autorización de padres). Queda pendiente de corrección."
+                ),
                 "nuevo_estado": revision["estado"],
             }
         )
@@ -1592,7 +1654,11 @@ def api_revisar_documento_asistente(request, tipo, asistente_id, accion):
         return JsonResponse(
             {
                 "success": True,
-                "message": f"❌ Documentos de {asistente.nombre_completo} rechazados. Queda pendiente de corrección.",
+                "message": (
+                    "Documento rechazado. Queda pendiente de corrección."
+                    if tipo == "externa"
+                    else f"❌ Documentos de {asistente.nombre_completo} rechazados. Queda pendiente de corrección."
+                ),
                 "nuevo_estado": revision["estado"],
             }
         )
@@ -1754,6 +1820,7 @@ def api_documentos_revision(request):
                             doc_actual["ds"],
                             versiones_envio=doc_actual["versiones_envio"],
                             es_reenvio=doc_actual["es_reenvio"],
+                            historial_versiones=doc_actual["historial_versiones"],
                         )
                         for doc_actual in documentos_actuales
                     ],
@@ -1823,6 +1890,60 @@ def api_documentos_revision(request):
                         if a.documento_adicional
                         else None
                     ),
+                        "formato_autorizacion_padres": (
+                            reverse(
+                                "documentos:ver_campo_asistente_inline",
+                                kwargs={
+                                    "tipo": "externa",
+                                    "asistente_id": a.id,
+                                    "campo": "formato_autorizacion_padres",
+                                },
+                            )
+                            if a.formato_autorizacion_padres
+                            else None
+                        ),
+                        "formato_autorizacion_padres_nombre": (
+                            a.formato_autorizacion_padres.name.split("/")[-1]
+                            if a.formato_autorizacion_padres
+                            else None
+                        ),
+                        "estado_autorizacion_padres": (
+                            a.estado_autorizacion_padres
+                            if a.formato_autorizacion_padres
+                            else None
+                        ),
+                        "observaciones_autorizacion_padres": (
+                            a.observaciones_autorizacion_padres
+                            if a.formato_autorizacion_padres
+                            else None
+                        ),
+                    "formato_autorizacion_padres": (
+                        reverse(
+                            "documentos:ver_campo_asistente_inline",
+                            kwargs={
+                                "tipo": "externa",
+                                "asistente_id": a.id,
+                                "campo": "formato_autorizacion_padres",
+                            },
+                        )
+                        if a.formato_autorizacion_padres
+                        else None
+                    ),
+                    "formato_autorizacion_padres_nombre": (
+                        a.formato_autorizacion_padres.name.split("/")[-1]
+                        if a.formato_autorizacion_padres
+                        else None
+                    ),
+                    "estado_autorizacion_padres": (
+                        a.estado_autorizacion_padres
+                        if a.formato_autorizacion_padres
+                        else None
+                    ),
+                    "observaciones_autorizacion_padres": (
+                        a.observaciones_autorizacion_padres
+                        if a.formato_autorizacion_padres
+                        else None
+                    ),
                     "observaciones_revision": (
                         a.observaciones_revision
                         if revision["estado"] == "documentos_rechazados"
@@ -1835,6 +1956,7 @@ def api_documentos_revision(request):
                             doc_actual["ds"],
                             versiones_envio=doc_actual["versiones_envio"],
                             es_reenvio=doc_actual["es_reenvio"],
+                            historial_versiones=doc_actual["historial_versiones"],
                         )
                         for doc_actual in documentos_actuales
                     ],
