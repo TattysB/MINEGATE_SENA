@@ -132,15 +132,55 @@ def porteria_visita(request, tipo_visita, visita_id):
     """
     Pantalla dedicada para escaneo y control de acceso de una visita puntual.
     """
-    visita_data = _obtener_visita_confirmada_hoy(tipo_visita, visita_id)
-    if not visita_data:
+    if not (request.user.is_superuser or request.user.is_staff):
         return render(
             request,
             'control_acceso_mina/porteria_visita.html',
             {
                 'visita': None,
-                'error_visita': 'La visita no existe o no está confirmada para hoy.',
+                'error_visita': 'No tienes permisos para acceder al control de acceso.',
+                'panel_role_label': 'Usuario',
                 'seccion_activa': 'control_acceso',
+            },
+            status=403,
+        )
+
+    visita_data = _obtener_visita_confirmada_hoy(tipo_visita, visita_id)
+    es_coordinador = request.user.groups.filter(name='coordinador').exists()
+    es_sst = request.user.groups.filter(name='sst').exists()
+
+    usuario_es_admin_panel = request.user.is_superuser or (
+        request.user.is_staff and not es_sst and not es_coordinador
+    )
+    usuario_solo_sst = es_sst and not request.user.is_superuser
+
+    if usuario_es_admin_panel:
+        panel_role_label = 'Administrador'
+    elif usuario_solo_sst:
+        panel_role_label = 'SST'
+    elif es_coordinador:
+        panel_role_label = 'Coordinador'
+    else:
+        panel_role_label = 'Usuario'
+
+    contexto_base_panel = {
+        'es_superusuario': usuario_es_admin_panel,
+        'solo_sst': usuario_solo_sst,
+        'solo_coordinador': es_coordinador,
+        'perfil': getattr(request.user, 'perfil', None),
+        'perfil_panel': getattr(request.user, 'perfil', None),
+        'panel_role_label': panel_role_label,
+        'seccion_activa': 'control_acceso',
+    }
+
+    if not visita_data:
+        return render(
+            request,
+            'control_acceso_mina/porteria_visita.html',
+            {
+                **contexto_base_panel,
+                'visita': None,
+                'error_visita': 'La visita no existe o no está confirmada para hoy.',
             },
             status=404,
         )
@@ -149,9 +189,9 @@ def porteria_visita(request, tipo_visita, visita_id):
         request,
         'control_acceso_mina/porteria_visita.html',
         {
+            **contexto_base_panel,
             'visita': visita_data,
             'error_visita': '',
-            'seccion_activa': 'control_acceso',
         },
     )
 

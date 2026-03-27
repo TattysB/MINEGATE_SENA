@@ -228,11 +228,29 @@ b {
     object-fit: contain !important;
 }
 
+.logo-duo-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.logo-duo-wrap .logo-secondary {
+    opacity: 0.95;
+}
+
 /* Ajuste adicional para móviles */
 @media (max-width: 576px) {
     .navbar .navbar-brand img.navbar-logo {
         height: 30px !important;
         max-height: 30px !important;
+    }
+
+    .logo-duo-wrap {
+        gap: 4px;
+    }
+
+    .logo-duo-wrap .navbar-logo {
+        margin-right: 0 !important;
     }
 }
 
