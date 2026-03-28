@@ -567,18 +567,7 @@
 </div>
 
 <div class="pp-dashboard">
-  <div class="pp-top">
-    <div>
-      <h2 class="pp-title">Dashboard General</h2>
-      <p class="pp-subtitle">Resumen operativo de visitas, accesos y estado actual del flujo administrativo.</p>
-    </div>
-    <div>
-      <span class="pp-variation {% if dashboard.variacion_mes_pct > 0 %}up{% elif dashboard.variacion_mes_pct < 0 %}down{% else %}neutral{% endif %}">
-        {% if dashboard.variacion_mes_pct > 0 %}▲{% elif dashboard.variacion_mes_pct < 0 %}▼{% else %}■{% endif %}
-        {{ dashboard.variacion_mes_pct }}% vs mes anterior
-      </span>
-    </div>
-  </div>
+  
 
   {% if dashboard_error %}
   <div class="pp-alerta">{{ dashboard_error }}</div>

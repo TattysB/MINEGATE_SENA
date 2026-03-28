@@ -2049,7 +2049,9 @@ def restablecer_contraseña(request):
             # Buscar visitante con ese email
             visitante = RegistroVisitante.objects.filter(correo__iexact=email).first()
 
-            if visitante:
+            if not visitante:
+                form.add_error("email", "Este correo no está registrado.")
+            else:
                 # Generar token y uid usando Django's default_token_generator
                 token = default_token_generator.make_token(visitante)
                 uid = urlsafe_base64_encode(force_bytes(visitante.pk))
@@ -2089,20 +2091,13 @@ def restablecer_contraseña(request):
                         request,
                         "Se ha enviado un correo con instrucciones para restablecer tu contraseña.",
                     )
+                    return redirect("panel_visitante:correo_enviado")
                 except Exception as e:
                     messages.warning(
                         request,
                         "El correo no se pudo enviar. Por favor intenta más tarde.",
                     )
                     print(f"Error enviando email: {str(e)}")
-            else:
-                # Por seguridad, mostrar el mismo mensaje aunque no exista el email
-                messages.success(
-                    request,
-                    "Si el correo existe en nuestro sistema, recibirás instrucciones para restablecer tu contraseña.",
-                )
-
-            return redirect("panel_visitante:correo_enviado")
     else:
         form = PasswordResetRequestForm()
 

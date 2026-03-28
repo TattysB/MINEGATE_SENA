@@ -1060,6 +1060,8 @@
       document.getElementById('editLastName').value = '';
       document.getElementById('editEmail').value = '';
       document.getElementById('editTelefono').value = '';
+      document.getElementById('editPassword1').value = '';
+      document.getElementById('editPassword2').value = '';
       document.getElementById('btnGuardarEdicion').disabled = false;
       document.getElementById('btnGuardarTexto').textContent = '💾 Guardar Cambios';
       _editOriginal = {};
@@ -1094,11 +1096,16 @@
         telefono: document.getElementById('editTelefono').value.trim(),
       };
 
+      const nuevaPassword = document.getElementById('editPassword1').value;
+      const confirmarPassword = document.getElementById('editPassword2').value;
+      const hayCambioContrasena = nuevaPassword.length > 0 || confirmarPassword.length > 0;
+
       if (
         actual.first_name === _editOriginal.first_name &&
         actual.last_name  === _editOriginal.last_name  &&
         actual.email      === _editOriginal.email      &&
-        actual.telefono   === _editOriginal.telefono
+        actual.telefono   === _editOriginal.telefono &&
+        !hayCambioContrasena
       ) {
         alerta.style.cssText = 'display:block;background:#fff8e1;color:#b7791f;padding:0.75rem 1rem;border-radius:8px;margin-bottom:1rem;border:1px solid #f6d860;font-weight:600;';
         alerta.textContent = 'ℹ️ No se detectaron cambios. La información ya está guardada.';
@@ -1210,6 +1217,22 @@
               <input type="text" id="editTelefono" name="telefono"
                      style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid #d1d5db;border-radius:8px;font-size:0.9rem;box-sizing:border-box;"
                      placeholder="Teléfono (opcional)">
+            </div>
+            <div style="grid-column:span 2;margin-top:0.25rem;padding-top:0.7rem;border-top:1px dashed #d1d5db;">
+              <label style="display:block;font-weight:700;font-size:0.82rem;color:#475569;margin-bottom:0.25rem;">Cambio de contraseña (opcional)</label>
+              <p style="margin:0 0 0.6rem;color:#64748b;font-size:0.78rem;">Solo completa estos campos si deseas cambiar la contraseña del usuario.</p>
+            </div>
+            <div>
+              <label style="display:block;font-weight:600;font-size:0.85rem;color:#64748b;margin-bottom:0.35rem;">Nueva contraseña</label>
+              <input type="password" id="editPassword1" name="password1"
+                     style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid #d1d5db;border-radius:8px;font-size:0.9rem;box-sizing:border-box;"
+                     placeholder="Nueva contraseña">
+            </div>
+            <div>
+              <label style="display:block;font-weight:600;font-size:0.85rem;color:#64748b;margin-bottom:0.35rem;">Confirmar contraseña</label>
+              <input type="password" id="editPassword2" name="password2"
+                     style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid #d1d5db;border-radius:8px;font-size:0.9rem;box-sizing:border-box;"
+                     placeholder="Confirmar contraseña">
             </div>
           </div>
         </form>
