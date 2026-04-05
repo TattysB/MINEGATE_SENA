@@ -7,6 +7,8 @@ from django.contrib import messages
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
 from django.http import JsonResponse
+from django.core.exceptions import ValidationError
+from django.contrib.auth.password_validation import validate_password
 from PIL import Image
 from django.db.models import Q
 from django.urls import reverse
@@ -1006,6 +1008,8 @@ def editar_usuario_ajax_view(request, usuario_id):
         last_name = request.POST.get("last_name", "").strip()
         email = request.POST.get("email", "").strip()
         telefono = request.POST.get("telefono", "").strip()
+        password1 = request.POST.get("password1", "")
+        password2 = request.POST.get("password2", "")
 
         errores = {}
         if not first_name:
@@ -1017,12 +1021,26 @@ def editar_usuario_ajax_view(request, usuario_id):
         elif User.objects.exclude(pk=usuario.pk).filter(email__iexact=email).exists():
             errores["email"] = "Este correo ya está en uso por otro usuario."
 
+        # Cambio de contraseña opcional: solo aplica si se diligencia alguno de los campos.
+        if password1 or password2:
+            if not password1 or not password2:
+                errores["password1"] = "Debes ingresar y confirmar la nueva contraseña."
+            elif password1 != password2:
+                errores["password2"] = "Las contraseñas no coinciden."
+            else:
+                try:
+                    validate_password(password1, usuario)
+                except ValidationError as exc:
+                    errores["password1"] = " ".join(exc.messages)
+
         if errores:
             return JsonResponse({"success": False, "errors": errores})
 
         usuario.first_name = first_name
         usuario.last_name = last_name
         usuario.email = email
+        if password1 and password1 == password2:
+            usuario.set_password(password1)
         usuario.save()
 
         if perfil:
@@ -1032,7 +1050,10 @@ def editar_usuario_ajax_view(request, usuario_id):
         return JsonResponse(
             {
                 "success": True,
-                "message": f"Usuario {usuario.get_full_name()} actualizado correctamente.",
+                "message": (
+                    f"Usuario {usuario.get_full_name()} actualizado correctamente."
+                    + (" Contraseña actualizada." if password1 else "")
+                ),
                 "nombre_completo": usuario.get_full_name(),
             }
         )

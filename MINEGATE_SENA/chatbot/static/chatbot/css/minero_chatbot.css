@@ -130,6 +130,31 @@
     gap: 10px;
 }
 
+.minero-manual-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    background: linear-gradient(135deg, #0f5132, #198754);
+    color: #fff;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 0.85rem;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 8px 20px rgba(15, 81, 50, 0.2);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.minero-manual-btn:hover {
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 12px 24px rgba(15, 81, 50, 0.28);
+    filter: brightness(1.05);
+}
+
 .minero-msg {
     max-width: 85%;
     padding: 10px 12px;

@@ -267,11 +267,11 @@
             </div>
 
             <div class="card shadow-lg border-0 rounded-4 overflow-hidden map-card-hover">
-                <div id="minegateCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000">
+                <div id="SICAMCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000">
                     {% if elementos_galeria %}
                     <div class="carousel-indicators">
                         {% for elemento in elementos_galeria %}
-                        <button type="button" data-bs-target="#minegateCarousel" data-bs-slide-to="{{ forloop.counter0 }}"
+                        <button type="button" data-bs-target="#SICAMCarousel" data-bs-slide-to="{{ forloop.counter0 }}"
                             class="{% if forloop.first %}active{% endif %}" {% if forloop.first %}aria-current="true"{% endif %}
                             aria-label="Slide {{ forloop.counter }}"></button>
                         {% endfor %}
@@ -303,11 +303,11 @@
                     </div>
                     {% else %}
                     <div class="carousel-indicators">
-                        <button type="button" data-bs-target="#minegateCarousel" data-bs-slide-to="0" class="active"
+                        <button type="button" data-bs-target="#SICAMCarousel" data-bs-slide-to="0" class="active"
                             aria-current="true" aria-label="Slide 1"></button>
-                        <button type="button" data-bs-target="#minegateCarousel" data-bs-slide-to="1"
+                        <button type="button" data-bs-target="#SICAMCarousel" data-bs-slide-to="1"
                             aria-label="Slide 2"></button>
-                        <button type="button" data-bs-target="#minegateCarousel" data-bs-slide-to="2"
+                        <button type="button" data-bs-target="#SICAMCarousel" data-bs-slide-to="2"
                             aria-label="Slide 3"></button>
                     </div>
 
@@ -345,12 +345,12 @@
                     </div>
                     {% endif %}
 
-                    <button class="carousel-control-prev" type="button" data-bs-target="#minegateCarousel"
+                    <button class="carousel-control-prev" type="button" data-bs-target="#SICAMCarousel"
                         data-bs-slide="prev">
                         <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                         <span class="visually-hidden">Anterior</span>
                     </button>
-                    <button class="carousel-control-next" type="button" data-bs-target="#minegateCarousel"
+                    <button class="carousel-control-next" type="button" data-bs-target="#SICAMCarousel"
                         data-bs-slide="next">
                         <span class="carousel-control-next-icon" aria-hidden="true"></span>
                         <span class="visually-hidden">Siguiente</span>
@@ -421,6 +421,17 @@
                 </div>
 
                 <div class="minero-chatbot-body" data-chatbot-body>
+                    <a
+                        href="{% static 'pdf/Manual_Usuario_SICAM.pdf' %}"
+                        class="minero-manual-btn"
+                        download
+                        target="_blank"
+                        rel="noopener"
+                    >
+                        <i class="fa-solid fa-file-arrow-down"></i>
+                        Descargar Manual de Usuario
+                    </a>
+
                     <div class="minero-msg bot">
                         Hola, soy Chat Bot Minero. Te ayudo con preguntas frecuentes sobre
                         SICAM y agendamiento de visitas.

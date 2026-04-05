@@ -177,6 +177,13 @@ h6,
     transition: color 0.2s, transform 0.2s cubic-bezier(.4, 2, .6, 1);
 }
 
+.navbar-brand {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    gap: 8px;
+}
+
 .navbar-brand:hover,
 .navbar-brand:focus,
 .nav-link:hover,
@@ -226,6 +233,18 @@ b {
     display: inline-block !important;
     margin-right: 10px !important;
     object-fit: contain !important;
+    vertical-align: middle !important;
+}
+
+.logo-duo-wrap {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    gap: 6px;
+}
+
+.logo-duo-wrap .logo-secondary {
+    opacity: 0.95;
 }
 
 /* Ajuste adicional para móviles */
@@ -233,6 +252,15 @@ b {
     .navbar .navbar-brand img.navbar-logo {
         height: 30px !important;
         max-height: 30px !important;
+        vertical-align: middle !important;
+    }
+
+    .logo-duo-wrap {
+        gap: 4px;
+    }
+
+    .logo-duo-wrap .navbar-logo {
+        margin-right: 0 !important;
     }
 }
 

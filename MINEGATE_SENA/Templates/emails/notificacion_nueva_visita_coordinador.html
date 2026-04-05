@@ -1,0 +1,88 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Nueva Solicitud de Visita - Coordinacion</title>
+  </head>
+  <body style="margin:0;padding:24px;background:#f4f6f8;font-family:Segoe UI,Arial,sans-serif;color:#1f2937;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:720px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #d9f5dd;">
+      <tr>
+        <td style="padding:24px 28px;background:linear-gradient(90deg,#00af00,#009900);color:#ffffff;">
+          <p style="margin:0;font-size:13px;letter-spacing:0.8px;text-transform:uppercase;opacity:0.9;">SICAM SENA</p>
+          <h1 style="margin:8px 0 0 0;font-size:24px;line-height:1.2;">Nueva visita para revision de coordinacion</h1>
+        </td>
+      </tr>
+
+      <tr>
+        <td style="padding:24px 28px;">
+          <p style="margin:0 0 14px 0;font-size:15px;line-height:1.6;">
+            Se registro una nueva solicitud y requiere revision inicial del equipo de coordinacion.
+          </p>
+
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:10px;border-collapse:collapse;">
+            <tr>
+              <td style="padding:10px 0;border-bottom:1px solid #e6efe6;"><strong>ID de visita</strong></td>
+              <td style="padding:10px 0;border-bottom:1px solid #e6efe6;text-align:right;">#{{ visita_id }}</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 0;border-bottom:1px solid #e6efe6;"><strong>Tipo</strong></td>
+              <td style="padding:10px 0;border-bottom:1px solid #e6efe6;text-align:right;">{{ tipo_visita }}</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 0;border-bottom:1px solid #e6efe6;"><strong>Entidad o programa</strong></td>
+              <td style="padding:10px 0;border-bottom:1px solid #e6efe6;text-align:right;">{{ entidad }}</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 0;border-bottom:1px solid #e6efe6;"><strong>Responsable</strong></td>
+              <td style="padding:10px 0;border-bottom:1px solid #e6efe6;text-align:right;">{{ responsable }}</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 0;border-bottom:1px solid #e6efe6;"><strong>Documento</strong></td>
+              <td style="padding:10px 0;border-bottom:1px solid #e6efe6;text-align:right;">{{ documento_responsable }}</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 0;border-bottom:1px solid #e6efe6;"><strong>Correo responsable</strong></td>
+              <td style="padding:10px 0;border-bottom:1px solid #e6efe6;text-align:right;">{{ correo_responsable }}</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 0;border-bottom:1px solid #e6efe6;"><strong>Cantidad asistentes</strong></td>
+              <td style="padding:10px 0;border-bottom:1px solid #e6efe6;text-align:right;">{{ cantidad_asistentes }}</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 0;border-bottom:1px solid #e6efe6;"><strong>Fecha de solicitud</strong></td>
+              <td style="padding:10px 0;border-bottom:1px solid #e6efe6;text-align:right;">{{ fecha_solicitud }}</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 0;border-bottom:1px solid #e6efe6;"><strong>Fecha de visita</strong></td>
+              <td style="padding:10px 0;border-bottom:1px solid #e6efe6;text-align:right;">{{ fecha_visita }}</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 0;border-bottom:1px solid #e6efe6;"><strong>Horario</strong></td>
+              <td style="padding:10px 0;border-bottom:1px solid #e6efe6;text-align:right;">{{ hora_visita }}</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 0;"><strong>Estado</strong></td>
+              <td style="padding:10px 0;text-align:right;">{{ estado }}</td>
+            </tr>
+          </table>
+
+          <div style="margin-top:18px;padding:14px 16px;background:#f3fff4;border:1px solid #d9f5dd;border-radius:8px;font-size:14px;line-height:1.5;">
+            Accion sugerida: revisar la solicitud y registrar la decision en el panel de coordinacion.
+          </div>
+
+          <div style="text-align:center;margin-top:20px;">
+            <a href="{{ login_url|default:'/auth/login/' }}" style="display:inline-block;background:#00af00;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:700;font-size:14px;">Ir al login</a>
+          </div>
+        </td>
+      </tr>
+
+      <tr>
+        <td style="padding:14px 28px;background:#f7faf7;border-top:1px solid #e6efe6;font-size:12px;color:#6b7280;">
+          Correo automatico generado por SICAM SENA.
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+

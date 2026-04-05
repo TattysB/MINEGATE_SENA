@@ -941,14 +941,41 @@
     });
   });
 
-  // ── Toast ────────────────────────────────────────────────────────
+  // ── Notificacion modal ───────────────────────────────────────────
+  function cerrarToastCoord() {
+    const overlay = document.getElementById('toastCoordOverlay');
+    if (!overlay) return;
+    clearTimeout(overlay._hideTimer);
+    overlay.style.display = 'none';
+  }
+
   function mostrarToast(mensaje, tipo) {
-    const toast = document.getElementById('toastCoord');
-    toast.textContent = mensaje;
-    toast.className = 'coord-toast coord-toast-' + (tipo || 'info');
-    toast.style.display = 'block';
-    clearTimeout(toast._hideTimer);
-    toast._hideTimer = setTimeout(() => { toast.style.display = 'none'; }, 4500);
+    const overlay = document.getElementById('toastCoordOverlay');
+    const card = document.getElementById('toastCoord');
+    const icon = document.getElementById('toastCoordIcon');
+    const title = document.getElementById('toastCoordTitle');
+    const body = document.getElementById('toastCoordBody');
+    if (!overlay || !card || !icon || !title || !body) return;
+
+    const config = tipo === 'error'
+      ? { border: '#ef4444', icon: 'ri-close-circle-fill', title: 'Error', color: '#b91c1c' }
+      : (tipo === 'warning'
+        ? { border: '#f59e0b', icon: 'ri-error-warning-fill', title: 'Aviso', color: '#b45309' }
+        : (tipo === 'success'
+          ? { border: '#10b981', icon: 'ri-checkbox-circle-fill', title: 'Confirmacion', color: '#047857' }
+          : { border: '#3b82f6', icon: 'ri-information-fill', title: 'Informacion', color: '#1d4ed8' }));
+
+    card.style.borderLeftColor = config.border;
+    icon.className = config.icon;
+    icon.style.color = config.color;
+    title.textContent = config.title;
+    body.textContent = mensaje;
+
+    overlay.style.display = 'flex';
+    clearTimeout(overlay._hideTimer);
+    overlay._hideTimer = setTimeout(() => {
+      cerrarToastCoord();
+    }, 4500);
   }
 
   function escapeHtml(value) {
@@ -1123,13 +1150,17 @@
   </div>
 </div>
 
-<!-- Toast de notificación -->
-<div id="toastCoord" style="display:none;position:fixed;bottom:28px;right:28px;z-index:10000;padding:14px 20px;border-radius:10px;font-size:14px;font-weight:600;max-width:380px;box-shadow:0 4px 16px rgba(0,0,0,0.15);"></div>
-
-<style>
-  .coord-toast-success { background:#10b981; color:#fff; }
-  .coord-toast-error   { background:#ef4444; color:#fff; }
-  .coord-toast-warning { background:#f59e0b; color:#fff; }
-  .coord-toast-info    { background:#3b82f6; color:#fff; }
-</style>
+<!-- Notificación modal -->
+<div id="toastCoordOverlay" onclick="if(event.target===this){cerrarToastCoord();}" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.45);z-index:10000;align-items:center;justify-content:center;padding:16px;">
+  <div id="toastCoord" style="position:relative;background:#fff;border-radius:14px;max-width:520px;width:min(520px,96vw);padding:20px;box-shadow:0 20px 45px rgba(0,0,0,0.26);border-left:6px solid #10b981;">
+    <button type="button" onclick="cerrarToastCoord()" style="position:absolute;top:8px;right:10px;background:none;border:none;color:#6b7280;font-size:1.4rem;cursor:pointer;line-height:1;">&times;</button>
+    <div style="display:flex;align-items:flex-start;gap:12px;">
+      <i id="toastCoordIcon" class="ri-checkbox-circle-fill" style="font-size:1.35rem;color:#047857;margin-top:2px;"></i>
+      <div>
+        <h4 id="toastCoordTitle" style="margin:0 0 4px;color:#0f172a;font-size:1.05rem;font-weight:800;">Confirmacion</h4>
+        <p id="toastCoordBody" style="margin:0;color:#334155;font-size:0.95rem;line-height:1.45;font-weight:600;"></p>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}

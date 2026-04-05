@@ -3,6 +3,7 @@
 
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/gestionar_permisos.css' %}" />
+<link rel="stylesheet" href="{% static 'css/cambiar_contrasena.css' %}" />
 
 <style>
     /* === VARIABLES CONSISTENTES === */
@@ -502,7 +503,7 @@
             </div>
 
             <!-- Password -->
-            <div class="campo">
+            <div class="campo campo-completo">
                 <label for="password1">Contraseña <span class="requerido">*</span></label>
                 <div class="password-field">
                     <input type="password" name="password1" id="password1" class="{% if form.password1.errors %}error{% endif %}" placeholder="Mínimo 8 caracteres" required>
@@ -510,13 +511,44 @@
                         <i class="fa-solid fa-eye" id="icon-password1"></i>
                     </button>
                 </div>
+                <!-- Contenedor para la barra de seguridad -->
+                <div id="password-strength-container" class="password-strength-container">
+                    <div class="strength-bar-wrapper" style="margin-top: 10px;">
+                        <div class="strength-bar">
+                            <div class="strength-bar-fill"></div>
+                        </div>
+                        <span class="strength-text"></span>
+                    </div>
+                    <div class="password-requirements-dynamic">
+                        <div class="requirement unmet" data-req="length">
+                            <i class="fa-solid fa-circle-xmark req-icon"></i>
+                            <span>Mínimo 8 caracteres</span>
+                        </div>
+                        <div class="requirement unmet" data-req="uppercase">
+                            <i class="fa-solid fa-circle-xmark req-icon"></i>
+                            <span>Una letra mayúscula (A-Z)</span>
+                        </div>
+                        <div class="requirement unmet" data-req="lowercase">
+                            <i class="fa-solid fa-circle-xmark req-icon"></i>
+                            <span>Una letra minúscula (a-z)</span>
+                        </div>
+                        <div class="requirement unmet" data-req="number">
+                            <i class="fa-solid fa-circle-xmark req-icon"></i>
+                            <span>Un número (0-9)</span>
+                        </div>
+                        <div class="requirement unmet" data-req="special">
+                            <i class="fa-solid fa-circle-xmark req-icon"></i>
+                            <span>Un carácter especial (!@#$%...)</span>
+                        </div>
+                    </div>
+                </div>
                 {% for error in form.password1.errors %}
                 <span class="error-msg">{{ error }}</span>
                 {% endfor %}
             </div>
 
             <!-- Confirmar Password -->
-            <div class="campo">
+            <div class="campo campo-completo">
                 <label for="password2">Confirmar Contraseña <span class="requerido">*</span></label>
                 <div class="password-field">
                     <input type="password" name="password2" id="password2" class="{% if form.password2.errors %}error{% endif %}" placeholder="Confirmar contraseña" required>
@@ -561,6 +593,81 @@
 </div>
 
 <script>
+    // =========== VALIDACIÓN DE SEGURIDAD DE CONTRASEÑA ===========
+    function checkPasswordStrength(password) {
+        const requirements = {
+            length: password.length >= 8,
+            uppercase: /[A-Z]/.test(password),
+            lowercase: /[a-z]/.test(password),
+            number: /\d/.test(password),
+            special: /[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\;'`~]/.test(password)
+        };
+
+        const metCount = Object.values(requirements).filter(Boolean).length;
+        let strengthText = '';
+        let strengthClass = '';
+
+        if (password.length === 0) {
+            strengthText = '';
+            strengthClass = '';
+        } else if (metCount <= 2) {
+            strengthText = 'Muy débil';
+            strengthClass = 'strength-weak';
+        } else if (metCount === 3) {
+            strengthText = 'Media';
+            strengthClass = 'strength-medium';
+        } else if (metCount === 4) {
+            strengthText = 'Buena';
+            strengthClass = 'strength-good';
+        } else {
+            strengthText = 'Segura';
+            strengthClass = 'strength-strong';
+        }
+
+        return { requirements, metCount, strengthText, strengthClass };
+    }
+
+    function updatePasswordStrengthUI(password) {
+        const container = document.getElementById('password-strength-container');
+        if (!container) return;
+
+        const result = checkPasswordStrength(password);
+        const barFill = container.querySelector('.strength-bar-fill');
+        const strengthText = container.querySelector('.strength-text');
+        const requirements = container.querySelectorAll('.requirement');
+
+        barFill.className = 'strength-bar-fill';
+        if (result.strengthClass) {
+            barFill.classList.add(result.strengthClass);
+        }
+
+        barFill.style.width = ((result.metCount / 5) * 100) + '%';
+        strengthText.textContent = result.strengthText;
+        strengthText.className = 'strength-text ' + result.strengthClass;
+
+        requirements.forEach(req => {
+            const reqName = req.dataset.req;
+            const icon = req.querySelector('.req-icon');
+            const isMet = result.requirements[reqName];
+
+            if (isMet) {
+                req.classList.add('met');
+                req.classList.remove('unmet');
+                icon.className = 'fa-solid fa-circle-check req-icon';
+            } else {
+                req.classList.remove('met');
+                req.classList.add('unmet');
+                icon.className = 'fa-solid fa-circle-xmark req-icon';
+            }
+        });
+
+        if (password.length > 0) {
+            container.classList.add('visible');
+        } else {
+            container.classList.remove('visible');
+        }
+    }
+
     function setFieldError(input, message) {
         let error = input.parentElement.querySelector('.error-msg-client');
         if (!error) {
@@ -602,8 +709,30 @@
         const firstName = document.getElementById('first_name');
         const lastName = document.getElementById('last_name');
         const telefono = document.getElementById('telefono');
+        const password1 = document.getElementById('password1');
 
         const soloLetras = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/;
+
+        // Listener para validar la seguridad de la contraseña en tiempo real
+        if (password1) {
+            password1.addEventListener('input', function () {
+                updatePasswordStrengthUI(this.value);
+            });
+
+            password1.addEventListener('focus', function () {
+                const container = document.getElementById('password-strength-container');
+                if (container && this.value) {
+                    container.classList.add('visible');
+                }
+            });
+
+            password1.addEventListener('blur', function () {
+                const container = document.getElementById('password-strength-container');
+                if (container && !this.value) {
+                    container.classList.remove('visible');
+                }
+            });
+        }
 
         if (form) {
             form.addEventListener('submit', function (event) {
