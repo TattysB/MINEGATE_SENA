@@ -1,4 +1,4 @@
-from django.urls import path
+﻿from django.urls import path
 from . import views
 
 app_name = 'panel_visitante'
@@ -17,7 +17,6 @@ urlpatterns = [
     path('actualizar-info/<str:tipo>/<int:asistente_id>/', views.actualizar_info_asistente, name='actualizar_info_asistente'),
     path('copiar-asistente/<str:tipo>/<int:visita_id>/<int:asistente_previo_id>/', views.copiar_asistente_previo, name='copiar_asistente_previo'),
     path('enviar-solicitud/<str:tipo>/<int:visita_id>/', views.enviar_solicitud_final, name='enviar_solicitud_final'),
-    # Recuperación de contraseña - Nuevo patrón
     path('restablecer-contraseña/', views.restablecer_contraseña, name='restablecer_contraseña'),
     path('restablecer-contraseña/correo-enviado/', views.correo_enviado_view, name='correo_enviado'),
     path('restablecer-contraseña/<uidb64>/<token>/', views.restablecer_contraseña_confirm, name='restablecer_contraseña_confirm'),

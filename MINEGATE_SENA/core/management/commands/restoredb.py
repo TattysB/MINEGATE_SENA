@@ -1,4 +1,4 @@
-import os
+﻿import os
 import shutil
 import stat
 import subprocess
@@ -84,7 +84,6 @@ class Command(BaseCommand):
         if db_conf.get("PASSWORD"):
             env["PGPASSWORD"] = str(db_conf["PASSWORD"])
 
-        # Se ejecuta sin shell para evitar comandos arbitrarios.
         resultado = subprocess.run(
             cmd,
             capture_output=True,
@@ -127,7 +126,6 @@ class Command(BaseCommand):
         backup_dir = (Path(settings.BASE_DIR) / "backups").resolve()
         backup_dir.mkdir(parents=True, exist_ok=True)
 
-        # Solo permitimos nombre de archivo para bloquear rutas externas.
         nombre = (file_option or "").strip()
         if not nombre:
             raise CommandError("Debes indicar un archivo con --file.")
@@ -204,14 +202,12 @@ class Command(BaseCommand):
         if os.name == "nt" and not binary_name.lower().endswith(".exe"):
             candidatos.append(f"{binary_name}.exe")
 
-        # 1) Prioridad: setting del proyecto.
         if postgres_bin_dir:
             for candidato in candidatos:
                 posible = Path(postgres_bin_dir) / candidato
                 if posible.exists():
                     return str(posible)
 
-        # 2) Prioridad: variable de entorno para despliegues sin tocar settings.py.
         postgres_bin_env = os.environ.get("POSTGRES_BIN_DIR", "")
         if postgres_bin_env:
             for candidato in candidatos:
@@ -219,13 +215,11 @@ class Command(BaseCommand):
                 if posible.exists():
                     return str(posible)
 
-        # 3) PATH del sistema.
         for candidato in candidatos:
             encontrado = shutil.which(candidato)
             if encontrado:
                 return encontrado
 
-        # 4) Fallback para Windows: rutas comunes de instalacion PostgreSQL.
         if os.name == "nt":
             for bin_dir in self._rutas_bin_postgres_windows():
                 for candidato in candidatos:

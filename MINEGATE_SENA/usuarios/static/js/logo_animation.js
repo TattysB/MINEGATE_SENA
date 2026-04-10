@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+﻿document.addEventListener('DOMContentLoaded', () => {
     const senaLogo = document.getElementById('sena-logo');
     const mineElements = document.getElementById('mine-elements');
     const minegateText = document.getElementById('minegate-text');
@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const carrito = document.getElementById('carrito');
     const mina = document.getElementById('mina');
 
-    // Verificar que todos los elementos existan antes de aplicar animaciones
     if (!senaLogo || !mineElements || !minegateText || !pico || !carrito || !mina) {
         console.warn('⚠️ Algunos elementos de la animación del logo no se encontraron en el DOM');
         return;

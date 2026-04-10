@@ -1,4 +1,4 @@
-if (typeof window.getCsrfToken !== 'function') {
+﻿if (typeof window.getCsrfToken !== 'function') {
   window.getCsrfToken = function () {
     const match = document.cookie.match(/(^|;)\s*csrftoken\s*=\s*([^;]+)/);
     return match ? match.pop() : '';
@@ -206,13 +206,11 @@ function mostrarDocumentosPorEstado(filtro) {
           }
 
           if (a.documentos_subidos && a.documentos_subidos.length > 0) {
-            // Filtrar SOLO documentos que NO sean los archivos finales (para evitar duplicados)
             const categorias_finales = ['📝 ATS', '🤸🏻‍♂️ Charla de Seguridad y Calestenia', '📜 Formato Inducción y Reinducción'];
             const documentos_personales = a.documentos_subidos.filter(ds =>
               !categorias_finales.some(cat => ds.categoria && ds.categoria.includes(cat))
             );
 
-            // Mostrar solo documentos personales del asistente (no los finales)
             documentos_personales.forEach(ds => {
               const badgeDoc = getBadgeRevisionDocumentoInline(ds);
 
@@ -417,7 +415,6 @@ function visualizarDocumento(url, titulo, extraOptions = null) {
   let absoluteUrl = url;
   if (url.startsWith('/')) absoluteUrl = window.location.origin + url;
 
-  // Detectar tipo de archivo para saber si el navegador puede mostrarlo
   const nombreArchivo = (extraOptions && extraOptions.nombre_archivo)
     ? extraOptions.nombre_archivo
     : url.split('/').pop().split('?')[0];

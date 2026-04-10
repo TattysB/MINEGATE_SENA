@@ -1,4 +1,4 @@
-{% load static %}
+﻿{% load static %}
 {% load accesibility_tags %}
 <!DOCTYPE html>
 <html lang="es">
@@ -242,6 +242,12 @@
     {% endfor %}
   {% endif %}
 
+  <div class="alert alert-success alert-no-autoclose border-0 mb-4" style="background:#ecfdf3;color:#166534;">
+    <i class="fas fa-life-ring me-2"></i>
+    Si tiene problemas o necesita ayuda, contacte a
+    <a href="mailto:sicamsenacentrominero@gmail.com" style="color:#14532d;font-weight:700;text-decoration:none;">sicamsenacentrominero@gmail.com</a>.
+  </div>
+
   <div class="section-title"><i class="fas fa-th-large text-success"></i>Módulos Disponibles</div>
   <div class="row g-4 mb-5" style="row-gap: 1rem;">
     <div class="col-12 col-sm-12 col-md-6">
@@ -300,14 +306,14 @@
   {% endif %}
 </div>
 
-<!-- Modal de Perfil Embebido -->
+
 <div id="modalActualizarPerfilInterno" class="perfil-modal-overlay" onclick="if(event.target===this){cerrarModalActualizarPerfilInterno();}">
   <div class="perfil-modal-card">
     <iframe id="iframeActualizarPerfilInterno" class="perfil-modal-iframe" title="Actualizar Perfil"></iframe>
   </div>
 </div>
 
-<!-- Modal de Confirmación de Cierre de Sesión -->
+
 <div class="modal fade" id="confirmLogoutModal" tabindex="-1" aria-labelledby="confirmLogoutLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -400,7 +406,7 @@
       });
     }
 
-    const alerts = document.querySelectorAll('.alert');
+    const alerts = document.querySelectorAll('.alert:not(.alert-no-autoclose)');
     alerts.forEach(function(alert) {
       setTimeout(function() {
         // Usar Bootstrap para hacer fade out

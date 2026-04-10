@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
     var root = document.getElementById("mineroChatbot");
     if (!root) {
         return;

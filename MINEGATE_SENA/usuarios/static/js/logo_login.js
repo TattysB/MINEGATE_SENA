@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+﻿document.addEventListener('DOMContentLoaded', () => {
     const senaLogo = document.getElementById('sena-logo');
     const mineElements = document.getElementById('mine-elements');
     const minegateText = document.getElementById('minegate-text');

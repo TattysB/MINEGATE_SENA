@@ -1,4 +1,4 @@
-/* === VARIABLES === */
+﻿
 :root {
     --sena-verde-primario: #00b000;
     --sena-verde-oscuro: #185027;
@@ -30,10 +30,10 @@
     --transicion: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* === CONTENEDOR PRINCIPAL === */
+
 .contenedor-permisos { padding: 1.5rem; max-width: 1400px; margin: 0 auto; }
 
-/* === MENSAJES DE ALERTA === */
+
 .mensajes { margin-bottom: 1.5rem; }
 
 .alerta {
@@ -80,7 +80,7 @@
 }
 .btn-cerrar-alerta:hover { opacity: 1; transform: scale(1.2); }
 
-/* === SECCIONES === */
+
 .seccion-estadisticas, .seccion-filtros, .seccion-tabla {
     background: var(--blanco);
     border-radius: var(--borde-radio-lg);
@@ -104,7 +104,7 @@
     gap: 0.5rem;
 }
 
-/* === TARJETAS DE ESTADÍSTICAS === */
+
 .grid-estadisticas { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; }
 
 .tarjeta-estadistica {
@@ -154,7 +154,7 @@
 .numero-estadistica { font-size: 2.5rem; font-weight: 800; line-height: 1; margin-bottom: 0.5rem; }
 .texto-estadistica { font-size: 0.9rem; font-weight: 600; color: var(--texto-secundario); text-transform: uppercase; letter-spacing: 0.5px; }
 
-/* === FILTROS === */
+
 .formulario-filtros { display: flex; flex-direction: column; gap: 1rem; }
 .grupo-filtros { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between; }
 .filtro-botones { display: flex; flex-wrap: wrap; gap: 0.5rem; }
@@ -192,7 +192,7 @@
 .btn-limpiar { background: var(--gris-claro); color: var(--texto-secundario); border: 2px solid var(--gris-borde); }
 .btn-limpiar:hover { background: #fee2e2; color: var(--color-rechazado); border-color: #fca5a5; }
 
-/* === TABLA DE USUARIOS === */
+
 .tabla-responsiva { overflow-x: auto; border-radius: var(--borde-radio); }
 .tabla-usuarios { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .tabla-usuarios thead { background: var(--gradient-verde); }
@@ -230,18 +230,18 @@
 .tabla-usuarios tbody tr:hover { background: var(--sena-verde-suave); }
 .tabla-usuarios td { padding: 1rem 1.25rem; vertical-align: middle; }
 
-/* Estados de filas */
+
 .fila-usuario.aprobado { background: rgba(200, 230, 201, 0.3); }
 .fila-usuario.pendiente { background: rgba(255, 224, 178, 0.3); }
 .fila-usuario.rechazado { background: rgba(255, 205, 210, 0.3); }
 
-/* Datos de usuario */
+
 .datos-usuario { min-width: 180px; }
 .nombre-usuario { font-weight: 700; color: var(--texto-oscuro); font-size: 0.95rem; }
 .username { font-size: 0.8rem; color: var(--sena-verde-primario); font-weight: 500; }
 .documento, .email, .telefono, .fecha { color: var(--texto-secundario); font-size: 0.875rem; }
 
-/* === BADGES === */
+
 .badge {
     display: inline-flex;
     align-items: center;
@@ -263,7 +263,7 @@
 
 .fecha-aprobacion, .razon { font-size: 0.75rem; color: var(--texto-secundario); margin-top: 0.25rem; }
 
-/* === ACCIONES === */
+
 .acciones-usuario { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
 
 .btn-accion {
@@ -289,7 +289,7 @@
 .btn-ver { background: linear-gradient(135deg, #1976d2, #1565c0); }
 .btn-ver:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(25, 118, 210, 0.4); color: var(--blanco); }
 
-/* === BOTÓN CREAR USUARIO === */
+
 .btn-crear-usuario {
     padding: 0.85rem 1.75rem;
     background: var(--gradient-verde);
@@ -312,7 +312,7 @@
     color: var(--blanco);
 }
 
-/* === TOGGLE SWITCH PÍLDORA === */
+
 .toggle-estado-wrapper {
     display: flex;
     align-items: center;
@@ -384,7 +384,7 @@
 .toggle-label.activo { color: var(--color-aprobado); }
 .toggle-label.inactivo { color: var(--color-rechazado); }
 
-/* Badge activo/inactivo */
+
 .badge-activo { 
     background: linear-gradient(135deg, var(--color-aprobado-bg), #a5d6a7); 
     color: var(--color-aprobado); 
@@ -396,11 +396,11 @@
     border: 1px solid var(--color-rechazado); 
 }
 
-/* === SIN RESULTADOS === */
+
 .sin-resultados { text-align: center; padding: 3rem 2rem; color: var(--texto-secundario); }
 .sin-resultados p { font-size: 1.1rem; margin: 0; }
 
-/* === MODALES === */
+
 .modal {
     display: none;
     position: fixed;
@@ -534,7 +534,7 @@
 .btn-confirmar { background: var(--gradient-verde); color: var(--blanco); }
 .btn-confirmar:hover { transform: translateY(-2px); box-shadow: var(--sombra-media); }
 
-/* Modales rechazar y eliminar */
+
 #modalRechazar .btn-confirmar, .btn-confirmar-eliminar { background: var(--gradient-rojo) !important; }
 #modalRechazar .btn-confirmar:hover, .btn-confirmar-eliminar:hover { box-shadow: 0 4px 15px rgba(198, 40, 40, 0.4) !important; }
 #modalRechazar .modal-encabezado { background: var(--gradient-rojo); }
@@ -563,7 +563,7 @@
 .info-usuario-eliminar p { margin: 0.25rem 0 !important; font-size: 0.95rem; }
 .texto-advertencia { font-size: 0.85rem !important; color: var(--color-rechazado) !important; font-style: italic; }
 
-/* === ANIMACIONES === */
+
 @keyframes fadeInRow {
     from { opacity: 0; transform: translateX(-20px); }
     to { opacity: 1; transform: translateX(0); }
@@ -574,13 +574,13 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* === SCROLLBAR === */
+
 .tabla-responsiva::-webkit-scrollbar { height: 8px; }
 .tabla-responsiva::-webkit-scrollbar-track { background: var(--gris-claro); border-radius: 4px; }
 .tabla-responsiva::-webkit-scrollbar-thumb { background: var(--gradient-verde); border-radius: 4px; }
 .tabla-responsiva::-webkit-scrollbar-thumb:hover { background: var(--sena-verde-hover); }
 
-/* === RESPONSIVE === */
+
 @media (max-width: 1024px) {
     .grid-estadisticas { grid-template-columns: repeat(2, 1fr); }
     .grupo-filtros { flex-direction: column; align-items: stretch; }

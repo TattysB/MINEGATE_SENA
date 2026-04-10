@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect, get_object_or_404
+﻿from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponse
 from django.urls import reverse
 from django.contrib import messages
@@ -381,7 +381,6 @@ def construir_reporte_documental_visita(visita, tipo_visita):
     )
     for asistente in asistentes:
         incidencias = []
-        # Tomar solo la version vigente (ultima subida) por documento requerido.
         latest_por_documento = {}
         for ds in asistente.documentos_subidos.all():
             doc_id = ds.documento_requerido_id
@@ -546,7 +545,6 @@ def _solicitud_final_historica_interna(visita):
     ).exists()
 
 
-# ==================== AUTENTICACIÓN POR SESIÓN ====================
 
 
 def get_sesion_instructor(request):
@@ -620,7 +618,6 @@ def _obtener_propietario_instructor(request):
     return user
 
 
-# ==================== PANEL PRINCIPAL ====================
 
 
 @instructor_interno_required
@@ -647,7 +644,6 @@ def panel_instructor_interno(request):
     return render(request, "panel_instructor_interno/panel.html", context)
 
 
-# ==================== MÓDULO: RESERVAR VISITA INTERNA ====================
 
 
 @instructor_interno_required
@@ -661,7 +657,6 @@ def reservar_visita_interna(request):
     )
     fichas_data = {str(f.numero): f.cantidad_aprendices for f in fichas}
 
-    # Obtener datos adicionales de la sesión
     nombre = request.session.get("responsable_nombre", "")
     apellido = request.session.get("responsable_apellido", "")
     tipo_documento = request.session.get("responsable_tipo_documento", "CC")
@@ -753,7 +748,6 @@ def reservar_visita_interna(request):
                 except ValueError as exc:
                     form.add_error(None, str(exc))
                 else:
-                    # Enviar correo HTML de confirmación al responsable
                     try:
                         subject = "Confirmación: solicitud de visita interna enviada"
                         context = {
@@ -828,7 +822,6 @@ def detalle_visita_interna(request, pk):
         .first()
     )
 
-    # Obtener documentos disponibles para descargar, agrupados por categoría
     from documentos.models import Documento
 
     documentos_disponibles = Documento.objects.all().order_by(
@@ -841,7 +834,6 @@ def detalle_visita_interna(request, pk):
             documentos_por_categoria[cat_display] = []
         documentos_por_categoria[cat_display].append(doc)
 
-    # Tomar un unico documento por cada categoria final requerida para descarga.
     documentos_finales_requeridos = []
     categorias_finales_agregadas = set()
     for doc in documentos_disponibles:
@@ -937,7 +929,6 @@ def detalle_visita_interna(request, pk):
     )
 
 
-# ==================== MÓDULO: GESTIONAR PROGRAMAS ====================
 
 
 @instructor_interno_required
@@ -974,7 +965,6 @@ def crear_programa(request):
                 return redirect("panel_instructor_interno:gestionar_fichas")
         else:
             if is_ajax:
-                # Retornar formulario con errores para mostrar en el modal
                 html = render(
                     request,
                     "panel_instructor_interno/form_programa_modal.html",
@@ -986,7 +976,6 @@ def crear_programa(request):
                     },
                 ).content.decode("utf-8")
                 return JsonResponse({"success": False, "html": html})
-            # Para requests normales con errores, mostrar la página completa
             return render(
                 request,
                 "panel_instructor_interno/form_programa.html",
@@ -1001,7 +990,6 @@ def crear_programa(request):
         form = ProgramaForm()
 
     if is_ajax:
-        # Para AJAX GET, retornar solo el formulario sin headers/footers
         html = render(
             request,
             "panel_instructor_interno/form_programa_modal.html",
@@ -1014,7 +1002,6 @@ def crear_programa(request):
         ).content.decode("utf-8")
         return JsonResponse({"html": html})
     else:
-        # Para requests normales, retornar la página completa
         return render(
             request,
             "panel_instructor_interno/form_programa.html",
@@ -1055,7 +1042,6 @@ def editar_programa(request, pk):
                 return redirect("panel_instructor_interno:gestionar_fichas")
         else:
             if is_ajax:
-                # Retornar formulario con errores para mostrar en el modal
                 html = render(
                     request,
                     "panel_instructor_interno/form_programa_modal.html",
@@ -1067,7 +1053,6 @@ def editar_programa(request, pk):
                     },
                 ).content.decode("utf-8")
                 return JsonResponse({"success": False, "html": html})
-            # Para requests normales con errores
             return render(
                 request,
                 "panel_instructor_interno/form_programa.html",
@@ -1083,7 +1068,6 @@ def editar_programa(request, pk):
         form = ProgramaForm(instance=programa)
 
     if is_ajax:
-        # Para AJAX GET, retornar solo el formulario
         html = render(
             request,
             "panel_instructor_interno/form_programa_modal.html",
@@ -1096,7 +1080,6 @@ def editar_programa(request, pk):
         ).content.decode("utf-8")
         return JsonResponse({"html": html})
     else:
-        # Para requests normales
         return render(
             request,
             "panel_instructor_interno/form_programa.html",
@@ -1163,7 +1146,6 @@ def eliminar_programa(request, pk):
         )
 
 
-# ==================== MÓDULO: GESTIONAR FICHAS ====================
 
 
 @instructor_interno_required
@@ -1218,7 +1200,6 @@ def crear_ficha(request):
                 return redirect("panel_instructor_interno:gestionar_fichas")
         else:
             if is_ajax:
-                # Retornar formulario con errores para mostrar en el modal
                 html = render(
                     request,
                     "panel_instructor_interno/form_ficha_modal.html",
@@ -1230,7 +1211,6 @@ def crear_ficha(request):
                     },
                 ).content.decode("utf-8")
                 return JsonResponse({"success": False, "html": html})
-            # Para requests normales con errores, mostrar la página completa
             return render(
                 request,
                 "panel_instructor_interno/form_ficha.html",
@@ -1245,7 +1225,6 @@ def crear_ficha(request):
         form = FichaForm(owner_user=owner_user)
 
     if is_ajax:
-        # Para AJAX GET, retornar solo el formulario sin headers/footers
         html = render(
             request,
             "panel_instructor_interno/form_ficha_modal.html",
@@ -1258,7 +1237,6 @@ def crear_ficha(request):
         ).content.decode("utf-8")
         return JsonResponse({"html": html})
     else:
-        # Para requests normales, retornar la página completa
         return render(
             request,
             "panel_instructor_interno/form_ficha.html",
@@ -1300,7 +1278,6 @@ def editar_ficha(request, pk):
                 return redirect("panel_instructor_interno:gestionar_fichas")
         else:
             if is_ajax:
-                # Retornar formulario con errores para mostrar en el modal
                 html = render(
                     request,
                     "panel_instructor_interno/form_ficha_modal.html",
@@ -1312,7 +1289,6 @@ def editar_ficha(request, pk):
                     },
                 ).content.decode("utf-8")
                 return JsonResponse({"success": False, "html": html})
-            # Para requests normales con errores
             return render(
                 request,
                 "panel_instructor_interno/form_ficha.html",
@@ -1328,7 +1304,6 @@ def editar_ficha(request, pk):
         form = FichaForm(instance=ficha, owner_user=owner_user)
 
     if is_ajax:
-        # Para AJAX GET, retornar solo el formulario
         html = render(
             request,
             "panel_instructor_interno/form_ficha_modal.html",
@@ -1341,7 +1316,6 @@ def editar_ficha(request, pk):
         ).content.decode("utf-8")
         return JsonResponse({"html": html})
     else:
-        # Para requests normales
         return render(
             request,
             "panel_instructor_interno/form_ficha.html",
@@ -1400,7 +1374,6 @@ def eliminar_ficha(request, pk):
         )
 
 
-# ==================== MÓDULO: GESTIONAR APRENDICES POR FICHA ====================
 
 
 @instructor_interno_required
@@ -1506,7 +1479,6 @@ def detalle_aprendices_ficha(request, pk):
             archivo_salud = request.FILES.get("documento_salud")
             archivo_autorizacion = request.FILES.get("documento_autorizacion_padres")
 
-            # Validar que se proporcionó ID de aprendiz
             if not aprendiz_id:
                 mensaje = "ID de aprendiz inválido."
                 if is_ajax:
@@ -1523,7 +1495,6 @@ def detalle_aprendices_ficha(request, pk):
                 messages.error(request, mensaje)
                 return redirect("panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id)
 
-            # Validar que si el aprendiz tiene TI y faltan ambos documentos, AMBOS son obligatorios
             falta_salud = not (bool(aprendiz.documento_adicional) or aprendiz.documentos_subidos.filter(
                 documento_requerido__categoria=CATEGORIA_DOC_SALUD
             ).exists())
@@ -1535,7 +1506,6 @@ def detalle_aprendices_ficha(request, pk):
                     for doc in aprendiz.documentos_subidos.all()
                 )
 
-            # Si es TI con ambos faltantes, exigir ambos archivos
             if aprendiz.tipo_documento == "TI" and falta_salud and falta_autorizacion:
                 if not archivo_salud or not archivo_autorizacion:
                     mensaje = "Aprendiz con Tarjeta de Identidad: Debe subir AMBOS archivos (reporte de salud y autorización de padres)."
@@ -1662,7 +1632,6 @@ def detalle_aprendices_ficha(request, pk):
     if estado_filtro:
         aprendices = aprendices.filter(estado=estado_filtro)
 
-    # Estadísticas
     stats = {
         "total": ficha.aprendices.count(),
         "activos": ficha.aprendices.filter(estado="activo").count(),
@@ -1831,7 +1800,6 @@ def crear_aprendiz(request, ficha_id):
     owner_user = _obtener_propietario_instructor(request)
     ficha = get_object_or_404(Ficha, pk=ficha_id, creado_por=owner_user)
 
-    # Obtener documentos por categoría
     documentos_por_categoria = obtener_documentos_por_categoria()
 
     if request.method == "POST":
@@ -1845,7 +1813,6 @@ def crear_aprendiz(request, ficha_id):
                 with transaction.atomic():
                     aprendiz.save()
 
-                    # Guardar documentos de apoyo subidos
                     for categoria, docs in documentos_por_categoria.items():
                         if (
                             categoria
@@ -1904,7 +1871,6 @@ def editar_aprendiz(request, pk):
     aprendiz = get_object_or_404(Aprendiz, pk=pk, ficha__creado_por=owner_user)
     ficha = aprendiz.ficha
 
-    # Obtener documentos por categoría
     documentos_por_categoria = obtener_documentos_por_categoria()
 
     if request.method == "POST":
@@ -1916,7 +1882,6 @@ def editar_aprendiz(request, pk):
                 with transaction.atomic():
                     form.save()
 
-                    # Guardar documentos de apoyo subidos (actualizar existentes)
                     for categoria, docs in documentos_por_categoria.items():
                         if (
                             categoria
@@ -1987,18 +1952,14 @@ def eliminar_aprendiz(request, pk):
         numero_documento = aprendiz.numero_documento
         asistentes_eliminados = 0
         
-        # Eliminar al aprendiz de cualquier visita donde esté registrado
-        # por número de documento en la misma ficha
         try:
             from visitaInterna.models import VisitaInterna, AsistenteVisitaInterna
             
-            # Encontrar visitas de esta ficha
             visitas_ficha = VisitaInterna.objects.filter(
                 numero_ficha=ficha.numero,
                 correo_responsable__iexact=correo
             )
             
-            # Eliminar asistentes que coincidan con el número de documento en estas visitas
             for visita in visitas_ficha:
                 asistentes = AsistenteVisitaInterna.objects.filter(
                     visita=visita,
@@ -2020,7 +1981,6 @@ def eliminar_aprendiz(request, pk):
                 f"⚠️ Aprendiz eliminado pero hubo un problema al sincronizar las visitas: {str(e)}"
             )
         
-        # Eliminar el aprendiz de la ficha
         aprendiz.delete()
         
         mensaje = (
@@ -2042,7 +2002,6 @@ def eliminar_aprendiz(request, pk):
             "panel_instructor_interno:detalle_aprendices_ficha", pk=ficha.id
         )
 
-    # GET - retorna datos para confirmar en modal o página clásica
     if es_ajax:
         return JsonResponse(
             {
@@ -2063,7 +2022,6 @@ def eliminar_aprendiz(request, pk):
     )
 
 
-# ==================== MÓDULO: INTEGRACIÓN CON VISITAS - APRENDICES ====================
 
 
 @instructor_interno_required
@@ -2120,7 +2078,6 @@ def registrar_aprendices_visita(request, visita_id):
         )
         return redirect("panel_instructor_interno:detalle_visita", pk=visita_id)
 
-    # Obtener la ficha de la visita
     try:
         ficha = Ficha.objects.get(numero=visita.numero_ficha, creado_por=owner_user)
     except Ficha.DoesNotExist:
@@ -2128,7 +2085,6 @@ def registrar_aprendices_visita(request, visita_id):
         return redirect("panel_instructor_interno:detalle_visita", pk=visita_id)
 
     if request.method == "POST":
-        # Obtener lista de IDs de aprendices seleccionados
         aprendices_ids = request.POST.getlist("aprendices[]")
         aprendices_registrados = 0
         aprendices_duplicados = 0
@@ -2149,14 +2105,12 @@ def registrar_aprendices_visita(request, visita_id):
                     aprendices_sin_doc_salud += 1
                     continue
 
-                # Verificar si ya está registrado en esta visita
                 if AsistenteVisitaInterna.objects.filter(
                     visita=visita, numero_documento=aprendiz.numero_documento
                 ).exists():
                     aprendices_duplicados += 1
                     continue
 
-                # Registrar como asistente con datos automáticos
                 asistente = AsistenteVisitaInterna.objects.create(
                     visita=visita,
                     nombre_completo=aprendiz.get_nombre_completo(),
@@ -2167,7 +2121,6 @@ def registrar_aprendices_visita(request, visita_id):
                     estado="pendiente_documentos",
                 )
 
-                # Cargar documentos del aprendiz automaticamente por categoria
                 for doc_subido in docs_aprendiz:
                     DocumentoSubidoAsistente.objects.update_or_create(
                         documento_requerido=doc_subido.documento_requerido,
@@ -2175,7 +2128,6 @@ def registrar_aprendices_visita(request, visita_id):
                         defaults={"archivo": doc_subido.archivo},
                     )
 
-                # Compatibilidad con registros antiguos que solo guardaban documento_adicional
                 if not docs_aprendiz.exists() and aprendiz.documento_adicional:
                     doc_salud = Documento.objects.filter(
                         categoria="Formato Auto Reporte Condiciones de Salud"
@@ -2209,10 +2161,8 @@ def registrar_aprendices_visita(request, visita_id):
 
         return redirect("panel_instructor_interno:detalle_visita", pk=visita_id)
 
-    # GET - Mostrar formulario
     aprendices = ficha.aprendices.filter(estado="activo").order_by("apellido", "nombre")
 
-    # Marcas visuales por categoria para el template
     for aprendiz in aprendices:
         docs_qs = aprendiz.documentos_subidos.select_related("documento_requerido")
         aprendiz.tiene_documentos_subidos = docs_qs.exists()
@@ -2220,7 +2170,6 @@ def registrar_aprendices_visita(request, visita_id):
             documento_requerido__categoria="Formato Auto Reporte Condiciones de Salud"
         ).exists()
 
-    # Identificar cuáles ya están registrados
     ya_registrados = list(
         AsistenteVisitaInterna.objects.filter(visita=visita).values_list(
             "numero_documento", flat=True
@@ -2244,14 +2193,12 @@ def registrar_aprendices_visita(request, visita_id):
     )
 
 
-# ==================== FUNCIÓN DE APOYO (Para evitar repetir código) ====================
 
 
 def obtener_documentos_por_categoria():
     docs = Documento.objects.all()
     resultado = {}
     for d in docs:
-        # Solo agregar si el documento tiene un archivo físico asociado
         if d.archivo:
             cat_display = d.get_categoria_display() if d.categoria else "General"
             if cat_display not in resultado:
@@ -2285,7 +2232,6 @@ def _obtener_docs_subidos_ids_aprendiz(aprendiz, documentos_por_categoria):
         aprendiz.documentos_subidos.values_list("documento_requerido_id", flat=True)
     )
 
-    # Compatibilidad: registros antiguos que solo guardaban el reporte en documento_adicional.
     if getattr(aprendiz, "documento_adicional", None):
         for categoria, docs in documentos_por_categoria.items():
             cat_norm = _normalizar_categoria_texto(categoria)
@@ -2346,7 +2292,6 @@ def validar_carga_documentos_aprendiz(
     return errores
 
 
-# ==================== MÓDULO: GESTIONAR APRENDICES (ACTUALIZADO) ====================
 
 
 @instructor_interno_required
@@ -2356,7 +2301,6 @@ def crear_aprendiz(request, ficha_id):
     ficha = get_object_or_404(Ficha, pk=ficha_id, creado_por=owner_user)
     es_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
 
-    # --- INTEGRACIÓN DE DOCUMENTOS ---
     docs_cat = obtener_documentos_por_categoria()
 
     if request.method == "POST":
@@ -2474,7 +2418,6 @@ def editar_aprendiz(request, pk):
     aprendiz = get_object_or_404(Aprendiz, pk=pk, ficha__creado_por=owner_user)
     ficha = aprendiz.ficha
 
-    # --- INTEGRACIÓN DE DOCUMENTOS ---
     docs_cat = obtener_documentos_por_categoria()
 
     if request.method == "POST":
@@ -2546,7 +2489,6 @@ def eliminar_asistente_visita(request, visita_id, asistente_id, tipo):
         )
         return redirect("panel_instructor_interno:detalle_visita", pk=visita_id)
 
-    # Verificar que el asistente pertenece a esta visita
     if tipo == "interna":
         asistente = get_object_or_404(
             AsistenteVisitaInterna, pk=asistente_id, visita=visita

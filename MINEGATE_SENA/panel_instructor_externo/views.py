@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect, get_object_or_404
+﻿from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Q
 from django.db import transaction
@@ -74,7 +74,6 @@ def construir_reporte_documental_visita(visita, tipo_visita):
         incidencias = []
         tiene_documento_rechazado = False
         tiene_autorizacion_rechazada = False
-        # Tomar solo la version vigente (ultima subida) por documento requerido.
         latest_por_documento = {}
         for ds in asistente.documentos_subidos.all():
             doc_id = ds.documento_requerido_id
@@ -253,7 +252,6 @@ def _solicitud_final_historica_externa(visita):
     ).exists()
 
 
-# ==================== AUTENTICACIÓN POR SESIÓN ====================
 
 
 def get_sesion_instructor(request):
@@ -290,7 +288,6 @@ def instructor_externo_required(view_func):
     return wrapper
 
 
-# ==================== PANEL PRINCIPAL ====================
 
 
 @instructor_externo_required
@@ -312,14 +309,12 @@ def panel_instructor_externo(request):
     return render(request, "panel_instructor_externo/panel.html", context)
 
 
-# ==================== MÓDULO: RESERVAR VISITA EXTERNA ====================
 
 
 @instructor_externo_required
 def reservar_visita_externa(request):
     correo, documento = get_sesion_instructor(request)
 
-    # Obtener datos adicionales de la sesión
     nombre = request.session.get("responsable_nombre", "")
     apellido = request.session.get("responsable_apellido", "")
     tipo_documento = request.session.get("responsable_tipo_documento", "CC")
@@ -334,7 +329,6 @@ def reservar_visita_externa(request):
             visita.documento_responsable = documento
             visita.estado = "enviada_coordinacion"
             visita.save()
-            # Enviar correo HTML de confirmación al responsable
             try:
                 subject = "Confirmación: solicitud de visita enviada"
                 context = {
@@ -400,7 +394,6 @@ def detalle_visita_externa(request, pk):
         .first()
     )
 
-    # Obtener documentos disponibles para descargar, agrupados por categoría
     from documentos.models import Documento
 
     documentos_disponibles = Documento.objects.all().order_by(
@@ -413,7 +406,6 @@ def detalle_visita_externa(request, pk):
             documentos_por_categoria[cat_display] = []
         documentos_por_categoria[cat_display].append(doc)
 
-    # Tomar un único documento por cada categoría final requerida para descarga.
     documentos_finales_requeridos = []
     categorias_finales_agregadas = set()
     for doc in documentos_disponibles:

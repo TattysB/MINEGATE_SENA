@@ -1,4 +1,4 @@
-import calendar
+﻿import calendar
 from datetime import date
 
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -223,7 +223,6 @@ def api_solicitudes_coordinacion(request):
                 }
             )
     else:
-        # tipo == 'todas' o cualquier otro valor: combinar internas y externas
         visitas_int = VisitaInterna.objects.filter(
             estado="enviada_coordinacion"
         ).order_by("-fecha_solicitud", "-id")
@@ -271,7 +270,6 @@ def api_solicitudes_coordinacion(request):
                 }
             )
 
-        # Mantener el orden correcto por fecha en la vista combinada.
         visitas_data.sort(
             key=lambda item: item.get("fecha_solicitud_orden", ""),
             reverse=True,
@@ -444,7 +442,6 @@ def api_accion_coordinacion(request, tipo, visita_id, accion):
         registrar(
             f"Solicitud aprobada por coordinación ({request.user.username}) y enviada al administrador para validación final."
         )
-        # Registrar en el log de aprobaciones para el panel de Registro
         try:
             if tipo == "interna":
                 AprobacionRegistro.objects.create(
@@ -467,7 +464,6 @@ def api_accion_coordinacion(request, tipo, visita_id, accion):
                     aprobado_por=request.user,
                 )
         except Exception:
-            # No bloquear la operación si el registro falla
             pass
         return JsonResponse(
             {

@@ -1,8 +1,6 @@
-/* ================================================
-   Gestión de Documentos — Estilos
-   ================================================ */
+﻿
 
-/* ---------- Título de sección ---------- */
+
 .docs-titulo {
     color: #1f2937;
     margin-bottom: 20px;
@@ -15,12 +13,12 @@
     color: #3b82f6;
 }
 
-/* ---------- Contenedor principal ---------- */
+
 .docs-contenedor {
     padding: 20px;
 }
 
-/* ---------- Zona de carga (drag & drop) ---------- */
+
 .docs-zona-subida {
     background: linear-gradient(135deg, #eff6ff, #dbeafe);
     border: 2px dashed #3b82f6;
@@ -59,7 +57,7 @@
     margin: 0;
 }
 
-/* ---------- Archivos pendientes ---------- */
+
 .docs-pendientes {
     display: none;
     background: white;
@@ -92,7 +90,7 @@
     flex-wrap: wrap;
 }
 
-/* ---------- Archivo individual pendiente ---------- */
+
 .docs-archivo-item {
     display: flex;
     align-items: center;
@@ -141,7 +139,7 @@
     background: white;
 }
 
-/* ---------- Botón quitar archivo ---------- */
+
 .docs-btn-quitar {
     background: none;
     border: none;
@@ -155,7 +153,7 @@
     transform: scale(1.15);
 }
 
-/* ---------- Botones principales ---------- */
+
 .docs-btn {
     padding: 10px 20px;
     color: white;
@@ -196,7 +194,7 @@
     background: #dc2626;
 }
 
-/* ---------- Progreso de subida ---------- */
+
 .docs-progreso {
     display: none;
     margin-top: 15px;
@@ -224,7 +222,7 @@
     text-align: center;
 }
 
-/* ---------- Filtros y búsqueda ---------- */
+
 .docs-filtros {
     display: flex;
     gap: 12px;
@@ -298,7 +296,7 @@
     color: white;
 }
 
-/* ---------- Barra de búsqueda ---------- */
+
 .docs-busqueda-bar {
     display: flex;
     gap: 10px;
@@ -396,7 +394,7 @@
     font-size: 13px;
 }
 
-/* ---------- Tabla de documentos ---------- */
+
 .docs-tabla-contenedor {
     background: white;
     border-radius: 10px;
@@ -462,7 +460,7 @@
     padding: 12px 15px;
 }
 
-/* ---------- Filas de tabla ---------- */
+
 .docs-fila {
     border-bottom: 1px solid #d8f0be;
     transition: background 0.2s;
@@ -503,7 +501,7 @@
     text-align: center;
 }
 
-/* ---------- Badges de categoría ---------- */
+
 .docs-badge {
     display: inline-flex;
     align-items: center;
@@ -570,7 +568,7 @@
     border-color: #9ca3af33;
 }
 
-/* ---------- Botones de acción en tabla ---------- */
+
 .docs-acciones {
     display: flex;
     gap: 6px;
@@ -625,7 +623,7 @@
     transform: translateY(0) scale(0.95);
 }
 
-/* Ver */
+
 .docs-btn-ver {
     background: linear-gradient(135deg, #3b82f6, #2563eb);
     box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
@@ -643,7 +641,7 @@
     transition: transform 0.2s ease;
 }
 
-/* Descargar */
+
 .docs-btn-descargar {
     background: linear-gradient(135deg, #10b981, #059669);
     box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
@@ -657,7 +655,7 @@
     animation: docs-bounce-down 0.5s ease;
 }
 
-/* Eliminar */
+
 .docs-btn-eliminar {
     background: linear-gradient(135deg, #ef4444, #dc2626);
     box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
@@ -671,7 +669,7 @@
     animation: docs-shake 0.4s ease;
 }
 
-/* ---------- Iconos de tipo de archivo ---------- */
+
 .docs-icono-pdf {
     color: #ef4444;
     font-size: 20px;
@@ -707,7 +705,7 @@
     font-size: 20px;
 }
 
-/* ---------- Estado vacío y carga ---------- */
+
 .docs-vacio {
     padding: 40px;
     text-align: center;
@@ -741,7 +739,7 @@
     color: #ef4444;
 }
 
-/* ---------- Modal personalizado ---------- */
+
 .docs-modal-overlay {
     position: fixed;
     top: 0;
@@ -857,7 +855,7 @@
     transform: translateY(-1px);
 }
 
-/* Variantes de color para modal */
+
 .docs-modal-success {
     background: #d1fae5;
 }
@@ -1072,7 +1070,7 @@
     }
 }
 
-/* ---------- Animaciones ---------- */
+
 @keyframes spin {
     from {
         transform: rotate(0deg);

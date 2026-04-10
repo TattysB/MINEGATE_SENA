@@ -1,4 +1,4 @@
-  /* ==================== VARIABLES ==================== */
+﻿  
   :root {
     --sena-green: #1b8f3a;
     --sena-green-dark: #0f5e28;
@@ -18,9 +18,7 @@
     --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.175);
   }
 
-  /* =====================
-   NAVBAR PERSONALIZADA
-===================== */
+  
 
   nav.navbar {
     background: linear-gradient(135deg, var(--sena-green) 0%, var(--sena-green-dark) 100%) !important;
@@ -64,12 +62,12 @@
     margin-right: 8px !important;
   }
 
-  /* ==================== GENERAL STYLES ==================== */
+  
   body {
     font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   }
 
-  /* ==================== MODAL OVERLAY ==================== */
+  
   .modal-password-overlay {
     position: fixed;
     top: 0;
@@ -97,7 +95,7 @@
     }
   }
 
-  /* ==================== MODAL CARD ==================== */
+  
   .modal-password-card {
     background: #ffffff;
     border-radius: 16px;
@@ -125,7 +123,7 @@
     }
   }
 
-  /* ==================== HEADER ==================== */
+  
   .password-header {
     background: #ffffff;
     padding: 22px 24px;
@@ -178,12 +176,12 @@
     color: inherit;
   }
 
-  /* ==================== BODY DEL CARD ==================== */
+  
   .password-body {
     padding: 24px;
   }
 
-  /* ==================== FORGOT PASSWORD SECTION ==================== */
+  
   .forgot-password-link {
     display: block;
     text-align: right;
@@ -212,7 +210,7 @@
     font-size: 1rem;
   }
 
-  /* ==================== FORM CONTROLS ==================== */
+  
   .form-section {
     margin-bottom: 20px;
   }
@@ -249,7 +247,7 @@
     margin-bottom: 16px;
   }
 
-  /* INPUT FIELDS */
+  
   .form-control {
     border: 1px solid #d1d5db;
     border-radius: 8px;
@@ -272,7 +270,7 @@
     border-color: #9ca3af;
   }
 
-  /* Input con error */
+  
   .form-control.is-invalid,
   input:invalid:not(:focus):not(:placeholder-shown) {
     border-color: #dc2626;
@@ -283,7 +281,7 @@
     box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
   }
 
-  /* ERROR MESSAGES */
+  
   .text-danger {
     color: var(--danger-color) !important;
     font-size: 0.85rem;
@@ -333,7 +331,7 @@
     margin-bottom: 4px;
   }
 
-  /* HELP TEXT */
+  
   .form-text {
     font-size: 0.85rem;
     color: #6b7280;
@@ -342,7 +340,7 @@
     line-height: 1.5;
   }
 
-  /* ==================== BUTTONS ==================== */
+  
   .button-group {
     display: flex;
     gap: 12px;
@@ -365,7 +363,7 @@
     text-decoration: none;
   }
 
-  /* BUTTON PRIMARY - ACTUALIZAR */
+  
   .btn-primary-custom {
     background-color: var(--primary-color);
     color: white;
@@ -382,7 +380,7 @@
     transform: translateY(0);
   }
 
-  /* ==================== HELPER TEXT ==================== */
+  
   .helper-text {
     margin-top: 16px;
     margin-bottom: 6px;
@@ -405,7 +403,7 @@
     font-weight: 600;
   }
 
-  /* ==================== RESPONSIVE ==================== */
+  
   @media (max-width: 768px) {
     .modal-password-overlay {
       padding: 10px;
@@ -440,17 +438,17 @@
 
     .form-control {
       font-size: 16px;
-      /* Evita zoom en iOS */
+      
     }
   }
 
-  /* ==================== ANIMATIONS ==================== */
+  
   .btn-primary-custom:focus {
     box-shadow: 0 0 0 3px rgba(75, 190, 75, 0.2);
     outline: none;
   }
 
-  /* ==================== HR DIVIDER ==================== */
+  
   hr {
     border: none;
     border-top: 1px solid #e5e7eb;
@@ -458,7 +456,7 @@
     opacity: 1;
   }
 
-  /* ==================== MODERN UI OVERRIDES ==================== */
+  
   .modal-password-overlay {
     background: rgba(15, 23, 42, 0.45);
     backdrop-filter: blur(4px);

@@ -1,4 +1,4 @@
-from django.test import TestCase, Client
+﻿from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from control_acceso_mina.models import RegistroAccesoMina
 from control_acceso_mina.views import _parse_qr_data, _contar_personas_en_visita_mina
@@ -21,7 +21,6 @@ class RegistroAccesoMinaTestCase(TestCase):
         self.user = User.objects.create_user(username='portero', password='1234')
         self.client = Client()
 
-    # --- Modelo ---
 
     def test_crear_registro_entrada(self):
         r = _registro('11111111', 'ENTRADA')
@@ -45,7 +44,6 @@ class RegistroAccesoMinaTestCase(TestCase):
         r = _registro('55555555', 'ENTRADA')
         self.assertIsNotNone(r.fecha_hora)
 
-    # --- Conteo ---
 
     def test_conteo_sin_registros_es_cero(self):
         self.assertEqual(_contar_personas_en_visita_mina('interna', 1), 0)
@@ -69,7 +67,6 @@ class RegistroAccesoMinaTestCase(TestCase):
         _registro('99999999', 'ENTRADA', visita_tipo='interna')
         self.assertEqual(_contar_personas_en_visita_mina('externa', 1), 0)
 
-    # --- QR ---
 
     def test_qr_valido(self):
         r = _parse_qr_data('SENA|1|12345678|Juan Pérez|interna')
@@ -90,7 +87,6 @@ class RegistroAccesoMinaTestCase(TestCase):
         r = _parse_qr_data('SENA|1|111|Nombre|desconocido')
         self.assertIsNone(r.get('tipo'))
 
-    # --- Endpoint autenticación ---
 
     def test_registrar_sin_login_redirige(self):
         resp = self.client.post('/porteria/registrar/', '{}', content_type='application/json')

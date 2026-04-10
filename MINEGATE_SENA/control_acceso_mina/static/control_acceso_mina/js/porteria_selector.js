@@ -1,6 +1,4 @@
-/**
- * Selector de visitas para control de acceso
- */
+﻿
 (function () {
     'use strict';
 

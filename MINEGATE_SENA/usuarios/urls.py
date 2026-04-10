@@ -4,11 +4,9 @@ from . import views
 app_name = "usuarios"
 
 urlpatterns = [
-    # Autenticación
     path("login/", views.login_view, name="login"),
     path("logout/", views.logout_view, name="logout"),
     path("bienvenida/", views.bienvenida_view, name="bienvenida"),
-    # Recuperación de contraseña
     path(
         "recuperar_contrasena/",
         views.password_reset_request_view,
@@ -37,7 +35,6 @@ urlpatterns = [
     path("recuperar-contraseña/correo-enviado/", views.password_reset_done_view),
     path("recuperar-contraseña/<uidb64>/<token>/", views.password_reset_confirm_view),
     path("recuperar-contraseña/completado/", views.password_reset_complete_view),
-    # Perfil de usuario
     path("perfil/", views.perfil_view, name="perfil"),
     path(
         "configuracion-perfil/",
@@ -49,7 +46,6 @@ urlpatterns = [
         views.cambiar_contraseña_view,
         name="cambiar_contraseña",
     ),
-    # Perfil de administrador
     path("usuarios/", views.lista_usuarios_view, name="lista_usuario"),
     path("usuarios/crear/", views.crear_usuario_view, name="crear_usuario"),
     path(
@@ -63,7 +59,6 @@ urlpatterns = [
         name="eliminar_usuario",
     ),
     path("perfil/", views.perfil_view, name="perfil"),
-    # Panel de administración
     path("usuarios/", views.lista_usuarios_view, name="lista_usuario"),
     path("usuarios/crear/", views.crear_usuario_view, name="crear_usuario"),
     path(
@@ -76,7 +71,6 @@ urlpatterns = [
         views.eliminar_usuario_view,
         name="eliminar_usuario",
     ),
-    # Gestión de permisos
     path(
         "gestionar-permisos/", views.gestionar_permisos_view, name="gestionar_permisos"
     ),
@@ -90,7 +84,6 @@ urlpatterns = [
         views.eliminar_usuario_permisos_view,
         name="eliminar_usuario_permisos",
     ),
-    # Nuevas rutas de gestión de permisos
     path(
         "gestionar-permisos/crear/",
         views.crear_usuario_permisos_view,

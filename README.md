@@ -1,6 +1,6 @@
-# ⛏ **MINEGATE**
+# ⛏ **SICAM**
 
-> *Proyecto:* Software para gestionar ingreso/salida y agendamiento de visitas en el Centro Minero Morca (SENA).
+> *Proyecto:* Software para gestionar ingreso/salida y agendamiento de visitas en la mina de el Centro Minero Morca (SENA).
 
 ---
 
@@ -10,17 +10,17 @@
 
 ### 👥 **Integrantes** (5)
 
-* *Jimy Angarita* — Rol
-* *Yamith Rosas* — Rol
-* *Elyan Cristancho* — Rol
-* *Mayerly Cardenas* — Rol
-* *Tatiana Bayona* — Rol
+* *Jimy Angarita* — Desarrollador FullStack
+* *Yamith Rosas* — Desarrollador FullStack
+* *Elyan Cristancho* — Desarrollador FullStack
+* *Mayerly Cardenas* — Desarrollador FullStack
+* *Tatiana Bayona* — Desarrollador FullStack
 
 ---
 
 ## 📌 **Descripción breve**
 
-Aplicación sencilla que permite registrar y controlar el ingreso y salida de visitantes internos ```(aprendices, personal)``` y externos ```(estudiantes, universidades, invitados)```. Incluye un sistema de agendamiento de visitas para programar horarios, validar autorizaciones y llevar reportes básicos de asistencia.
+Aplicación que permite registrar y controlar el ingreso y salida de visitantes internos ```(aprendices, personal)``` y externos ```(estudiantes, universidades, invitados)```. Incluye un sistema de agendamiento de visitas para programar horarios, validar autorizaciones y llevar reportes básicos de asistencia.
 
 ---
 
@@ -30,15 +30,17 @@ Aplicación sencilla que permite registrar y controlar el ingreso y salida de vi
 * Control de ingreso y salida con marca de hora.
 * Agendamiento y aprobación de visitas.
 * Búsqueda y filtros por fecha, tipo de visitante y responsable.
-* Reportes simples ```(lista diaria de visitas)```.
+* Reportes ```(lista diaria de visitas)```.
+* Codigo QR para imprimir y escanear.
+* Notificaciones por correo electrónico.
 
 ---
 
 ## 🛠 **Tecnologías (sugeridas)**
-* Backend: Python ```(Django)``` o Node.js ```(Express)```
-* Frontend: HTML/CSS + JavaScript ```(o React si lo desean)```
+* Backend: Python ```(Django)``` + PostgreSQL
+* Frontend: HTML/CSS + JavaScript + Bootstrap
 * Base de datos: SQLite ```(desarrollo) / PostgreSQL (producción)```
-* Control de versiones: Git
+* Control de versiones: Git y GitHub
 
 ---
 
@@ -67,18 +69,10 @@ Aplicación sencilla que permite registrar y controlar el ingreso y salida de vi
 
 * Entrar a ```http://localhost:8000```
 * Registrar un visitante nuevo desde el formulario
-* Agendar visita desde la sección "Agendamientos"
-* Revisar reportes en "Informes"
+* Agendar visita desde la sección "Regir visitas"
+* Ver notificaciones en "Notificaciones en el correo electrónico"
 
 ---
-
-## 🤝 **Contribuir**
-
-* Crear rama nueva para cambios: git checkout -b feat/mi-cambio
-* Hacer commits claros y abrir Pull Request
-
----
-
 
 
 

@@ -1,4 +1,4 @@
-  {% csrf_token %}
+﻿  {% csrf_token %}
   <div class="docs-contenedor">
     <div class="pg-hero">
       <div class="pg-hero-left">
@@ -10,7 +10,7 @@
       </div>
     </div>
 <div id="seccion-documentos" class="contenido-seccion" style="display: none;">
-    <!-- Zona de carga de archivos -->
+    
     <div id="zonaSubida" class="docs-zona-subida"
          ondragover="event.preventDefault(); this.classList.add('drag-over');"
          ondragleave="this.classList.remove('drag-over');"
@@ -22,7 +22,7 @@
       <input type="file" id="inputArchivosDocumentos" multiple accept=".pdf,.doc,.docx" style="display: none;" onchange="prepararArchivosDocumentos(this.files)">
     </div>
 
-    <!-- Archivos seleccionados (antes de subir) -->
+    
     <div id="archivosPendientes" class="docs-pendientes">
       <h5><i class="fas fa-list-ul me-2"></i>Archivos seleccionados</h5>
       <div id="listaArchivosPendientes"></div>
@@ -43,7 +43,7 @@
       </div>
     </div>
 
-    <!-- Filtros y búsqueda -->
+    
     <div class="docs-filtros" style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
       <select id="filtroCategoria" onchange="cargarDocumentos()" class="docs-filtro-select">
         <option value="">📂 Todas las categorías</option>
@@ -70,7 +70,7 @@
        
         <span id="contadorDocs" class="docs-contador"></span>
       </div>
-    <!-- Tabla de documentos -->
+    
     <div class="docs-tabla-contenedor">
       <div class="docs-tabla-scroll">
         <table class="docs-tabla" id="tablaDocumentos">

@@ -1,8 +1,10 @@
-from django import forms
+﻿from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django_recaptcha.fields import ReCaptchaField
+from django_recaptcha.widgets import ReCaptchaV2Checkbox
 import re
 from .models import PerfilUsuario
 
@@ -45,15 +47,20 @@ class LoginForm(AuthenticationForm):
         label="Recordarme",
     )
 
+    captcha = ReCaptchaField(
+        widget=ReCaptchaV2Checkbox,
+        error_messages={"required": "Debe completar el captcha."},
+    )
+
     def clean(self):
         """
         Sobreescribimos clean() para NO hacer la autenticación aquí.
         La autenticación y mensajes específicos se manejan en la vista.
         Solo validamos que los campos no estén vacíos.
         """
-        username = self.cleaned_data.get('username')
-        password = self.cleaned_data.get('password')
-        
+        username = self.cleaned_data.get("username")
+        password = self.cleaned_data.get("password")
+
         if username and password:
             pass
 
@@ -125,10 +132,8 @@ class RegistroForm(UserCreationForm):
         first_name = self.cleaned_data.get("first_name", "").strip()
         if not first_name:
             raise forms.ValidationError("El nombre es obligatorio.")
-        # Permitir solo letras y espacios
         if not re.match(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$", first_name):
             raise forms.ValidationError("El nombre solo debe contener letras.")
-        # Convertir a formato título (primera letra de cada palabra en mayúscula)
         return " ".join(word.capitalize() for word in first_name.split())
 
     def clean_last_name(self):
@@ -136,10 +141,8 @@ class RegistroForm(UserCreationForm):
         last_name = self.cleaned_data.get("last_name", "").strip()
         if not last_name:
             raise forms.ValidationError("El apellido es obligatorio.")
-        # Permitir solo letras y espacios
         if not re.match(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$", last_name):
             raise forms.ValidationError("El apellido solo debe contener letras.")
-        # Convertir a formato título (primera letra de cada palabra en mayúscula)
         return " ".join(word.capitalize() for word in last_name.split())
 
     telefono = forms.CharField(
@@ -153,6 +156,11 @@ class RegistroForm(UserCreationForm):
                 "maxlength": "10",
             }
         ),
+    )
+
+    captcha = ReCaptchaField(
+        widget=ReCaptchaV2Checkbox,
+        error_messages={"required": "Debe completar el captcha."},
     )
 
     class Meta:
@@ -189,7 +197,6 @@ class RegistroForm(UserCreationForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Mensajes personalizados en español para las contraseñas
         self.fields["password1"].error_messages = {
             "required": "La contraseña es obligatoria.",
         }
@@ -203,7 +210,6 @@ class RegistroForm(UserCreationForm):
             "Ingresa la misma contraseña para verificación."
         )
 
-        # Hacer username opcional porque lo usamos internamente con documento
         self.fields["username"].required = False
 
     def clean(self):
@@ -211,7 +217,6 @@ class RegistroForm(UserCreationForm):
         cleaned_data = super().clean()
         documento = cleaned_data.get("documento")
 
-        # Asignar el documento como username automáticamente
         if documento:
             cleaned_data["username"] = documento
 
@@ -271,23 +276,18 @@ class RegistroForm(UserCreationForm):
 
         errors = []
 
-        # Mínimo 8 caracteres
         if len(password) < 8:
             errors.append("La contraseña debe tener al menos 8 caracteres.")
 
-        # Al menos una letra mayúscula
         if not re.search(r"[A-Z]", password):
             errors.append("Debe contener al menos una letra mayúscula.")
 
-        # Al menos una letra minúscula
         if not re.search(r"[a-z]", password):
             errors.append("Debe contener al menos una letra minúscula.")
 
-        # Al menos un número
         if not re.search(r"\d", password):
             errors.append("Debe contener al menos un número.")
 
-        # Al menos un carácter especial
         if not re.search(r'[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\;\'`~]', password):
             errors.append("Debe contener al menos un carácter especial (!@#$%^&*...).")
 
@@ -316,7 +316,6 @@ class RegistroForm(UserCreationForm):
 
         if commit:
             user.save()
-            # Crear o actualizar el perfil manualmente
             perfil, created = PerfilUsuario.objects.get_or_create(
                 user=user,
                 defaults={
@@ -393,9 +392,7 @@ class EditarUsuarioForm(forms.ModelForm):
         """
         user = super().save(commit=False)
 
-        # Preservar la contraseña original
         if self.instance.pk:
-            # Si el usuario ya existe, obtener la contraseña original
             original_user = User.objects.get(pk=self.instance.pk)
             user.password = original_user.password
 
@@ -426,7 +423,6 @@ class EditarPerfilForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
 
-# ==================== FORMULARIOS DE RECUPERACIÓN DE CONTRASEÑA ====================
 
 
 class PasswordResetRequestForm(forms.Form):
@@ -485,23 +481,18 @@ class PasswordResetConfirmForm(forms.Form):
 
         errors = []
 
-        # Mínimo 8 caracteres
         if len(password) < 8:
             errors.append("La contraseña debe tener al menos 8 caracteres.")
 
-        # Al menos una letra mayúscula
         if not re.search(r"[A-Z]", password):
             errors.append("Debe contener al menos una letra mayúscula.")
 
-        # Al menos una letra minúscula
         if not re.search(r"[a-z]", password):
             errors.append("Debe contener al menos una letra minúscula.")
 
-        # Al menos un número
         if not re.search(r"\d", password):
             errors.append("Debe contener al menos un número.")
 
-        # Al menos un carácter especial
         if not re.search(r'[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\;\'`~]', password):
             errors.append("Debe contener al menos un carácter especial (!@#$%^&*...).")
 

@@ -1,4 +1,4 @@
-from datetime import date, time
+﻿from datetime import date, time
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
@@ -75,7 +75,6 @@ class CoordinadorTestBase(TestCase):
 		)
 
 class CoordinadorViewsTests(CoordinadorTestBase):
-	# Test 1: listar solicitudes internas filtrando por estado y texto de busqueda
 
 	def test_api_solicitudes_internas_filtra_por_estado_y_busqueda(self):
 		self.login_como_coordinador()
@@ -92,7 +91,6 @@ class CoordinadorViewsTests(CoordinadorTestBase):
 		self.assertEqual(payload["visitas"][0]["id"], esperada.id)
 		self.assertEqual(payload["visitas"][0]["tipo"], "interna")
 
-	# Test 2: aprobar solicitud interna y registrar aprobacion e historial
 
 	def test_api_accion_aprobar_interna_actualiza_estado_y_registra(self):
 		self.login_como_coordinador()
@@ -120,7 +118,6 @@ class CoordinadorViewsTests(CoordinadorTestBase):
 			).exists()
 		)
 
-	# Test 3: rechazar solicitud externa, crear reprogramacion y liberar reserva
 
 	def test_api_accion_rechazar_externa_crea_reprogramacion_y_libera_reserva(self):
 		self.login_como_coordinador()
@@ -164,7 +161,6 @@ class CoordinadorViewsTests(CoordinadorTestBase):
 			).exists()
 		)
 
-	# Test 4: resumen del dia devuelve error 400 cuando la fecha es invalida
 
 	def test_resumen_dia_coordinador_fecha_invalida_retorna_400(self):
 		self.login_como_coordinador()
@@ -174,7 +170,6 @@ class CoordinadorViewsTests(CoordinadorTestBase):
 		self.assertEqual(response.status_code, 400)
 		self.assertFalse(response.json()["ok"])
 
-	# Test 5: resumen del dia incluye visitas internas y externas del mismo dia
 
 	def test_resumen_dia_coordinador_retorna_visitas_de_ambos_tipos(self):
 		self.login_como_coordinador()

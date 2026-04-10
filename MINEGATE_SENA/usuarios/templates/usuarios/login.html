@@ -1,4 +1,4 @@
-{% load accesibility_tags %}
+﻿{% load accesibility_tags %}
 {% load static %}
 <!DOCTYPE html>
 
@@ -17,14 +17,29 @@
     <link rel="stylesheet" href="{% static 'css/login.css' %}" />
     <link rel="stylesheet" href="{% static 'css/auth.css' %}" />
     <link rel="stylesheet" href="{% static 'core/styles.css' %}" />
+    <style>
+        .security-check-label {
+            font-size: 0.86rem;
+            color: #2e7d32;
+            font-weight: 600;
+        }
+
+        .captcha-compact {
+            transform: scale(0.88);
+            transform-origin: left top;
+            width: 268px;
+            margin-top: 2px;
+            margin-bottom: -8px;
+        }
+    </style>
 </head>
 
 <body>
-    <!-- Contenedor de alertas -->
+    
     <div class="alerts-container" id="alertsContainer"></div>
 
     <div class="container" id="container">
-        <!-- Formulario de Inicio de Sesión -->
+        
         <div class="form-container sign-in">
             <form action="{% url 'usuarios:login' %}" method="POST" id="loginForm">
                 {% csrf_token %}
@@ -52,6 +67,16 @@
                         <span class="field-error">{{ form.password.errors|striptags }}</span>
                     {% endif %}
                 </div>
+
+                <div class="form-group">
+                    <label class="security-check-label">
+                        <i class="fa-solid fa-shield-halved"></i> Verificación de seguridad
+                    </label>
+                    <div class="captcha-compact">{{ form.captcha }}</div>
+                    {% if form.captcha.errors %}
+                        <span class="field-error">{{ form.captcha.errors|striptags }}</span>
+                    {% endif %}
+                </div>
                 
                 <label style="font-size: 12px; margin-top: 10px; display: flex; align-items: center;">
                     <input type="checkbox" name="remember_me" style="margin-right: 8px;"> Recordarme
@@ -68,7 +93,7 @@
             </form>
         </div>
 
-        <!-- Panel de Bienvenida -->
+        
         <div class="toggle-container">
             <div class="toggle">
                 <div class="toggle-panel toggle-right">

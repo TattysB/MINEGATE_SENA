@@ -1,4 +1,4 @@
-from django.db import models
+﻿from django.db import models
 from django.conf import settings
 from django.utils import timezone
 import uuid
@@ -58,7 +58,6 @@ class VisitaExterna(models.Model):
     )
     cantidad_visitantes = models.IntegerField(verbose_name="Cantidad de Visitantes")
 
-    # Campos de fecha y horario de la visita
     fecha_visita = models.DateField(
         verbose_name="Fecha de la visita", null=True, blank=True
     )
@@ -124,7 +123,6 @@ class AsistenteVisitaExterna(models.Model):
         auto_now_add=True, verbose_name="Fecha de Registro"
     )
 
-    # Estado del asistente
     estado = models.CharField(
         max_length=25,
         choices=ESTADO_ASISTENTE_CHOICES,
@@ -132,7 +130,6 @@ class AsistenteVisitaExterna(models.Model):
         verbose_name="Estado de documentos",
     )
 
-    # Documentos
     documento_identidad = models.FileField(
         upload_to=documento_asistente_path_externa,
         blank=True,
@@ -165,12 +162,10 @@ class AsistenteVisitaExterna(models.Model):
         blank=True, verbose_name="Observaciones Autorización Padres"
     )
 
-    # Observaciones del revisor
     observaciones_revision = models.TextField(
         blank=True, verbose_name="Observaciones de revisión"
     )
 
-    # Campos para QR
     qr_generado = models.BooleanField(default=False, verbose_name="QR Generado")
     fecha_envio_qr = models.DateTimeField(
         null=True, blank=True, verbose_name="Fecha de Envío del QR"
@@ -179,7 +174,6 @@ class AsistenteVisitaExterna(models.Model):
         default=False, verbose_name="Email con QR Enviado"
     )
 
-    # Campos para reutilización de asistentes
     puede_reutilizar = models.BooleanField(
         default=True, verbose_name="Puede reutilizarse en futuras visitas"
     )

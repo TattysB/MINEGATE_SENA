@@ -1,4 +1,4 @@
-"""
+﻿"""
 URL configuration for MINEGATE_SENA project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
@@ -27,14 +27,12 @@ urlpatterns = [
     path('',include('core.urls')),
     path('auth/',include('usuarios.urls')),
     path('chatbot/', include('chatbot.urls')),
-    # Nuevas apps organizadas
     path('gestion/', include('gestion_visitas.urls')),
     path('visitante/', include('panel_visitante.urls')),
     path('documentos/', include('documentos.urls')),
     path('calendario/', include('calendario.urls')),
     path('visita_interna/', include('visitaInterna.urls')),
     path('visita_externa/', include('visitaExterna.urls')),
-    # Paneles de instructores
     path('instructor/interno/', include('panel_instructor_interno.urls')),
     path('instructor/externo/', include('panel_instructor_externo.urls')),    
     path('coordinador/', include('coordinador.urls')),

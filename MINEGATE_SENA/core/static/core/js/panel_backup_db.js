@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   function useAlert(message, type) {
     if (typeof window.mAlert === "function") {
       return window.mAlert(message, type);
@@ -21,6 +21,37 @@
     }
     boton.disabled = true;
     boton.innerHTML = '<i class="ri-loader-4-line"></i><span>' + textoCargando + "</span>";
+  }
+
+  function mostrarAlertasServidorComoEmergentes(panel) {
+    var contenedorMensajes = panel.querySelector("#backupMessages");
+    if (!contenedorMensajes) return;
+
+    var alertas = Array.prototype.slice.call(
+      contenedorMensajes.querySelectorAll(".backup-alert")
+    );
+    if (!alertas.length) return;
+
+    contenedorMensajes.style.display = "none";
+
+    var cola = Promise.resolve();
+    alertas.forEach(function (alerta) {
+      var texto = String(alerta.textContent || "").trim();
+      if (!texto) return;
+
+      var tipo = "info";
+      if (alerta.classList.contains("success")) {
+        tipo = "success";
+      } else if (alerta.classList.contains("warning")) {
+        tipo = "warning";
+      } else if (alerta.classList.contains("error") || alerta.classList.contains("danger")) {
+        tipo = "error";
+      }
+
+      cola = cola.then(function () {
+        return useAlert(texto, tipo);
+      });
+    });
   }
 
   function crearControlModalPassword() {
@@ -197,6 +228,8 @@
   function inicializarPanelBackups() {
     var panel = document.querySelector('[data-backup-panel="true"]');
     if (!panel) return;
+
+    mostrarAlertasServidorComoEmergentes(panel);
 
     var modalPassword = crearControlModalPassword();
 

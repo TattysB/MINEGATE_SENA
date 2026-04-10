@@ -1,6 +1,6 @@
-/* ===== ESTILOS DE SOLICITAR RECUPERACIÓN ===== */
+﻿
 
-/* Animaciones adicionales */
+
 .recuperacion-container {
     animation: slideUp 0.6s ease-out;
 }
@@ -76,7 +76,7 @@
     transform: translateY(-1px);
 }
 
-/* Loading animation */
+
 .btn-submit.loading {
     pointer-events: none;
     opacity: 0.8;
@@ -110,7 +110,7 @@
     transform: translateX(-3px);
 }
 
-/* Input focus animation */
+
 .form-group input {
     transition: all 0.3s ease;
 }
@@ -119,7 +119,7 @@
     transform: scale(1.02);
 }
 
-/* Shake animation para alertas */
+
 @keyframes shake {
     0%, 100% { transform: translateX(0); }
     10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }

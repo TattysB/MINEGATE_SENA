@@ -1,4 +1,4 @@
-#calendarioSeleccionPage {
+﻿#calendarioSeleccionPage {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.95fr);
   gap: 24px;
@@ -146,7 +146,7 @@
   margin-top: 10px !important;
 }
 
-/* Override generic admin calendar rules with stronger selectors in Nueva Visita panel. */
+
 #mainContent #calendarioSeleccionPage.calendar-page {
   width: 100%;
   max-width: 100%;

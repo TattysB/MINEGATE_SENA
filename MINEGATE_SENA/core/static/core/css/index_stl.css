@@ -1,18 +1,18 @@
-/* .navbar-logo moved to global styles.css */
-/* Estilos para la sección principal (Hero Section) */
+﻿
+
 .hero-section {
     background-color: #222;
-    /* Fondo oscuro por defecto */
+    
     color: white;
-    /* Color del texto sobre la imagen */
+    
     padding: 150px 20px;
-    /* Espaciado interno */
+    
     text-align: center;
     position: relative;
     overflow: hidden;
-    /* Para que el carrusel no sobresalga */
+    
     min-height: 80vh;
-    /* Restaura la altura visual completa del panorama */
+    
 }
 
 .hero-section::before {
@@ -23,13 +23,13 @@
     right: 0;
     bottom: 0;
     background: rgba(66, 60, 60, 0.473);
-    /* Capa oscura semitransparente */
+    
     z-index: 1;
 }
 
 .hero-content {
     position: relative;
-    /* Asegura que el contenido esté sobre la capa oscura */
+    
     z-index: 2;
     max-width: 900px;
     margin: 0 auto;
@@ -38,9 +38,9 @@
 .hero-content h1 {
     font-family: 'Work Sans', sans-serif;
     font-size: 4em;
-    /* Más grande el título */
+    
     font-weight: 700;
-    /* Bold para títulos */
+    
     margin-bottom: 20px;
     line-height: 1.2;
 }
@@ -48,46 +48,46 @@
 .hero-content .subtitle {
     font-family: 'Work Sans', sans-serif;
     font-size: 1.8em;
-    /* Más grande el subtítulo */
+    
     margin-bottom: 40px;
     font-weight: 400;
-    /* Regular / Medium */
+    
 }
 
-/* Aplicando Work Sans a los textos genéricos del hero */
+
 .sicam-tagline,
 .sicam-invitation,
 .sicam-description p,
 .carousel-caption * {
     font-family: 'Work Sans', sans-serif;
     color: #ffffff !important;
-    /* Fuerza el color blanco puro y radiante */
+    
     text-shadow: 2px 2px 5px rgba(0, 0, 0, 1), 0px 0px 20px rgba(0, 0, 0, 0.9), 0px 0px 30px rgba(0, 0, 0, 0.8) !important;
-    /* Sombras 100% negras, gruesas y difuminadas para garantizar contraste extremo */
+    
     font-weight: 700;
-    /* Engruesa ligeramente todo el texto para darle más solidez frente a la imagen */
+    
 }
 
 .sicam-tagline {
     font-size: 1.5em;
-    /* Un poco más grande */
+    
 }
 
 .sicam-invitation {
     font-size: 1.7em;
-    /* Un poco más grande */
+    
 }
 
 .sicam-description p {
     font-size: 2.2em;
-    /* Tamaño aún más grande para la tercera imagen */
+    
 }
 
-/* Efecto hover interactivo para la tarjeta del mapa */
+
 .map-card-hover {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     border-radius: 2.5rem !important;
-    /* Esquinas muy redondeadas tipo óvalo */
+    
 }
 
 .map-card-hover:hover {
@@ -95,12 +95,12 @@
     box-shadow: 0 1rem 3rem rgba(9, 53, 2, 0.525) !important;
 }
 
-/* Estilos de Botones CTA */
+
 .cta-buttons {
     display: flex;
     justify-content: center;
     gap: 20px;
-    /* Espacio entre los botones */
+    
     margin-top: 30px;
 }
 
@@ -114,7 +114,7 @@
 
 .btn-primary {
     background-color: #58af22;
-    /* Amarillo/Naranja de seguridad */
+    
     color: #1a1a1a;
     border: 2px solid #58af22;
 }
@@ -133,12 +133,12 @@
     background-color: rgba(255, 255, 255, 0.1);
 }
 
-/* Estilos para la sección de valor */
 
-/* Estilos para la Sección de Protocolos de Seguridad (Light Theme) */
+
+
 .security-protocols-section {
     background-color: #ffffff;
-    /* Fondo blanco */
+    
     color: #1a1a1a;
 }
 
@@ -177,18 +177,18 @@
 
 .important-note {
     background-color: #f1f9ec !important;
-    /* Verde muy claro */
+    
     border: 1px solid #cce8bc !important;
-    /* Borde verde suave */
+    
     border-radius: 4rem !important;
-    /* Bordes muy ovalados */
+    
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    /* Efecto elástico para el "saltico" */
+    
 }
 
 .important-note:hover {
     transform: translateY(-10px) scale(1.01);
-    /* El "saltico" */
+    
     background-color: #ebf5e6 !important;
     border-color: #3fa500 !important;
     box-shadow: 0 10px 25px rgba(63, 165, 0, 0.15);
@@ -204,36 +204,36 @@
     align-items: center;
     justify-content: center;
     border-radius: 1.5rem;
-    /* Icono con bordes redondeados */
+    
     flex-shrink: 0;
 }
 
-/* Estilos para la sección de valor */
 
 
-/* Media Query para hacerlo Responsivo */
+
+
 @media (max-width: 768px) {
     .feature-card {
         width: 100%;
-        /* Una sola columna en móviles */
+        
         margin-bottom: 20px;
     }
 }
 
-/* Estilos para las Tarjetas de Características (Publicidad) */
+
 .card.h-100.shadow-sm {
     transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     background-color: #ffffff;
     border-radius: 2.5rem !important;
-    /* Bordes ovalados */
+    
     border: 1px solid rgba(0, 0, 0, 0.05) !important;
 }
 
 .card.h-100.shadow-sm:hover {
     transform: translateY(-12px) scale(1.02);
-    /* El "saltico" más pronunciado */
+    
     box-shadow: 0 20px 40px rgba(63, 165, 0, 0.15) !important;
-    /* Brillo verde sutil */
+    
     border-color: rgba(63, 165, 0, 0.3) !important;
 }
 
@@ -361,10 +361,10 @@
 }
 
 
-/* Estilos para la Sección de Estadísticas (Cifras de Impacto) */
+
 .stats-section {
     background-color: #343a40;
-    /* Fondo oscuro (gris minero) */
+    
     color: white;
     padding: 80px 20px;
     text-align: center;
@@ -377,12 +377,12 @@
     max-width: 1200px;
     margin: 0 auto;
     flex-wrap: wrap;
-    /* Para manejo en móviles */
+    
 }
 
 .stat-block {
     flex-basis: 22%;
-    /* Distribución en 4 columnas */
+    
     padding: 20px;
     margin: 10px 0;
 }
@@ -391,7 +391,7 @@
     font-size: 3.5em;
     font-weight: 700;
     color: #ffc107;
-    /* Color de acento (Amarillo/Naranja) */
+    
     margin-bottom: 5px;
 }
 
@@ -401,31 +401,61 @@
     opacity: 0.9;
 }
 
-/* Media Query para hacerlo Responsivo */
+
 @media (max-width: 768px) {
     .stat-block {
         flex-basis: 45%;
-        /* Dos columnas en tablets */
+        
     }
 }
 
 @media (max-width: 480px) {
     .stat-block {
         flex-basis: 100%;
-        /* Una sola columna en móviles */
+        
     }
 }
 
-/* Carousel */
+
+
+.carousel-item {
+    position: relative;
+}
+
+.carousel-watermark {
+    position: absolute;
+    left: 0.7rem;
+    bottom: 0.7rem;
+    z-index: 3;
+    pointer-events: none;
+    max-width: calc(100% - 1.4rem);
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.28);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    color: #fff;
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.30);
+    backdrop-filter: blur(8px);
+    opacity: 0.72;
+    line-height: 1.1;
+}
+
+.carousel-caption {
+    z-index: 4;
+}
 
 .carousel-item img {
     height: 500px;
-    /* Ajusta la altura a tu gusto */
+    
     object-fit: cover;
-    /* Esto evita que la imagen se estire feo */
+    
 }
 
-/* Ajuste para que el carrusel se vea bien en móviles */
+
 @media (max-width: 768px) {
     .carousel-item img {
         height: 300px;

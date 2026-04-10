@@ -1,4 +1,4 @@
-"""
+﻿"""
 Servicio para generar QR y PDF con información del asistente.
 Proporciona funcionalidad para crear documentos profesionales con QR.
 """
@@ -32,14 +32,12 @@ class GeneradorQRPDF:
     Incluye información del asistente, visita y código QR.
     """
     
-    # Colores corporativos SENA
     COLOR_PRIMARIO = HexColor('#39A900')      # Verde institucional SENA
     COLOR_SECUNDARIO = HexColor('#007832')    # Verde oscuro de apoyo
     COLOR_ACENTO = HexColor('#8BC53F')        # Verde claro de apoyo
     COLOR_GRIS_CLARO = HexColor('#F5F5F5')
     COLOR_GRIS_OSCURO = HexColor('#333333')
     
-    # Tamaño de página
     ANCHO, ALTO = A4
     
     def __init__(self, asistente, visita, tipo_visita='interna'):
@@ -71,7 +69,6 @@ class GeneradorQRPDF:
         """
         datos = self.generar_datos_qr()
         
-        # Generar QR
         qr = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -81,10 +78,8 @@ class GeneradorQRPDF:
         qr.add_data(datos)
         qr.make(fit=True)
         
-        # Crear imagen
         img = qr.make_image(fill_color="black", back_color="white")
         
-        # Guardar en BytesIO
         img_buffer = BytesIO()
         img.save(img_buffer, format='PNG')
         img_buffer.seek(0)
@@ -96,10 +91,8 @@ class GeneradorQRPDF:
         Genera un PDF simple con el nombre y el código QR.
         Retorna BytesIO con PDF generado.
         """
-        # Crear imagen QR
         qr_imagen = self.crear_qr_imagen()
         
-        # Crear PDF
         pdf_buffer = BytesIO()
         doc = SimpleDocTemplate(
             pdf_buffer,
@@ -111,7 +104,6 @@ class GeneradorQRPDF:
         )
         ancho_util = self.ANCHO - 2*cm
         
-        # Estilos
         styles = getSampleStyleSheet()
 
         nombre_texto = (getattr(self.asistente, 'nombre_completo', '') or '').strip()
@@ -173,15 +165,12 @@ class GeneradorQRPDF:
             fontName='Helvetica-Bold'
         )
         
-        # Construcción del documento
         elementos = []
         
-        # Encabezado
         elementos.append(Paragraph("SENA", titulo_style))
         elementos.append(Paragraph("CÓDIGO QR DE ACCESO", subtitulo_style))
         elementos.append(Spacer(1, 0.2*cm))
         
-        # Línea divisora
         tabla_linea = Table(
             [[' ']],
             colWidths=[ancho_util],
@@ -197,7 +186,6 @@ class GeneradorQRPDF:
 
         qr_imagen.seek(0)
 
-        # Tabla con QR
         tabla_qr = Table(
             [[RLImage(qr_imagen, width=13.5*cm, height=13.5*cm)]],
             colWidths=[ancho_util],
@@ -212,7 +200,6 @@ class GeneradorQRPDF:
         elementos.append(tabla_qr)
         elementos.append(Spacer(1, 0.45*cm))
         
-        # Información adicional
         elementos.append(Paragraph(
             "Presenta este código al ingreso.",
             ParagraphStyle(
@@ -224,7 +211,6 @@ class GeneradorQRPDF:
             )
         ))
         
-        # Pie de página
         elementos.append(Spacer(1, 0.5*cm))
         elementos.append(Paragraph(
             f"Generado: {datetime.now().strftime('%d/%m/%Y a las %H:%M')}",
@@ -237,7 +223,6 @@ class GeneradorQRPDF:
             )
         ))
         
-        # Construir PDF
         doc.build(elementos)
         pdf_buffer.seek(0)
         
@@ -254,16 +239,13 @@ class GeneradorQRPDF:
             bool: True si se envió exitosamente, False en caso contrario
         """
         try:
-            # Generar PDF
             pdf_buffer = self.generar_pdf_profesional()
             
-            # Configurar email
             if not correo_remitente:
                 correo_remitente = settings.DEFAULT_FROM_EMAIL
             
             asunto = f"Código QR - Visita {self.tipo_visita.capitalize()} SENA"
             
-            # Verbo para la visita
             if self.tipo_visita == 'interna':
                 programa = self.visita.nombre_programa
                 descripcion_visita = f"la ficha {self.visita.numero_ficha} del programa {programa}"
@@ -288,7 +270,6 @@ Saludos,
 Sistema de Gestión de Visitas SENA
             """
             
-            # Crear mensaje
             email = EmailMessage(
                 subject=asunto,
                 body=mensaje_texto,
@@ -296,14 +277,12 @@ Sistema de Gestión de Visitas SENA
                 to=[self.asistente.correo],
             )
             
-            # Adjuntar PDF
             email.attach(
                 f"QR_Visita_{self.asistente.numero_documento}.pdf",
                 pdf_buffer.getvalue(),
                 "application/pdf"
             )
             
-            # Enviar
             resultado = email.send()
             
             if resultado:

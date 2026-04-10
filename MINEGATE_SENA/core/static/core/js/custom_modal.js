@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   if (window.__minegateCustomModalLoaded) {
     return;
   }
@@ -262,7 +262,6 @@
   window.mConfirm = confirmModal;
   window.mPrompt = promptModal;
 
-  // Reemplaza alert nativo para unificar la experiencia visual.
   window.alert = function (message) {
     return alertModal(message, null);
   };
@@ -282,6 +281,5 @@
     attachInlineConfirmInterceptor();
   });
 
-  // Fallback si por alguna razón no se pudo crear el modal.
   window.mNativeAlert = nativeAlert;
 })();

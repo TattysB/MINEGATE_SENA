@@ -1,4 +1,4 @@
-function getCsrfToken() {
+﻿function getCsrfToken() {
   const match = document.cookie.match(/(^|;)\s*csrftoken\s*=\s*([^;]+)/);
   return match ? match.pop() : '';
 }
@@ -155,7 +155,7 @@ function _inferirExtensionDesdeMimeVisitas(contentType) {
   return '';
 }
 
-let tipoVisitaActual = 'internas';
+let tipoVisitaActual = 'todas';
 
 function esUsuarioSst() {
   return Boolean(window.panelPermisos && window.panelPermisos.soloSst);
@@ -180,6 +180,7 @@ function actualizarTarjetaEstadoActiva(estado) {
   const selectorPorEstado = {
     todos: '.gv-stat-total',
     pendiente: '.gv-stat-pendiente',
+    hoy: null,
     aprobadas: '.gv-stat-aprobada',
     aprobada_inicial: '.gv-stat-aprobada',
     en_revision_documentos: '.gv-stat-revision',
@@ -199,19 +200,31 @@ function actualizarTarjetaEstadoActiva(estado) {
 function cargarVisitas() {
   const estadoEl = document.getElementById('filtroEstadoVisita');
   const buscarEl = document.getElementById('buscarVisita');
+  const fechaDesdeEl = document.getElementById('filtroFechaDesde');
+  const fechaHastaEl = document.getElementById('filtroFechaHasta');
   const tbody = document.getElementById('cuerpoTablaVisitas');
 
   if (!estadoEl || !buscarEl || !tbody) return;
 
   const estado = estadoEl.value;
   const buscar = buscarEl.value;
+  const fechaDesde = fechaDesdeEl ? fechaDesdeEl.value : '';
+  const fechaHasta = fechaHastaEl ? fechaHastaEl.value : '';
 
   tbody.innerHTML = `<tr><td colspan="8" class="docs-cargando">
       <i class="ri-loader-4-line"></i>
       <p>Cargando visitas...</p>
     </td></tr>`;
 
-  return fetch(`/gestion/visitas/?tipo=${tipoVisitaActual}&estado=${estado}&buscar=${encodeURIComponent(buscar)}`)
+  const params = new URLSearchParams({
+    tipo: tipoVisitaActual,
+    estado: estado,
+    buscar: buscar,
+  });
+  if (fechaDesde) params.set('fecha_desde', fechaDesde);
+  if (fechaHasta) params.set('fecha_hasta', fechaHasta);
+
+  return fetch(`/gestion/visitas/?${params.toString()}`)
     .then(response => response.json())
     .then(data => {
       const totalEl = document.getElementById('statTotalVisitas');
@@ -302,6 +315,14 @@ function cargarVisitas() {
           <p>Error al cargar las visitas</p>
         </td></tr>`;
     });
+}
+
+function limpiarFiltroFechas() {
+  const desdeEl = document.getElementById('filtroFechaDesde');
+  const hastaEl = document.getElementById('filtroFechaHasta');
+  if (desdeEl) desdeEl.value = '';
+  if (hastaEl) hastaEl.value = '';
+  cargarVisitas();
 }
 
 function getEstadoBadge(estado) {
@@ -559,7 +580,6 @@ function mostrarDocumentosPorEstado(filtro) {
   const subtitulo = document.getElementById('subtituloInlineDocs');
   const statsDiv = document.getElementById('statsInlineDocs');
 
-  // Si el bloque inline fue retirado del layout, mantener flujo en la tabla.
   if (!inlineContainer || !contenido || !titulo || !subtitulo || !statsDiv) {
     if (tablaContainer) tablaContainer.style.display = '';
     return;
@@ -671,7 +691,6 @@ function mostrarDocumentosPorEstado(filtro) {
               </div>
               <div style="padding:12px 18px;">`;
 
-        // Extraer y mostrar documentos finales de toda la visita (ultima version por categoria+titulo)
         const finalesPorClave = {};
         visita.asistentes.forEach(asistente => {
           (asistente.documentos_subidos || []).forEach(ds => {
@@ -689,7 +708,6 @@ function mostrarDocumentosPorEstado(filtro) {
           return String(a.titulo || '').localeCompare(String(b.titulo || ''));
         });
 
-        // Mostrar documentos finales de la visita (una sola vez)
         if (documentos_finales_visita.length > 0) {
           html += `
             <div style="padding:10px 14px;margin:6px 0;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;border-left:4px solid #22c55e;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
@@ -742,7 +760,6 @@ function mostrarDocumentosPorEstado(filtro) {
         }
 
         visita.asistentes.forEach(a => {
-          // Si solo falló un archivo final (ATS/inducción/charla), no marcar al asistente como rechazado.
           const documentosSubidosAsistente = a.documentos_subidos || [];
           const documentosPersonalesAsistente = documentosSubidosAsistente.filter(ds =>
             !esCategoriaArchivoFinal(ds.categoria)
@@ -783,7 +800,6 @@ function mostrarDocumentosPorEstado(filtro) {
                   </div>`;
           }
           if (a.documentos_subidos && a.documentos_subidos.length > 0) {
-            // Filtrar SOLO documentos que NO sean los archivos finales (para evitar duplicados)
             const documentos_personales = a.documentos_subidos.filter(ds =>
               !esCategoriaArchivoFinal(ds.categoria)
             );
@@ -792,7 +808,6 @@ function mostrarDocumentosPorEstado(filtro) {
               ? documentos_personales.filter(ds => ds.estado === 'rechazado')
               : documentos_personales;
 
-            // Mostrar solo documentos personales del asistente (no los finales)
             documentos_personales_mostrar.forEach(ds => {
               const badgeDoc = getBadgeRevisionDocumento(ds);
               const observacionDoc = ds.observaciones_revision
@@ -1017,7 +1032,6 @@ async function visualizarDocumento(url, titulo, extraOptions = null) {
     absoluteUrl = window.location.origin + url;
   }
 
-  // Detectar extensión del archivo
   let nombreArchivo = (extraOptions && extraOptions.nombre_archivo)
     ? extraOptions.nombre_archivo
     : url.split('/').pop().split('?')[0];
@@ -1248,7 +1262,6 @@ function verDetalleVisita(tipo, id) {
   fetch(`/gestion/visitas/${tipo}/${id}/`)
     .then(response => response.json())
     .then(data => {
-      // Extraer documentos finales de toda la visita (ultima version por categoria+titulo)
       const finalesPorClave = {};
       data.asistentes.forEach(asistente => {
         (asistente.documentos_subidos || []).forEach(ds => {
@@ -1266,7 +1279,6 @@ function verDetalleVisita(tipo, id) {
         return String(a.titulo || '').localeCompare(String(b.titulo || ''));
       });
 
-      // Construir HTML de archivos finales
       let archivosFinalesHtml = '';
       if (documentos_finales.length > 0) {
         archivosFinalesHtml = `
@@ -1405,7 +1417,6 @@ function verDetalleVisita(tipo, id) {
             }
           }
           if (a.documentos_subidos && a.documentos_subidos.length > 0) {
-            // Filtrar SOLO documentos que NO sean los archivos finales
             const documentos_personales = a.documentos_subidos.filter(ds =>
               !esCategoriaArchivoFinal(ds.categoria)
             );
@@ -1919,7 +1930,6 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 });
 
-// Resaltar fila objetivo si la URL contiene ?tipo=&id=
 document.addEventListener('DOMContentLoaded', () => {
   const params = new URLSearchParams(window.location.search);
   const tipoParam = params.get('tipo');
@@ -1933,18 +1943,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const estadosDocs = new Set(['documentos_enviados', 'en_revision_documentos']);
   if (openDocsParam === '1' && estadoParam && estadosDocs.has(estadoParam) && typeof filtrarPorEstado === 'function') {
-    // Espera breve para permitir que la tabla/filtros terminen su carga inicial.
     setTimeout(() => filtrarPorEstado(estadoParam), 220);
   }
 
   if (!tipoParam || !idParam) return;
 
   const attempt = () => {
-    // selector por id creado: visita-<tipo>-<id>
     const sel = `#visita-${tipoParam}-${idParam}`;
     let el = document.querySelector(sel);
     if (!el) {
-      // fallback: buscar por data attributes
       el = document.querySelector(`.visit-row[data-id="${idParam}"][data-tipo="${tipoParam}"]`);
     }
     if (el) {
@@ -1955,7 +1962,6 @@ document.addEventListener('DOMContentLoaded', () => {
     return false;
   };
 
-  // Esperar la carga de visitas si cargarVisitas devuelve promesa
   if (typeof cargarVisitas === 'function') {
     const p = cargarVisitas();
     if (p && typeof p.then === 'function') {
@@ -1970,7 +1976,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // fallback retries
   let tries = 0;
   const max = 12;
   const iv = setInterval(() => {

@@ -1,8 +1,5 @@
-// ===== FUNCIONES DE AUTENTICACIÓN (LOGIN Y REGISTRO) =====
-
-// Función para mostrar alertas (modal centrado con overlay)
+﻿
 window.showAlert = function(message, type) {
-    // Crear overlay si no existe
     let overlay = document.getElementById('alertOverlay');
     if (!overlay) {
         overlay = document.createElement('div');
@@ -11,7 +8,6 @@ window.showAlert = function(message, type) {
         document.body.appendChild(overlay);
     }
 
-    // Crear modal si no existe
     let modal = document.getElementById('alertModal');
     if (!modal) {
         modal = document.createElement('div');
@@ -20,10 +16,8 @@ window.showAlert = function(message, type) {
         document.body.appendChild(modal);
     }
 
-    // Limpiar clases de tipo anteriores y agregar la nueva
     modal.className = 'alert-modal alert-' + (type || 'info');
 
-    // Definir icono y color según tipo
     const iconMap = {
         success: { icon: 'circle-check', color: '#10b981' },
         error: { icon: 'circle-exclamation', color: '#ef4444' },
@@ -32,7 +26,6 @@ window.showAlert = function(message, type) {
     };
     const config = iconMap[type] || iconMap.info;
 
-    // Contenido del modal
     modal.innerHTML = `
         <div class="alert-modal-icon" style="color: ${config.color}">
             <i class="fa-solid fa-${config.icon}"></i>
@@ -43,19 +36,16 @@ window.showAlert = function(message, type) {
         </button>
     `;
 
-    // Mostrar overlay y modal
     overlay.classList.add('active');
     modal.classList.add('active');
     document.body.classList.add('alert-open');
 
-    // Función para cerrar
     function closeModal() {
         modal.classList.remove('active');
         overlay.classList.remove('active');
         document.body.classList.remove('alert-open');
     }
 
-    // Eventos de cierre
     document.getElementById('alertCloseBtn').addEventListener('click', closeModal);
     overlay.addEventListener('click', closeModal);
     document.addEventListener('keydown', function onEsc(e) {
@@ -66,13 +56,10 @@ window.showAlert = function(message, type) {
     });
 };
 
-// Función auxiliar para mostrar error inline en un campo
 function showFieldError(input, message) {
     const container = input.closest('.form-group') || input.closest('.password-field') || input.parentElement;
-    // Eliminar error previo del mismo campo
     const existingError = container.querySelector('.field-error');
     if (existingError) existingError.remove();
-    // Crear y añadir mensaje de error
     const errorSpan = document.createElement('span');
     errorSpan.className = 'field-error';
     errorSpan.textContent = message;
@@ -80,7 +67,6 @@ function showFieldError(input, message) {
     input.classList.add('input-error');
 }
 
-// Función auxiliar para limpiar error inline de un campo
 function clearFieldError(input) {
     const container = input.closest('.form-group') || input.closest('.password-field') || input.parentElement;
     const existingError = container.querySelector('.field-error');
@@ -88,25 +74,20 @@ function clearFieldError(input) {
     input.classList.remove('input-error');
 }
 
-// ===== VALIDACIÓN EN TIEMPO REAL =====
 
-// Función para validar que solo se ingresen números
 function setupNumericOnlyField(input) {
     if (!input) return;
     
     input.addEventListener('input', function(e) {
-        // Eliminar cualquier carácter que no sea número
         this.value = this.value.replace(/[^0-9]/g, '');
     });
     
     input.addEventListener('keypress', function(e) {
-        // Prevenir ingreso de caracteres no numéricos
         if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'Tab') {
             e.preventDefault();
         }
     });
     
-    // Prevenir pegado de texto no numérico
     input.addEventListener('paste', function(e) {
         e.preventDefault();
         const pastedText = (e.clipboardData || window.clipboardData).getData('text');
@@ -115,27 +96,22 @@ function setupNumericOnlyField(input) {
     });
 }
 
-// Función para validar que solo se ingresen letras y convertir a formato título
 function setupLettersOnlyField(input) {
     if (!input) return;
     
     input.addEventListener('input', function(e) {
-        // Eliminar cualquier carácter que no sea letra o espacio
         let value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '');
-        // Evitar espacios múltiples
         value = value.replace(/\s+/g, ' ');
         this.value = value;
     });
     
     input.addEventListener('keypress', function(e) {
-        // Prevenir ingreso de caracteres no alfabéticos (excepto espacio)
         const char = e.key;
         if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]$/.test(char) && char !== 'Backspace' && char !== 'Delete' && char !== 'Tab') {
             e.preventDefault();
         }
     });
     
-    // Convertir a formato título al perder el foco
     input.addEventListener('blur', function() {
         if (this.value.trim()) {
             this.value = this.value.trim().split(' ')
@@ -145,7 +121,6 @@ function setupLettersOnlyField(input) {
         }
     });
     
-    // Prevenir pegado de texto con caracteres no válidos
     input.addEventListener('paste', function(e) {
         e.preventDefault();
         const pastedText = (e.clipboardData || window.clipboardData).getData('text');
@@ -154,7 +129,6 @@ function setupLettersOnlyField(input) {
     });
 }
 
-// ===== VALIDACIÓN DE FORTALEZA DE CONTRASEÑA =====
 
 function checkPasswordStrength(password) {
     const requirements = {
@@ -208,10 +182,8 @@ function createPasswordStrengthUI(passwordInput) {
     const formGroup = passwordInput.closest('.form-group');
     if (!formGroup) return;
     
-    // Verificar si ya existe la UI
     if (formGroup.querySelector('.password-strength-container')) return;
     
-    // Crear contenedor de fortaleza
     const strengthContainer = document.createElement('div');
     strengthContainer.className = 'password-strength-container';
     strengthContainer.innerHTML = `
@@ -245,7 +217,6 @@ function createPasswordStrengthUI(passwordInput) {
         </div>
     `;
     
-    // Insertar después del password-field
     const passwordField = formGroup.querySelector('.password-field');
     if (passwordField) {
         passwordField.after(strengthContainer);
@@ -253,17 +224,14 @@ function createPasswordStrengthUI(passwordInput) {
         formGroup.appendChild(strengthContainer);
     }
     
-    // Configurar evento de input
     passwordInput.addEventListener('input', function() {
         updatePasswordStrengthUI(this.value, strengthContainer);
     });
     
-    // Mostrar requisitos al enfocar
     passwordInput.addEventListener('focus', function() {
         strengthContainer.classList.add('visible');
     });
     
-    // Ocultar requisitos al desenfocar (si la contraseña está vacía)
     passwordInput.addEventListener('blur', function() {
         if (!this.value) {
             strengthContainer.classList.remove('visible');
@@ -279,21 +247,17 @@ function updatePasswordStrengthUI(password, container) {
     const strengthText = container.querySelector('.strength-text');
     const requirements = container.querySelectorAll('.requirement');
     
-    // Actualizar barra de fortaleza
     barFill.className = 'strength-bar-fill';
     if (result.strengthClass) {
         barFill.classList.add(result.strengthClass);
     }
     
-    // Calcular ancho de la barra
     const widthPercent = (result.metCount / 5) * 100;
     barFill.style.width = widthPercent + '%';
     
-    // Actualizar texto
     strengthText.textContent = result.strengthText;
     strengthText.className = 'strength-text ' + result.strengthClass;
     
-    // Actualizar requisitos
     requirements.forEach(req => {
         const reqName = req.dataset.req;
         const icon = req.querySelector('.req-icon');
@@ -314,13 +278,11 @@ function updatePasswordStrengthUI(password, container) {
         }
     });
     
-    // Mostrar contenedor si hay texto
     if (password.length > 0) {
         container.classList.add('visible');
     }
 }
 
-// Configurar validación de campos (errores inline, sin alertas flotantes)
 function setupValidationMessages() {
     const inputs = document.querySelectorAll('input[required], input[type="email"]');
     inputs.forEach(input => {
@@ -340,12 +302,10 @@ function setupValidationMessages() {
     });
 }
 
-// Funcionalidad para mostrar/ocultar contraseñas
 function setupPasswordToggle() {
     const toggleButtons = document.querySelectorAll('.toggle-password');
     
     toggleButtons.forEach(button => {
-        // Asegurar que el botón sea de tipo button
         button.type = 'button';
         
         button.addEventListener('click', function(e) {
@@ -377,7 +337,6 @@ function setupPasswordToggle() {
     });
 }
 
-// Validación de login
 function setupLoginValidation() {
     const loginForm = document.getElementById('loginForm');
     if (!loginForm) return;
@@ -389,7 +348,6 @@ function setupLoginValidation() {
         const password = passInput?.value || '';
         let hasErrors = false;
 
-        // Limpiar errores previos
         clearFieldError(userInput);
         clearFieldError(passInput);
 
@@ -409,7 +367,6 @@ function setupLoginValidation() {
     });
 }
 
-// Inicializar todo cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', function() {
     setupValidationMessages();
     setupPasswordToggle();

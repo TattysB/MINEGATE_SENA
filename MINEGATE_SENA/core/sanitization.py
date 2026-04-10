@@ -1,4 +1,4 @@
-import re
+﻿import re
 import unicodedata
 
 from django.utils.html import strip_tags
