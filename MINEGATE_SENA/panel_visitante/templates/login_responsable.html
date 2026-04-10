@@ -1,7 +1,7 @@
-{% extends "master.html" %}
+﻿{% extends "master.html" %}
 {% load static %}
 
-{% block title %}Acceso Responsable - MINEGATE{% endblock %}
+{% block title %}Acceso Responsable - SICAM{% endblock %}
 
 {% block content %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -43,6 +43,7 @@
             
             <form method="POST">
                 {% csrf_token %}
+                {{ form.media }}
                 
                 <div class="form-group">
                     <label for="documento">
@@ -72,7 +73,9 @@
                         <i class="fas fa-shield-alt"></i> Verificación de seguridad
                     </label>
                     <div class="captcha-wrapper">
-                        {{ form.captcha }}
+                        <div class="captcha-inner">
+                            {{ form.captcha }}
+                        </div>
                     </div>
                     {% if form.captcha.errors %}
                         <span class="field-error">{{ form.captcha.errors|striptags }}</span>
@@ -100,7 +103,7 @@
     </div>
 </div>
 
-<!-- Modal de Sesión Cerrada Correctamente -->
+
 <div class="modal fade" id="sessionClosedModal" tabindex="-1" aria-labelledby="sessionClosedLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content custom-modal-content">
@@ -120,7 +123,7 @@
     </div>
 </div>
 
-<!-- Modal de Proceso Completado -->
+
 <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content custom-modal-content">
@@ -140,7 +143,7 @@
     </div>
 </div>
 
-<!-- Modal de Cuenta Creada -->
+
 <div class="modal fade" id="accountCreatedModal" tabindex="-1" aria-labelledby="accountCreatedLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content custom-modal-content">
@@ -160,7 +163,7 @@
     </div>
 </div>
 
-<!-- Modal de Credenciales Inválidas -->
+
 <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content custom-modal-content">

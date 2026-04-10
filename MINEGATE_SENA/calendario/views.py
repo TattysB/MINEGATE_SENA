@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+﻿from django.shortcuts import render, redirect
 import calendar
 from datetime import date, datetime, timedelta
 from .models import Availability, ReservaHorario
@@ -196,7 +196,6 @@ def calendario_seleccion(request, year=None, month=None):
 
 	is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
 
-	# Obtener días disponibles (solo fechas futuras o de hoy)
 	try:
 		start_month = date(year, month, 1)
 		next_month = (start_month.replace(day=28) + timedelta(days=4)).replace(day=1)
@@ -204,13 +203,11 @@ def calendario_seleccion(request, year=None, month=None):
 		av_qs = Availability.objects.filter(date__gte=today, date__lte=end_month)
 		available_dates = set(a.date.isoformat() for a in av_qs)
 		
-		# Obtener reservas para este mes
 		reservas_qs = ReservaHorario.objects.filter(
 			fecha__gte=today,
 			fecha__lte=end_month
 		)
 		
-		# Crear diccionario de reservas por fecha para verificar disponibilidad
 		reservas_por_fecha = {}
 		for reserva in reservas_qs:
 			fecha_str = reserva.fecha.isoformat()
@@ -218,16 +215,13 @@ def calendario_seleccion(request, year=None, month=None):
 				reservas_por_fecha[fecha_str] = []
 			reservas_por_fecha[fecha_str].append(reserva)
 		
-		# Filtrar días donde todos los horarios están reservados
 		fechas_completamente_ocupadas = set()
 		for fecha_str in list(available_dates):
 			if fecha_str in reservas_por_fecha:
-				# Obtener disponibilidades para este día
 				fecha_date = datetime.strptime(fecha_str, '%Y-%m-%d').date()
 				disponibilidades = list(Availability.objects.filter(date=fecha_date))
 				reservas_del_dia = reservas_por_fecha[fecha_str]
 				
-				# Verificar si todos los horarios están reservados
 				todos_ocupados = True
 				for disp in disponibilidades:
 					start_time = disp.time
@@ -246,7 +240,6 @@ def calendario_seleccion(request, year=None, month=None):
 				if todos_ocupados:
 					fechas_completamente_ocupadas.add(fecha_str)
 		
-		# Quitar las fechas completamente ocupadas de available_dates
 		available_dates = available_dates - fechas_completamente_ocupadas
 		
 	except Exception:
@@ -305,7 +298,6 @@ def calendario_mes(request, year=None, month=None):
 	cal = calendar.Calendar(firstweekday=6)  # semana inicia en Domingo
 	month_days = list(cal.itermonthdates(year, month))
 
-	# Organizar en semanas (filas de 7 días) y añadir flags (hoy, otro mes, domingo)
 	weeks_raw = [month_days[i:i+7] for i in range(0, len(month_days), 7)]
 	weeks = []
 	for week in weeks_raw:
@@ -320,7 +312,6 @@ def calendario_mes(request, year=None, month=None):
 			})
 		weeks.append(row)
 
-	# Nombres de meses en español
 	meses_es = [
 		'', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
 		'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
@@ -337,33 +328,25 @@ def calendario_mes(request, year=None, month=None):
 		'include_assets': not is_ajax,
 	}
 
-	# Query availability for the shown month and build a set of dates
 	try:
 		start_month = date(year, month, 1)
-		# Fecha final del mes: avanzar al primer día del mes siguiente y restar uno
 		next_month = (start_month.replace(day=28) + timedelta(days=4)).replace(day=1)
 		end_month = next_month - timedelta(days=1)
 		av_qs = Availability.objects.filter(date__gte=start_month, date__lte=end_month)
-		# convertir a cadenas ISO para comparar en la plantilla
 		available_dates = set(a.date.isoformat() for a in av_qs)
-		# Unir fechas temporales guardadas en sesión (POST no-AJAX) para que
-		# el flujo de redirección muestre inmediatamente las nuevas disponibilidades.
 		try:
 			session_dates = request.session.pop('temp_available_dates', None)
 			if session_dates:
 				available_dates.update(session_dates)
 				request.session.modified = True
 		except Exception:
-			# no interrumpir el render si falla el acceso a la sesión
 			pass
 		context['available_dates'] = available_dates
 		
-		# Obtener reservas del mes para mostrar estados (pendiente/confirmada)
 		reservas_qs = ReservaHorario.objects.filter(
 			fecha__gte=start_month,
 			fecha__lte=end_month
 		)
-		# Agrupar por fecha y estado
 		fechas_pendientes = set()
 		fechas_confirmadas = set()
 		for reserva in reservas_qs:
@@ -381,7 +364,6 @@ def calendario_mes(request, year=None, month=None):
 		context['fechas_pendientes'] = set()
 		context['fechas_confirmadas'] = set()
 
-	# Si la petición es AJAX, devolver la misma plantilla para inyección en el panel
 	if is_ajax:
 		return render(request, 'calendario.html', context)
 
@@ -454,7 +436,6 @@ def _serialize_day_ranges(records):
 		else:
 			legacy_times.append(start_label)
 
-	# Compatibilidad con datos antiguos (slots cada 30 min): agrupar en rangos continuos
 	if legacy_times:
 		legacy_times_sorted = sorted(set(legacy_times))
 		if legacy_times_sorted:
@@ -551,7 +532,6 @@ def delete_day_availability(request):
 			start_value = datetime.strptime(start_label, '%H:%M').time()
 			end_value = datetime.strptime(end_label, '%H:%M').time()
 			deleted_count, _ = Availability.objects.filter(date=day_date, time=start_value, end_time=end_value).delete()
-			# Compatibilidad con datos antiguos guardados por slots (end_time=None)
 			if not deleted_count:
 				Availability.objects.filter(date=day_date, end_time__isnull=True, time__gte=start_value, time__lt=end_value).delete()
 		else:
@@ -586,7 +566,6 @@ def save_availability(request):
 	def normalize_part(p):
 		return _normalize_time_part(p)
 
-	# Nuevo formato: dates[] + ranges[] (HH:MM-HH:MM)
 	dates_raw = [d for d in request.POST.getlist('dates') if d and d.strip()]
 	ranges_raw = [r for r in request.POST.getlist('ranges') if r and r.strip()]
 
@@ -599,7 +578,6 @@ def save_availability(request):
 				continue
 			if d < today:
 				continue
-			# Sólo lunes a sábado
 			if d.weekday() == 6:
 				continue
 			parsed_dates.append(d)
@@ -636,7 +614,6 @@ def save_availability(request):
 
 		return redirect('calendario:index')
 
-	# Formato anterior (compatibilidad): start_date, end_date, times[] o times_text
 	start = request.POST.get('start_date')
 	end = request.POST.get('end_date')
 	times = request.POST.getlist('times')

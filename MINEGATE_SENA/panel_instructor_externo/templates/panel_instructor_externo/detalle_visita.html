@@ -1,4 +1,4 @@
-{% load static %}
+﻿{% load static %}
 {% load accesibility_tags %}
 
 <!DOCTYPE html>
@@ -6,7 +6,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Detalle Visita #{{ visita.id }} - MINEGATE</title>
+  <title>Detalle Visita #{{ visita.id }}  - SICAM</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=20260320a">
@@ -164,7 +164,7 @@
   </div>
   {% endif %}
 
-  <!-- ===== TIMELINE ===== -->
+  
   <div class="detail-card">
     <div class="detail-card-header azul"><i class="fas fa-map-signs"></i>Estado de la Solicitud</div>
     <div class="detail-card-body">
@@ -227,7 +227,7 @@
     </div>
   </div>
 
-  <!-- ===== DETALLES DE LA VISITA ===== -->
+  
   <div class="detail-card">
     <div class="detail-card-header azul"><i class="fas fa-calendar-check"></i>Detalles de la Visita</div>
     <div class="detail-card-body">
@@ -250,7 +250,7 @@
         </div>
         <div class="info-item">
           <label>Estado actual</label>
-          <span>{{ visita.get_estado_display }}</span>
+          <span>{{ visita.estado|estado_legible }}</span>
         </div>
         <div class="info-item">
           <label>Cantidad de visitantes</label>
@@ -285,7 +285,7 @@
   {% endif %}
 
   {% if visita.estado == 'documentos_enviados' or visita.estado == 'en_revision_documentos' or visita.estado == 'confirmada' or visita.estado == 'aprobada_inicial' and visita.asistentes.count > 0 %}
-  <!-- ===== REPORTE DE DILIGENCIAMIENTO DOCUMENTAL ===== -->
+  
   <div class="detail-card">
     <div class="detail-card-header {% if reporte_documental.hay_alertas %}morado{% else %}verde{% endif %}">
       <i class="fas fa-file-circle-check"></i>Reporte de Diligenciamiento
@@ -320,13 +320,11 @@
                   <i class="fas fa-user me-2" style="color:#2d8600;"></i>{{ asistente_alerta.nombre }}
                   <span class="doc-issue-sub">{{ asistente_alerta.documento }}</span>
                 </div>
-                {% for incidencia in asistente_alerta.incidencias %}
-                  {% if incidencia.tipo == 'rechazado' and incidencia.documento_subido_id %}
-                    <button type="button" class="btn" style="padding:4px 8px; font-size:0.75rem; background:#ef4444; color:white; border:none; border-radius:4px; cursor:pointer;" onclick="abrirModalSubirPorAsistente('{{ asistente_alerta.nombre }}', '{{ asistente_alerta.id }}', '{{ incidencia.detalle|escapejs }}', '{{ incidencia.documento_subido_id }}')">
-                      <i class="fas fa-upload me-1"></i>Subir corrección
-                    </button>
-                  {% endif %}
-                {% endfor %}
+                {% if asistente_alerta.tiene_documento_rechazado or asistente_alerta.tiene_autorizacion_rechazada %}
+                <button type="button" class="btn" style="padding:4px 8px; font-size:0.75rem; background:#ef4444; color:white; border:none; border-radius:4px; cursor:pointer;" onclick="abrirModalSubirPorAsistente('{{ asistente_alerta.nombre|escapejs }}', '{{ asistente_alerta.id }}', '{{ asistente_alerta.tiene_documento_rechazado|yesno:'1,0' }}', '{{ asistente_alerta.tiene_autorizacion_rechazada|yesno:'1,0' }}')">
+                  <i class="fas fa-upload me-1"></i>Subir correcciones
+                </button>
+                {% endif %}
               </div>
               {% for incidencia in asistente_alerta.incidencias %}
                 <div class="doc-issue-line">
@@ -379,7 +377,7 @@
   </div>
   {% endif %}
 
-  <!-- ===== REGISTRO DE VISITANTES ===== -->
+  
   {% if visita.estado == 'aprobada_inicial' or visita.estado == 'documentos_enviados' or visita.estado == 'en_revision_documentos' or visita.estado == 'confirmada' %}
   <div class="detail-card">
     <div class="detail-card-header morado">
@@ -444,26 +442,38 @@
           <i class="fas fa-check-circle me-2"></i>
           <strong>¡Visita aprobada!</strong> Ya puedes registrar los visitantes y luego enviar la solicitud final.
         </div>
+        {% if solicitud_final_historica %}
+        <div class="doc-resumen-box mb-3" style="background:#fef3c7;border-color:#fcd34d;color:#92400e;">
+          <i class="fas fa-lock me-2"></i>
+          Esta visita ya fue enviada previamente a revisión. Los datos de visitantes quedaron bloqueados y las correcciones documentales se envían automáticamente.
+        </div>
+        {% endif %}
         <div class="d-flex flex-wrap gap-2 mb-4">
           <a href="{% url 'panel_visitante:registrar_asistentes' tipo='externa' visita_id=visita.id %}" class="btn-registrar">
-            <i class="fas fa-user-plus"></i> Registrar / Ver visitantes
+            <i class="fas fa-user-plus"></i> {% if solicitud_final_historica %}Ver visitantes{% else %}Registrar / Ver visitantes{% endif %}
           </a>
           {% if visita.asistentes.count > 0 %}
-          {% if mostrar_boton_subir_archivos_finales %}
+          {% if not solicitud_final_historica and mostrar_boton_subir_archivos_finales %}
           <button type="button" onclick="abrirModalArchivosFinales(false)" class="btn-registrar" style="background: linear-gradient(135deg, #eae1b2 0%, #fff177 100%); color: #333; border: none; cursor: pointer;">
             <i class="fas fa-folder-open"></i> Subir archivos finales
           </button>
+          {% elif solicitud_final_historica %}
+          <span class="btn-registrar" style="background:#ecfeff;color:#0f766e;border:1px solid #99f6e4;cursor:default;">
+            <i class="fas fa-sync-alt"></i> Correcciones con envío automático
+          </span>
           {% else %}
           <span class="btn-registrar" style="background:#ecfdf3;color:#166534;border:1px solid #86efac;cursor:default;">
             <i class="fas fa-check-circle"></i> Archivos cargados para revisión
           </span>
           {% endif %}
+          {% if not solicitud_final_historica %}
           <form method="post" action="{% url 'panel_visitante:enviar_solicitud_final' tipo='externa' visita_id=visita.id %}" style="display:inline;">
             {% csrf_token %}
-            <button type="submit" id="btnEnviarSolicitudFinal" class="btn-enviar" {% if not enviar_final_habilitado %}disabled{% endif %} style="{% if not enviar_final_habilitado %}opacity: 0.5; cursor: not-allowed;{% endif %}">
+            <button type="button" onclick="abrirModalConfirmacion()" id="btnEnviarSolicitudFinal" class="btn-enviar" {% if not enviar_final_habilitado %}disabled{% endif %} style="{% if not enviar_final_habilitado %}opacity: 0.5; cursor: not-allowed;{% endif %}">
               <i class="fas fa-paper-plane"></i> Enviar solicitud final
             </button>
           </form>
+          {% endif %}
           {% endif %}
         </div>
       {% elif visita.estado == 'documentos_enviados' or visita.estado == 'en_revision_documentos' %}
@@ -498,7 +508,7 @@
             <a href="{% url 'panel_visitante:actualizar_info_asistente' tipo='externa' asistente_id=asistente.id %}"
                class="btn-actualizar-asi"
                onclick="return abrirModalActualizarAsistente(this.href);">
-              <i class="fas fa-pen me-1"></i>Actualizar
+              <i class="fas fa-pen me-1"></i>Actualizar datos/documentos
             </a>
             {% endif %}
             {% if permite_eliminar_asistentes %}
@@ -529,7 +539,7 @@
   </div>
   {% endif %}
 
-  <!-- ===== DATOS DE LA INSTITUCIÓN ===== -->
+  
   <div class="detail-card">
     <div class="detail-card-header verde"><i class="fas fa-building"></i>Datos de la Institución</div>
     <div class="detail-card-body">
@@ -547,7 +557,7 @@
     </div>
   </div>
 
-  <!-- ===== DATOS DEL RESPONSABLE ===== -->
+  
   <div class="detail-card">
     <div class="detail-card-header azul"><i class="fas fa-user-tie"></i>Datos del Responsable</div>
     <div class="detail-card-body">
@@ -560,7 +570,7 @@
     </div>
   </div>
 
-  <!-- BOTONES -->
+  
   <div class="d-flex gap-2">
     <a href="{% url 'panel_instructor_externo:panel' %}" class="btn btn-outline-secondary">
       <i class="fas fa-arrow-left me-2"></i>Volver al Panel
@@ -569,7 +579,7 @@
 
 </div>
 
-<!-- Modal Archivos Finales -->
+
 <div id="modalArchivosFinales" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); overflow-y: auto; padding: 24px 0;">
   <div style="background: #fff; padding: 32px 24px; border-radius: 12px; max-width: 600px; max-height: 88vh; overflow-y: auto; margin: 24px auto; box-shadow: 0 8px 32px rgba(0,0,0,0.2); position: relative;">
     <button onclick="cerrarModalArchivosFinales()" style="position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 1.5rem; color: #888; cursor: pointer;">&times;</button>
@@ -623,7 +633,7 @@
   </div>
 </div>
 
-<!-- ===== MODAL PARA SUBIR DOCUMENTO POR ASISTENTE ===== -->
+
 <div id="modalSubirPorAsistente" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); overflow-y: auto; padding: 24px 0;">
   <div style="background: #fff; padding: 32px 24px; border-radius: 12px; max-width: 500px; max-height: 88vh; overflow-y: auto; margin: 24px auto; box-shadow: 0 8px 32px rgba(0,0,0,0.2); position: relative;">
     <button onclick="cerrarModalSubirPorAsistente()" style="position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 1.5rem; color: #888; cursor: pointer;">&times;</button>
@@ -632,7 +642,8 @@
     <form method="post" enctype="multipart/form-data" id="formSubirPorAsistente" action="{% url 'panel_visitante:actualizar_documento_asistente' tipo='externa' asistente_id=0 %}">
       {% csrf_token %}
       <input type="hidden" name="documento_subido_id" id="inputDocumentoSubidoId" value="">
-      <div class="final-doc-item" style="background: #f9fafb; padding: 16px; border-radius: 8px;">
+      <input type="hidden" name="tipo_correccion" id="inputTipoCorreccion" value="documento">
+      <div class="final-doc-item" id="bloqueDocumentoCorreccion" style="background: #f9fafb; padding: 16px; border-radius: 8px;">
         <div class="final-doc-head" style="margin-bottom: 12px;">
           <div class="final-doc-icon">
             <i class="fas fa-file-upload"></i>
@@ -643,6 +654,18 @@
         </div>
         <input type="file" name="archivo_correccion" id="inputArchivoCorreccion" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" class="final-doc-input">
         <span class="error-mensaje" id="errorArchivoCorreccion" style="display: none; color: #dc2626; font-size: 0.875rem; margin-top: 4px;"><i class="fas fa-exclamation-circle me-1"></i>Debe seleccionar un archivo</span>
+      </div>
+      <div class="final-doc-item" id="bloqueAutorizacionCorreccion" style="background: #f9fafb; padding: 16px; border-radius: 8px; margin-top: 10px;">
+        <div class="final-doc-head" style="margin-bottom: 12px;">
+          <div class="final-doc-icon">
+            <i class="fas fa-file-signature"></i>
+          </div>
+          <div>
+            <p class="final-doc-subtitle" style="font-size:0.98rem; font-weight:700; color:#334155; margin:0;">Autorización de padres (solo TI)</p>
+          </div>
+        </div>
+        <input type="file" name="archivo_autorizacion_correccion" id="inputArchivoAutorizacionCorreccion" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" class="final-doc-input">
+        <span class="error-mensaje" id="errorArchivoAutorizacionCorreccion" style="display: none; color: #dc2626; font-size: 0.875rem; margin-top: 4px;"><i class="fas fa-exclamation-circle me-1"></i>Debe seleccionar la autorización de padres</span>
       </div>
       <div id="statusMensajeAsistente" style="margin-top: 15px; display: none;">
         <div id="statusContenidoAsistente"></div>
@@ -659,7 +682,7 @@
   </div>
 </div>
 
-<!-- ===== MODAL REPROGRAMAR VISITA ===== -->
+
 <div id="modalReprogramacionInstructor" style="display:none;position:fixed;z-index:10000;inset:0;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;padding:16px;">
   <div style="background:#fff;border-radius:12px;width:min(960px,95vw);padding:20px;box-shadow:0 12px 28px rgba(0,0,0,0.2);">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
@@ -691,15 +714,26 @@
   </div>
 </div>
 
-<div id="popupEmergente" style="display:none;position:fixed;right:20px;bottom:20px;z-index:11000;padding:12px 16px;border-radius:10px;color:#fff;font-weight:700;max-width:360px;box-shadow:0 8px 20px rgba(0,0,0,0.2);"></div>
-
-<div id="modalActualizarAsistente" onclick="if(event.target===this){cerrarModalActualizarAsistente();}" style="display:none;position:fixed;z-index:11020;inset:0;background:rgba(15,23,42,0.55);align-items:center;justify-content:center;padding:12px;">
-  <div onclick="event.stopPropagation();" style="background:#fff;border-radius:14px;width:min(980px,96vw);box-shadow:0 18px 45px rgba(0,0,0,0.28);overflow:hidden;">
-    <iframe id="iframeActualizarAsistente" title="Actualizar asistente" style="width:100%;height:min(84vh,760px);border:none;background:#f8fafc;display:block;"></iframe>
+<div id="popupEmergenteOverlay" onclick="if(event.target===this){cerrarPopupEmergente();}" style="display:none;position:fixed;inset:0;z-index:11000;background:rgba(15,23,42,0.45);align-items:center;justify-content:center;padding:16px;">
+  <div id="popupEmergente" style="position:relative;background:#fff;border-radius:14px;max-width:520px;width:min(520px,96vw);padding:22px 20px;box-shadow:0 20px 45px rgba(0,0,0,0.26);border-left:6px solid #10b981;">
+    <button type="button" onclick="cerrarPopupEmergente();" style="position:absolute;top:10px;right:12px;border:none;background:none;color:#6b7280;font-size:1.4rem;line-height:1;cursor:pointer;">&times;</button>
+    <div style="display:flex;align-items:flex-start;gap:12px;">
+      <div id="popupEmergenteIcon" style="font-size:1.3rem;color:#10b981;margin-top:2px;"><i class="fas fa-check-circle"></i></div>
+      <div>
+        <h5 id="popupEmergenteTitulo" style="margin:0 0 4px;font-weight:800;color:#0f172a;font-size:1.02rem;">Notificacion</h5>
+        <p id="popupEmergenteMensaje" style="margin:0;color:#334155;font-weight:600;line-height:1.45;"></p>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- ===== MODAL DE CONFIRMACIÓN ANTES DE ENVIAR ===== -->
+<div id="modalActualizarAsistente" onclick="if(event.target===this){cerrarModalActualizarAsistente();}" style="display:none;position:fixed;z-index:11020;inset:0;background:rgba(15,23,42,0.55);align-items:center;justify-content:center;padding:12px;">
+  <div onclick="event.stopPropagation();" style="background:#fff;border-radius:10px;width:min(980px,96vw);box-shadow:0 18px 45px rgba(0,0,0,0.28);overflow:hidden;">
+    <iframe id="iframeActualizarAsistente" title="Actualizar asistente" style="width:100%;height:min(68vh,700px);background:#f8fafc;"></iframe>
+  </div>
+</div>
+
+
 <div id="modalConfirmacionEnvio" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); overflow-y: auto; padding: 24px 0;">
   <div style="background: #fff; padding: 32px 24px; border-radius: 12px; max-width: 500px; margin: 24px auto; box-shadow: 0 8px 32px rgba(0,0,0,0.2); position: relative; text-align: center;">
     <button onclick="cerrarModalConfirmacion()" style="position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 1.5rem; color: #888; cursor: pointer;">&times;</button>
@@ -710,13 +744,39 @@
     <p style="font-size: 0.95rem; color: #4b5563; margin-bottom: 24px; line-height: 1.6;">
       Asegúrese de que todos los documentos estén corregidos y listos. Una vez enviados, serán revisados por el administrador.
     </p>
+    <div style="background:#f8fafc;border:1px solid #dbeafe;border-radius:10px;padding:10px 12px;margin-bottom:16px;text-align:left;">
+      <label for="aceptoTerminosEnvioFinalExterno" style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;color:#1f2937;font-size:0.92rem;line-height:1.4;">
+        <input type="checkbox" id="aceptoTerminosEnvioFinalExterno" onchange="actualizarEstadoConfirmacionEnvio()" style="margin-top:2px;">
+        <span>He leído y acepto los términos y condiciones para el envío de esta solicitud.</span>
+      </label>
+      <button type="button" onclick="abrirModalTerminosEnvioFinal()" style="margin-top:8px;background:#e0f2fe;color:#075985;border:1px solid #bae6fd;border-radius:8px;padding:6px 10px;font-size:0.82rem;font-weight:700;cursor:pointer;">
+        Ver términos y condiciones
+      </button>
+    </div>
     <div style="display: flex; gap: 10px; justify-content: center;">
       <button type="button" onclick="cerrarModalConfirmacion()" style="background: #e5e7eb; color: #374151; font-weight: 600; padding: 12px 28px; border: none; border-radius: 8px; cursor: pointer;">
         Cancelar
       </button>
-      <button type="button" onclick="confirmarEnvioFinal()" style="background: linear-gradient(90deg, #228B22, #2ecc40); color: #fff; font-weight: bold; padding: 12px 28px; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;">
+      <button type="button" id="btnConfirmarEnvioFinalExterno" onclick="confirmarEnvioFinal()" style="background: linear-gradient(90deg, #228B22, #2ecc40); color: #fff; font-weight: bold; padding: 12px 28px; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;" disabled>
         <i class="fas fa-paper-plane me-2"></i>Sí, Enviar Documentos
       </button>
+    </div>
+  </div>
+</div>
+
+<div id="modalTerminosEnvioFinal" style="display:none;position:fixed;z-index:10010;left:0;top:0;width:100%;height:100%;background-color:rgba(0,0,0,0.55);overflow-y:auto;padding:24px 0;">
+  <div style="background:#fff;padding:24px;border-radius:12px;max-width:680px;margin:24px auto;box-shadow:0 8px 32px rgba(0,0,0,0.2);position:relative;">
+    <button onclick="cerrarModalTerminosEnvioFinal()" style="position:absolute;top:12px;right:12px;background:none;border:none;font-size:1.4rem;color:#64748b;cursor:pointer;">&times;</button>
+    <h3 style="margin:0 0 10px 0;color:#0f172a;font-weight:800;">Términos y condiciones del envío final</h3>
+    <div style="max-height:55vh;overflow:auto;border:1px solid #e2e8f0;border-radius:8px;padding:12px;background:#f8fafc;color:#334155;font-size:0.9rem;line-height:1.55;">
+      <p>1. El responsable declara que la información registrada es verídica y que cuenta con autorización para enviarla.</p>
+      <p>2. El envío final remite la visita a revisión administrativa y puede generar bloqueos de edición sobre los registros.</p>
+      <p>3. Los documentos adjuntos deben corresponder a los participantes de la visita y cumplir requisitos institucionales.</p>
+      <p>4. Cualquier inconsistencia u omisión podrá causar devolución, rechazo o solicitud de corrección adicional.</p>
+      <p>5. Al continuar, usted acepta las políticas de tratamiento de datos y uso del sistema SICAM del Centro Minero SENA.</p>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:12px;">
+      <button type="button" onclick="cerrarModalTerminosEnvioFinal()" style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-weight:700;cursor:pointer;">Entendido</button>
     </div>
   </div>
 </div>
@@ -793,6 +853,7 @@
   let urlEnviarSolicitudFinal = "{% url 'panel_visitante:enviar_solicitud_final' tipo='externa' visita_id=visita.id %}";
   const urlCompletarReprogramacion = "{% url 'gestion_visitas:completar_reprogramacion_legacy' tipo='externa' visita_id=visita.id %}";
   let csrfTokenGlobal = '';
+  let envioFinalEnCurso = false;
   let reprogramacionSeleccion = { fecha: null, horario: null };
 
   function obtenerCSRFToken() {
@@ -807,16 +868,37 @@
     return '';
   }
 
+  function cerrarPopupEmergente() {
+    const overlay = document.getElementById('popupEmergenteOverlay');
+    if (!overlay) return;
+    clearTimeout(overlay._timer);
+    overlay.style.display = 'none';
+  }
+
   function mostrarPopupEmergente(mensaje, tipo) {
+    const overlay = document.getElementById('popupEmergenteOverlay');
     const popup = document.getElementById('popupEmergente');
-    if (!popup) return;
-    const color = tipo === 'error' ? '#dc2626' : (tipo === 'warning' ? '#f59e0b' : '#10b981');
-    popup.style.background = color;
-    popup.textContent = mensaje;
-    popup.style.display = 'block';
-    clearTimeout(popup._timer);
-    popup._timer = setTimeout(() => {
-      popup.style.display = 'none';
+    const icon = document.getElementById('popupEmergenteIcon');
+    const titulo = document.getElementById('popupEmergenteTitulo');
+    const texto = document.getElementById('popupEmergenteMensaje');
+    if (!overlay || !popup || !icon || !titulo || !texto) return;
+
+    const config = tipo === 'error'
+      ? { borde: '#dc2626', icono: 'fa-times-circle', titulo: 'Error', color: '#b91c1c' }
+      : (tipo === 'warning'
+        ? { borde: '#f59e0b', icono: 'fa-exclamation-triangle', titulo: 'Aviso', color: '#b45309' }
+        : { borde: '#10b981', icono: 'fa-check-circle', titulo: 'Exito', color: '#047857' });
+
+    popup.style.borderLeftColor = config.borde;
+    icon.style.color = config.color;
+    icon.innerHTML = '<i class="fas ' + config.icono + '"></i>';
+    titulo.textContent = config.titulo;
+    texto.textContent = mensaje;
+
+    overlay.style.display = 'flex';
+    clearTimeout(overlay._timer);
+    overlay._timer = setTimeout(() => {
+      cerrarPopupEmergente();
     }, 4500);
   }
 
@@ -1178,21 +1260,34 @@
     }
   }
 
-  function abrirModalSubirPorAsistente(nombre, asistenteId, documentoNombre, documentoSubidoId) {
+  function abrirModalSubirPorAsistente(nombre, asistenteId, tieneDocumentoRechazado, tieneAutorizacionRechazada) {
+    const mostrarDocumento = String(tieneDocumentoRechazado || '') === '1';
+    const mostrarAutorizacion = String(tieneAutorizacionRechazada || '') === '1';
     if (!asistenteId || String(asistenteId).trim() === '') {
       mostrarPopupEmergente('No se pudo identificar el asistente para subir la corrección.', 'error');
       return;
     }
-    if (!documentoSubidoId || String(documentoSubidoId).trim() === '') {
-      mostrarPopupEmergente('No se pudo identificar el documento rechazado para corregir.', 'error');
+    if (!mostrarDocumento && !mostrarAutorizacion) {
+      mostrarPopupEmergente('Este visitante no tiene archivos rechazados para corregir.', 'warning');
       return;
     }
 
     document.getElementById('modalSubirPorAsistente').style.display = 'block';
     document.body.style.overflow = 'hidden';
-    document.getElementById('modalAsistenteInfo').innerHTML = `<strong>${nombre}</strong> - Cargue el archivo rechazado: <em>${documentoNombre}</em>`;
-    document.getElementById('modalDocumentoNombre').textContent = documentoNombre;
-    document.getElementById('inputDocumentoSubidoId').value = documentoSubidoId;
+    document.getElementById('modalAsistenteInfo').innerHTML = `<strong>${nombre}</strong> - Cargue solo los archivos enviados a corrección.`;
+    document.getElementById('modalDocumentoNombre').textContent = mostrarDocumento ? 'Archivo de salud / documento rechazado' : 'Documento rechazado';
+    document.getElementById('inputDocumentoSubidoId').value = '';
+    document.getElementById('inputTipoCorreccion').value = 'documento';
+
+    const bloqueDocumento = document.getElementById('bloqueDocumentoCorreccion');
+    const bloqueAutorizacion = document.getElementById('bloqueAutorizacionCorreccion');
+    const inputArchivoCorreccion = document.getElementById('inputArchivoCorreccion');
+    const inputArchivoAutorizacion = document.getElementById('inputArchivoAutorizacionCorreccion');
+
+    if (bloqueDocumento) bloqueDocumento.style.display = mostrarDocumento ? 'block' : 'none';
+    if (bloqueAutorizacion) bloqueAutorizacion.style.display = mostrarAutorizacion ? 'block' : 'none';
+    if (inputArchivoCorreccion) inputArchivoCorreccion.required = mostrarDocumento;
+    if (inputArchivoAutorizacion) inputArchivoAutorizacion.required = mostrarAutorizacion;
     
     // Actualizar la acción del formulario
     const formSubir = document.getElementById('formSubirPorAsistente');
@@ -1207,16 +1302,31 @@
       form.reset();
       const inputDocumentoSubidoId = document.getElementById('inputDocumentoSubidoId');
       if (inputDocumentoSubidoId) inputDocumentoSubidoId.value = '';
+      const inputTipoCorreccion = document.getElementById('inputTipoCorreccion');
+      if (inputTipoCorreccion) inputTipoCorreccion.value = 'documento';
       const errorMensaje = document.getElementById('errorArchivoCorreccion');
       if (errorMensaje) errorMensaje.style.display = 'none';
+      const errorMensajeAutorizacion = document.getElementById('errorArchivoAutorizacionCorreccion');
+      if (errorMensajeAutorizacion) errorMensajeAutorizacion.style.display = 'none';
       const statusMensaje = document.getElementById('statusMensajeAsistente');
       if (statusMensaje) statusMensaje.style.display = 'none';
+      const bloqueDocumento = document.getElementById('bloqueDocumentoCorreccion');
+      const bloqueAutorizacion = document.getElementById('bloqueAutorizacionCorreccion');
+      const inputArchivoCorreccion = document.getElementById('inputArchivoCorreccion');
+      const inputArchivoAutorizacion = document.getElementById('inputArchivoAutorizacionCorreccion');
+      if (bloqueDocumento) bloqueDocumento.style.display = 'block';
+      if (bloqueAutorizacion) bloqueAutorizacion.style.display = 'block';
+      if (inputArchivoCorreccion) inputArchivoCorreccion.required = false;
+      if (inputArchivoAutorizacion) inputArchivoAutorizacion.required = false;
     }
   }
 
   function abrirModalConfirmacion() {
     document.getElementById('modalConfirmacionEnvio').style.display = 'block';
     document.body.style.overflow = 'hidden';
+    const chk = document.getElementById('aceptoTerminosEnvioFinalExterno');
+    if (chk) chk.checked = false;
+    actualizarEstadoConfirmacionEnvio();
   }
 
   function cerrarModalConfirmacion() {
@@ -1224,12 +1334,52 @@
     document.body.style.overflow = '';
   }
 
+  function abrirModalTerminosEnvioFinal() {
+    const modal = document.getElementById('modalTerminosEnvioFinal');
+    if (!modal) return;
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function cerrarModalTerminosEnvioFinal() {
+    const modal = document.getElementById('modalTerminosEnvioFinal');
+    if (!modal) return;
+    modal.style.display = 'none';
+    if (document.getElementById('modalConfirmacionEnvio').style.display === 'block') {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+  }
+
+  function actualizarEstadoConfirmacionEnvio() {
+    const chk = document.getElementById('aceptoTerminosEnvioFinalExterno');
+    const btn = document.getElementById('btnConfirmarEnvioFinalExterno');
+    if (!btn) return;
+    const habilitar = Boolean(chk && chk.checked);
+    btn.disabled = !habilitar;
+    btn.style.opacity = habilitar ? '1' : '0.6';
+    btn.style.cursor = habilitar ? 'pointer' : 'not-allowed';
+  }
+
   function confirmarEnvioFinal() {
+    const chk = document.getElementById('aceptoTerminosEnvioFinalExterno');
+    if (!chk || !chk.checked) {
+      if (typeof mostrarPopupEmergente === 'function') {
+        mostrarPopupEmergente('Debe aceptar los términos y condiciones antes de enviar.', 'warning');
+      }
+      return;
+    }
     cerrarModalConfirmacion();
     ejecutarEnvioFinal();
   }
 
   async function ejecutarEnvioFinal() {
+    if (envioFinalEnCurso) {
+      return;
+    }
+    envioFinalEnCurso = true;
+
     const btnSolicitudFinal = document.getElementById('btnEnviarSolicitudFinal');
     const statusMensaje = document.getElementById('statusMensaje');
     const statusContenido = document.getElementById('statusContenido');
@@ -1241,8 +1391,9 @@
 
     try {
       const formDataEnvioFinal = new FormData();
-      if (csrfTokenGlobal) {
-        formDataEnvioFinal.append('csrfmiddlewaretoken', csrfTokenGlobal);
+      const csrfTokenEnvio = csrfTokenGlobal || obtenerCSRFToken();
+      if (csrfTokenEnvio) {
+        formDataEnvioFinal.append('csrfmiddlewaretoken', csrfTokenEnvio);
       }
 
       const respuestaEnvioFinal = await fetch(urlEnviarSolicitudFinal, {
@@ -1258,6 +1409,7 @@
         if (statusMensaje && statusContenido) {
           statusContenido.innerHTML = `<div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; border-radius: 6px; color: #92400e;"><i class="fas fa-exclamation-triangle me-2"></i>Error al enviar: ${dataEnvioFinal.error || 'revise el estado de la visita.'}</div>`;
         }
+        envioFinalEnCurso = false;
         return;
       }
 
@@ -1338,6 +1490,7 @@
           mostrarPopupEmergente('Error de conexión al reprogramar la visita.', 'error');
         }
       });
+          envioFinalEnCurso = false;
     }
 
     const form = document.getElementById('formArchivosFinales');
@@ -1519,7 +1672,11 @@
             // Mostrar modal de confirmación
             setTimeout(function() {
               cerrarModalArchivosFinales();
-              ejecutarEnvioFinal();
+              if (dataCarga.auto_reenvio_aplicado === true) {
+                location.reload();
+              } else {
+                ejecutarEnvioFinal();
+              }
             }, 1200);
 
           } else {
@@ -1561,24 +1718,50 @@
         e.preventDefault();
 
         const inputArchivo = document.getElementById('inputArchivoCorreccion');
+        const inputArchivoAutorizacion = document.getElementById('inputArchivoAutorizacionCorreccion');
         const errorMensaje = document.getElementById('errorArchivoCorreccion');
+        const errorMensajeAutorizacion = document.getElementById('errorArchivoAutorizacionCorreccion');
         const btnEnviarAsistente = document.getElementById('btnEnviarAsistente');
         const statusMensaje = document.getElementById('statusMensajeAsistente');
         const statusContenido = document.getElementById('statusContenidoAsistente');
+        const bloqueDocumento = document.getElementById('bloqueDocumentoCorreccion');
+        const bloqueAutorizacion = document.getElementById('bloqueAutorizacionCorreccion');
         const inputDocumentoSubidoId = document.getElementById('inputDocumentoSubidoId');
+        const inputTipoCorreccion = document.getElementById('inputTipoCorreccion');
+        const correccionEsAutorizacion = inputTipoCorreccion && inputTipoCorreccion.value === 'autorizacion_padres';
 
-        if (!inputArchivo.files || inputArchivo.files.length === 0) {
-          errorMensaje.style.display = 'block';
+        const tieneArchivoSalud = inputArchivo && inputArchivo.files && inputArchivo.files.length > 0;
+        const tieneArchivoAutorizacion = inputArchivoAutorizacion && inputArchivoAutorizacion.files && inputArchivoAutorizacion.files.length > 0;
+        const requiereDocumento = bloqueDocumento && bloqueDocumento.style.display !== 'none';
+        const requiereAutorizacion = bloqueAutorizacion && bloqueAutorizacion.style.display !== 'none';
+
+        if (errorMensaje) {
+          errorMensaje.style.display = 'none';
+        }
+        if (errorMensajeAutorizacion) {
+          errorMensajeAutorizacion.style.display = 'none';
+        }
+        if (inputArchivo) {
+          inputArchivo.style.borderColor = '#e5e7eb';
+        }
+        if (inputArchivoAutorizacion) {
+          inputArchivoAutorizacion.style.borderColor = '#e5e7eb';
+        }
+
+        const faltanDocumento = requiereDocumento && !tieneArchivoSalud;
+        const faltanAutorizacion = requiereAutorizacion && !tieneArchivoAutorizacion;
+        if (faltanDocumento || faltanAutorizacion) {
+          if (faltanDocumento) {
+            if (errorMensaje) errorMensaje.style.display = 'block';
+            if (inputArchivo) inputArchivo.style.borderColor = '#dc2626';
+          }
+          if (faltanAutorizacion) {
+            if (errorMensajeAutorizacion) errorMensajeAutorizacion.style.display = 'block';
+            if (inputArchivoAutorizacion) inputArchivoAutorizacion.style.borderColor = '#dc2626';
+          }
           return;
         }
 
-        if (!inputDocumentoSubidoId || !inputDocumentoSubidoId.value) {
-          statusMensaje.style.display = 'block';
-          statusContenido.innerHTML = '<div style="background: #fee2e2; border-left: 4px solid #dc2626; padding: 12px; border-radius: 6px; color: #991b1b;"><i class="fas fa-exclamation-circle me-2"></i>No se encontró el documento rechazado para aplicar la corrección.</div>';
-          return;
-        }
-
-        errorMensaje.style.display = 'none';
         btnEnviarAsistente.disabled = true;
         btnEnviarAsistente.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Procesando...';
         statusMensaje.style.display = 'block';
@@ -1610,15 +1793,33 @@
             return;
           }
 
-          statusContenido.innerHTML = '<div style="background: #d1fae5; border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; color: #065f46;"><i class="fas fa-check-circle me-2"></i>Archivo subido correctamente.</div>';
+          const pendientesCorreccion = Number(data.pendientes_correccion || 0);
+          const listoParaConfirmar = data.listo_para_confirmar_envio === true || pendientesCorreccion === 0;
+
+          if (listoParaConfirmar) {
+            statusContenido.innerHTML = '<div style="background: #d1fae5; border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; color: #065f46;"><i class="fas fa-check-circle me-2"></i>Archivo subido. Todas las correcciones están completas.</div>';
+          } else {
+            statusContenido.innerHTML = `<div style="background: #eef9e8; border-left: 4px solid #39a900; padding: 12px; border-radius: 6px; color: #1f5f16;"><i class="fas fa-check-circle me-2"></i>Archivo subido. Aún faltan ${pendientesCorreccion} corrección(es).</div>`;
+          }
           btnEnviarAsistente.style.background = 'linear-gradient(90deg, #10b981, #059669)';
           btnEnviarAsistente.innerHTML = '<i class="fas fa-check me-2"></i>Subido correctamente';
           btnEnviarAsistente.disabled = true;
 
-          setTimeout(function() {
-            cerrarModalSubirPorAsistente();
-            location.reload();
-          }, 1500);
+          if (listoParaConfirmar) {
+            setTimeout(function() {
+              cerrarModalSubirPorAsistente();
+              if (data.auto_reenvio_aplicado === true) {
+                location.reload();
+              } else {
+                ejecutarEnvioFinal();
+              }
+            }, 1200);
+          } else {
+            setTimeout(function() {
+              cerrarModalSubirPorAsistente();
+              location.reload();
+            }, 1400);
+          }
         } catch (error) {
           console.error('Error:', error);
           statusContenido.innerHTML = '<div style="background: #fee2e2; border-left: 4px solid #dc2626; padding: 12px; border-radius: 6px; color: #991b1b;"><i class="fas fa-exclamation-circle me-2"></i>Error de conexión.</div>';

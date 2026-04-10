@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   --sena-green: #1b8f3a;
   --sena-green-dark: #0f5e28;
   --sena-green-light: #e9f6ee;
@@ -27,7 +27,7 @@ main.main-content {
   align-items: flex-start;
 }
 
-/* Base Modal Container */
+
 .modal-edit-overlay {
   position: fixed;
   top: 0;
@@ -47,24 +47,24 @@ main.main-content {
   width: 100%;
   max-width: 650px;
   max-height: 90vh;
-  /* Permite que el modal no sea más alto que la pantalla */
+  
   background: var(--card-bg);
   border-radius: var(--radius);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
   overflow-y: auto;
-  /* Permite hacer scroll vertical si el contenido (como la foto) excede la altura */
+  
   border: 1px solid rgba(0, 0, 0, 0.05);
   animation: modalFadeIn 0.25s ease-out;
 }
 
-/* Flex Container for Horizontal Layout */
+
 .modal-edit-flex-container {
   display: flex;
   flex-direction: column;
   align-items: stretch;
 }
 
-/* Header */
+
 .modal-edit-header {
   padding: 20px 24px;
   display: flex;
@@ -95,13 +95,13 @@ main.main-content {
   color: var(--text-main);
 }
 
-/* Body */
+
 .modal-edit-body {
   padding: 0;
-  /* Handled by internal sections */
+  
 }
 
-/* Avatar Section (Left Side) */
+
 .profile-header-card {
   flex: 0 0 auto;
   background-color: var(--sena-green-super-light);
@@ -180,7 +180,7 @@ main.main-content {
   background-color: #008f00;
 }
 
-/* Form Section (Right Side) */
+
 .form-section-edit-container {
   flex: 1;
   display: flex;
@@ -221,7 +221,7 @@ main.main-content {
   color: var(--text-muted);
 }
 
-/* Form Controls */
+
 .form-section-edit input,
 .form-section-edit select,
 .form-section-edit textarea {
@@ -250,7 +250,7 @@ main.main-content {
   margin-top: 4px;
 }
 
-/* Actions Footer */
+
 .form-actions-edit {
   padding: 20px 24px;
   display: flex;
@@ -276,7 +276,7 @@ main.main-content {
   box-shadow: 0 6px 20px rgba(0, 166, 0, 0.25);
 }
 
-/* Alerts */
+
 .alerts-container {
   padding: 0 24px;
   margin-bottom: 20px;

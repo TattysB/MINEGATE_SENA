@@ -1,11 +1,10 @@
-from django.test import Client, TestCase
+﻿from django.test import Client, TestCase
 from django.urls import reverse
 from django.contrib.auth.models import User
 from .models import PerfilUsuario
 from .forms import RegistroForm
 
 
-# ==================== TEST 1: Crear perfil de usuario ====================
 
 
 class PerfilUsuarioCreationTest(TestCase):
@@ -18,7 +17,6 @@ class PerfilUsuarioCreationTest(TestCase):
         Crea un usuario y su perfil con documento, teléfono y dirección.
         Verifica que el perfil se crea correctamente y contiene los datos esperados.
         """
-        # Crear usuario
         user = User.objects.create_user(
             username="123456789",
             email="juan@example.com",
@@ -27,7 +25,6 @@ class PerfilUsuarioCreationTest(TestCase):
             last_name="Pérez",
         )
 
-        # Crear perfil asociado
         perfil = PerfilUsuario.objects.create(
             user=user,
             documento="123456789",
@@ -35,13 +32,11 @@ class PerfilUsuarioCreationTest(TestCase):
             direccion="Calle 1 #2-3",
         )
 
-        # Validaciones
         self.assertEqual(perfil.documento, "123456789")
         self.assertEqual(perfil.telefono, "3105551234")
         self.assertEqual(perfil.get_nombre_completo(), "Juan Pérez")
 
 
-# ==================== TEST 2: Validación de registro con email duplicado ====================
 
 
 class RegistroFormEmailDuplicadoTest(TestCase):
@@ -54,12 +49,10 @@ class RegistroFormEmailDuplicadoTest(TestCase):
         Intenta registrar dos usuarios con el mismo email.
         El formulario debe fallar en la validación porque el email ya existe.
         """
-        # Crear primer usuario con email
         User.objects.create_user(
             username="user1", email="duplicado@example.com", password="TestPassword123!"
         )
 
-        # Intentar registrar con el mismo email
         form = RegistroForm(
             data={
                 "documento": "987654321",
@@ -72,12 +65,10 @@ class RegistroFormEmailDuplicadoTest(TestCase):
             }
         )
 
-        # El formulario debe ser inválido
         self.assertFalse(form.is_valid())
         self.assertIn("email", form.errors)
 
 
-# ==================== TEST 3: Validación de contraseña débil ====================
 
 
 class RegistroFormContraseñaDebilTest(TestCase):
@@ -102,12 +93,10 @@ class RegistroFormContraseñaDebilTest(TestCase):
             }
         )
 
-        # El formulario debe ser inválido
         self.assertFalse(form.is_valid())
         self.assertIn("password1", form.errors)
 
 
-# ==================== TEST 4: Login exitoso ====================
 
 
 class LoginViewExitosoTest(TestCase):
@@ -137,11 +126,9 @@ class LoginViewExitosoTest(TestCase):
             follow=True,  # Seguir redirecciones
         )
 
-        # Debe llegar a una página exitosamente
         self.assertEqual(response.status_code, 200)
 
 
-# ==================== TEST 5: Acceso denegado a lista de usuarios ====================
 
 
 class ListaUsuariosAccesoDenegadoTest(TestCase):
@@ -163,11 +150,8 @@ class ListaUsuariosAccesoDenegadoTest(TestCase):
         Un usuario regular (no staff) intenta acceder a la lista de usuarios.
         El sistema debe redirigirlo porque no tiene permisos.
         """
-        # Iniciar sesión como usuario regular
         self.client.login(username="usuario_regular", password="TestPassword123!")
 
-        # Intentar acceder a la lista de usuarios
         response = self.client.get(reverse("usuarios:lista_usuario"))
 
-        # Debe ser redirigido (status 302)
         self.assertEqual(response.status_code, 302)

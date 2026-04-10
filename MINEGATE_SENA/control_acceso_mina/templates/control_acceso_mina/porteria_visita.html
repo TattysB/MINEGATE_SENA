@@ -1,11 +1,11 @@
-{% extends "core/panel_administrativo.html" %}
+﻿{% extends "core/panel_administrativo.html" %}
 {% load static %}
 
 {% block extra_css %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{% static 'control_acceso_mina/css/porteria.css' %}?v=20260312a">
+<link rel="stylesheet" href="{% static 'control_acceso_mina/css/porteria.css' %}?v=20260325a">
 {% endblock %}
 
 {% block content %}
@@ -52,39 +52,10 @@
           </div>
         </div>
         <div class="porteria-header-right">
-          <div class="porteria-live-box">
-            <span class="porteria-live-label">Monitoreo en vivo</span>
-            <strong id="porteriaClock" class="porteria-clock">--:--:--</strong>
-            <span class="porteria-date">Actualización automática cada 30 segundos</span>
-          </div>
           <a href="{% url 'core:panel_administrativo_seccion' 'control_acceso' %}" class="btn-open-visita">
             <i class="ri-repeat-line"></i> Cambiar visita
           </a>
         </div>
-      </section>
-
-      <section class="porteria-stats">
-        <article class="stat-card stat-card-inside">
-          <div class="stat-icon"><i class="ri-user-location-line"></i></div>
-          <div class="stat-info">
-            <span class="stat-number" id="personasEnMina">0</span>
-            <span class="stat-label">Personas dentro de la mina</span>
-          </div>
-        </article>
-        <article class="stat-card stat-card-entries">
-          <div class="stat-icon"><i class="ri-login-box-line"></i></div>
-          <div class="stat-info">
-            <span class="stat-number" id="entradasHoy">0</span>
-            <span class="stat-label">Ingresos registrados hoy</span>
-          </div>
-        </article>
-        <article class="stat-card stat-card-exits">
-          <div class="stat-icon"><i class="ri-logout-box-r-line"></i></div>
-          <div class="stat-info">
-            <span class="stat-number" id="salidasHoy">0</span>
-            <span class="stat-label">Salidas registradas hoy</span>
-          </div>
-        </article>
       </section>
 
       <section class="porteria-scanner-card">

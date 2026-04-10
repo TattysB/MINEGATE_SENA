@@ -1,9 +1,9 @@
-{% load static %}
+﻿{% load static %}
 
-<link rel="stylesheet" href="{% static 'control_acceso_mina/css/porteria.css' %}">
+<link rel="stylesheet" href="{% static 'control_acceso_mina/css/porteria.css' %}?v=20260325a">
 
 <div class="porteria-module">
-  <!-- Header -->
+  
   <div class="porteria-header">
     <div class="porteria-header-left">
       <i class="ri-shield-check-line porteria-icon"></i>
@@ -14,16 +14,11 @@
     </div>
   </div>
 
-  <!-- Visitas del día -->
+  
   <div class="porteria-table-section visitas-hoy-section">
     <h3 class="table-title">
       <i class="ri-calendar-check-line"></i> Visitas confirmadas de hoy (abrir control individual)
     </h3>
-    <div class="visitas-stats-inline">
-      <span class="visita-pill visita-pill-interna">Internas: <strong id="visitasInternasHoy">0</strong></span>
-      <span class="visita-pill visita-pill-externa">Externas: <strong id="visitasExternasHoy">0</strong></span>
-      <span class="visita-pill visita-pill-total">Total: <strong id="visitasTotalHoy">0</strong></span>
-    </div>
     <div class="porteria-table-wrapper">
       <table class="porteria-table" id="tablaVisitasHoy">
         <thead>

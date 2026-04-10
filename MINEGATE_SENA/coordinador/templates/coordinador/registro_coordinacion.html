@@ -1,4 +1,4 @@
-{% extends "coordinador/base_coordinador.html" %}
+﻿{% extends "coordinador/base_coordinador.html" %}
 
 {% block extra_css %}
 <style>
@@ -31,6 +31,115 @@
   .btn-reject:hover{background:#f6f6f6}
 
   @media (max-width:900px){.reg-header{flex-direction:column;align-items:flex-start}.reg-table thead th,.reg-table tbody td{padding:10px}}
+
+  @media (max-width:768px) {
+    .reg-page {
+      padding: 12px;
+    }
+    .reg-card {
+      padding: 14px;
+      border-radius: 10px;
+    }
+    .reg-card::before {
+      height: 4px;
+      margin: -14px -14px 10px;
+      border-top-left-radius: 10px;
+      border-top-right-radius: 10px;
+    }
+    .reg-title {
+      font-size: 0.95rem;
+    }
+    .reg-desc {
+      font-size: 0.9rem;
+    }
+    .reg-table {
+      display: block;
+      width: 100%;
+      border-radius: 8px;
+      border-collapse: collapse;
+    }
+    .reg-table thead {
+      display: none;
+    }
+    .reg-table tbody {
+      display: block;
+      width: 100%;
+    }
+    .reg-table tbody tr {
+      display: block;
+      margin-bottom: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #fff;
+      padding: 0;
+    }
+    .reg-table tbody tr.row-selected {
+      background: #00af00 !important;
+      border-color: #00af00 !important;
+    }
+    .reg-table tbody tr.row-selected td {
+      color: #fff !important;
+    }
+    .reg-table tbody td {
+      display: block;
+      padding: 8px;
+      font-size: 0.85rem;
+      border-bottom: 1px solid #f0f0f0;
+      text-align: left;
+    }
+    .reg-table tbody td:last-child {
+      border-bottom: none;
+    }
+    .reg-table tbody td::before {
+      content: attr(data-label);
+      display: inline-block;
+      font-weight: 700;
+      color: #00af00;
+      min-width: 100px;
+      margin-right: 8px;
+    }
+    .reg-table tbody tr.row-selected td::before {
+      color: #fff;
+    }
+  }
+
+  @media (max-width:480px) {
+    .reg-page {
+      padding: 8px;
+    }
+    .reg-card {
+      padding: 10px;
+      border-radius: 8px;
+    }
+    .reg-card::before {
+      height: 3px;
+      margin: -10px -10px 8px;
+      border-top-left-radius: 8px;
+      border-top-right-radius: 8px;
+    }
+    .reg-title {
+      font-size: 0.8rem;
+      margin-bottom: 6px !important;
+    }
+    .reg-desc {
+      font-size: 0.7rem;
+      margin-bottom: 10px !important;
+    }
+    .reg-table tbody tr {
+      margin-bottom: 10px;
+      padding: 0;
+    }
+    .reg-table tbody td {
+      padding: 6px;
+      font-size: 0.75rem;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .reg-table tbody td::before {
+      min-width: 80px;
+      font-size: 0.7rem;
+      margin-right: 6px;
+    }
+  }
 </style>
 {% endblock %}
 
@@ -42,7 +151,7 @@
   <div class="reg-card">
     <div class="reg-header">
       <div>
-        <!-- espacio para título / filtros si se desea -->
+        
       </div>
     </div>
 
@@ -64,14 +173,14 @@
           {% if registros %}
             {% for r in registros %}
               <tr>
-                <td>#{{ r.id }}</td>
-                <td>{{ r.get_visita_tipo_display }}</td>
-                <td>{{ r.responsable }}</td>
-                <td>{{ r.institucion|default:'-' }}</td>
-                <td>{{ r.correo|default:'-' }}</td>
-                <td>{{ r.cantidad|default:'-' }}</td>
-                <td>{% if r.aprobado_por %}{{ r.aprobado_por.get_full_name|default:r.aprobado_por.username }}{% else %}-{% endif %}</td>
-                <td>{{ r.fecha_aprobacion }}</td>
+                <td data-label="#">#{{ r.id }}</td>
+                <td data-label="Tipo">{{ r.get_visita_tipo_display }}</td>
+                <td data-label="Responsable">{{ r.responsable }}</td>
+                <td data-label="Institución">{{ r.institucion|default:'-' }}</td>
+                <td data-label="Correo">{{ r.correo|default:'-' }}</td>
+                <td data-label="Cantidad">{{ r.cantidad|default:'-' }}</td>
+                <td data-label="Aprobado">{% if r.aprobado_por %}{{ r.aprobado_por.get_full_name|default:r.aprobado_por.username }}{% else %}-{% endif %}</td>
+                <td data-label="Fecha">{{ r.fecha_aprobacion }}</td>
               </tr>
             {% endfor %}
           {% else %}
@@ -82,4 +191,30 @@
     </div>
   </div>
 </div>
+
+<script>
+  // Forzar tabla responsive en tiempo real
+  function adaptarTabla() {
+    const tabla = document.querySelector('.reg-table');
+    const contenedor = tabla ? tabla.parentElement : null;
+    
+    if (!tabla || !contenedor) return;
+    
+    if (window.innerWidth <= 768) {
+      contenedor.style.overflowX = 'visible';
+      tabla.style.display = 'block';
+      tabla.style.width = '100%';
+      tabla.style.minWidth = 'auto';
+      tabla.querySelectorAll('thead').forEach(th => th.style.display = 'none');
+    } else {
+      contenedor.style.overflowX = 'visible';
+      tabla.style.display = 'table';
+      tabla.style.width = '100%';
+      tabla.querySelectorAll('thead').forEach(th => th.style.display = 'table-header-group');
+    }
+  }
+  
+  document.addEventListener('DOMContentLoaded', adaptarTabla);
+  window.addEventListener('resize', adaptarTabla);
+</script>
 {% endblock %}

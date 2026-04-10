@@ -1,4 +1,4 @@
-{% load static %}
+﻿{% load static %}
 {% load accesibility_tags %}
 
 <!DOCTYPE html>
@@ -6,7 +6,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reservar Visita Interna - MINEGATE</title>
+  <title>Reservar Visita Interna  - SICAM</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="{% static 'calendario/css/calendario.css' %}">
@@ -144,6 +144,26 @@
     border-color: var(--sena-verde);
   }
   
+  /* Media query para pantallas pequeñas (móviles) */
+  @media (max-width: 768px) {
+    #calendarioContainer .calendar-page {
+      flex-direction: column;
+      gap: 15px;
+    }
+    #calendarioContainer .calendar-card {
+      flex: none;
+      min-width: 100%;
+      max-width: 100%;
+      padding: 0;
+    }
+    #calendarioContainer .availability-config {
+      flex: none;
+      min-width: 100%;
+      max-width: 100%;
+      padding: 15px;
+    }
+  }
+  
   /* Resumen de selección */
   .seleccion-resumen {
     background: #f0fdf4;
@@ -205,7 +225,7 @@
 </head>
 <body class="reservar-visita-interna-page">
 
-<!-- Page Header -->
+
 <div class="page-header">
   <div class="container">
     <div class="breadcrumb-nav mb-2">
@@ -239,7 +259,7 @@
   <div class="alert alert-warning">
     <i class="fas fa-exclamation-triangle me-2"></i>
     Para reservar una visita debes seleccionar una ficha existente (incluye su programa).
-    <a href="{% url 'panel_instructor_interno:crear_ficha' %}" class="alert-link">Crea una ficha</a>
+    <a href="{% url 'panel_instructor_interno:gestionar_fichas' %}" class="alert-link">Crea una ficha</a>
     antes de continuar.
   </div>
   {% endif %}
@@ -247,12 +267,12 @@
   <form method="POST">
     {% csrf_token %}
     
-    <!-- Campos ocultos para fecha y hora -->
+    
     {{ form.fecha_visita }}
     {{ form.hora_inicio }}
     {{ form.hora_fin }}
 
-    <!-- Selección de Fecha y Horario -->
+    
     <div class="form-card">
       <div class="form-card-header">
         <i class="fas fa-calendar-alt"></i>Fecha y Horario de la Visita
@@ -272,7 +292,7 @@
       </div>
     </div>
 
-    <!-- Datos de la Ficha -->
+    
     <div class="form-card">
       <div class="form-card-header">
         <i class="fas fa-graduation-cap"></i>Datos de la Ficha
@@ -293,7 +313,7 @@
       </div>
     </div>
 
-    <!-- Datos del Responsable -->
+    
     <div class="form-card">
       <div class="form-card-header">
         <i class="fas fa-user-tie"></i>Datos del Responsable
@@ -324,7 +344,7 @@
       </div>
     </div>
 
-    <!-- Observaciones -->
+    
     <div class="form-card">
       <div class="form-card-header">
         <i class="fas fa-comment-alt"></i>Observaciones
@@ -633,7 +653,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<!-- Modal Términos y Condiciones -->
+
 <div class="modal fade" id="modalTerminos" tabindex="-1" aria-labelledby="modalTerminosLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content">
@@ -778,7 +798,7 @@ document.addEventListener('DOMContentLoaded', function() {
   </div>
 </div>
 
-<!-- Modal Confirmacion de Envio -->
+
 <div class="modal fade" id="modalConfirmarEnvio" tabindex="-1" aria-labelledby="modalConfirmarEnvioLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content modal-confirmacion-envio">

@@ -1,4 +1,4 @@
-/* === ESTILOS DE IMÁGENES === */
+﻿
 .flip {
     width: 170px;
     height: 170px;
@@ -22,7 +22,7 @@
     position: absolute;
     width: 100%;
     height: 100%;
-    background: url("../img/Blanco%20SENA.png") no-repeat center center;
+    background: url("../img/Logo_SICAM.png") no-repeat center center;
     background-size: cover;
     backface-visibility: hidden;
 }
@@ -31,13 +31,13 @@
     position: absolute;
     width: 100%;
     height: 100%;
-    background: url("../img/MINEGATE-NULL.png") no-repeat center center;
+    background: url("../img/Blanco%20SENA.png") no-repeat center center;
     background-size: cover;
     transform: rotateY(180deg);
     backface-visibility: hidden;
 }
 
-/* === ESTILOS GENERALES === */
+
 * {
     margin: 0;
     padding: 0;
@@ -114,7 +114,7 @@ body {
     background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
 }
 
-/* Excluir toggle-password del hover animado del container button */
+
 .container button.toggle-password:hover {
     transform: translateY(-50%);
     box-shadow: none;
@@ -192,7 +192,7 @@ body {
     box-shadow: 0 0 5px rgba(2, 71, 81, 0.2);
 }
 
-/* === CAMPO DE CONTRASEÑA === */
+
 .password-field {
     position: relative;
     width: 100%;
@@ -249,7 +249,7 @@ body {
     font-size: 11px;
 }
 
-/* === CONTENEDORES DE FORMULARIOS === */
+
 .form-container {
     position: absolute;
     top: 0;
@@ -292,7 +292,7 @@ body {
     }
 }
 
-/* === TOGGLE CONTAINER === */
+
 .toggle-container {
     position: absolute;
     top: 0;
@@ -375,7 +375,7 @@ body {
     transform: translateX(200%);
 }
 
-/* === MODAL DE ALERTAS CENTRADO === */
+
 .alert-overlay {
     position: fixed;
     inset: 0;
@@ -417,7 +417,7 @@ body {
     transform: translate(-50%, -50%) scale(1);
 }
 
-/* Variantes de color del modal */
+
 .alert-modal.alert-error {
     background: linear-gradient(180deg, #fef2f2 0%, #ffffff 30%);
     border-top-color: #ef4444;
@@ -456,7 +456,7 @@ body {
     font-weight: 500;
 }
 
-/* Botones según tipo */
+
 .alert-modal-btn {
     color: #fff;
     border: none;
@@ -517,7 +517,7 @@ body.alert-open .container {
     pointer-events: none;
 }
 
-/* === ERRORES INLINE EN CAMPOS === */
+
 .form-group {
     display: flex;
     flex-direction: column;
@@ -538,7 +538,7 @@ body.alert-open .container {
     background-color: #fef2f2 !important;
 }
 
-/* === ALERTAS LEGACY (compatibilidad) === */
+
 .alerts-container {
     display: none;
 }
@@ -608,7 +608,7 @@ body.alert-open .container {
     animation: slideOut 0.3s ease-in forwards;
 }
 
-/* Animación del botón de submit */
+
 @keyframes buttonPress {
     0% {
         transform: scale(1);
@@ -637,7 +637,7 @@ button[type="submit"].clicking {
     animation: buttonPress 0.3s ease-out, buttonPulse 0.5s ease-out;
 }
 
-/* Animaciones bidireccionales para los formularios */
+
 .sign-up {
     animation: moveOut 0.6s ease-in-out;
 }
@@ -686,7 +686,7 @@ button[type="submit"].clicking {
 }
 
 @media (max-width: 768px) {
-    /* Layout general para móviles */
+    
     body {
         height: auto;
         min-height: 100vh;
@@ -716,7 +716,7 @@ button[type="submit"].clicking {
         flex-shrink: 0;
     }
 
-    /* Formularios apilados */
+    
     .form-container,
     .sign-in,
     .sign-up {
@@ -733,7 +733,7 @@ button[type="submit"].clicking {
         transform: none !important;
     }
 
-    /* Panel toggle siempre visible debajo del formulario */
+    
     .toggle-container {
         position: static !important;
         width: 100%;
@@ -772,7 +772,7 @@ button[type="submit"].clicking {
         margin-bottom: 10px;
     }
 
-    /* Inputs más compactos en móvil */
+    
     .container input {
         font-size: 13px;
         padding: 10px 12px;
@@ -785,7 +785,7 @@ button[type="submit"].clicking {
         font-size: 11px;
     }
 
-    /* Ajustes de animaciones (evitar saltos en móvil) */
+    
     .sign-up,
     .sign-in,
     .container.active .sign-up,
@@ -793,7 +793,7 @@ button[type="submit"].clicking {
         animation: none;
     }
 
-    /* Alertas ocupan ancho completo */
+    
     .alerts-container {
         top: 10px;
         right: 10px;
@@ -806,7 +806,7 @@ button[type="submit"].clicking {
         width: 100%;
     }
 
-    /* Enlace de volver al login dentro del formulario de registro */
+    
     .back-login-link {
         display: inline-flex;
         align-items: center;
@@ -823,7 +823,7 @@ button[type="submit"].clicking {
         text-decoration: underline;
     }
 
-    /* Form groups más compactos en móvil */
+    
     .form-group {
         margin-bottom: 4px;
     }
@@ -833,13 +833,13 @@ button[type="submit"].clicking {
         margin-top: 1px;
     }
 
-    /* Título más compacto */
+    
     .container form h1 {
         font-size: 20px;
         margin-bottom: 10px;
     }
 
-    /* Botón submit más compacto */
+    
     .container form button[type="submit"] {
         padding: 10px 30px;
         font-size: 12px;
@@ -900,7 +900,7 @@ button[type="submit"].clicking {
     .flip {
         width: 80px;
         height: 80px;
-        display: none; /* Ocultar logo en pantallas muy pequeñas */
+        display: none; 
     }
 
     .form-group {
@@ -922,7 +922,7 @@ button[type="submit"].clicking {
         font-size: 10px;
     }
 
-    /* Modal de alerta más compacto */
+    
     .alert-modal {
         padding: 20px;
         max-width: 280px;

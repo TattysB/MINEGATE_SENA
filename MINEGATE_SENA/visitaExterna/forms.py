@@ -1,4 +1,4 @@
-from django import forms
+﻿from django import forms
 from .models import VisitaExterna
 
 
@@ -17,7 +17,6 @@ class VisitaExternaForm(forms.ModelForm):
             'cantidad_visitantes',
             'observacion'
         ]
-        # Widgets
         widgets = {
             'nombre': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -57,7 +56,6 @@ class VisitaExternaForm(forms.ModelForm):
                 'rows': 4
             })
         }
-        # Etiquetas 
         labels = {
             'nombre': 'Nombre de la Institución',
             'nombre_responsable': 'Nombre del Responsable',
@@ -69,7 +67,6 @@ class VisitaExternaForm(forms.ModelForm):
             'observacion': 'Observación'
         }
         
-    # Validaciones 
     
     def clean_telefono_responsable(self):
         """Validar que el teléfono contenga solo números"""
@@ -81,8 +78,16 @@ class VisitaExternaForm(forms.ModelForm):
         return telefono
     
     def clean_cantidad_visitantes(self):
-        """Validar que la cantidad sea un número positivo"""
+        """Validar que la cantidad sea un número entre 1 y 80"""
         cantidad = self.cleaned_data.get('cantidad_visitantes')
-        if cantidad and cantidad <= 0:
-            raise forms.ValidationError("La cantidad debe ser un número positivo mayor a 0.")
+        if cantidad is None or cantidad == '':
+            raise forms.ValidationError("La cantidad de visitantes es obligatoria.")
+        try:
+            cantidad_int = int(cantidad)
+            if cantidad_int < 1:
+                raise forms.ValidationError("Debe registrar mínimo 1 visitante.")
+            if cantidad_int > 80:
+                raise forms.ValidationError("La cantidad de visitantes no puede exceder 80.")
+        except (ValueError, TypeError):
+            raise forms.ValidationError("La cantidad debe ser un número válido.")
         return cantidad

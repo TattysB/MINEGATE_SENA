@@ -1,8 +1,6 @@
-/* ========================================
-   VARIABLES Y CONFIGURACIÓN GLOBAL
-   ======================================== */
+﻿
 :root {
-  /* Paleta de Verdes SENA */
+  
   --verde-primario: #39A900;
   --verde-oscuro: #2d8500;
   --verde-claro: #4FBF26;
@@ -11,7 +9,7 @@
   --verde-gradiente-2: #39A900;
   --verde-gradiente-3: #4FBF26;
 
-  /* Colores Complementarios */
+  
   --blanco: #FFFFFF;
   --negro: #1A1A1A;
   --gris-oscuro: #2C3E50;
@@ -19,24 +17,24 @@
   --gris-claro: #ECF0F1;
   --gris-muy-claro: #F8F9FA;
 
-  /* Colores de Estado */
+  
   --azul-info: #3498DB;
   --amarillo-warning: #F39C12;
   --rojo-danger: #E74C3C;
   --verde-success: #27AE60;
 
-  /* Sombras */
+  
   --sombra-suave: 0 2px 8px rgba(57, 169, 0, 0.1);
   --sombra-media: 0 4px 16px rgba(57, 169, 0, 0.15);
   --sombra-fuerte: 0 8px 24px rgba(57, 169, 0, 0.2);
   --sombra-topbar: 0 2px 10px rgba(0, 0, 0, 0.1);
 
-  /* Transiciones */
+  
   --transicion-rapida: all 0.2s ease;
   --transicion-media: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --transicion-suave: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Tamaños */
+  
   --sidebar-width: 280px;
   --sidebar-collapsed-width: 120px;
   --topbar-height: 90px;
@@ -44,7 +42,7 @@
   --border-radius-small: 8px;
 }
 
-/* Reset y Base */
+
 * {
   margin: 0;
   padding: 0;
@@ -61,18 +59,14 @@ body {
   margin-top: 0 !important;
 }
 
-/* ========================================
-   CONTENEDOR PRINCIPAL
-   ======================================== */
+
 .app-container {
   display: flex;
   min-height: 100vh;
   position: relative;
 }
 
-/* ========================================
-   TOPBAR - BARRA SUPERIOR
-   ======================================== */
+
 .topbar {
   position: fixed;
   top: 0;
@@ -103,10 +97,10 @@ body {
 
 .topbar-logo-img {
   height: 50px;
-  /* Made slightly larger */
+  
   width: auto;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-  /* Subtle shadow to pop */
+  
   transition: transform var(--transicion-media);
 }
 
@@ -139,19 +133,19 @@ body {
   opacity: 0.9;
 }
 
-/* Buscador Central */
+
 .topbar-center {
   display: flex;
   justify-content: flex-end;
   margin-left: auto;
-  /* Push to the right */
+  
   margin-right: 2rem;
-  /* Spacing from notifications */
+  
 }
 
 .search-container {
   width: 450px;
-  /* Fixed width for a more compact look */
+  
   position: relative;
   display: flex;
   align-items: center;
@@ -187,7 +181,7 @@ body {
   color: rgba(255, 255, 255, 0.8);
 }
 
-/* Acciones Derecha */
+
 .topbar-right {
   display: flex;
   align-items: center;
@@ -212,7 +206,7 @@ body {
 .notification-icon {
   color: white;
   font-size: 2.2rem;
-  /* Significantly larger */
+  
 }
 
 
@@ -237,12 +231,12 @@ body {
 
 .user-profile-photo-container {
   width: 55px;
-  /* Enlarged from 40px */
+  
   height: 55px;
   border-radius: 50%;
   overflow: hidden;
   border: 3px solid white;
-  /* Thicker border */
+  
   cursor: pointer;
   transition: var(--transicion-media);
 }
@@ -287,10 +281,107 @@ body {
   white-space: nowrap;
 }
 
+@media (max-width: 1024px) {
+  .topbar {
+    padding: 0 1rem;
+  }
 
-/* ========================================
-   SIDEBAR - BARRA LATERAL
-   ======================================== */
+  .brand-sub {
+    display: none;
+  }
+
+  .topbar-actions {
+    gap: 0.8rem;
+  }
+
+  .user-profile-btn {
+    padding-right: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --topbar-height: 78px;
+  }
+
+  .topbar {
+    padding: 0 0.7rem;
+  }
+
+  .topbar-logo-container {
+    gap: 0.5rem;
+  }
+
+  .topbar-logo-img {
+    height: 40px;
+  }
+
+  .brand-main {
+    font-size: 1.05rem;
+  }
+
+  .brand-divider,
+  .brand-sub,
+  .topbar-role-label {
+    display: none;
+  }
+
+  .user-profile-photo-container {
+    width: 46px;
+    height: 46px;
+  }
+
+  .user-profile-btn {
+    padding: 3px;
+    border-radius: 999px;
+    min-width: 52px;
+    justify-content: center;
+  }
+
+  .notification-btn {
+    min-width: 40px !important;
+    min-height: 36px !important;
+    padding: 6px !important;
+  }
+
+  .notification-icon {
+    font-size: 18px !important;
+  }
+
+  .admin-notif-dropdown.coord-style {
+    right: 0 !important;
+    width: min(92vw, 350px) !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .topbar {
+    padding: 0 0.45rem;
+  }
+
+  .topbar-actions {
+    gap: 0.45rem;
+  }
+
+  .topbar-logo-img {
+    height: 34px;
+  }
+
+  .brand-main {
+    font-size: 0.95rem;
+  }
+
+  .notification-badge {
+    min-width: 18px;
+    height: 18px;
+    line-height: 18px;
+    font-size: 11px;
+    margin-left: 4px !important;
+  }
+}
+
+
+
 .sidebar {
   position: fixed;
   left: 0;
@@ -306,17 +397,17 @@ body {
   border-right: 1px solid var(--gris-claro);
   box-shadow: 4px 0 10px rgba(0, 0, 0, 0.05);
   overflow: hidden;
-  /* Prevent sidebar itself from scrolling */
+  
 }
 
 
 
-/* Sidebar Contraído */
+
 .sidebar.collapsed {
   width: var(--sidebar-collapsed-width);
 }
 
-/* Scrollbar personalizado para sidebar */
+
 .sidebar::-webkit-scrollbar {
   width: 4px;
 }
@@ -330,7 +421,7 @@ body {
   border-radius: 10px;
 }
 
-/* Lista del Sidebar */
+
 .sidebar ul {
   list-style: none;
   padding: 1rem 0;
@@ -338,19 +429,19 @@ body {
   flex: 1;
   overflow-y: auto;
   scrollbar-width: none;
-  /* Hide scrollbar for Firefox */
+  
   -ms-overflow-style: none;
-  /* Hide scrollbar for IE/Edge */
+  
 }
 
 .sidebar ul::-webkit-scrollbar {
   display: none;
-  /* Hide scrollbar for Chrome/Safari */
+  
 }
 
 
 
-/* Items del Sidebar */
+
 .sidebar li {
   position: relative;
   display: flex;
@@ -403,11 +494,11 @@ body {
 }
 
 
-/* ICONOS DEL SIDEBAR */
+
 .sidebar li i {
   font-size: 1.5rem;
   width: 25px;
-  /* Subtle fixed width for alignment without "box" feel */
+  
   text-align: center;
   display: flex;
   align-items: center;
@@ -431,7 +522,7 @@ body {
 
 
 
-/* Texto del Sidebar */
+
 .sidebar li span {
   flex: 1;
   opacity: 1;
@@ -446,7 +537,7 @@ body {
 }
 
 
-/* Botón de Logout */
+
 .logout-button {
   width: 100%;
   margin-top: auto;
@@ -480,7 +571,7 @@ body {
 .logout-button:hover li span {
   color: #e74c3c !important;
   background: transparent !important;
-  /* Remove any residual background */
+  
 }
 
 
@@ -490,9 +581,7 @@ body {
 }
 
 
-/* ========================================
-   HAMBURGER BUTTON (MOBILE)
-   ======================================== */
+
 .hamburger-btn {
   position: fixed;
   top: 1rem;
@@ -522,7 +611,7 @@ body {
   background: linear-gradient(135deg, var(--verde-oscuro), var(--verde-primario));
 }
 
-/* Overlay para Mobile */
+
 .sidebar-overlay {
   position: fixed;
   top: 0;
@@ -542,11 +631,10 @@ body {
   visibility: visible;
 }
 
-/* ========================================
-   MAIN CONTENT
-   ======================================== */
+
 main {
   flex: 1;
+  min-width: 0;
   margin-left: var(--sidebar-width);
   margin-top: var(--topbar-height);
   padding: 0.75rem 2rem 2rem;
@@ -555,14 +643,12 @@ main {
   animation: fadeIn 0.6s ease;
 }
 
-/* Ajuste cuando el sidebar está contraído */
+
 .app-container:has(.sidebar.collapsed) main {
   margin-left: var(--sidebar-collapsed-width);
 }
 
-/* ========================================
-   MODALES
-   ======================================== */
+
 .modal {
   display: none;
   position: fixed;
@@ -705,9 +791,7 @@ main {
   transform: translateY(-2px);
 }
 
-/* ========================================
-   ANIMACIONES
-   ======================================== */
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -754,7 +838,7 @@ main {
   }
 }
 
-/* Efecto Ripple */
+
 .ripple {
   position: absolute;
   border-radius: 50%;
@@ -771,9 +855,7 @@ main {
   }
 }
 
-/* ========================================
-   RESPONSIVE DESIGN
-   ======================================== */
+
 @media (max-width: 768px) {
   .hamburger-btn {
     display: flex;
@@ -797,6 +879,124 @@ main {
     left: 0 !important;
     padding: 0 1rem 0 5rem;
     width: 100% !important;
+    overflow: visible;
+  }
+
+  .topbar-left,
+  .topbar-right {
+    min-width: 0;
+  }
+
+  .topbar-right {
+    margin-left: auto;
+  }
+
+  .topbar-actions {
+    gap: 0.45rem;
+  }
+
+  .notification-wrapper,
+  .notification-wrapper:hover {
+    transform: none !important;
+  }
+
+  #adminNotifBtn {
+    min-width: 38px !important;
+    min-height: 36px !important;
+    padding: 6px !important;
+    border-radius: 9px !important;
+  }
+
+  #adminNotifBtn .notification-icon {
+    font-size: 19px !important;
+  }
+
+  #adminNotifBtn #adminNotifBadge {
+    margin-left: 5px !important;
+  }
+
+  .topbar-logo-container {
+    min-width: 0;
+    gap: 0.6rem;
+  }
+
+  .topbar-logo-img {
+    height: 42px;
+  }
+
+  .topbar-brand {
+    min-width: 0;
+    overflow: visible;
+    gap: 0.35rem;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.05;
+  }
+
+  .brand-main {
+    font-size: 1.1rem;
+    white-space: nowrap;
+    line-height: 1;
+  }
+
+  .brand-sub {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 170px;
+    font-size: 0.63rem;
+    line-height: 1.18;
+    opacity: 0.9;
+  }
+
+  .brand-divider {
+    display: none;
+  }
+
+  #adminNotifDropdown {
+    position: fixed !important;
+    left: 6px !important;
+    right: 6px !important;
+    top: calc(var(--topbar-height) + 4px) !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: calc(100vh - var(--topbar-height) - 12px);
+    overflow: hidden;
+    z-index: 3000 !important;
+  }
+
+  #adminNotifDropdown>div:nth-child(2) {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 6px !important;
+    padding: 8px 10px !important;
+  }
+
+  #adminNotifDropdown>div:nth-child(2) .notif-filter {
+    flex: 1 1 90px;
+    justify-content: center;
+  }
+
+  #adminNotifDropdown>div:nth-child(3) {
+    max-height: min(46vh, 340px) !important;
+    overflow: auto !important;
+  }
+
+  .user-profile-btn {
+    padding: 3px 8px 3px 3px;
+    gap: 6px;
+  }
+
+  .user-profile-photo-container {
+    width: 40px;
+    height: 40px;
+    border-width: 2px;
+  }
+
+  .topbar-role-label {
+    display: none;
   }
 
   .topbar-logo h1 {
@@ -834,14 +1034,85 @@ main {
     letter-spacing: 1px;
   }
 
+  .topbar {
+    padding-right: 0.6rem;
+  }
+
+  .topbar {
+    padding-left: 4.2rem !important;
+  }
+
+  .topbar-brand {
+    max-width: 150px;
+  }
+
+  .topbar-logo-img {
+    height: 36px;
+  }
+
+  .brand-main {
+    font-size: 1.05rem;
+  }
+
+  .brand-sub {
+    -webkit-line-clamp: 1;
+    max-width: 145px;
+    font-size: 0.6rem;
+  }
+
+  #adminNotifDropdown {
+    left: 4px !important;
+    right: 4px !important;
+  }
+
+  .brand-divider {
+    display: none;
+  }
+
   main {
     padding: 1rem;
   }
 }
 
-/* ========================================
-   UTILIDADES
-   ======================================== */
+@media (max-width: 1024px) {
+  #adminNotifDropdown {
+    position: absolute !important;
+    left: auto !important;
+    right: 0 !important;
+    width: min(360px, calc(100vw - 12px)) !important;
+    max-width: min(360px, calc(100vw - 12px)) !important;
+    z-index: 3000 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  #adminNotifDropdown {
+    position: fixed !important;
+    left: 8px !important;
+    right: 8px !important;
+    top: calc(var(--topbar-height) + 6px) !important;
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+    max-height: calc(100vh - var(--topbar-height) - 12px) !important;
+    border-radius: 12px !important;
+    z-index: 4000 !important;
+  }
+
+  #adminNotifDropdown>div:nth-child(1) {
+    padding: 12px !important;
+  }
+
+  #adminNotifDropdown>div:nth-child(2) .notif-filter {
+    font-size: 12px !important;
+    padding: 6px 8px !important;
+  }
+
+  #adminNotifDropdown>div:nth-child(3) {
+    max-height: calc(100vh - var(--topbar-height) - 150px) !important;
+  }
+}
+
+
 .text-center {
   text-align: center;
 }

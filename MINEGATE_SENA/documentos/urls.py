@@ -1,10 +1,9 @@
-from django.urls import path
+﻿from django.urls import path
 from . import views
 
 app_name = "documentos"
 
 urlpatterns = [
-    # Registro público con token
     path(
         "registro/interna/<str:token>/",
         views.registro_publico_asistentes,
@@ -17,7 +16,6 @@ urlpatterns = [
         {"tipo": "externa"},
         name="registro_publico_externa",
     ),
-    # Eliminar asistente desde enlace público
     path(
         "eliminar/interna/<str:token>/<int:asistente_id>/",
         views.eliminar_asistente_publico,
@@ -42,7 +40,6 @@ urlpatterns = [
         {"tipo": "externa"},
         name="actualizar_asistente_publico_externa",
     ),
-    # API para gestión de documentos (panel admin)
     path("api/listar/", views.listar_documentos_api, name="api_listar_documentos"),
     path(
         "api/categorias-faltantes/",
@@ -55,7 +52,6 @@ urlpatterns = [
         views.eliminar_documento_api,
         name="api_eliminar_documento",
     ),
-    # Descargar/servir documento
     path(
         "descargar/<int:documento_id>/",
         views.descargar_documento,
@@ -71,19 +67,16 @@ urlpatterns = [
         views.descargar_documento_publico,
         name="descargar_documento_publico",
     ),
-    # Campo de archivo de asistente (documento_identidad, documento_adicional, etc.)
     path(
         "ver-campo-asistente/<str:tipo>/<int:asistente_id>/<str:campo>/",
         views.ver_campo_asistente_inline,
         name="ver_campo_asistente_inline",
     ),
-    # DocumentoSubidoAprendiz
     path(
         "ver-aprendiz/<int:documento_subido_id>/",
         views.ver_documento_aprendiz_doc_inline,
         name="ver_documento_aprendiz_doc_inline",
     ),
-    # Documentos subidos por asistentes
     path(
         "ver-asistente/<int:documento_subido_id>/",
         views.ver_documento_asistente_inline,

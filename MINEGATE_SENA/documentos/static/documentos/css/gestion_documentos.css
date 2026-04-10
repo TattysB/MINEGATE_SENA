@@ -1,8 +1,6 @@
-/* ================================================
-   Gestión de Documentos — Estilos
-   ================================================ */
+﻿
 
-/* ---------- Título de sección ---------- */
+
 .docs-titulo {
     color: #1f2937;
     margin-bottom: 20px;
@@ -15,12 +13,12 @@
     color: #3b82f6;
 }
 
-/* ---------- Contenedor principal ---------- */
+
 .docs-contenedor {
     padding: 20px;
 }
 
-/* ---------- Zona de carga (drag & drop) ---------- */
+
 .docs-zona-subida {
     background: linear-gradient(135deg, #eff6ff, #dbeafe);
     border: 2px dashed #3b82f6;
@@ -59,7 +57,7 @@
     margin: 0;
 }
 
-/* ---------- Archivos pendientes ---------- */
+
 .docs-pendientes {
     display: none;
     background: white;
@@ -92,7 +90,7 @@
     flex-wrap: wrap;
 }
 
-/* ---------- Archivo individual pendiente ---------- */
+
 .docs-archivo-item {
     display: flex;
     align-items: center;
@@ -141,7 +139,7 @@
     background: white;
 }
 
-/* ---------- Botón quitar archivo ---------- */
+
 .docs-btn-quitar {
     background: none;
     border: none;
@@ -155,7 +153,7 @@
     transform: scale(1.15);
 }
 
-/* ---------- Botones principales ---------- */
+
 .docs-btn {
     padding: 10px 20px;
     color: white;
@@ -196,7 +194,7 @@
     background: #dc2626;
 }
 
-/* ---------- Progreso de subida ---------- */
+
 .docs-progreso {
     display: none;
     margin-top: 15px;
@@ -224,7 +222,7 @@
     text-align: center;
 }
 
-/* ---------- Filtros y búsqueda ---------- */
+
 .docs-filtros {
     display: flex;
     gap: 12px;
@@ -298,7 +296,7 @@
     color: white;
 }
 
-/* ---------- Barra de búsqueda ---------- */
+
 .docs-busqueda-bar {
     display: flex;
     gap: 10px;
@@ -396,7 +394,7 @@
     font-size: 13px;
 }
 
-/* ---------- Tabla de documentos ---------- */
+
 .docs-tabla-contenedor {
     background: white;
     border-radius: 10px;
@@ -450,8 +448,8 @@
     font-weight: 700;
     color: #ffffff;
     font-size: 13px;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.15);
-    border-right: 1px solid rgba(255,255,255,0.2);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    border-right: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .docs-tabla th:last-child {
@@ -462,7 +460,7 @@
     padding: 12px 15px;
 }
 
-/* ---------- Filas de tabla ---------- */
+
 .docs-fila {
     border-bottom: 1px solid #d8f0be;
     transition: background 0.2s;
@@ -503,7 +501,7 @@
     text-align: center;
 }
 
-/* ---------- Badges de categoría ---------- */
+
 .docs-badge {
     display: inline-flex;
     align-items: center;
@@ -570,7 +568,7 @@
     border-color: #9ca3af33;
 }
 
-/* ---------- Botones de acción en tabla ---------- */
+
 .docs-acciones {
     display: flex;
     gap: 6px;
@@ -625,7 +623,7 @@
     transform: translateY(0) scale(0.95);
 }
 
-/* Ver */
+
 .docs-btn-ver {
     background: linear-gradient(135deg, #3b82f6, #2563eb);
     box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
@@ -643,7 +641,7 @@
     transition: transform 0.2s ease;
 }
 
-/* Descargar */
+
 .docs-btn-descargar {
     background: linear-gradient(135deg, #10b981, #059669);
     box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
@@ -657,7 +655,7 @@
     animation: docs-bounce-down 0.5s ease;
 }
 
-/* Eliminar */
+
 .docs-btn-eliminar {
     background: linear-gradient(135deg, #ef4444, #dc2626);
     box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
@@ -671,7 +669,7 @@
     animation: docs-shake 0.4s ease;
 }
 
-/* ---------- Iconos de tipo de archivo ---------- */
+
 .docs-icono-pdf {
     color: #ef4444;
     font-size: 20px;
@@ -707,7 +705,7 @@
     font-size: 20px;
 }
 
-/* ---------- Estado vacío y carga ---------- */
+
 .docs-vacio {
     padding: 40px;
     text-align: center;
@@ -741,7 +739,7 @@
     color: #ef4444;
 }
 
-/* ---------- Modal personalizado ---------- */
+
 .docs-modal-overlay {
     position: fixed;
     top: 0;
@@ -857,7 +855,7 @@
     transform: translateY(-1px);
 }
 
-/* Variantes de color para modal */
+
 .docs-modal-success {
     background: #d1fae5;
 }
@@ -935,7 +933,144 @@
     box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
 }
 
-/* ---------- Animaciones ---------- */
+@media (max-width: 700px) {
+    .docs-tabla-scroll {
+        overflow-x: visible;
+    }
+
+    .docs-tabla {
+        min-width: 0;
+    }
+
+    .docs-tabla thead {
+        display: none;
+    }
+
+    .docs-tabla,
+    .docs-tabla tbody,
+    .docs-tabla tr,
+    .docs-tabla td {
+        display: block;
+        width: 100%;
+    }
+
+    .docs-fila {
+        border: 1px solid #d8f0be;
+        border-radius: 10px;
+        margin: 0 0 10px;
+        padding: 10px;
+        background: #fff;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    .docs-fila td {
+        border: 0;
+        border-bottom: 1px dashed #e5e7eb;
+        padding: 8px 0;
+        display: grid;
+        grid-template-columns: minmax(82px, 34%) minmax(0, 1fr);
+        gap: 10px;
+        align-items: start;
+    }
+
+    .docs-fila td:last-child {
+        border-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .docs-fila td::before {
+        grid-column: 1;
+        font-size: 11px;
+        font-weight: 700;
+        color: #4b5563;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .docs-fila td>* {
+        grid-column: 2;
+        min-width: 0;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+    }
+
+    .docs-fila td:nth-child(1)::before {
+        content: 'Archivo';
+    }
+
+    .docs-fila td:nth-child(2)::before {
+        content: 'Categoria';
+    }
+
+    .docs-fila td:nth-child(3)::before {
+        content: 'Subido por';
+    }
+
+    .docs-fila td:nth-child(4)::before {
+        content: 'Fecha';
+    }
+
+    .docs-fila td:nth-child(5)::before {
+        content: 'Tamano';
+    }
+
+    .docs-fila td:nth-child(6)::before {
+        content: 'Acciones';
+    }
+
+    .docs-celda-archivo {
+        flex-wrap: wrap;
+    }
+
+    .docs-archivo-titulo,
+    .docs-archivo-subtitulo,
+    .docs-celda-texto {
+        word-break: break-word;
+        overflow-wrap: anywhere;
+    }
+
+    .docs-fila td:nth-child(2) .docs-badge {
+        display: inline-flex;
+        flex-wrap: wrap;
+        max-width: 100%;
+        white-space: normal;
+        line-height: 1.2;
+        padding: 6px 10px;
+    }
+
+    .docs-fila td:nth-child(2) .docs-badge i {
+        margin-top: 1px;
+    }
+
+    .docs-celda-acciones {
+        text-align: left;
+    }
+
+    .docs-acciones {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .docs-btn-accion {
+        flex: 1 1 120px;
+        justify-content: center;
+    }
+
+    .docs-tabla .docs-cargando,
+    .docs-tabla .docs-vacio,
+    .docs-tabla .docs-error {
+        text-align: center;
+        padding: 20px 12px;
+    }
+
+    .docs-tabla .docs-cargando::before,
+    .docs-tabla .docs-vacio::before,
+    .docs-tabla .docs-error::before {
+        content: none;
+    }
+}
+
+
 @keyframes spin {
     from {
         transform: rotate(0deg);

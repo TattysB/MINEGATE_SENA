@@ -1,4 +1,4 @@
-{% load static %}
+﻿{% load static %}
 {% load accesibility_tags %}
 
 <!DOCTYPE html>
@@ -6,7 +6,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Registrar Aprendices — Visita #{{ visita.id }} — MINEGATE</title>
+  <title>Registrar Aprendices — Visita #{{ visita.id }} — SICAM</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
@@ -102,7 +102,7 @@
 </head>
 <body>
 
-<!-- ============ HEADER ============ -->
+
 <div class="page-header">
   <div class="container">
     <div class="breadcrumb-nav mb-2">
@@ -121,7 +121,7 @@
   </div>
 </div>
 
-<!-- ============ STATS BAR ============ -->
+
 <div class="stats-wrap">
   <div class="container">
     <div class="d-flex flex-wrap">
@@ -137,7 +137,7 @@
   </div>
 </div>
 
-<!-- ============ CONTENIDO ============ -->
+
 <div class="container py-4">
 
   {% if messages %}
@@ -150,13 +150,13 @@
 
   <div class="row g-4">
 
-    <!-- COLUMNA PRINCIPAL -->
+    
     <div class="col-lg-9">
       {% if aprendices %}
         <form method="POST" id="form_aprendices">
           {% csrf_token %}
 
-          <!-- Barra de selección total -->
+          
           <div class="select-bar">
             <div class="form-check mb-0">
               <input class="form-check-input" type="checkbox" id="selectAll">
@@ -174,12 +174,12 @@
             Aprendices de la Ficha ({{ total_aprendices }})
           </div>
 
-          <!-- Lista de aprendices -->
+          
           <div class="aprendices-list">
             {% for aprendiz in aprendices %}
 
               {% if aprendiz.numero_documento in ya_registrados %}
-              <!-- Ya registrado — no seleccionable -->
+              
               <div class="aprendiz-card ya-registrado">
                 <div class="card-check-col">
                   <i class="fas fa-check-circle" style="color:var(--sena-verde); font-size:1.3rem;"></i>
@@ -209,7 +209,7 @@
               </div>
 
               {% elif not aprendiz.tiene_doc_salud %}
-              <!-- Sin reporte de salud — no seleccionable -->
+              
               <div class="aprendiz-card sin-doc-salud">
                 <div class="card-check-col" style="background:#fff7ed; border-right:1px solid #fde68a;">
                   <i class="fas fa-triangle-exclamation" style="color:#d97706; font-size:1.2rem;"></i>
@@ -235,7 +235,7 @@
               </div>
 
               {% else %}
-              <!-- Seleccionable -->
+              
               <div class="aprendiz-card selectable-aprendiz" data-aprendiz-id="{{ aprendiz.id }}">
                 <div class="card-check-col">
                   <input
@@ -269,7 +269,7 @@
             {% endfor %}
           </div>
 
-          <!-- Barra de acciones -->
+          
           <div class="actions-bar">
             <button type="submit" class="btn-registrar-submit" id="btn_submit">
               <i class="fas fa-user-plus"></i> Registrar Seleccionados
@@ -292,7 +292,7 @@
       {% endif %}
     </div>
 
-    <!-- SIDEBAR -->
+    
     <div class="col-lg-3">
       <div class="info-card">
         <div class="info-card-header">

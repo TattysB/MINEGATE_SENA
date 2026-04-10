@@ -1,7 +1,7 @@
-{% extends "master.html" %}
+﻿{% extends "master.html" %}
 {% load static %}
 
-{% block title %}Registro de Asistentes - MINEGATE{% endblock %}
+{% block title %}Registro de Asistentes - SICAM{% endblock %}
 
 {% block content %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -34,7 +34,7 @@
 </style>
 
 {% if estado_no_aprobado %}
-<!-- Visita no aprobada -->
+
 <div class="registro-header" style="background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);">
     <div class="container text-center">
         <h1><i class="fas fa-clock me-3"></i>Visita Pendiente</h1>
@@ -61,7 +61,7 @@
 </div>
 
 {% else %}
-<!-- Visita aprobada - Mostrar formulario de registro -->
+
 <div class="registro-header">
     <div class="container text-center">
         <h1><i class="fas fa-user-plus me-3"></i>Registro de Asistentes</h1>
@@ -85,7 +85,7 @@
     {% endfor %}
     {% endif %}
 
-    <!-- Información de la visita -->
+    
     <div class="visita-info-card">
         <h4><i class="fas fa-info-circle"></i> Información de la Visita</h4>
         <div class="info-grid">
@@ -120,7 +120,7 @@
     </div>
 
 
-    <!-- Progreso -->
+    
     <div class="progress-box">
         <h5><i class="fas fa-chart-pie me-2" style="color: #00af00;"></i>Progreso de Registro</h5>
         <div class="progress-bar-custom">
@@ -150,7 +150,7 @@
     {% endif %}
 
     {% if visita.estado == 'aprobada_inicial' %}
-    <!-- Sección de Envío Final -->
+    
     <div class="visita-info-card" id="seccion-envio-final" style="border-left: 4px solid #f59e0b; background: #fffbeb;">
         <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
             <div style="flex: 1; min-width: 280px;">
@@ -175,7 +175,7 @@
     {% endif %}
 
     {% if puede_agregar and visita.estado == 'aprobada_inicial' %}
-    <!-- Documentos disponibles para descargar -->
+    
     {% if documentos_por_categoria %}
     <div class="form-registro" style="border-left: 4px solid #667eea;">
         <h4><i class="fas fa-download" style="color: #667eea;"></i> Documentos Requeridos para Descargar</h4>
@@ -224,7 +224,7 @@
     {% endif %}
 
     {% if puede_agregar and visita.estado == 'aprobada_inicial' %}
-    <!-- Formulario de registro -->
+    
     <div class="form-registro">
         <h4><i class="fas fa-plus-circle"></i> Registrar Nuevo Asistente</h4>
 
@@ -302,7 +302,7 @@
                 </div>
             </div>
 
-            <!-- Advertencia y campo para Formato Autorización Padres de Familia -->
+            
             <div style="margin-top: 25px; margin-bottom: 20px; padding: 20px; background: #fef3c7; border-left: 5px solid #f59e0b; border-radius: 10px; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.1);">
                 <div style="display: flex; align-items: start; gap: 15px; margin-bottom: 15px;">
                     <i class="fas fa-exclamation-triangle" style="color: #f59e0b; font-size: 2rem; margin-top: 2px;"></i>
@@ -353,7 +353,7 @@
     </div>
     {% endif %}
 
-    <!-- Lista de asistentes registrados -->
+    
     <div class="asistentes-lista">
         <h4><i class="fas fa-users"></i> Asistentes Registrados ({{ asistentes_actuales }})</h4>
 
@@ -659,7 +659,7 @@
     });
 </script>
 
-<!-- Modal Visor de Documentos -->
+
 <div id="modalVisorDocPublico" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.75);overflow-y:auto;">
   <div style="background:#fff;margin:2% auto;border-radius:12px;width:92%;max-width:960px;height:90vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.4);overflow:hidden;">
     <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #e5e7eb;background:#f9fafb;">

@@ -1,7 +1,7 @@
-{% extends "panel_visitante_base.html" %}
+﻿{% extends "panel_visitante_base.html" %}
 {% load static %}
 
-{% block title %}Mi Panel de Visitas - MINEGATE{% endblock %}
+{% block title %}Mi Panel de Visitas - SICAM{% endblock %}
 
 {% block content %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -34,7 +34,13 @@
         {% endfor %}
     {% endif %}
 
-    <!-- Visitas Internas -->
+    <div class="alert alert-no-autoclose border-0" style="background:#ecfdf3;color:#166534;">
+        <i class="fas fa-life-ring me-2"></i>
+        Si tiene problemas o necesita ayuda, contacte a
+        <a href="mailto:sicamsenacentrominero@gmail.com" style="color:#14532d;font-weight:700;text-decoration:none;">sicamsenacentrominero@gmail.com</a>.
+    </div>
+
+    
     {% if rol == 'interno' or rol == None %}
     <div class="section-title">
         <i class="fas fa-building"></i>
@@ -73,7 +79,7 @@
                 </div>
                 
                 <div class="visita-card-body">
-                    <!-- Estado de progreso -->
+                    
                     <div class="estado-progreso">
                         {% if visita.estado == 'pendiente' %}
                             <div class="estado-progreso-icon" style="background: #fef3c7; color: #d97706;">
@@ -161,7 +167,7 @@
                         </p>
                     </div>
                     
-                    <!-- Enlace compartible (solo si aprobada_inicial o estados siguientes) -->
+                    
                     {% if visita.estado in 'aprobada_inicial,documentos_enviados,en_revision_documentos,confirmada' %}
                         <div class="enlace-compartir">
                             <label><i class="fas fa-link me-2"></i>Enlace de Registro para Asistentes</label>
@@ -226,7 +232,7 @@
     {% endif %}
     {% endif %}
 
-    <!-- Visitas Externas -->
+    
     {% if rol == 'externo' or rol == None %}
     <div class="section-title">
         <i class="fas fa-user-tie"></i>
@@ -265,7 +271,7 @@
                 </div>
                 
                 <div class="visita-card-body">
-                    <!-- Estado de progreso -->
+                    
                     <div class="estado-progreso">
                         {% if visita.estado == 'pendiente' %}
                             <div class="estado-progreso-icon" style="background: #fef3c7; color: #d97706;">
@@ -353,7 +359,7 @@
                         </p>
                     </div>
                     
-                    <!-- Enlace compartible (solo si aprobada_inicial o estados siguientes) -->
+                    
                     {% if visita.estado in 'aprobada_inicial,documentos_enviados,en_revision_documentos,confirmada' %}
                         <div class="enlace-compartir">
                             <label><i class="fas fa-link me-2"></i>Enlace de Registro para Asistentes</label>
@@ -418,7 +424,7 @@
     {% endif %}
     {% endif %}
     
-    <!-- Botón para nueva visita -->
+    
     <div class="text-center mt-5">
         {% if rol == 'interno' %}
             <a href="{% url 'visitaInterna:crear_visita_interna' %}" class="btn btn-lg btn-primary" style="background: linear-gradient(135deg, #00af00 0%, #008c00 100%); color: white; border: none; text-decoration: none;">

@@ -1,4 +1,4 @@
-.login-container {
+﻿.login-container {
 	min-height: calc(100vh - 200px);
 	display: flex;
 	align-items: center;
@@ -179,7 +179,45 @@
 	font-size: 0.85rem;
 }
 
-/* Estilos personalizados para selector de rol */
+.captcha-wrapper {
+	border: 1px solid #d7e7d7;
+	border-radius: 14px;
+	padding: 12px 14px;
+	background: linear-gradient(180deg, #ffffff 0%, #f7fbf7 100%);
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	overflow: visible;
+}
+
+.captcha-inner {
+	display: inline-flex;
+	transform-origin: center top;
+	transform: scale(0.88);
+}
+
+.captcha-wrapper .g-recaptcha {
+	display: inline-block;
+}
+
+@media (max-width: 420px) {
+	.captcha-inner {
+		transform: scale(0.78);
+	}
+}
+
+.captcha-wrapper-registro {
+	min-height: 110px;
+}
+
+.captcha-box {
+	min-height: 78px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+
 .role-selector {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
@@ -237,7 +275,7 @@
 	font-size: 0.95rem;
 }
 
-/* Wrapper para campo de contraseña con ícono */
+
 .password-wrapper {
 	position: relative;
 	display: flex;
@@ -259,4 +297,14 @@
 
 .toggle-password:hover {
 	color: #00af00;
+}
+
+.realtime-invalid {
+	border-color: #dc2626 !important;
+	box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15) !important;
+}
+
+.realtime-valid {
+	border-color: #16a34a !important;
+	box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15) !important;
 }

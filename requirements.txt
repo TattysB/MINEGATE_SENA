@@ -1,0 +1,22 @@
+asgiref==3.11.0
+beautifulsoup4==4.14.3
+chardet==7.2.0
+colorama==0.4.6
+coverage==7.13.5
+Django==4.2.27
+django-bootstrap-v5==1.0.11
+django-recaptcha==4.1.0
+pillow==12.0.0
+python-decouple==3.8
+qrcode==8.0
+reportlab==4.0.9
+soupsieve==2.8
+sqlparse==0.5.4
+typing_extensions==4.15.0
+tzdata==2025.2
+psycopg2-binary==2.9.11
+openpyxl==3.1.5
+pypdf==4.0.0
+
+# Para instalar los paquetes en el VENV 
+# pip install -r requirements.txt

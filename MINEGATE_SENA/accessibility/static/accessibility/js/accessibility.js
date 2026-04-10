@@ -1,5 +1,4 @@
-// --- VARIABLES DE ESTADO ---
-let fontSizeFactor = 100;
+﻿let fontSizeFactor = 100;
 let isHighContrast = false;
 let filterStates = {
     'underline-links': false,
@@ -11,7 +10,6 @@ let isReading = false;
 let guideEnabled = false;
 let guideElement = null;
 
-// --- INICIALIZACIÓN ---
 document.addEventListener('DOMContentLoaded', () => {
     loadSettings();
     initializeReadingGuide();
@@ -19,7 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
 });
 
-// Cargar configuración de localStorage
 function loadSettings() {
     const savedFont = localStorage.getItem('mg-font');
     if (savedFont) fontSizeFactor = parseInt(savedFont);
@@ -36,12 +33,10 @@ function loadSettings() {
     });
 }
 
-// Crear el elemento de la guía visualmente
 function initializeReadingGuide() {
     if (!document.getElementById('reading-guide')) {
         guideElement = document.createElement('div');
         guideElement.id = 'reading-guide';
-        // Estilos ultra-fuertes para evitar que se pierda o bloquee clics
         guideElement.style.cssText = `
             display: none;
             position: fixed;
@@ -74,7 +69,6 @@ function initializeReadingGuide() {
 function setupEventListeners() {
     window.addEventListener('mousemove', (e) => {
         if (guideEnabled && guideElement) {
-            // Pasamos las coordenadas del mouse directamente al CSS
             guideElement.style.setProperty('--mouse-x', e.clientX + 'px');
             guideElement.style.setProperty('--mouse-y', e.clientY + 'px');
             
@@ -84,7 +78,6 @@ function setupEventListeners() {
         }
     });
 
-    // Cerrar panel al hacer clic fuera
     document.addEventListener('click', (e) => {
         const panel = document.getElementById('accPanel');
         const trigger = document.querySelector('.minegate-acc-trigger');
@@ -94,7 +87,6 @@ function setupEventListeners() {
     });
 }
 
-// --- FUNCIONES DE ACCIÓN ---
 
 function toggleAccPanel() {
     const panel = document.getElementById('accPanel');
@@ -131,10 +123,8 @@ function toggleReadingGuide() {
 }
 
 function applyAccessibilityChanges() {
-    // Cambia el tamaño de fuente en la raíz (HTML)
     document.documentElement.style.fontSize = fontSizeFactor + "%";
     
-    // Aplica las clases de filtros al BODY
     const body = document.body;
     body.classList.toggle('underline-links', filterStates['underline-links']);
     body.classList.toggle('big-cursor', filterStates['big-cursor']);
@@ -169,20 +159,16 @@ function resetAll() {
         'high-contrast-mode': false
     };
     
-    // Limpiar storage
     localStorage.clear();
     
-    // Desactivar guía
     guideEnabled = false;
     if (guideElement) guideElement.style.display = 'none';
     
-    // Detener voz
     window.speechSynthesis.cancel();
     isReading = false;
     
     applyAccessibilityChanges();
     
-    // Cerrar panel
     const panel = document.getElementById('accPanel');
     if (panel) panel.style.display = 'none';
 }

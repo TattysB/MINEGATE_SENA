@@ -1,4 +1,4 @@
-<style>
+﻿<style>
   .pp-dashboard {
     --pp-bg: linear-gradient(145deg, #effcf3 0%, #f6fff8 50%, #ffffff 100%);
     --pp-card: #ffffff;
@@ -553,23 +553,31 @@
   }
 </style>
 
-<div class="pp-dashboard">
-  <div class="pp-top">
+<div class="pg-hero">
+  <div class="pg-hero-left">
+    <span class="pg-hero-icon"><i class="ri-dashboard-line"></i></span>
     <div>
-      <h2 class="pp-title">Dashboard General</h2>
-      <p class="pp-subtitle">Resumen operativo de visitas, accesos y estado actual del flujo administrativo.</p>
-    </div>
-    <div>
-      <span class="pp-variation {% if dashboard.variacion_mes_pct > 0 %}up{% elif dashboard.variacion_mes_pct < 0 %}down{% else %}neutral{% endif %}">
-        {% if dashboard.variacion_mes_pct > 0 %}▲{% elif dashboard.variacion_mes_pct < 0 %}▼{% else %}■{% endif %}
-        {{ dashboard.variacion_mes_pct }}% vs mes anterior
-      </span>
+      <h2 class="pg-hero-title">Panel Principal</h2>
+      <p class="pg-hero-subtitle">Resumen operativo de visitas, accesos y estado administrativo</p>
     </div>
   </div>
+  <div class="pg-hero-right">
+    <span class="pg-hero-chip"><i class="ri-calendar-line"></i> {% now "D, j M Y" %}</span>
+  </div>
+</div>
+
+<div class="pp-dashboard">
+  
 
   {% if dashboard_error %}
   <div class="pp-alerta">{{ dashboard_error }}</div>
   {% endif %}
+
+  <div class="pp-alerta" style="border-color:#bbf7d0;background:#ecfdf3;color:#166534;">
+    <i class="ri-customer-service-2-line" style="margin-right:6px;"></i>
+    Si tiene problemas o necesita ayuda, contacte a
+    <a href="mailto:sicamsenacentrominero@gmail.com" style="color:#14532d;font-weight:700;text-decoration:none;">sicamsenacentrominero@gmail.com</a>.
+  </div>
 
   <div class="pp-kpis">
     <article class="pp-kpi kpi-total">
@@ -663,7 +671,7 @@
             <p class="pp-item-title">{{ item.responsable }} · {{ item.entidad }}</p>
             <p class="pp-item-meta">Solicitud {{ item.fecha_solicitud|date:'d/m/Y H:i' }} · ID {{ item.id }}</p>
           </div>
-          <span class="pp-estado estado-{{ item.estado }}">{{ item.estado|title }}</span>
+          <span class="pp-estado estado-{{ item.estado }}">{{ item.estado_label }}</span>
         </li>
         {% empty %}
         <li class="pp-empty">No hay solicitudes recientes para mostrar.</li>

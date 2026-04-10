@@ -1,4 +1,4 @@
-{% extends "core/panel_administrativo.html" %}
+﻿{% extends "core/panel_administrativo.html" %}
 {% load static %}
 
 {% block content %}
@@ -421,7 +421,7 @@
 </style>
 
 <div class="contenedor-detalle">
-    <!-- Header -->
+    
     <div class="header-detalle">
         <h1>📋 Detalles del Usuario</h1>
         <a href="{% url 'usuarios:gestionar_permisos' %}" class="btn-volver">
@@ -429,9 +429,9 @@
         </a>
     </div>
 
-    <!-- Tarjeta de detalle -->
+    
     <div class="tarjeta-detalle">
-        <!-- Cabecera con foto y nombre -->
+        
         <div class="cabecera-usuario">
             <div class="avatar-usuario">
                 {% if perfil and perfil.foto_perfil %}
@@ -452,7 +452,7 @@
                 </div>
             </div>
             
-            <!-- Toggle Estado en cabecera -->
+            
             <div class="toggle-cabecera">
                 <span class="toggle-label-text" id="estadoLabel">
                     {% if usuario.is_active %}Activo{% else %}Inactivo{% endif %}
@@ -469,10 +469,10 @@
             </div>
         </div>
 
-        <!-- Contenido del detalle -->
+        
         <div class="contenido-detalle">
             <div class="grid-info">
-                <!-- Información Personal -->
+                
                 <div class="seccion-info">
                     <h3>👤 Información Personal</h3>
                     <div class="campo-info">
@@ -495,7 +495,7 @@
                     {% endif %}
                 </div>
 
-                <!-- Información de Contacto -->
+                
                 <div class="seccion-info">
                     <h3>📧 Información de Contacto</h3>
                     <div class="campo-info">
@@ -514,7 +514,7 @@
                     {% endif %}
                 </div>
 
-                <!-- Información de la Cuenta -->
+                
                 <div class="seccion-info">
                     <h3>🔐 Información de la Cuenta</h3>
                     <div class="campo-info">
@@ -537,7 +537,7 @@
             </div>
         </div>
 
-        <!-- Acciones -->
+        
         <div class="acciones-detalle">
             <a href="{% url 'usuarios:editar_usuario' usuario.id %}" class="btn-accion-detalle btn-editar-detalle">
                 ✏️ Editar

@@ -1,18 +1,12 @@
-<section class="backup-admin-wrap" data-backup-panel="true">
-  <header class="backup-hero">
-    <div class="backup-hero-icon">
-      <i class="ri-database-2-line"></i>
-    </div>
-    <div class="backup-hero-content">
-      <h2 class="backup-title">Copias de Seguridad PostgreSQL</h2>
-      <p class="backup-subtitle">Gestión exclusiva para superadmin</p>
+﻿<section class="backup-admin-wrap" data-backup-panel="true">
+  <header class="pg-hero">
+    <div class="pg-hero-left">
+      <span class="pg-hero-icon"><i class="ri-database-2-line"></i></span>
+      <div>
+        <h2 class="pg-hero-title">Copias de Seguridad</h2>
+      </div>
     </div>
   </header>
-
-  <div class="backup-path-box">
-    <span class="backup-path-label">Carpeta protegida</span>
-    <span class="backup-path-value">{{ ruta_backups }}</span>
-  </div>
 
   {% if messages %}
     <div class="backup-messages" id="backupMessages">

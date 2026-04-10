@@ -1,4 +1,4 @@
-/* Panel de copias de seguridad - estilo integrado con tema verde del dashboard */
+﻿
 .backup-admin-wrap {
   --backup-green-1: #2d8500;
   --backup-green-2: #39a900;
@@ -307,7 +307,8 @@
   margin-bottom: 14px;
   border: 1px solid #d9e6d1;
   border-radius: 12px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   background: #fff;
 }
 
@@ -632,6 +633,88 @@ body.backup-modal-open {
 
   .backup-table {
     font-size: 0.82rem;
+    min-width: 0;
+  }
+
+  .backup-table thead {
+    display: none;
+  }
+
+  .backup-table,
+  .backup-table tbody,
+  .backup-table tr,
+  .backup-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .backup-table tbody tr {
+    border: 1px solid #d8e4cf;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    padding: 10px;
+    background: #fff;
+  }
+
+  .backup-table tbody td {
+    border-bottom: 1px dashed #e5ecdf;
+    padding: 8px 0;
+    display: grid;
+    grid-template-columns: minmax(92px, 40%) minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+  }
+
+  .backup-table tbody td:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .backup-table tbody td::before {
+    grid-column: 1;
+    font-size: 11px;
+    font-weight: 700;
+    color: #3f5a36;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .backup-table tbody td>* {
+    grid-column: 2;
+    min-width: 0;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .backup-table tbody td:nth-child(1)::before {
+    content: 'Elegir';
+  }
+
+  .backup-table tbody td:nth-child(2)::before {
+    content: 'Archivo';
+  }
+
+  .backup-table tbody td:nth-child(3)::before {
+    content: 'Tamano';
+  }
+
+  .backup-table tbody td:nth-child(4)::before {
+    content: 'Fecha';
+  }
+
+  .backup-table tbody td:nth-child(5)::before {
+    content: 'Estado';
+  }
+
+  .backup-empty-row {
+    display: block;
+    text-align: center;
+    padding: 16px 10px;
+    border-bottom: 0 !important;
+  }
+
+  .backup-empty-row::before {
+    content: none !important;
   }
 
   .backup-table thead th,

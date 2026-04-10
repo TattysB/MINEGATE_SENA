@@ -1,4 +1,4 @@
-import json
+﻿import json
 import re
 import unicodedata
 from difflib import SequenceMatcher
@@ -13,9 +13,60 @@ from .models import PreguntaFrecuente
 
 FALLBACK_RESPUESTA = (
 	"Aun no tengo una respuesta exacta para eso. "
-	"Puedes intentar con una pregunta sobre registro de visitas, seguridad, "
-	"calendario, documentos o reportes."
+	"Puedo ayudarte con preguntas frecuentes sobre SICAM y agendamiento de visitas "
+	"(registro, fechas, horarios, requisitos y estado de solicitud)."
 )
+
+BLOQUEO_ADMIN_RESPUESTA = (
+	"Solo puedo responder preguntas frecuentes sobre SICAM y agendamiento de visitas. "
+)
+
+PALABRAS_AGENDAMIENTO = {
+	"agendar",
+	"agendamiento",
+	"agenda",
+	"visita",
+	"visitas",
+	"registro",
+	"registrar",
+	"solicitud",
+	"calendario",
+	"fecha",
+	"fechas",
+	"hora",
+	"horario",
+	"horarios",
+	"disponibilidad",
+	"cancelar",
+	"reprogramar",
+	"estado",
+	"requisitos",
+	"asistentes",
+	"responsable",
+	"sicam",
+	"sistema",
+	"plataforma",
+}
+
+PALABRAS_ADMIN = {
+	"admin",
+	"administrador",
+	"administrativa",
+	"administrativo",
+	"panel",
+	"modulo",
+	"modulos",
+	"reporte",
+	"reportes",
+	"permisos",
+	"usuarios",
+	"documentos",
+	"backup",
+	"copias",
+	"seguridad",
+	"restaurar",
+	"configuracion",
+}
 
 
 def _normalizar_texto(texto):
@@ -30,18 +81,35 @@ def _tokenizar(texto):
 	return [t for t in _normalizar_texto(texto).split(" ") if len(t) > 1]
 
 
+def _es_tema_agendamiento(texto):
+	tokens = set(_tokenizar(texto))
+	return bool(tokens & PALABRAS_AGENDAMIENTO)
+
+
+def _es_tema_admin(texto):
+	tokens = set(_tokenizar(texto))
+	return bool(tokens & PALABRAS_ADMIN)
+
+
 def _conocimiento_desde_bd():
 	try:
 		registros = PreguntaFrecuente.objects.filter(activa=True)
-		return [
+		filtrados = []
+		for row in registros:
+			texto_referencia = f"{row.pregunta} {row.palabras_clave}"
+			if _es_tema_admin(texto_referencia):
+				continue
+			if not _es_tema_agendamiento(texto_referencia):
+				continue
+			filtrados.append(
 			{
 				"pregunta": row.pregunta,
 				"respuesta": row.respuesta,
 				"palabras_clave": row.palabras_clave,
 				"prioridad": row.prioridad,
 			}
-			for row in registros
-		]
+			)
+		return filtrados
 	except (OperationalError, ProgrammingError):
 		return []
 
@@ -78,6 +146,18 @@ def _puntaje_entrada(texto_usuario, entrada):
 
 def _buscar_respuesta(mensaje):
 	base = _obtener_base_conocimiento()
+	if _es_tema_admin(mensaje):
+		sugerencias = [
+			item.get("pregunta")
+			for item in base[:3]
+			if item.get("pregunta")
+		]
+		return {
+			"respuesta": BLOQUEO_ADMIN_RESPUESTA,
+			"confianza": 1.0,
+			"sugerencias": sugerencias,
+		}
+
 	if not base:
 		return {
 			"respuesta": FALLBACK_RESPUESTA,

@@ -1,4 +1,4 @@
-{% extends "coordinador/base_coordinador.html" %}
+﻿{% extends "coordinador/base_coordinador.html" %}
 {% block extra_css %}
 <style>
   /* Resaltar fila objetivo: amarillo suave para mostrar selección desde notificaciones */
@@ -22,6 +22,77 @@
   #gestionVisitasPanel .btn-reject:hover{background:#f6f6f6}
   #gestionVisitasPanel .btn-detail:hover{background:#dbeafe}
   #gestionVisitasPanel .btn-observaciones:hover{background:#cffafe}
+
+  @media (max-width:768px) {
+    #gestionVisitasPanel {
+      padding: 10px !important;
+      margin-top: 14px !important;
+    }
+    #gestionVisitasPanel .reg-header {
+      flex-direction: column !important;
+      gap: 8px !important;
+      margin-bottom: 10px !important;
+    }
+    #gestionVisitasPanel .reg-header h3 {
+      margin: 0 !important;
+      font-size: 0.95rem !important;
+    }
+    #gestionVisitasPanel .reg-header select,
+    #gestionVisitasPanel .reg-header input {
+      font-size: 0.85rem !important;
+      padding: 6px !important;
+      width: 100% !important;
+    }
+    #gestionVisitasPanel .reg-header button {
+      font-size: 0.85rem !important;
+      padding: 6px 10px !important;
+      width: 100% !important;
+    }
+    #gestionVisitasPanel .reg-table {
+      display: block !important;
+      width: 100% !important;
+      overflow-x: auto !important;
+      overflow-y: visible !important;
+    }
+    #gestionVisitasPanel .reg-table thead th,
+    #gestionVisitasPanel .reg-table tbody td {
+      font-size: 0.8rem !important;
+      padding: 6px !important;
+      white-space: nowrap !important;
+    }
+    #gestionVisitasPanel .btn-approve,
+    #gestionVisitasPanel .btn-reject,
+    #gestionVisitasPanel .btn-detail,
+    #gestionVisitasPanel .btn-observaciones {
+      padding: 4px 6px !important;
+      font-size: 0.75rem !important;
+    }
+  }
+
+  @media (max-width:480px) {
+    #gestionVisitasPanel {
+      padding: 8px !important;
+    }
+    #gestionVisitasPanel .reg-header {
+      flex-direction: column !important;
+      gap: 6px !important;
+    }
+    #gestionVisitasPanel .reg-header h3 {
+      font-size: 0.85rem !important;
+    }
+    #gestionVisitasPanel .reg-table thead th,
+    #gestionVisitasPanel .reg-table tbody td {
+      font-size: 0.75rem !important;
+      padding: 4px !important;
+    }
+    #gestionVisitasPanel .btn-approve,
+    #gestionVisitasPanel .btn-reject,
+    #gestionVisitasPanel .btn-detail,
+    #gestionVisitasPanel .btn-observaciones {
+      padding: 3px 4px !important;
+      font-size: 0.7rem !important;
+    }
+  }
 
   #modalConfirmarAprobacion .confirm-modal-card{background:#fff;border-radius:12px;padding:24px;max-width:460px;width:calc(100% - 32px);box-shadow:0 10px 30px rgba(0,0,0,0.2)}
   #modalConfirmarAprobacion .confirm-title{margin:0 0 8px;color:#14532d;font-size:1.1rem;font-weight:800}
@@ -64,22 +135,272 @@
   @media (max-width:760px){
     #modalInfoVisita .info-grid{grid-template-columns:1fr}
   }
-  @media (max-width:900px){#gestionVisitasPanel .reg-table thead th,#gestionVisitasPanel .reg-table tbody td{padding:10px}}
+  
+  @media (max-width: 768px) {
+    #gestionVisitasPanel {
+      padding: 10px !important;
+    }
+    #gestionVisitasPanel .reg-header {
+      flex-direction: column !important;
+      gap: 8px !important;
+    }
+    #gestionVisitasPanel .reg-header h3 {
+      font-size: 0.95rem !important;
+    }
+    #gestionVisitasPanel .reg-header select,
+    #gestionVisitasPanel .reg-header input {
+      width: 100% !important;
+      font-size: 0.9rem !important;
+    }
+    #gestionVisitasPanel .reg-table {
+      display: block;
+      border-radius: 8px;
+      overflow: visible;
+    }
+    #gestionVisitasPanel .reg-table thead {
+      display: none;
+    }
+    #gestionVisitasPanel .reg-table tbody {
+      display: block;
+    }
+    #gestionVisitasPanel .reg-table tbody tr {
+      display: block;
+      margin-bottom: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #fff;
+      padding: 0;
+    }
+    #gestionVisitasPanel .reg-table tbody td {
+      display: block;
+      padding: 8px;
+      font-size: 0.85rem;
+      border-bottom: 1px solid #f0f0f0;
+      text-align: left;
+    }
+    #gestionVisitasPanel .reg-table tbody td:last-child {
+      border-bottom: none;
+    }
+    #gestionVisitasPanel .reg-table tbody td::before {
+      content: attr(data-label);
+      display: inline-block;
+      font-weight: 700;
+      color: #00af00;
+      min-width: 90px;
+      margin-right: 8px;
+    }
+    #gestionVisitasPanel .btn-approve,
+    #gestionVisitasPanel .btn-reject,
+    #gestionVisitasPanel .btn-detail,
+    #gestionVisitasPanel .btn-observaciones {
+      padding: 6px 10px !important;
+      font-size: 0.8rem !important;
+    }
+  }
+
+  @media (max-width:480px) {
+    #gestionVisitasPanel {
+      padding: 8px !important;
+    }
+    #gestionVisitasPanel .reg-header {
+      flex-direction: column !important;
+      gap: 6px !important;
+    }
+    #gestionVisitasPanel .reg-header h3 {
+      font-size: 0.8rem !important;
+      margin-bottom: 0 !important;
+    }
+    #gestionVisitasPanel .reg-header select,
+    #gestionVisitasPanel .reg-header input {
+      width: 100% !important;
+      font-size: 0.8rem !important;
+      padding: 6px !important;
+    }
+    #gestionVisitasPanel .reg-header button {
+      width: 100% !important;
+      font-size: 0.8rem !important;
+    }
+    #gestionVisitasPanel .reg-table tbody tr {
+      margin-bottom: 10px;
+      padding: 0;
+    }
+    #gestionVisitasPanel .reg-table tbody td {
+      padding: 6px;
+      font-size: 0.75rem;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    #gestionVisitasPanel .reg-table tbody td::before {
+      min-width: 70px;
+      font-size: 0.7rem;
+      margin-right: 6px;
+    }
+    #gestionVisitasPanel .btn-approve,
+    #gestionVisitasPanel .btn-reject,
+    #gestionVisitasPanel .btn-detail,
+    #gestionVisitasPanel .btn-observaciones {
+      padding: 4px 6px !important;
+      font-size: 0.65rem !important;
+    }
+  }
+  .coordinador-main-wrap {
+    padding: 20px;
+  }
+  .coordinador-dashboard-grid {
+    display: grid;
+    grid-template-columns: 2.8fr 1.2fr;
+    gap: 18px;
+    align-items: flex-start;
+  }
+  .coordinador-calendar-card,
+  .coordinador-resumen-card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    width: 100%;
+  }
+  .coordinador-calendar-card {
+    padding: 14px;
+  }
+  .coordinador-resumen-card {
+    padding: 16px;
+  }
+
+  @media (max-width: 1200px) {
+    .coordinador-dashboard-grid {
+      grid-template-columns: 1fr !important;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .coordinador-main-wrap {
+      padding: 12px;
+    }
+    .coordinador-main-wrap h2 {
+      font-size: 1.9rem;
+      line-height: 1.15;
+    }
+    .coordinador-dashboard-grid {
+      grid-template-columns: 1fr !important;
+      gap: 14px;
+    }
+    .coordinador-calendar-card,
+    .coordinador-resumen-card {
+      width: 100% !important;
+    }
+    #gestionVisitasPanel {
+      margin-top: 14px !important;
+      padding: 12px;
+      border-radius: 10px;
+    }
+    #gestionVisitasPanel .reg-table {
+      min-width: 100%;
+      overflow-x: auto;
+    }
+    #gestionVisitasPanel .reg-table thead th,
+    #gestionVisitasPanel .reg-table tbody td {
+      white-space: nowrap;
+      font-size: 0.86rem;
+      padding: 8px;
+    }
+    #gestionVisitasPanel .btn-approve,
+    #gestionVisitasPanel .btn-reject,
+    #gestionVisitasPanel .btn-detail,
+    #gestionVisitasPanel .btn-observaciones {
+      padding: 6px 8px;
+      font-size: 0.8rem;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .coordinador-main-wrap {
+      padding: 10px;
+    }
+    .coordinador-main-wrap h2 {
+      font-size: 1.7rem;
+      margin-bottom: 10px !important;
+    }
+    .coordinador-main-wrap > p {
+      font-size: 0.95rem;
+      margin-bottom: 12px !important;
+    }
+    .coordinador-dashboard-grid {
+      grid-template-columns: 1fr !important;
+      gap: 12px;
+    }
+    .coordinador-calendar-card,
+    .coordinador-resumen-card {
+      padding: 10px;
+      width: 100% !important;
+    }
+    #gestionVisitasPanel .reg-table {
+      min-width: 100%;
+      display: block;
+      overflow-x: auto;
+    }
+  }
 </style>
+<script>
+  // Forzar responsive de grilla en carga y redimensionamiento
+  function adaptarGrilla() {
+    const grid = document.querySelector('.coordinador-dashboard-grid');
+    const calendario = document.querySelector('.coordinador-calendar-card');
+    const resumen = document.querySelector('.coordinador-resumen-card');
+    const tabla = document.querySelector('#gestionVisitasPanel .reg-table');
+    
+    if (window.innerWidth <= 1200) {
+      if (grid) {
+        grid.style.gridTemplateColumns = '1fr';
+        grid.style.gap = '14px';
+      }
+    } else {
+      if (grid) {
+        grid.style.gridTemplateColumns = '2.8fr 1.2fr';
+        grid.style.gap = '18px';
+      }
+    }
+    
+    // Tabla: scroll horizontal en móvil
+    if (tabla) {
+      if (window.innerWidth <= 768) {
+        tabla.style.overflowX = 'auto';
+        tabla.style.display = 'block';
+      } else {
+        tabla.style.overflowX = 'hidden';
+        tabla.style.display = 'table';
+      }
+    }
+  }
+  
+  document.addEventListener('DOMContentLoaded', adaptarGrilla);
+  window.addEventListener('resize', adaptarGrilla);
+  
+  // Ejecutar también después de que cargue el calendario dinámico
+  const observer = new MutationObserver(adaptarGrilla);
+  observer.observe(document.getElementById('calendarReadonlyContainer') || document.body, { 
+    childList: true, 
+    subtree: true 
+  });
+</script>
 {% endblock %}
 {% block content %}
-<div style="padding: 20px;">
+<div class="coordinador-main-wrap">
   <h2 style="margin:0 0 14px;color:#1f2937;">Gestión de Visitas</h2>
   <p style="margin:0 0 18px;color:#6b7280;">Calendario de solo lectura, resumen diario y aprobación de solicitudes en un solo apartado.</p>
 
-  <div style="display:grid;grid-template-columns:2.8fr 1.2fr;gap:18px;align-items:flex-start;">
-    <div style="background:#fff;border-radius:10px;padding:14px;box-shadow:0 2px 10px rgba(0,0,0,0.08);align-self:flex-start;height:auto;">
+  <div style="margin:0 0 16px;padding:12px 14px;border:1px solid #bbf7d0;border-radius:10px;background:#ecfdf3;color:#166534;">
+    <i class="fas fa-life-ring me-2"></i>
+    Si tiene problemas o necesita ayuda, contacte a
+    <a href="mailto:sicamsenacentrominero@gmail.com" style="color:#14532d;font-weight:700;text-decoration:none;">sicamsenacentrominero@gmail.com</a>.
+  </div>
+
+  <div class="coordinador-dashboard-grid" style="display:grid;grid-template-columns:2.8fr 1.2fr;gap:18px;align-items:flex-start">
+    <div class="coordinador-calendar-card" style="align-self:flex-start;height:auto;display:block;width:100%;background:#fff;border-radius:10px;padding:14px;box-shadow:0 2px 10px rgba(0,0,0,0.08)">
       <div id="calendarReadonlyContainer">
         <p style="padding:20px;text-align:center;color:#6b7280;">Cargando calendario...</p>
       </div>
     </div>
 
-    <div style="background:#fff;border-radius:10px;padding:16px;box-shadow:0 2px 10px rgba(0,0,0,0.08);" id="resumenDiaPanel">
+    <div class="coordinador-resumen-card" id="resumenDiaPanel" style="display:block;width:100%;background:#fff;border-radius:10px;padding:16px;box-shadow:0 2px 10px rgba(0,0,0,0.08)">
       <h3 style="margin-top:0;">Resumen del día</h3>
       <p id="resumenDiaTitulo" style="margin:0 0 8px;color:#6b7280;">Selecciona una fecha pendiente u ocupada.</p>
       <div id="resumenDiaContenido" style="display:flex;flex-direction:column;gap:8px;">
@@ -330,15 +651,15 @@
 
     cuerpo.innerHTML = visitas.map(v => `
       <tr id="visita-${v.tipo}-${v.id}" data-tipo="${v.tipo}" data-id="${v.id}">
-        <td>#${v.id}</td>
-        <td>${v.tipo_display}</td>
-        <td>${v.responsable}</td>
-        <td>${v.institucion}</td>
-        <td>${v.fecha_solicitud}</td>
-        <td style="text-align:center;">
-          <div style="display:inline-flex;gap:8px;align-items:center;justify-content:center;">
+        <td data-label="ID">#${v.id}</td>
+        <td data-label="Tipo">${v.tipo_display}</td>
+        <td data-label="Responsable">${v.responsable}</td>
+        <td data-label="Institución">${v.institucion}</td>
+        <td data-label="Fecha">${v.fecha_solicitud}</td>
+        <td data-label="Acciones" style="text-align:center;">
+          <div style="display:inline-flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;">
             <button class="btn-detail" onclick="verDetalleSolicitud('${v.tipo}', ${v.id})">Detalle</button>
-            <button class="btn-observaciones" onclick="abrirModalObservaciones('${v.tipo}', ${v.id})">Observaciones</button>
+            <button class="btn-observaciones" onclick="abrirModalObservaciones('${v.tipo}', ${v.id})">Observ.</button>
             <button class="btn-approve" onclick="accionSolicitud('${v.tipo}', ${v.id}, 'aprobar')">Aprobar</button>
           </div>
         </td>
@@ -626,14 +947,41 @@
     });
   });
 
-  // ── Toast ────────────────────────────────────────────────────────
+  // ── Notificacion modal ───────────────────────────────────────────
+  function cerrarToastCoord() {
+    const overlay = document.getElementById('toastCoordOverlay');
+    if (!overlay) return;
+    clearTimeout(overlay._hideTimer);
+    overlay.style.display = 'none';
+  }
+
   function mostrarToast(mensaje, tipo) {
-    const toast = document.getElementById('toastCoord');
-    toast.textContent = mensaje;
-    toast.className = 'coord-toast coord-toast-' + (tipo || 'info');
-    toast.style.display = 'block';
-    clearTimeout(toast._hideTimer);
-    toast._hideTimer = setTimeout(() => { toast.style.display = 'none'; }, 4500);
+    const overlay = document.getElementById('toastCoordOverlay');
+    const card = document.getElementById('toastCoord');
+    const icon = document.getElementById('toastCoordIcon');
+    const title = document.getElementById('toastCoordTitle');
+    const body = document.getElementById('toastCoordBody');
+    if (!overlay || !card || !icon || !title || !body) return;
+
+    const config = tipo === 'error'
+      ? { border: '#ef4444', icon: 'ri-close-circle-fill', title: 'Error', color: '#b91c1c' }
+      : (tipo === 'warning'
+        ? { border: '#f59e0b', icon: 'ri-error-warning-fill', title: 'Aviso', color: '#b45309' }
+        : (tipo === 'success'
+          ? { border: '#10b981', icon: 'ri-checkbox-circle-fill', title: 'Confirmacion', color: '#047857' }
+          : { border: '#3b82f6', icon: 'ri-information-fill', title: 'Informacion', color: '#1d4ed8' }));
+
+    card.style.borderLeftColor = config.border;
+    icon.className = config.icon;
+    icon.style.color = config.color;
+    title.textContent = config.title;
+    body.textContent = mensaje;
+
+    overlay.style.display = 'flex';
+    clearTimeout(overlay._hideTimer);
+    overlay._hideTimer = setTimeout(() => {
+      cerrarToastCoord();
+    }, 4500);
   }
 
   function escapeHtml(value) {
@@ -728,7 +1076,7 @@
   }
 </script>
 
-<!-- Modal: Confirmar aprobación -->
+
 <div id="modalConfirmarAprobacion" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
   <div class="confirm-modal-card">
     <h3 class="confirm-title">✅ Confirmar visita</h3>
@@ -741,7 +1089,7 @@
   </div>
 </div>
 
-<!-- Modal: Motivo de rechazo / reprogramación -->
+
 <div id="modalRechazo" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
   <div style="background:#fff;border-radius:12px;padding:28px 24px;max-width:480px;width:calc(100% - 32px);box-shadow:0 8px 32px rgba(0,0,0,0.18);">
     <h3 style="margin:0 0 6px;color:#1f2937;font-size:1.1rem;">🔄 Enviar a reprogramación</h3>
@@ -766,7 +1114,7 @@
   </div>
 </div>
 
-<!-- Modal: información de la visita -->
+
 <div id="modalInfoVisita" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9998;align-items:center;justify-content:center;">
   <div class="info-modal-card">
     <div class="info-modal-header">
@@ -781,7 +1129,7 @@
   </div>
 </div>
 
-<!-- Modal: editar observaciones -->
+
 <div id="modalObservaciones" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
   <div class="obs-modal-card">
     <div class="obs-modal-header">
@@ -808,13 +1156,17 @@
   </div>
 </div>
 
-<!-- Toast de notificación -->
-<div id="toastCoord" style="display:none;position:fixed;bottom:28px;right:28px;z-index:10000;padding:14px 20px;border-radius:10px;font-size:14px;font-weight:600;max-width:380px;box-shadow:0 4px 16px rgba(0,0,0,0.15);"></div>
 
-<style>
-  .coord-toast-success { background:#10b981; color:#fff; }
-  .coord-toast-error   { background:#ef4444; color:#fff; }
-  .coord-toast-warning { background:#f59e0b; color:#fff; }
-  .coord-toast-info    { background:#3b82f6; color:#fff; }
-</style>
+<div id="toastCoordOverlay" onclick="if(event.target===this){cerrarToastCoord();}" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.45);z-index:10000;align-items:center;justify-content:center;padding:16px;">
+  <div id="toastCoord" style="position:relative;background:#fff;border-radius:14px;max-width:520px;width:min(520px,96vw);padding:20px;box-shadow:0 20px 45px rgba(0,0,0,0.26);border-left:6px solid #10b981;">
+    <button type="button" onclick="cerrarToastCoord()" style="position:absolute;top:8px;right:10px;background:none;border:none;color:#6b7280;font-size:1.4rem;cursor:pointer;line-height:1;">&times;</button>
+    <div style="display:flex;align-items:flex-start;gap:12px;">
+      <i id="toastCoordIcon" class="ri-checkbox-circle-fill" style="font-size:1.35rem;color:#047857;margin-top:2px;"></i>
+      <div>
+        <h4 id="toastCoordTitle" style="margin:0 0 4px;color:#0f172a;font-size:1.05rem;font-weight:800;">Confirmacion</h4>
+        <p id="toastCoordBody" style="margin:0;color:#334155;font-size:0.95rem;line-height:1.45;font-weight:600;"></p>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}

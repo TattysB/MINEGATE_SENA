@@ -1,7 +1,7 @@
-{% extends "core/panel_administrativo.html" %}
+﻿{% extends "core/panel_administrativo.html" %}
 {% load static %}
  {% block content %} 
-<link rel="stylesheet" href="{% static 'css/gestionar_permisos.css' %}" />
+<link rel="stylesheet" href="{% static 'css/gestionar_permisos.css' %}?v=20260325a" />
 <link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}?v=20260320a">
 
 <style>
@@ -13,19 +13,19 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.85rem 1.5rem;
-    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    background: linear-gradient(135deg, #00b000 0%, #185027 100%);
     color: white;
     text-decoration: none;
     border-radius: 10px;
     font-weight: 600;
     font-size: 1rem;
-    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 176, 0, 0.28);
     transition: all 0.3s ease;
   }
   
   .btn-crear-usuario:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+    box-shadow: 0 6px 20px rgba(24, 80, 39, 0.35);
     color: white;
   }
   
@@ -142,17 +142,75 @@
     background: #ffdce1;
     color: #912018;
   }
+
+  .tabla-usuarios thead {
+    background: linear-gradient(135deg, #00b000 0%, #185027 100%) !important;
+  }
   
   /* Iconos en botones */
   .btn-accion i {
     font-size: 0.95rem;
   }
+
+  /* Tabla más compacta */
+  .tabla-usuarios {
+    table-layout: auto;
+  }
+
+  .tabla-usuarios th,
+  .tabla-usuarios td {
+    padding: 0.7rem 0.75rem;
+  }
+
+  .tabla-usuarios th:nth-child(1) { width: 22%; }
+  .tabla-usuarios th:nth-child(2) { width: 12%; }
+  .tabla-usuarios th:nth-child(3) { width: 20%; }
+  .tabla-usuarios th:nth-child(4) { width: 12%; }
+  .tabla-usuarios th:nth-child(5) { width: 14%; }
+  .tabla-usuarios th:nth-child(6) { width: 10%; }
+  .tabla-usuarios th:nth-child(7) { width: 10%; }
+
+  .datos-usuario {
+    min-width: 150px;
+  }
+
+  .nombre-usuario {
+    font-size: 0.9rem;
+  }
+
+  .username,
+  .documento,
+  .email,
+  .fecha {
+    font-size: 0.8rem;
+  }
+
+  .btn-accion {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* Badge de rol simple en verde */
+  .badge-rol-tabla {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.28rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: #166534;
+    background: #dcfce7;
+    border: 1px solid #86efac;
+    text-transform: none;
+    animation: none;
+  }
   
   /* Ajuste columnas de tabla */
-  .tabla-usuarios th:nth-child(5),
-  .tabla-usuarios td:nth-child(5),
   .tabla-usuarios th:nth-child(6),
-  .tabla-usuarios td:nth-child(6) {
+  .tabla-usuarios td:nth-child(6),
+  .tabla-usuarios th:nth-child(7),
+  .tabla-usuarios td:nth-child(7) {
     text-align: center;
   }
   
@@ -172,10 +230,112 @@
       justify-content: center;
     }
   }
+
+  @media (max-width: 700px) {
+    .seccion-tabla {
+      overflow: hidden;
+    }
+
+    .tabla-responsiva {
+      overflow-x: visible;
+    }
+
+    .tabla-usuarios thead {
+      display: none;
+    }
+
+    .tabla-usuarios,
+    .tabla-usuarios tbody,
+    .tabla-usuarios tr,
+    .tabla-usuarios td {
+      display: block;
+      width: 100%;
+    }
+
+    .tabla-usuarios tr.fila-usuario {
+      border: 1px solid #dbe7dc;
+      border-radius: 10px;
+      margin: 0 0 12px;
+      padding: 10px;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+    }
+
+    .tabla-usuarios tr.fila-usuario td {
+      border: 0;
+      border-bottom: 1px dashed #e2e8f0;
+      padding: 8px 0;
+      display: grid;
+      grid-template-columns: minmax(98px, 40%) minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      text-align: left !important;
+    }
+
+    .tabla-usuarios tr.fila-usuario td:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .tabla-usuarios tr.fila-usuario td::before {
+      grid-column: 1;
+      font-size: 11px;
+      font-weight: 700;
+      color: #4b5563;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .tabla-usuarios tr.fila-usuario td > * {
+      grid-column: 2;
+      min-width: 0;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .tabla-usuarios tr.fila-usuario td:nth-child(1)::before { content: 'Usuario'; }
+    .tabla-usuarios tr.fila-usuario td:nth-child(2)::before { content: 'Documento'; }
+    .tabla-usuarios tr.fila-usuario td:nth-child(3)::before { content: 'Email'; }
+    .tabla-usuarios tr.fila-usuario td:nth-child(4)::before { content: 'Rol'; }
+    .tabla-usuarios tr.fila-usuario td:nth-child(5)::before { content: 'Registro'; }
+    .tabla-usuarios tr.fila-usuario td:nth-child(6)::before { content: 'Estado'; }
+    .tabla-usuarios tr.fila-usuario td:nth-child(7)::before { content: 'Acciones'; }
+
+    .tabla-usuarios tr.fila-usuario td:nth-child(7) .acciones-usuario {
+      justify-content: flex-start;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tabla-usuarios tr.fila-usuario td:nth-child(7) .btn-accion {
+      flex: 1 1 44px;
+    }
+
+    .tabla-usuarios td[colspan] {
+      display: block;
+      border-bottom: 0;
+      text-align: center !important;
+      padding: 18px 10px !important;
+    }
+
+    .tabla-usuarios td[colspan]::before {
+      content: none;
+    }
+  }
 </style>
 
 <div class="contenedor-permisos">
-  <!-- Mensajes -->
+  <div class="pg-hero">
+    <div class="pg-hero-left">
+      <span class="pg-hero-icon"><i class="ri-shield-user-line"></i></span>
+      <div>
+        <h2 class="pg-hero-title">Gestión de Permisos</h2>
+        <p class="pg-hero-subtitle">Administra roles, estados y accesos de los usuarios</p>
+      </div>
+    </div>
+  </div>
+
+  
   {% if messages %}
   <div class="mensajes">
     {% for message in messages %}
@@ -193,16 +353,17 @@
   </div>
   {% endif %}
 
-  <!-- Botón Crear Usuario -->
+  
   <div class="seccion-acciones-principales" style="margin-bottom: 1.5rem; display: flex; justify-content: flex-end;">
     <a href="{% url 'usuarios:crear_usuario_permisos' %}" class="btn-crear-usuario">
-      ➕ Crear Nuevo Usuario
+      <i class="ri-user-add-line"></i>
+      <span>Crear Nuevo Usuario</span>
     </a>
   </div>
 
-  <!-- Tarjetas de Estadísticas -->
+  
   <div class="seccion-estadisticas">
-    <div class="titulo-seccion">📈 Estadísticas de Usuarios</div>
+    <div class="titulo-seccion">Estadísticas de Usuarios</div>
     <div class="grid-estadisticas">
       <div class="tarjeta-estadistica total">
         <div class="numero-estadistica">{{ total_usuarios }}</div>
@@ -219,9 +380,9 @@
     </div>
   </div>
 
-  <!-- Filtros y Búsqueda -->
+  
   <div class="seccion-filtros">
-    <div class="titulo-seccion">🔍 Filtros</div>
+    <div class="titulo-seccion">Filtros</div>
     <form
       id="formFiltros"
       class="formulario-filtros"
@@ -269,7 +430,7 @@
             name="filtro"
             value="{{ filtro_actual|default:'todos' }}"
           />
-          <button type="submit" class="btn-buscar">🔍 Buscar</button>
+          <button type="submit" class="btn-buscar">Buscar</button>
           <button type="button" class="btn-limpiar" onclick="limpiarBusqueda()">
             Limpiar
           </button>
@@ -278,10 +439,10 @@
     </form>
   </div>
 
-  <!-- Tabla de Usuarios -->
+  
   <div class="seccion-tabla">
     <div class="titulo-seccion">
-      👥 Lista de Usuarios{% if perfiles %} ({{ perfiles.count }}){% endif %}
+      Lista de Usuarios{% if perfiles %} ({{ perfiles.count }}){% endif %}
     </div>
     {% if perfiles %}
     <div class="tabla-responsiva">
@@ -291,6 +452,7 @@
             <th>Usuario</th>
             <th>Documento</th>
             <th>Email</th>
+            <th>Rol</th>
             <th>Fecha Registro</th>
             <th>Estado</th>
             <th>Acciones</th>
@@ -313,6 +475,9 @@
             </td>
             <td>
               <span class="email">{{ perfil_usuario.user.email }}</span>
+            </td>
+            <td>
+              <span class="badge-rol-tabla">{{ perfil_usuario.rol_label }}</span>
             </td>
             <td>
               <span class="fecha"
@@ -374,9 +539,9 @@
     {% endif %}
   </div>
 
-  <!-- Modales -->
   
-  <!-- Modal Eliminar Usuario -->
+  
+  
   <div id="modalEliminar" class="modal">
     <div class="modal-contenido">
       <div class="modal-encabezado modal-encabezado-eliminar">
@@ -422,7 +587,7 @@
     </div>
   </div>
 
-  <!-- Modal Toggle Estado Usuario -->
+  
   <div id="modalToggleEstado" class="modal">
     <div class="modal-contenido">
       <div class="modal-encabezado" id="encabezadoToggle">
@@ -454,10 +619,10 @@
     </div>
   </div>
 
-  <!-- Script para Modal Unificado -->
+  
   <script src="{% static 'core/js/custom_modal.js' %}?v=20260320a"></script>
 
-  <!-- Script para Gestión de Permisos -->
+  
   <script>
     let usuarioIdEliminar = null;
     let usuarioIdToggle = null;
@@ -598,7 +763,7 @@
             '<div class="sin-resultados"><p>📋 No se encontraron usuarios con los criterios seleccionados.</p></div>';
         }
         if (tituloSeccion) {
-          tituloSeccion.textContent = "👥 Lista de Usuarios (0)";
+          tituloSeccion.textContent = "Lista de Usuarios (0)";
         }
         return;
       }
@@ -611,7 +776,7 @@
 
       // Actualizar título
       if (tituloSeccion) {
-        tituloSeccion.textContent = `👥 Lista de Usuarios (${usuarios.length})`;
+        tituloSeccion.textContent = `Lista de Usuarios (${usuarios.length})`;
       }
 
       // Limpiar la tabla primero
@@ -645,6 +810,11 @@
         const tdEmail = document.createElement("td");
         tdEmail.innerHTML = `<span class="email">${escaparHTML(usuario.email || "")}</span>`;
         tr.appendChild(tdEmail);
+
+        // Celda de rol
+        const tdRol = document.createElement("td");
+        tdRol.innerHTML = `<span class="badge-rol-tabla">${escaparHTML(usuario.rol || "Usuario")}</span>`;
+        tr.appendChild(tdRol);
 
         // Celda de fecha
         const tdFecha = document.createElement("td");
@@ -846,7 +1016,7 @@
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
               <div style="background:#f8fafc;padding:1rem;border-radius:10px;border:1px solid #e2e8f0;">
-                <p style="font-size:0.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin:0 0 0.6rem;">👤 Personal</p>
+                <p style="font-size:0.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin:0 0 0.6rem;">Personal</p>
                 ${campoDetalle('Nombre', u.first_name)}
                 ${campoDetalle('Apellido', u.last_name)}
                 ${campoDetalle('Documento', u.documento || u.username)}
@@ -890,6 +1060,8 @@
       document.getElementById('editLastName').value = '';
       document.getElementById('editEmail').value = '';
       document.getElementById('editTelefono').value = '';
+      document.getElementById('editPassword1').value = '';
+      document.getElementById('editPassword2').value = '';
       document.getElementById('btnGuardarEdicion').disabled = false;
       document.getElementById('btnGuardarTexto').textContent = '💾 Guardar Cambios';
       _editOriginal = {};
@@ -924,11 +1096,16 @@
         telefono: document.getElementById('editTelefono').value.trim(),
       };
 
+      const nuevaPassword = document.getElementById('editPassword1').value;
+      const confirmarPassword = document.getElementById('editPassword2').value;
+      const hayCambioContrasena = nuevaPassword.length > 0 || confirmarPassword.length > 0;
+
       if (
         actual.first_name === _editOriginal.first_name &&
         actual.last_name  === _editOriginal.last_name  &&
         actual.email      === _editOriginal.email      &&
-        actual.telefono   === _editOriginal.telefono
+        actual.telefono   === _editOriginal.telefono &&
+        !hayCambioContrasena
       ) {
         alerta.style.cssText = 'display:block;background:#fff8e1;color:#b7791f;padding:0.75rem 1rem;border-radius:8px;margin-bottom:1rem;border:1px solid #f6d860;font-weight:600;';
         alerta.textContent = 'ℹ️ No se detectaron cambios. La información ya está guardada.';
@@ -984,7 +1161,7 @@
     }
   </script>
 
-  <!-- Modal Ver Usuario -->
+  
   <div id="modalVerUsuario" class="modal" style="display:none;">
     <div class="modal-contenido" style="max-width:600px;width:100%;max-height:90vh;overflow-y:auto;">
       <div class="modal-encabezado" style="background:linear-gradient(135deg,#00b000,#185027);">
@@ -1004,7 +1181,7 @@
     </div>
   </div>
 
-  <!-- Modal Editar Usuario -->
+  
   <div id="modalEditarUsuario" class="modal" style="display:none;">
     <div class="modal-contenido" style="max-width:520px;width:100%;">
       <div class="modal-encabezado" style="background:linear-gradient(135deg,#1976d2,#1565c0);">
@@ -1040,6 +1217,22 @@
               <input type="text" id="editTelefono" name="telefono"
                      style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid #d1d5db;border-radius:8px;font-size:0.9rem;box-sizing:border-box;"
                      placeholder="Teléfono (opcional)">
+            </div>
+            <div style="grid-column:span 2;margin-top:0.25rem;padding-top:0.7rem;border-top:1px dashed #d1d5db;">
+              <label style="display:block;font-weight:700;font-size:0.82rem;color:#475569;margin-bottom:0.25rem;">Cambio de contraseña (opcional)</label>
+              <p style="margin:0 0 0.6rem;color:#64748b;font-size:0.78rem;">Solo completa estos campos si deseas cambiar la contraseña del usuario.</p>
+            </div>
+            <div>
+              <label style="display:block;font-weight:600;font-size:0.85rem;color:#64748b;margin-bottom:0.35rem;">Nueva contraseña</label>
+              <input type="password" id="editPassword1" name="password1"
+                     style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid #d1d5db;border-radius:8px;font-size:0.9rem;box-sizing:border-box;"
+                     placeholder="Nueva contraseña">
+            </div>
+            <div>
+              <label style="display:block;font-weight:600;font-size:0.85rem;color:#64748b;margin-bottom:0.35rem;">Confirmar contraseña</label>
+              <input type="password" id="editPassword2" name="password2"
+                     style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid #d1d5db;border-radius:8px;font-size:0.9rem;box-sizing:border-box;"
+                     placeholder="Confirmar contraseña">
             </div>
           </div>
         </form>

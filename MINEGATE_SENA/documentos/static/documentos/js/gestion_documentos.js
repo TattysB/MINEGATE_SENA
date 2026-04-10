@@ -1,13 +1,9 @@
-let archivosPendientesLista = [];
+﻿let archivosPendientesLista = [];
 var categoriasFaltantesActuales = [];
 
 console.log("✓ gestion_documentos.js CARGADO CORRECTAMENTE");
 
-// ==============================
-// Modal personalizado (reemplaza alert/confirm)
-// ==============================
 function _crearModalBase() {
-    // Si ya existe, reutilizar
     var existente = document.getElementById('modalDocsCustom');
     if (existente) existente.remove();
 
@@ -22,7 +18,6 @@ function _crearModalBase() {
     overlay.appendChild(card);
     document.body.appendChild(overlay);
 
-    // Animación de entrada
     requestAnimationFrame(function () {
         overlay.classList.add('visible');
         card.classList.add('visible');
@@ -42,11 +37,7 @@ function _cerrarModal(overlay) {
     }, 250);
 }
 
-/**
- * Modal de alerta personalizado (reemplaza alert)
- * @param {string} mensaje - Texto a mostrar
- * @param {string} tipo - 'success' | 'error' | 'warning' | 'info'
- */
+
 function mostrarAlerta(mensaje, tipo) {
     if (typeof window.mAlert === 'function') {
         window.mAlert(mensaje, tipo || 'info');
@@ -80,13 +71,7 @@ function mostrarAlerta(mensaje, tipo) {
     modal.overlay.onclick = function (e) { if (e.target === modal.overlay) _cerrarModal(modal.overlay); };
 }
 
-/**
- * Modal de confirmación personalizado (reemplaza confirm)
- * @param {string} titulo - Título del modal
- * @param {string} mensaje - Texto descriptivo
- * @param {function} onConfirmar - Callback si confirma
- * @param {string} tipo - 'danger' | 'warning' | 'info'
- */
+
 function mostrarConfirmacion(titulo, mensaje, onConfirmar, tipo) {
     if (typeof window.mConfirm === 'function') {
         window.mConfirm(mensaje, {
@@ -142,7 +127,6 @@ function mostrarConfirmacion(titulo, mensaje, onConfirmar, tipo) {
     modal.overlay.onclick = function (e) { if (e.target === modal.overlay) _cerrarModal(modal.overlay); };
 }
 
-// Obtener CSRF token desde la cookie
 function getCsrfToken() {
     const name = 'csrftoken';
     const cookies = document.cookie.split(';');
@@ -152,7 +136,6 @@ function getCsrfToken() {
             return c.substring(name.length + 1);
         }
     }
-    // Fallback: buscar en el meta tag o input hidden
     const meta = document.querySelector('meta[name="csrf-token"]');
     if (meta) return meta.getAttribute('content');
     const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
@@ -160,7 +143,6 @@ function getCsrfToken() {
     return '';
 }
 
-// Iconos según extensión
 function getIconoDocumento(ext) {
     const iconos = {
         '.pdf': '<i class="fas fa-file-pdf docs-icono-pdf"></i>',
@@ -214,18 +196,13 @@ function formatearTamaño(bytes) {
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
-// Filtrar por categoría (chips)
 function filtrarCategoria(btn) {
-    // Quitar active de todos los chips
     document.querySelectorAll('.docs-cat-chip').forEach(function (c) { c.classList.remove('active'); });
-    // Activar el seleccionado
     btn.classList.add('active');
-    // Guardar valor en el hidden input
     document.getElementById('filtroCategoria').value = btn.getAttribute('data-cat');
     cargarDocumentos();
 }
 
-// Cargar documentos desde la API
 function cargarDocumentos() {
     console.log(">>> cargarDocumentos() INICIADO");
     var filtroElem = document.getElementById('filtroCategoria');
@@ -243,7 +220,6 @@ function cargarDocumentos() {
 
     console.log("Filtros aplicados:", { categoria, buscar });
 
-    // Saltico visual al recargar
     if (tablaContenedor) {
         tablaContenedor.classList.remove('docs-tabla-refresh');
         void tablaContenedor.offsetWidth;
@@ -313,7 +289,6 @@ function cargarDocumentos() {
         });
 }
 
-// Drag & Drop
 function handleDropDocumentos(e) {
     e.preventDefault();
     var zona = document.getElementById('zonaSubida');
@@ -324,7 +299,6 @@ function handleDropDocumentos(e) {
     }
 }
 
-// Categorías disponibles
 var CATEGORIAS_DOCUMENTO = [
     { value: 'EPP Necesarios', label: '\ud83d\udc77\ud83c\udffb\u200d\u2642\ufe0f EPP Necesarios', keywords: ['epp', 'casco', 'guante', 'botas', 'gafa', 'chaleco', 'proteccion'] },
     { value: 'Formato Inducción y Reinducción', label: '📜 Formato Inducción y Reinducción', keywords: ['inducci', 'reinducci', 'induccion', 'reinduccion'] },
@@ -334,7 +308,6 @@ var CATEGORIAS_DOCUMENTO = [
     { value: 'Formato Autorización Padres de Familia', label: '\ud83d\udccb Autorización Padres', keywords: ['autorizaci', 'padres', 'familia', 'menor'] }
 ];
 
-// Auto-detectar categoría según el nombre del archivo
 function detectarCategoria(nombreArchivo) {
     var nombre = nombreArchivo.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     for (var c = 0; c < CATEGORIAS_DOCUMENTO.length; c++) {
@@ -347,7 +320,6 @@ function detectarCategoria(nombreArchivo) {
     return CATEGORIAS_DOCUMENTO[0].value; // Default: EPP Necesarios
 }
 
-// Generar HTML de <select> de categorías con una seleccionada
 function generarSelectCategoria(index, seleccionada) {
     var html = '<select id="catArchivo_' + index + '" class="docs-archivo-cat select">';
     var categoriasPermitidas = categoriasFaltantesActuales.length > 0
@@ -364,10 +336,8 @@ function generarSelectCategoria(index, seleccionada) {
     return html;
 }
 
-// Extensiones permitidas para documentos
 var EXTENSIONES_PERMITIDAS_DOCS = ['.pdf', '.doc', '.docx'];
 
-// Preparar archivos para subir
 function prepararArchivosDocumentos(files) {
     var archivosNuevos = Array.from(files);
     var contenedor = document.getElementById('archivosPendientes');
@@ -379,7 +349,6 @@ function prepararArchivosDocumentos(files) {
         return;
     }
 
-    // Validar formatos permitidos
     var rechazados = [];
     archivosNuevos = archivosNuevos.filter(function (archivo) {
         var ext = '.' + archivo.name.split('.').pop().toLowerCase();
@@ -395,7 +364,6 @@ function prepararArchivosDocumentos(files) {
             '⚠️ Formato no permitido.\n\nSolo se aceptan archivos PDF o Word (DOC, DOCX).\n\nArchivo(s) rechazado(s):\n' + rechazados.join('\n'),
             'error'
         );
-        // Limpiar el input para que no quede el archivo inválido seleccionado
         var inputFile = document.getElementById('inputArchivosDocumentos');
         if (inputFile) inputFile.value = '';
         if (archivosNuevos.length === 0) return;
@@ -477,7 +445,6 @@ function cancelarSubida() {
     document.getElementById('inputArchivosDocumentos').value = '';
 }
 
-// Subir archivos
 function subirArchivosDocumentos() {
     if (archivosPendientesLista.length === 0) {
         mostrarAlerta('Selecciona archivos para subir', 'warning');
@@ -574,7 +541,6 @@ function subirArchivosDocumentos() {
     xhr.send(formData);
 }
 
-// Ver documento en modal (versión segura con data attributes)
 function verDocumentoSafe(button) {
     var archivoUrl = button.getAttribute('data-url');
     var nombreArchivo = button.getAttribute('data-nombre');
@@ -641,7 +607,6 @@ function _ensureDocxPreviewReady() {
     return _docxPreviewLoaderPromise;
 }
 
-// Función original verDocumento
 function verDocumento(archivoUrl, nombreArchivo) {
     console.log("=== verDocumento INICIANDO ===");
     console.log("URL recibida:", archivoUrl);
@@ -652,7 +617,6 @@ function verDocumento(archivoUrl, nombreArchivo) {
     var modal = _crearModalBase();
     var extension = nombreArchivo.split('.').pop().toLowerCase();
 
-    // Ampliar el modal para que sea más grande
     var card = document.getElementById('modalDocsCard');
     if (!card) {
         mostrarAlerta('Error: No se pudo crear el modal', 'error');
@@ -664,7 +628,6 @@ function verDocumento(archivoUrl, nombreArchivo) {
     card.style.height = '85vh';
     card.style.padding = '20px';
 
-    // Detectar el tipo de archivo
     var isPDF = extension === 'pdf';
     var isDocx = extension === 'docx';
     var isImagen = ['jpg', 'jpeg', 'png', 'gif', 'webp'].indexOf(extension) !== -1;
@@ -755,7 +718,6 @@ function verDocumento(archivoUrl, nombreArchivo) {
 
         card.innerHTML = fullHtml;
     } else {
-        // Para otros tipos de archivo, mostrar opciones
         card.innerHTML = '<div style="text-align: center; padding: 40px;">' +
             '<i class="fas fa-file" style="font-size: 64px; color: #d1d5db; margin-bottom: 20px; display: block;"></i>' +
             '<h3 style="margin: 0 0 12px 0; color: #1f2937;">Tipo de archivo no soportado</h3>' +
@@ -776,7 +738,6 @@ function verDocumento(archivoUrl, nombreArchivo) {
     };
 }
 
-// Función auxiliar para cerrar modal desde dentro del HTML
 function _cerrarModalButton() {
     var modal = document.getElementById('modalDocsCustom');
     if (modal) {
@@ -784,7 +745,6 @@ function _cerrarModalButton() {
     }
 }
 
-// Eliminar documento (versión segura con data attributes)
 function eliminarDocumentoSafe(button) {
     var id = parseInt(button.getAttribute('data-id'), 10);
     var titulo = button.getAttribute('data-titulo');
@@ -797,7 +757,6 @@ function eliminarDocumentoSafe(button) {
     eliminarDocumento(id, titulo);
 }
 
-// Función original eliminarDocumento
 function eliminarDocumento(id, titulo) {
     mostrarConfirmacion(
         'Eliminar documento',

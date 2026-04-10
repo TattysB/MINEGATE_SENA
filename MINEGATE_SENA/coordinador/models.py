@@ -1,4 +1,4 @@
-from django.db import models
+﻿from django.db import models
 from django.conf import settings
 
 
@@ -20,4 +20,3 @@ class AprobacionRegistro(models.Model):
 	def __str__(self):
 		return f"{self.get_visita_tipo_display()} #{self.visita_id} - {self.responsable} ({self.fecha_aprobacion:%Y-%m-%d %H:%M})"
 
-# Create your models here.

@@ -1,7 +1,7 @@
-{% extends "panel_visitante_base.html" %}
+﻿{% extends "panel_visitante_base.html" %}
 {% load static %}
 
-{% block title %}Restablecer Contraseña - MINEGATE{% endblock %}
+{% block title %}Restablecer Contraseña - SICAM{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'restablecer_contraseña_paginaInformativa.css' %}">
@@ -12,10 +12,10 @@
     <div class="password-reset-container">
         <div class="reset-header">
         <h1>🔐 Restablecer Contraseña</h1>
-        <p>Recupera acceso a tu cuenta en MINEGATE</p>
+        <p>Recupera acceso a tu cuenta en SICAM</p>
     </div>
 
-    <!-- Mensajes de alerta -->
+    
     {% if messages %}
         {% for message in messages %}
             <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %}">
@@ -24,7 +24,7 @@
         {% endfor %}
     {% endif %}
 
-    <!-- Sección Informativa -->
+    
     <div class="reset-steps">
         <h3><span class="info-icon">ℹ</span>Proceso de Restablecimiento</h3>
         <ol>
@@ -38,7 +38,7 @@
     <form method="post" id="passwordResetForm">
         {% csrf_token %}
 
-        <!-- PASO 1: Solicitud de restablecimiento -->
+        
         <div class="form-section {% if not show_password_form %}active{% endif %}" id="step-1">
             <div class="section-title">Paso 1: Identifica tu cuenta</div>
 
@@ -58,11 +58,11 @@
             </div>
         </div>
 
-        <!-- PASO 2: Establecer nueva contraseña -->
+        
         <div class="form-section {% if show_password_form %}active{% endif %}" id="step-2">
             <div class="section-title">Paso 2: Establece tu nueva contraseña</div>
             
-            <!-- Token (oculto) -->
+            
             <input type="hidden" id="token" name="token" value="{{ token }}">
             <input type="hidden" id="email_hidden" name="email" value="{{ email }}">
 
@@ -115,7 +115,7 @@
             </div>
         </div>
 
-        <!-- PASO 3: Confirmación exitosa -->
+        
         <div class="form-section" id="step-3">
             <div style="text-align: center; padding: 30px 0;">
                 <div style="font-size: 60px; margin-bottom: 20px;">✅</div>

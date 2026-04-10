@@ -1,13 +1,11 @@
-/* ========================================
-   PREMIUM USER DROPDOWN - MINEGATE
-   ======================================== */
+﻿
 
 .user-profile-dropdown {
   position: relative;
   display: inline-block;
 }
 
-/* Show dropdown on hover */
+
 .user-profile-dropdown:hover .user-dropdown-menu {
   opacity: 1;
   visibility: visible;
@@ -33,7 +31,14 @@
   border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-/* Header Verde */
+.user-dropdown-menu.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+  display: block;
+}
+
+
 .user-dropdown-header {
   background: var(--verde-primario);
   padding: 2.5rem 1.5rem 1.5rem;
@@ -98,7 +103,7 @@
   font-weight: 400;
 }
 
-/* Body Items */
+
 .user-dropdown-body {
   padding: 0.8rem 0;
 }
@@ -147,7 +152,7 @@
 }
 
 
-/* Arrow pointer */
+
 .user-dropdown-menu::before {
   content: '';
   position: absolute;
@@ -158,4 +163,38 @@
   background: var(--verde-primario);
   transform: rotate(45deg);
   z-index: -1;
+}
+
+@media (max-width: 768px) {
+  .user-dropdown-menu {
+    right: 6px;
+    top: calc(100% + 8px);
+    width: min(320px, calc(100vw - 12px));
+    margin-top: 0;
+    z-index: 3001;
+  }
+
+  .user-dropdown-header {
+    padding: 1.1rem 1rem 1rem;
+    gap: 0.6rem;
+  }
+
+  .header-avatar {
+    width: 58px;
+    height: 58px;
+    margin-bottom: 0.2rem;
+  }
+
+  .header-avatar i {
+    font-size: 2.1rem;
+  }
+
+  .header-info .user-name {
+    font-size: 1rem;
+  }
+
+  .header-info .user-email {
+    font-size: 0.8rem;
+    word-break: break-word;
+  }
 }

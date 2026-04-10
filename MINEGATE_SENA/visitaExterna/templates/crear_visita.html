@@ -1,7 +1,7 @@
-{% extends "master.html" %}
+﻿{% extends "master.html" %}
 {% load static %}
 
-{% block title %}Crear Visita Externa - MINEGATE{% endblock %}
+{% block title %}Crear Visita Externa - SICAM{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/crear_visita.css' %}">
@@ -80,10 +80,54 @@
             </div>
             
             <div class="buttons">
-                <button type="submit">Crear Visita</button>
+                <button type="submit" onclick="return validarFormularioVisitaExterna();">Crear Visita</button>
                 <a href="{% url 'core:visitas' %}"><button type="button">Cancelar</button></a>
             </div>
         </form>
     </div>
 </div>
+
+<script>
+function validarFormularioVisitaExterna() {
+    const cantidadInput = document.getElementById('id_cantidad_visitantes');
+    const cantidad = parseInt(cantidadInput.value, 10);
+    
+    if (isNaN(cantidad) || cantidad < 1) {
+        alert('❌ Error: Debe registrar mínimo 1 visitante. La cantidad debe ser mayor a 0.');
+        cantidadInput.focus();
+        return false;
+    }
+    
+    if (cantidad > 80) {
+        alert('❌ Error: La cantidad de visitantes no puede exceder 80.');
+        cantidadInput.focus();
+        return false;
+    }
+    
+    return true;
+}
+
+// Validación en tiempo real cuando el usuario cambia el valor
+document.addEventListener('DOMContentLoaded', function() {
+    const cantidadInput = document.getElementById('id_cantidad_visitantes');
+    if (cantidadInput) {
+        cantidadInput.addEventListener('change', function() {
+            const valor = this.value.trim();
+            if (valor !== '' && (isNaN(valor) || parseInt(valor, 10) < 1)) {
+                const mensaje = document.createElement('div');
+                mensaje.style.cssText = 'color: red; font-size: 0.85rem; margin-top: 4px;';
+                mensaje.textContent = '⚠️ Debe registrar mínimo 1 visitante (mayor a 0).';
+                
+                // Eliminar mensaje anterior si existe
+                const mensajeAnterior = this.parentElement.querySelector('div[style*="color: red"]');
+                if (mensajeAnterior && !mensajeAnterior.textContent.includes('form.cantidad_visitantes.errors')) {
+                    mensajeAnterior.remove();
+                }
+                
+                this.parentElement.appendChild(mensaje);
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

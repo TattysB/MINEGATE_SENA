@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   let selectedDate = null;
   let selectedSchedule = null;
 

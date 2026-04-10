@@ -1,4 +1,4 @@
-/* === ESTILOS PARA RECUPERACIÓN DE CONTRASEÑA === */
+﻿
 
 * {
     margin: 0;
@@ -198,7 +198,7 @@ form {
     text-decoration: underline;
 }
 
-/* === ALERTAS === */
+
 .alerts-container {
     position: fixed;
     top: 20px;
@@ -426,7 +426,7 @@ form {
     }
 }
 
-/* === BARRA DE FORTALEZA DE CONTRASEÑA === */
+
 
 .password-strength-container {
     width: 100%;
@@ -442,7 +442,7 @@ form {
     max-height: 250px;
 }
 
-/* Barra de fortaleza */
+
 .strength-bar-wrapper {
     display: flex;
     align-items: center;
@@ -465,7 +465,7 @@ form {
     transition: width 0.3s ease, background-color 0.3s ease;
 }
 
-/* Colores de fortaleza */
+
 .strength-bar-fill.strength-weak {
     background: linear-gradient(90deg, #ef4444, #f87171);
 }
@@ -482,7 +482,7 @@ form {
     background: linear-gradient(90deg, #10b981, #34d399);
 }
 
-/* Texto de fortaleza */
+
 .strength-text {
     font-size: 12px;
     font-weight: 600;
@@ -506,7 +506,7 @@ form {
     color: #10b981;
 }
 
-/* Requisitos de contraseña dinámicos */
+
 .password-requirements-dynamic {
     display: flex;
     flex-direction: column;
@@ -553,7 +553,7 @@ form {
     color: #10b981 !important;
 }
 
-/* === RESPONSIVE === */
+
 @media (max-width: 600px) {
     .recuperacion-container {
         padding: 25px;

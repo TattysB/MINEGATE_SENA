@@ -1,4 +1,4 @@
-from django import forms
+﻿from django import forms
 from django_recaptcha.fields import ReCaptchaField
 from django_recaptcha.widgets import ReCaptchaV2Checkbox
 from .models import RegistroVisitante
@@ -118,7 +118,6 @@ class RegistroVisitanteForm(forms.Form):
         nombre = self.cleaned_data.get("nombre", "").strip()
         if not nombre:
             raise forms.ValidationError("El nombre es obligatorio.")
-        # Permitir solo letras y espacios
         if not re.match(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$", nombre):
             raise forms.ValidationError("El nombre solo debe contener letras.")
         return " ".join(word.capitalize() for word in nombre.split())
@@ -127,7 +126,6 @@ class RegistroVisitanteForm(forms.Form):
         apellido = self.cleaned_data.get("apellido", "").strip()
         if not apellido:
             raise forms.ValidationError("El apellido es obligatorio.")
-        # Permitir solo letras y espacios
         if not re.match(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$", apellido):
             raise forms.ValidationError("El apellido solo debe contener letras.")
         return " ".join(word.capitalize() for word in apellido.split())
@@ -164,23 +162,18 @@ class RegistroVisitanteForm(forms.Form):
         
         errors = []
         
-        # Longitud mínima de 8 caracteres
         if len(password) < 8:
             errors.append("Debe tener al menos 8 caracteres.")
         
-        # Al menos una letra mayúscula
         if not re.search(r'[A-Z]', password):
             errors.append("Debe contener al menos una letra mayúscula.")
         
-        # Al menos una letra minúscula
         if not re.search(r'[a-z]', password):
             errors.append("Debe contener al menos una letra minúscula.")
         
-        # Al menos un número
         if not re.search(r'\d', password):
             errors.append("Debe contener al menos un número.")
         
-        # Al menos un carácter especial
         if not re.search(r'[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\;\'`~]', password):
             errors.append("Debe contener al menos un carácter especial (!@#$%^&*...).")
         
@@ -283,23 +276,18 @@ class PasswordResetConfirmForm(forms.Form):
 
         errors = []
 
-        # Mínimo 8 caracteres
         if len(password) < 8:
             errors.append("La contraseña debe tener al menos 8 caracteres.")
 
-        # Al menos una letra mayúscula
         if not re.search(r"[A-Z]", password):
             errors.append("Debe contener al menos una letra mayúscula.")
 
-        # Al menos una letra minúscula
         if not re.search(r"[a-z]", password):
             errors.append("Debe contener al menos una letra minúscula.")
 
-        # Al menos un número
         if not re.search(r"\d", password):
             errors.append("Debe contener al menos un número.")
 
-        # Al menos un carácter especial
         if not re.search(r'[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\;\'`~]', password):
             errors.append("Debe contener al menos un carácter especial (!@#$%^&*...).")
 
@@ -423,7 +411,6 @@ class CambiarContrasenaForm(forms.Form):
             if nueva != confirmar:
                 raise forms.ValidationError("Las contraseñas no coinciden.")
             
-            # Validación de la nueva contraseña
             errors = []
             if len(nueva) < 8:
                 errors.append("La contraseña debe tener al menos 8 caracteres.")

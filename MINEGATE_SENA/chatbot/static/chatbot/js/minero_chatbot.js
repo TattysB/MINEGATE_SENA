@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
     var root = document.getElementById("mineroChatbot");
     if (!root) {
         return;
@@ -85,6 +85,9 @@
     }
 
     function renderChips(sugerencias) {
+        if (!chipsWrap) {
+            return;
+        }
         chipsWrap.innerHTML = "";
         (sugerencias || []).slice(0, 4).forEach(function (sug) {
             var chip = document.createElement("button");
@@ -111,10 +114,12 @@
         var response;
         var data;
         var requestFailed = false;
+        var parseFailed = false;
 
         try {
             response = await fetch("/chatbot/responder/", {
                 method: "POST",
+                credentials: "same-origin",
                 headers: {
                     "Content-Type": "application/json",
                     "X-CSRFToken": getCookie("csrftoken"),
@@ -122,7 +127,12 @@
                 body: JSON.stringify({ mensaje: message }),
             });
 
-            data = await response.json();
+            try {
+                data = await response.json();
+            } catch (err) {
+                parseFailed = true;
+                data = null;
+            }
         } catch (err) {
             requestFailed = true;
         }
@@ -132,6 +142,13 @@
 
         if (requestFailed) {
             appendMessage("Estoy fuera de linea por un momento. Intenta de nuevo.", "bot");
+            setBusyState(false);
+            input.focus();
+            return;
+        }
+
+        if (parseFailed) {
+            appendMessage("No pude validar la sesion del chat. Recarga la pagina e intenta nuevamente.", "bot");
             setBusyState(false);
             input.focus();
             return;
@@ -171,15 +188,17 @@
         sendMessage(value);
     });
 
-    chipsWrap.addEventListener("click", function (event) {
-        if (isSending) {
-            return;
-        }
-        var target = event.target;
-        if (!target.classList.contains("minero-chatbot-chip")) {
-            return;
-        }
-        input.value = target.textContent || "";
-        form.dispatchEvent(new Event("submit", { cancelable: true }));
-    });
+    if (chipsWrap) {
+        chipsWrap.addEventListener("click", function (event) {
+            if (isSending) {
+                return;
+            }
+            var target = event.target;
+            if (!target.classList.contains("minero-chatbot-chip")) {
+                return;
+            }
+            input.value = target.textContent || "";
+            form.dispatchEvent(new Event("submit", { cancelable: true }));
+        });
+    }
 })();

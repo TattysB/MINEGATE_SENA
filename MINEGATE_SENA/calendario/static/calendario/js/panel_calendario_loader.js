@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   function ensureCss(src) {
     if (!src || document.querySelector("link[href='" + src + "']")) return;
     const link = document.createElement('link');

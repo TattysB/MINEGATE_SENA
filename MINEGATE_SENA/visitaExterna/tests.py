@@ -1,4 +1,4 @@
-from django.test import TestCase
+﻿from django.test import TestCase
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError
@@ -27,7 +27,6 @@ class VisitaExternaModelTests(TestCase):
 			telefono_responsable='3001112222',
 			cantidad_visitantes=5,
 		)
-		# token_acceso debe generarse al guardar
 		self.assertIsNotNone(v.token_acceso)
 		self.assertEqual(len(v.token_acceso), 32)
 		enlace = v.get_enlace_registro()
@@ -50,7 +49,6 @@ class VisitaExternaModelTests(TestCase):
 			tipo_documento='CC',
 			numero_documento='ABC123',
 		)
-		# intentar crear otro con mismo visita y numero_documento debe fallar
 		with self.assertRaises(IntegrityError):
 			AsistenteVisitaExterna.objects.create(
 				visita=v,

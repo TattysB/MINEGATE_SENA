@@ -1,4 +1,4 @@
-#calendarioSeleccionPage {
+﻿#calendarioSeleccionPage {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.95fr);
   gap: 24px;
@@ -146,7 +146,7 @@
   margin-top: 10px !important;
 }
 
-/* Override generic admin calendar rules with stronger selectors in Nueva Visita panel. */
+
 #mainContent #calendarioSeleccionPage.calendar-page {
   width: 100%;
   max-width: 100%;
@@ -191,10 +191,19 @@
     grid-template-columns: 1fr;
     gap: 14px;
     padding: 8px;
+    grid-auto-flow: row;
+    align-items: flex-start !important;
   }
 
-  #calendarioSeleccionPage .calendar-card,
+  #calendarioSeleccionPage .calendar-card {
+    z-index: auto !important;
+    order: 1;
+    padding: 14px;
+  }
+
   #calendarioSeleccionPage .availability-config {
+    z-index: auto !important;
+    order: 2;
     padding: 14px;
   }
 }

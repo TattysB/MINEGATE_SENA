@@ -1,4 +1,4 @@
-{% load static %}
+﻿{% load static %}
 {% get_media_prefix as MEDIA_PREFIX %}
 <div class="contenido-temporal gpi-wrapper">
   <div class="gpi-header">
@@ -28,7 +28,7 @@
   <div class="alert alert-danger gpi-alert"><i class="ri-error-warning-line"></i> {{ error_gestion_pagina }}</div>
   {% else %}
 
-  <!-- ═══ VISTA PREVIA INDEX (TIEMPO REAL) ═══ -->
+  
   <section class="gpi-preview-container">
     <h3 class="gpi-preview-title"><i class="ri-eye-line"></i> Vista previa del index (tiempo real)</h3>
 
@@ -43,6 +43,7 @@
           <h4 id="gpi-live-hero-title">{{ slide_base_preview.titulo|default:'Centro Minero de Morcá' }}</h4>
           <p id="gpi-live-hero-text">{{ slide_base_preview.texto|default:'Agenda tu experiencia minera de forma fácil, segura y digital.' }}</p>
         </div>
+        <div class="gpi-watermark">SICAM | Imagen Propia{% if slide_base_preview and slide_base_preview.actualizado_en %} - {{ slide_base_preview.actualizado_en|date:"d F Y" }}{% endif %}</div>
         <div class="gpi-live-hero-controls">
           <button type="button" id="gpi-live-hero-prev" aria-label="Anterior"><i class="ri-arrow-left-s-line"></i></button>
           <span id="gpi-live-hero-count">1 / 1</span>
@@ -83,6 +84,7 @@
             <source src="{{ galeria_base_preview.archivo.url }}?v={{ galeria_base_preview.actualizado_en|date:'U' }}" type="{{ galeria_base_preview.mime_type|default:'video/mp4' }}">
             {% endif %}
           </video>
+          <div class="gpi-watermark gpi-watermark-gallery">SICAM | Imagen Propia{% if galeria_base_preview and galeria_base_preview.actualizado_en %} - {{ galeria_base_preview.actualizado_en|date:"d F Y" }}{% endif %}</div>
           <div class="gpi-live-gallery-caption">
             <strong id="gpi-live-gallery-item-title">{{ galeria_base_preview.titulo|default:'Título del elemento' }}</strong>
             <small id="gpi-live-gallery-item-desc">{{ galeria_base_preview.descripcion|default:'Descripción del elemento de galería.' }}</small>
@@ -92,13 +94,13 @@
     </div>
   </section>
 
-  <!-- ═══ LAYOUT PRINCIPAL ═══ -->
+  
   <div class="gpi-layout">
 
-    <!-- ── COLUMNA IZQUIERDA ── -->
+    
     <div class="gpi-col">
 
-      <!-- Paso 1: Configuración general -->
+      
       <section class="gpi-card">
         <div class="gpi-section-head">
           <span class="gpi-step">1</span>
@@ -138,7 +140,7 @@
         </div>
       </section>
 
-      <!-- Paso 2: Encabezado principal -->
+      
       <section class="gpi-card">
         <div class="gpi-section-head">
           <span class="gpi-step">2</span>
@@ -275,7 +277,7 @@
           </div>
         </form>
 
-        <!-- Lista de slides existentes -->
+        
         <div id="gpi-encabezado-lista" class="gpi-items-header">
           <span><i class="ri-stack-line"></i> Diapositivas existentes</span>
           <span class="gpi-items-count">{{ elementos_encabezado_admin|length }}</span>
@@ -315,10 +317,10 @@
       </section>
     </div>
 
-    <!-- ── COLUMNA DERECHA ── -->
+    
     <div class="gpi-col">
 
-      <!-- Paso 3: Galería -->
+      
       <section class="gpi-card">
         <div class="gpi-section-head">
           <span class="gpi-step">3</span>
@@ -465,7 +467,7 @@
           </div>
         </form>
 
-        <!-- Lista de elementos de galería -->
+        
         <div id="gpi-galeria-lista" class="gpi-items-header">
           <span><i class="ri-stack-line"></i> Elementos existentes</span>
           <span id="gpi-galeria-count" class="gpi-items-count">{{ elementos_galeria_admin|length }}</span>
@@ -664,7 +666,7 @@
 
       const galleryData = [
         {% for item in elementos_galeria_admin %}
-          {% if item.activo and item.archivo %}
+          {% if item.archivo %}
           {
             tipo: '{{ item.tipo }}',
             mime: '{{ item.mime_type|default_if_none:""|escapejs }}',

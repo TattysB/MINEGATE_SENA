@@ -1,4 +1,4 @@
-.error-container {
+﻿.error-container {
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -57,7 +57,7 @@
     }
     
     .error-suggestions li:before {
-        content: "→ ";
+        content: "â†’ ";
         color: #dc3545;
         font-weight: bold;
         margin-right: 10px;

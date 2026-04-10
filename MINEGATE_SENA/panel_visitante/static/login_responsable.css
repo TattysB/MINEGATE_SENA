@@ -1,4 +1,4 @@
-.login-container {
+﻿.login-container {
     min-height: calc(100vh - 200px);
     display: flex;
     align-items: center;
@@ -199,25 +199,37 @@
 }
 
 .captcha-wrapper {
-    border: 1px solid #e0e0e0;
-    border-radius: 10px;
-    padding: 12px;
-    background: #fafafa;
+    border: 1px solid #d7e7d7;
+    border-radius: 14px;
+    padding: 8px 10px;
+    background: linear-gradient(180deg, #ffffff 0%, #f7fbf7 100%);
     display: flex;
     justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.captcha-inner {
+    display: inline-flex;
+    transform-origin: center top;
+    transform: scale(0.82);
 }
 
 .captcha-wrapper .g-recaptcha {
-    transform-origin: center top;
+    display: inline-block;
 }
 
 @media (max-width: 420px) {
-    .captcha-wrapper .g-recaptcha {
-        transform: scale(0.88);
+    .captcha-inner {
+        transform: scale(0.74);
     }
 }
 
-/* Wrapper para campo de contraseña con ícono */
+.captcha-group .field-error {
+    margin-top: 10px;
+}
+
+
 .password-wrapper {
     position: relative;
     display: flex;
@@ -241,7 +253,7 @@
     color: #00af00;
 }
 
-/* Estilos personalizados para selector de rol */
+
 .role-selector {
     display: grid;
     grid-template-columns: 1fr 1fr;

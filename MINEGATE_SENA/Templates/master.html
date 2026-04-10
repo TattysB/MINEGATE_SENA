@@ -1,4 +1,4 @@
-{% load static %}
+﻿{% load static %}
 {% load accesibility_tags %}
 <!DOCTYPE html>
 <html lang="es">
@@ -6,13 +6,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}SICAM-Sistema Informativo del Control y Acceso a la Mina{% endblock %}</title>
+    <title>{% block title %}SICAM-Sistema de Información del Control y Acceso a la Mina{% endblock %}</title>
 
     {% load bootstrap5 %}
     {% bootstrap_css %}
     {% bootstrap_javascript %}
 
-    <!-- Google Fonts - Work Sans -->
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700;800&display=swap"
@@ -22,7 +22,7 @@
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}?v=20260311a">
 
-    <!-- mapa -->
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -63,11 +63,14 @@
     {% endblock %}
 </head>
 
-<body>
+<body class="{% block body_class %}{% endblock %}">
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
         <div class="container">
             <a class="navbar-brand" href="{% url 'core:index' %}">
-                <img src="{% static 'img/LogoMine.png' %}" alt="Logo MINEGATE" class="navbar-logo">
+                <span class="logo-duo-wrap">
+                    <img src="{% static 'img/Logo_SICAM.png' %}" alt="Logo SICAM" class="navbar-logo">
+                    <img src="{% static 'img/Blanco SENA.png' %}" alt="Logo SENA" class="navbar-logo logo-secondary">
+                </span>
                 SICAM
             </a>
 
@@ -97,6 +100,11 @@
             function ajustarEspacioNavbar() {
                 var navbar = document.querySelector('.navbar.fixed-top');
                 if (!navbar) return;
+                var tieneHeroInicio = document.getElementById('hero-section');
+                if (tieneHeroInicio) {
+                    document.body.style.paddingTop = '0px';
+                    return;
+                }
                 document.body.style.paddingTop = navbar.offsetHeight + 'px';
             }
 
@@ -151,11 +159,15 @@
             <div class="row align-items-center gy-4">
                 <div class="col-lg-4 col-md-6 mb-3 mb-lg-0">
                     <div class="d-flex align-items-center mb-2">
-                        <img src="{% static 'img/LogoMine.png' %}" alt="Logo MINEGATE"
-                            class="navbar-logo me-2 footer-logo-big">
+                        <span class="logo-duo-wrap me-2">
+                            <img src="{% static 'img/Logo_SICAM.png' %}" alt="Logo SICAM"
+                                class="navbar-logo footer-logo-big">
+                            <img src="{% static 'img/Blanco SENA.png' %}" alt="Logo SENA"
+                                class="navbar-logo logo-secondary footer-logo-big">
+                        </span>
                         <span class="fs-2 fw-bold footer-sicam-big">SICAM</span>
                     </div>
-                    <div class="footer-desc">Sistema Informativo del Control y Acceso a la Mina</div>
+                    <div class="footer-desc">Sistema de Información del Control y Acceso a la Mina</div>
                     <div class="footer-desc small">Fomentando la seguridad y el conocimiento en el sector.</div>
                 </div>
                 <div class="col-lg-3 col-md-6 mb-3 mb-lg-0">
@@ -173,6 +185,10 @@
                 <div class="col-lg-3 col-md-6">
                     <div class="fw-semibold mb-2"><i class="fas fa-phone-alt me-2"></i>Contacto</div>
                     <div class="footer-desc small mb-1"><i class="fas fa-phone me-1"></i> +(57) 601 736 60 60</div>
+                    <div class="footer-desc small mb-1" style="display:inline-flex;align-items:center;gap:6px;">
+                        <i class="fas fa-envelope" style="line-height:1;flex-shrink:0;"></i>
+                        <a href="mailto:sicamsenacentrominero@gmail.com" style="color: inherit; text-decoration: none;">sicamsenacentrominero@gmail.com</a>
+                    </div>
                 </div>
             </div>
             <hr class="footer-hr">
@@ -182,7 +198,7 @@
         <div class="footer-mine-bg"></div>
     </footer>
 
-    <!-- Inclusión del widget de accesibilidad -->
+    
     {% accessibility_widget %}
     <script src="{% static 'core/js/custom_modal.js' %}?v=20260311a"></script>
 </body>

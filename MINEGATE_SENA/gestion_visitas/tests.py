@@ -1,4 +1,4 @@
-from datetime import timedelta
+﻿from datetime import timedelta
 
 from django.test import TestCase
 from django.urls import reverse
@@ -56,7 +56,7 @@ class CompletarReprogramacionTests(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertJSONEqual(response.content, {
 			"success": True,
-			"message": f"✅ Visita reprogramada exitosamente. Nueva fecha: {(timezone.datetime.strptime(fecha_nueva + ' 08:00', '%Y-%m-%d %H:%M')).strftime('%d/%m/%Y %H:%M')}"
+			"message": f"âœ… Visita reprogramada exitosamente. Nueva fecha: {(timezone.datetime.strptime(fecha_nueva + ' 08:00', '%Y-%m-%d %H:%M')).strftime('%d/%m/%Y %H:%M')}"
 		})
 
 		visita.refresh_from_db()

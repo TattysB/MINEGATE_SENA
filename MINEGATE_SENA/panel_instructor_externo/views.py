@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect, get_object_or_404
+﻿from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Q
 from django.db import transaction
@@ -72,7 +72,8 @@ def construir_reporte_documental_visita(visita, tipo_visita):
     )
     for asistente in asistentes:
         incidencias = []
-        # Tomar solo la version vigente (ultima subida) por documento requerido.
+        tiene_documento_rechazado = False
+        tiene_autorizacion_rechazada = False
         latest_por_documento = {}
         for ds in asistente.documentos_subidos.all():
             doc_id = ds.documento_requerido_id
@@ -102,11 +103,23 @@ def construir_reporte_documental_visita(visita, tipo_visita):
                 }
             )
 
+        if asistente.tipo_documento == "TI" and not getattr(
+            asistente, "formato_autorizacion_padres", None
+        ):
+            incidencias.append(
+                {
+                    "tipo": "faltante",
+                    "detalle": "Falta la autorización de padres para visitante con TI.",
+                }
+            )
+
         for doc_subido in documentos_personales:
             if doc_subido.estado == "rechazado":
+                tiene_documento_rechazado = True
                 incidencias.append(
                     {
                         "tipo": "rechazado",
+                        "tipo_correccion": "documento",
                         "documento_subido_id": doc_subido.id,
                         "detalle": (
                             f"{doc_subido.documento_requerido.titulo}: "
@@ -120,9 +133,11 @@ def construir_reporte_documental_visita(visita, tipo_visita):
         ) == "rechazado" and getattr(
             asistente, "observaciones_autorizacion_padres", ""
         ):
+            tiene_autorizacion_rechazada = True
             incidencias.append(
                 {
                     "tipo": "rechazado",
+                    "tipo_correccion": "autorizacion_padres",
                     "detalle": (
                         "Autorización de padres: "
                         f"{asistente.observaciones_autorizacion_padres}"
@@ -137,6 +152,8 @@ def construir_reporte_documental_visita(visita, tipo_visita):
                     "nombre": asistente.nombre_completo,
                     "documento": f"{asistente.get_tipo_documento_display()} {asistente.numero_documento}",
                     "incidencias": incidencias,
+                    "tiene_documento_rechazado": tiene_documento_rechazado,
+                    "tiene_autorizacion_rechazada": tiene_autorizacion_rechazada,
                 }
             )
 
@@ -235,7 +252,6 @@ def _solicitud_final_historica_externa(visita):
     ).exists()
 
 
-# ==================== AUTENTICACIÓN POR SESIÓN ====================
 
 
 def get_sesion_instructor(request):
@@ -272,7 +288,6 @@ def instructor_externo_required(view_func):
     return wrapper
 
 
-# ==================== PANEL PRINCIPAL ====================
 
 
 @instructor_externo_required
@@ -294,14 +309,12 @@ def panel_instructor_externo(request):
     return render(request, "panel_instructor_externo/panel.html", context)
 
 
-# ==================== MÓDULO: RESERVAR VISITA EXTERNA ====================
 
 
 @instructor_externo_required
 def reservar_visita_externa(request):
     correo, documento = get_sesion_instructor(request)
 
-    # Obtener datos adicionales de la sesión
     nombre = request.session.get("responsable_nombre", "")
     apellido = request.session.get("responsable_apellido", "")
     tipo_documento = request.session.get("responsable_tipo_documento", "CC")
@@ -316,7 +329,6 @@ def reservar_visita_externa(request):
             visita.documento_responsable = documento
             visita.estado = "enviada_coordinacion"
             visita.save()
-            # Enviar correo HTML de confirmación al responsable
             try:
                 subject = "Confirmación: solicitud de visita enviada"
                 context = {
@@ -382,7 +394,6 @@ def detalle_visita_externa(request, pk):
         .first()
     )
 
-    # Obtener documentos disponibles para descargar, agrupados por categoría
     from documentos.models import Documento
 
     documentos_disponibles = Documento.objects.all().order_by(
@@ -395,7 +406,6 @@ def detalle_visita_externa(request, pk):
             documentos_por_categoria[cat_display] = []
         documentos_por_categoria[cat_display].append(doc)
 
-    # Tomar un único documento por cada categoría final requerida para descarga.
     documentos_finales_requeridos = []
     categorias_finales_agregadas = set()
     for doc in documentos_disponibles:
@@ -452,10 +462,12 @@ def detalle_visita_externa(request, pk):
     )
 
     solicitud_final_historica = _solicitud_final_historica_externa(visita)
-    # En externo se permite actualizar datos mientras la visita siga editable
-    # en el estado actual, incluso si hubo un envio final historico.
-    permite_editar_asistentes = visita.estado == "aprobada_inicial"
-    permite_eliminar_asistentes = visita.estado == "aprobada_inicial"
+    permite_editar_asistentes = (
+        visita.estado == "aprobada_inicial" and not solicitud_final_historica
+    )
+    permite_eliminar_asistentes = (
+        visita.estado == "aprobada_inicial" and not solicitud_final_historica
+    )
 
     return render(
         request,

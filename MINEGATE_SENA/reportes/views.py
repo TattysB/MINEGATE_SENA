@@ -1,4 +1,4 @@
-from django.contrib.auth.decorators import login_required, user_passes_test
+﻿from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils.dateparse import parse_date
@@ -7,16 +7,83 @@ from django.utils import timezone
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle, Image
+from reportlab.lib.units import inch
+from reportlab.lib.enums import TA_CENTER
+import os
 
-from visitaExterna.models import VisitaExterna
-from visitaInterna.models import VisitaInterna
+from visitaExterna.models import AsistenteVisitaExterna, VisitaExterna
+from visitaInterna.models import AsistenteVisitaInterna, VisitaInterna
 from control_acceso_mina.models import RegistroAccesoMina
 
 
 def _es_admin(user):
 	return user.is_authenticated and (user.is_superuser or user.is_staff)
+
+
+def _crear_encabezado_pdf(elementos, estilos):
+	"""Crea un encabezado profesional con logos y título"""
+	base_dir = os.path.dirname(__file__)
+	logo_sicam_path = os.path.normpath(os.path.join(base_dir, '..', 'static', 'img', 'Logo_SICAM.png'))
+	logo_sena_candidates = [
+		os.path.normpath(os.path.join(base_dir, '..', 'usuarios', 'static', 'img', 'Blanco SENA.png')),
+		os.path.normpath(os.path.join(base_dir, '..', '..', 'usuarios', 'static', 'img', 'Blanco SENA.png')),
+	]
+	logo_sena_path = next((p for p in logo_sena_candidates if os.path.exists(p)), None)
+	
+	logo_data = []
+	if os.path.exists(logo_sicam_path) and logo_sena_path:
+		logo_sicam = Image(logo_sicam_path, width=1.2*inch, height=0.8*inch)
+		logo_sena = Image(logo_sena_path, width=1.2*inch, height=0.8*inch)
+		logo_data = [[
+			logo_sicam,
+			Paragraph("<font color='white'><b>SICAM SENA</b><br/>Centro Minero</font>", estilos["Normal"]),
+			logo_sena,
+		]]
+	else:
+		logo_data = [[
+			"",
+			Paragraph("<font color='white'><b>SISTEMA DE CONTROL DE ACCESO A MINA</b><br/>SENA - Centro Minero</font>", estilos["Normal"]),
+			"",
+		]]
+	
+	tabla_logos = Table(logo_data, colWidths=[1.5*inch, 3*inch, 1.5*inch])
+	tabla_logos.setStyle(TableStyle([
+		('BACKGROUND', (0, 0), (-1, -1), colors.HexColor("#0f6b0f")),
+		('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+		('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+		('TEXTCOLOR', (0, 0), (-1, -1), colors.white),
+		('TOPPADDING', (0, 0), (-1, -1), 8),
+		('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+		('LEFTPADDING', (0, 0), (-1, -1), 10),
+		('RIGHTPADDING', (0, 0), (-1, -1), 10),
+	]))
+	
+	elementos.append(tabla_logos)
+	elementos.append(Spacer(1, 10))
+	elementos.append(Spacer(1, 2))
+	linea = Table([['']]*1, colWidths=[7.5*inch])
+	linea.setStyle(TableStyle([
+		('BACKGROUND', (0, 0), (-1, -1), colors.HexColor("#39a900")),
+		('LEFTPADDING', (0, 0), (-1, -1), 0),
+		('RIGHTPADDING', (0, 0), (-1, -1), 0),
+		('TOPPADDING', (0, 0), (-1, -1), 2),
+		('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+	]))
+	elementos.append(linea)
+	elementos.append(Spacer(1, 10))
+
+
+def _obtener_asistentes_queryset(visita, tipo_visita):
+	"""Devuelve asistentes por relación inversa y aplica fallback por FK si es necesario."""
+	asistentes_qs = visita.asistentes.all()
+	if asistentes_qs.exists():
+		return asistentes_qs
+
+	if tipo_visita == "interna":
+		return AsistenteVisitaInterna.objects.filter(visita_id=visita.id)
+	return AsistenteVisitaExterna.objects.filter(visita_id=visita.id)
 
 
 def _obtener_horarios_acceso_por_documento(tipo_visita, id_visita):
@@ -101,7 +168,7 @@ def _obtener_filas_reporte(request):
 	if filtros["tipo"] in {"todas", "interna"}:
 		for visita in visitas_internas:
 			asistentes = []
-			for asistente in visita.asistentes.all():
+			for asistente in _obtener_asistentes_queryset(visita, "interna"):
 				asistentes.append({
 					"nombre": asistente.nombre_completo,
 					"tipo_documento": asistente.get_tipo_documento_display(),
@@ -131,7 +198,7 @@ def _obtener_filas_reporte(request):
 	if filtros["tipo"] in {"todas", "externa"}:
 		for visita in visitas_externas:
 			asistentes = []
-			for asistente in visita.asistentes.all():
+			for asistente in _obtener_asistentes_queryset(visita, "externa"):
 				asistentes.append({
 					"nombre": asistente.nombre_completo,
 					"tipo_documento": asistente.get_tipo_documento_display(),
@@ -188,9 +255,21 @@ def descargar_excel(request):
 	response["Content-Disposition"] = 'attachment; filename="reporte_visitas.xls"'
 	response.write("\ufeff")
 
-	response.write("<table border='1'>")
+	response.write("<table border='1' cellpadding='8' cellspacing='0' style='font-family: Arial, sans-serif; background-color: #f9fafb;'>")
+	response.write(
+		"<tr style='background-color: #39a900; color: white;'>"
+		"<td colspan='11' style='text-align:center; padding: 14px;'>"
+		"<strong>SICAM SENA - REPORTE GENERAL DE VISITAS</strong><br/>"
+		f"<span style='font-size: 10px;'>Generado: {timezone.localtime().strftime('%d/%m/%Y %H:%M')}</span>"
+		"</td>"
+		"</tr>"
+	)
+	response.write(
+		"<tr style='background-color: #e5f3dd;'>"
+		"<td colspan='11' style='text-align:center;'><strong>Logos: SICAM | SENA</strong></td>"
+		"</tr>"
+	)
 	
-	# Encabezado principal
 	response.write(
 		"<tr style='background-color: #39a900; color: white; font-weight: bold;'>"
 		"<th>Tipo</th><th>ID</th><th>Nombre/Programa</th><th>Responsable</th>"
@@ -203,14 +282,12 @@ def descargar_excel(request):
 		fecha_solicitud = fila["fecha_solicitud"].strftime("%Y-%m-%d %H:%M")
 		fecha_visita = fila["fecha_visita"].strftime("%Y-%m-%d") if fila["fecha_visita"] else "-"
 
-		# Encabezado de la visita
 		response.write(
 			"<tr style='background-color: #e8f5e9;'>"
 			f"<td colspan='11'><strong>Visita: {escape(fila['nombre'])} | Código: {fila['id']}</strong></td>"
 			"</tr>"
 		)
 		
-		# Fila de la visita
 		response.write(
 			"<tr>"
 			f"<td>{escape(fila['tipo'])}</td>"
@@ -227,7 +304,6 @@ def descargar_excel(request):
 			"</tr>"
 		)
 		
-		# Agregar visitantes inmediatamente debajo si los hay
 		if fila['asistentes']:
 			response.write(
 				"<tr style='background-color: #d4edda;'>"
@@ -243,7 +319,6 @@ def descargar_excel(request):
 				"</tr>"
 			)
 			
-			# Agregar cada asistente
 			for asistente in fila['asistentes']:
 				response.write(
 					"<tr style='background-color: #f9f9f9;'>"
@@ -258,7 +333,6 @@ def descargar_excel(request):
 					"</tr>"
 				)
 			
-			# Fila separadora
 			response.write(
 				"<tr style='height: 10px;'>"
 				"<td colspan='11' style='background-color: #ffffff; border: none;'></td>"
@@ -280,10 +354,10 @@ def descargar_pdf(request):
 	documento = SimpleDocTemplate(
 		response,
 		pagesize=landscape(A4),
-		leftMargin=20,
-		rightMargin=20,
-		topMargin=22,
-		bottomMargin=20,
+		leftMargin=30,
+		rightMargin=30,
+		topMargin=40,
+		bottomMargin=30,
 	)
 
 	def _txt(valor, limite=60):
@@ -298,15 +372,25 @@ def descargar_pdf(request):
 	color_borde = colors.HexColor("#9ca3af")
 	color_fondo = colors.HexColor("#f9fafb")
 
-	elementos = [
-		Paragraph("<b>Reporte General de Visitas</b>", estilos["Title"]),
-		Spacer(1, 4),
-		Paragraph(
-			f"Generado: {timezone.localtime().strftime('%d/%m/%Y %H:%M')} | Total de visitas: {len(filas)}",
-			estilos["Normal"],
-		),
-		Spacer(1, 10),
-	]
+	elementos = []
+	
+	_crear_encabezado_pdf(elementos, estilos)
+	
+	titulo_estilo = ParagraphStyle(
+		'TituloReporteGeneral',
+		parent=estilos['Title'],
+		fontSize=16,
+		textColor=colors.HexColor("#39a900"),
+		spaceAfter=8,
+		alignment=TA_CENTER,
+		fontName='Helvetica-Bold'
+	)
+	elementos.append(Paragraph("REPORTE GENERAL DE VISITAS", titulo_estilo))
+	elementos.append(Paragraph(
+		f"<i>Generado: {timezone.localtime().strftime('%d/%m/%Y %H:%M')} | Total de visitas: {len(filas)}</i>",
+		estilos["Normal"],
+	))
+	elementos.append(Spacer(1, 15))
 
 	if not filas:
 		elementos.append(Paragraph("No hay visitas para los filtros seleccionados.", estilos["Normal"]))
@@ -414,7 +498,14 @@ def descargar_pdf(request):
 			elementos.append(tabla_asistentes)
 		else:
 			elementos.append(Spacer(1, 6))
-			elementos.append(Paragraph("No hay visitantes registrados para esta visita.", estilos["Normal"]))
+			aviso_estilo = ParagraphStyle(
+				'AvisoNoAsistentes',
+				parent=estilos['Normal'],
+				fontSize=9,
+				textColor=colors.HexColor("#666666"),
+				spaceAfter=5,
+			)
+			elementos.append(Paragraph("<i>No hay visitantes registrados para esta visita aún.</i>", aviso_estilo))
 
 		if indice < len(filas):
 			elementos.append(PageBreak())
@@ -452,7 +543,7 @@ def descargar_pdf_individual(request, tipo, id_visita):
 			"observaciones": visita.observaciones,
 		}
 		asistentes = []
-		for asistente in visita.asistentes.all():
+		for asistente in _obtener_asistentes_queryset(visita, "interna"):
 			horarios = horarios_acceso.get(str(asistente.numero_documento).strip(), {})
 			hora_entrada = horarios.get("hora_entrada")
 			hora_salida = horarios.get("hora_salida")
@@ -485,7 +576,7 @@ def descargar_pdf_individual(request, tipo, id_visita):
 			"observaciones": visita.observacion if hasattr(visita, 'observacion') else "",
 		}
 		asistentes = []
-		for asistente in visita.asistentes.all():
+		for asistente in _obtener_asistentes_queryset(visita, "externa"):
 			horarios = horarios_acceso.get(str(asistente.numero_documento).strip(), {})
 			hora_entrada = horarios.get("hora_entrada")
 			hora_salida = horarios.get("hora_salida")
@@ -508,22 +599,30 @@ def descargar_pdf_individual(request, tipo, id_visita):
 	documento = SimpleDocTemplate(
 		response,
 		pagesize=A4,
-		leftMargin=30,
-		rightMargin=30,
-		topMargin=30,
-		bottomMargin=30,
+		leftMargin=40,
+		rightMargin=40,
+		topMargin=50,
+		bottomMargin=40,
 	)
 
 	estilos = getSampleStyleSheet()
 	elementos = []
 	
-	# Título
-	elementos.append(
-		Paragraph(f"<b>Reporte de Visita {datos_visita['tipo']}</b>", estilos["Heading1"])
-	)
-	elementos.append(Spacer(1, 20))
+	_crear_encabezado_pdf(elementos, estilos)
 	
-	# Datos de la visita
+	titulo_estilo = ParagraphStyle(
+		'TituloReporte',
+		parent=estilos['Heading1'],
+		fontSize=16,
+		textColor=colors.HexColor("#39a900"),
+		spaceAfter=10,
+		alignment=TA_CENTER,
+		fontName='Helvetica-Bold'
+	)
+	elementos.append(Paragraph(f"REPORTE DE VISITA {datos_visita['tipo'].upper()}", titulo_estilo))
+	elementos.append(Paragraph(f"Código: {datos_visita['id']}", estilos["Normal"]))
+	elementos.append(Spacer(1, 15))
+	
 	elementos.append(Paragraph("<b>Información General</b>", estilos["Heading2"]))
 	elementos.append(Spacer(1, 10))
 	
@@ -543,25 +642,29 @@ def descargar_pdf_individual(request, tipo, id_visita):
 	if datos_visita["observaciones"]:
 		data_general.append(["Observaciones", datos_visita["observaciones"][:100]])
 	
-	tabla_general = Table(data_general, colWidths=[150, 350])
+	tabla_general = Table(data_general, colWidths=[140, 360])
 	tabla_general.setStyle(
 		TableStyle([
 			("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#39a900")),
 			("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
 			("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
 			("FONTSIZE", (0, 0), (-1, -1), 9),
-			("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-			("BACKGROUND", (0, 1), (0, -1), colors.lightgrey),
+			("FONTNAME", (0, 1), (0, -1), "Helvetica-Bold"),
+			("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#d4edda")),
+			("BACKGROUND", (0, 1), (0, -1), colors.HexColor("#e5f3dd")),
+			("BACKGROUND", (1, 1), (1, -1), colors.HexColor("#f9fafb")),
+			("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.HexColor("#ffffff"), colors.HexColor("#f9fafb")]),
 			("ALIGN", (0, 0), (-1, -1), "LEFT"),
 			("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
 			("LEFTPADDING", (0, 0), (-1, -1), 10),
 			("RIGHTPADDING", (0, 0), (-1, -1), 10),
+			("TOPPADDING", (0, 0), (-1, -1), 8),
+			("BOTTOMPADDING", (0, 0), (-1, -1), 8),
 		])
 	)
 	elementos.append(tabla_general)
 	elementos.append(Spacer(1, 20))
 	
-	# Datos del responsable
 	elementos.append(Paragraph("<b>Datos del Responsable</b>", estilos["Heading2"]))
 	elementos.append(Spacer(1, 10))
 	
@@ -574,25 +677,29 @@ def descargar_pdf_individual(request, tipo, id_visita):
 		["Teléfono", datos_visita["telefono"]],
 	]
 	
-	tabla_responsable = Table(data_responsable, colWidths=[150, 350])
+	tabla_responsable = Table(data_responsable, colWidths=[140, 360])
 	tabla_responsable.setStyle(
 		TableStyle([
 			("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#39a900")),
 			("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
 			("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
 			("FONTSIZE", (0, 0), (-1, -1), 9),
-			("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-			("BACKGROUND", (0, 1), (0, -1), colors.lightgrey),
+			("FONTNAME", (0, 1), (0, -1), "Helvetica-Bold"),
+			("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#d4edda")),
+			("BACKGROUND", (0, 1), (0, -1), colors.HexColor("#e5f3dd")),
+			("BACKGROUND", (1, 1), (1, -1), colors.HexColor("#f9fafb")),
+			("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.HexColor("#ffffff"), colors.HexColor("#f9fafb")]),
 			("ALIGN", (0, 0), (-1, -1), "LEFT"),
 			("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
 			("LEFTPADDING", (0, 0), (-1, -1), 10),
 			("RIGHTPADDING", (0, 0), (-1, -1), 10),
+			("TOPPADDING", (0, 0), (-1, -1), 8),
+			("BOTTOMPADDING", (0, 0), (-1, -1), 8),
 		])
 	)
 	elementos.append(tabla_responsable)
 	elementos.append(Spacer(1, 20))
 	
-	# Listado de asistentes/visitantes
 	if asistentes:
 		elementos.append(Paragraph(f"<b>Listado de Visitantes Registrados ({len(asistentes)})</b>", estilos["Heading2"]))
 		elementos.append(Spacer(1, 10))
@@ -612,22 +719,36 @@ def descargar_pdf_individual(request, tipo, id_visita):
 				asistente["hora_salida"],
 			])
 		
-		tabla_asistentes = Table(data_asistentes, colWidths=[80, 45, 60, 90, 55, 70, 70])
+		tabla_asistentes = Table(data_asistentes, colWidths=[85, 50, 65, 85, 55, 70, 70])
 		tabla_asistentes.setStyle(
 			TableStyle([
 				("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#39a900")),
 				("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
 				("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-				("FONTSIZE", (0, 0), (-1, -1), 7),
-				("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-				("BACKGROUND", (0, 1), (-1, -1), colors.beige),
+				("FONTSIZE", (0, 0), (-1, -1), 8),
+				("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#d4edda")),
+				("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.HexColor("#ffffff"), colors.HexColor("#f9fafb")]),
 				("ALIGN", (0, 0), (-1, -1), "CENTER"),
 				("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+				("LEFTPADDING", (0, 0), (-1, -1), 5),
+				("RIGHTPADDING", (0, 0), (-1, -1), 5),
+				("TOPPADDING", (0, 0), (-1, -1), 5),
+				("BOTTOMPADDING", (0, 0), (-1, -1), 5),
 			])
 		)
 		elementos.append(tabla_asistentes)
 	else:
-		elementos.append(Paragraph("<i>No hay visitantes registrados para esta visita.</i>", estilos["Normal"]))
+		elementos.append(Spacer(1, 10))
+		elementos.append(Paragraph("<b>Listado de Visitantes Registrados</b>", estilos["Heading2"]))
+		elementos.append(Spacer(1, 5))
+		aviso_estilo = ParagraphStyle(
+			'Aviso',
+			parent=estilos['Normal'],
+			fontSize=10,
+			textColor=colors.HexColor("#666666"),
+			spaceAfter=10,
+		)
+		elementos.append(Paragraph("<i>No hay visitantes registrados para esta visita aún.</i>", aviso_estilo))
 	
 	documento.build(elementos)
 	return response
@@ -660,7 +781,7 @@ def descargar_excel_individual(request, tipo, id_visita):
 			"observaciones": visita.observaciones,
 		}
 		asistentes = []
-		for asistente in visita.asistentes.all():
+		for asistente in _obtener_asistentes_queryset(visita, "interna"):
 			horarios = horarios_acceso.get(str(asistente.numero_documento).strip(), {})
 			hora_entrada = horarios.get("hora_entrada")
 			hora_salida = horarios.get("hora_salida")
@@ -693,7 +814,7 @@ def descargar_excel_individual(request, tipo, id_visita):
 			"observaciones": visita.observacion if hasattr(visita, 'observacion') else "",
 		}
 		asistentes = []
-		for asistente in visita.asistentes.all():
+		for asistente in _obtener_asistentes_queryset(visita, "externa"):
 			horarios = horarios_acceso.get(str(asistente.numero_documento).strip(), {})
 			hora_entrada = horarios.get("hora_entrada")
 			hora_salida = horarios.get("hora_salida")
@@ -714,54 +835,60 @@ def descargar_excel_individual(request, tipo, id_visita):
 	response["Content-Disposition"] = f'attachment; filename="reporte_visita_{tipo}_{id_visita}.xls"'
 	response.write("\ufeff")
 
-	response.write("<table border='1'>")
+	response.write("<table border='1' cellpadding='10' cellspacing='0' style='background-color: #f9fafb; font-family: Arial, sans-serif;'>")
 	
-	# Título
+	response.write(
+		"<tr style='background-color: #39a900; color: white; font-weight: bold; font-size: 14px;'>"
+		f"<td colspan='2' style='text-align: center; padding: 15px;'>"
+		f"<strong>REPORTE DE VISITA {datos_visita['tipo'].upper()}</strong><br/>"
+		f"<span style='font-size: 11px;'>Código: {datos_visita['id']}</span><br/>"
+		f"<span style='font-size: 10px;'>Generado: {timezone.localtime().strftime('%d/%m/%Y %H:%M')}</span>"
+		"</td>"
+		"</tr>"
+	)
+	
+	response.write(
+		"<tr style='background-color: #e5f3dd;'>"
+		"<td colspan='2' style='text-align: center; padding: 5px;'></td>"
+		"</tr>"
+	)
+	
 	response.write(
 		"<tr style='background-color: #39a900; color: white; font-weight: bold;'>"
-		f"<th colspan='2'>Reporte de Visita {datos_visita['tipo']} - Código: {datos_visita['id']}</th>"
+		"<td colspan='2' style='padding: 8px;'>INFORMACIÓN GENERAL</td>"
 		"</tr>"
 	)
-	
-	# Información General
-	response.write(
-		"<tr style='background-color: #d4edda;'>"
-		"<td colspan='2'><strong>INFORMACIÓN GENERAL</strong></td>"
-		"</tr>"
-	)
-	response.write(f"<tr><td><strong>Código de Visita</strong></td><td>{datos_visita['id']}</td></tr>")
-	response.write(f"<tr><td><strong>Tipo de Visita</strong></td><td>{escape(datos_visita['tipo'])}</td></tr>")
-	response.write(f"<tr><td><strong>Nombre/Programa</strong></td><td>{escape(datos_visita['nombre'])}</td></tr>")
-	response.write(f"<tr><td><strong>Estado</strong></td><td>{escape(datos_visita['estado'])}</td></tr>")
-	response.write(f"<tr><td><strong>Fecha de Solicitud</strong></td><td>{datos_visita['fecha_solicitud'].strftime('%d/%m/%Y %H:%M')}</td></tr>")
+	response.write(f"<tr style='background-color: #e5f3dd;'><td style='font-weight: bold; width: 40%;'>Código de Visita</td><td>{datos_visita['id']}</td></tr>")
+	response.write(f"<tr><td style='font-weight: bold;'>Tipo de Visita</td><td>{escape(datos_visita['tipo'])}</td></tr>")
+	response.write(f"<tr style='background-color: #e5f3dd;'><td style='font-weight: bold;'>Nombre/Programa</td><td>{escape(datos_visita['nombre'])}</td></tr>")
+	response.write(f"<tr><td style='font-weight: bold;'>Estado</td><td>{escape(datos_visita['estado'])}</td></tr>")
+	response.write(f"<tr style='background-color: #e5f3dd;'><td style='font-weight: bold;'>Fecha de Solicitud</td><td>{datos_visita['fecha_solicitud'].strftime('%d/%m/%Y %H:%M')}</td></tr>")
 	fecha_visita_str = datos_visita["fecha_visita"].strftime("%d/%m/%Y") if datos_visita["fecha_visita"] else "No asignada"
-	response.write(f"<tr><td><strong>Fecha de Visita</strong></td><td>{fecha_visita_str}</td></tr>")
+	response.write(f"<tr><td style='font-weight: bold;'>Fecha de Visita</td><td>{fecha_visita_str}</td></tr>")
 	hora_inicio_str = datos_visita["hora_inicio"].strftime("%H:%M") if datos_visita["hora_inicio"] else "-"
 	hora_fin_str = datos_visita["hora_fin"].strftime("%H:%M") if datos_visita["hora_fin"] else "-"
-	response.write(f"<tr><td><strong>Hora de Inicio</strong></td><td>{hora_inicio_str}</td></tr>")
-	response.write(f"<tr><td><strong>Hora de Fin</strong></td><td>{hora_fin_str}</td></tr>")
-	response.write(f"<tr><td><strong>Cantidad de Visitantes</strong></td><td>{datos_visita['cantidad']}</td></tr>")
+	response.write(f"<tr style='background-color: #e5f3dd;'><td style='font-weight: bold;'>Hora de Inicio</td><td>{hora_inicio_str}</td></tr>")
+	response.write(f"<tr><td style='font-weight: bold;'>Hora de Fin</td><td>{hora_fin_str}</td></tr>")
+	response.write(f"<tr style='background-color: #e5f3dd;'><td style='font-weight: bold;'>Cantidad de Visitantes</td><td>{datos_visita['cantidad']}</td></tr>")
 	
 	if datos_visita["observaciones"]:
 		response.write(f"<tr><td><strong>Observaciones</strong></td><td>{escape(datos_visita['observaciones'])}</td></tr>")
 	
-	# Información del Responsable
 	response.write(
-		"<tr style='background-color: #d4edda;'>"
-		"<td colspan='2'><strong>DATOS DEL RESPONSABLE</strong></td>"
+		"<tr style='background-color: #39a900; color: white; font-weight: bold;'>"
+		"<td colspan='2' style='padding: 8px;'>DATOS DEL RESPONSABLE</td>"
 		"</tr>"
 	)
-	response.write(f"<tr><td><strong>Nombre</strong></td><td>{escape(datos_visita['responsable'])}</td></tr>")
-	response.write(f"<tr><td><strong>Tipo de Documento</strong></td><td>{escape(datos_visita['tipo_documento'])}</td></tr>")
-	response.write(f"<tr><td><strong>Número de Documento</strong></td><td>{escape(datos_visita['documento'])}</td></tr>")
-	response.write(f"<tr><td><strong>Correo Electrónico</strong></td><td>{escape(datos_visita['correo'])}</td></tr>")
-	response.write(f"<tr><td><strong>Teléfono</strong></td><td>{escape(datos_visita['telefono'])}</td></tr>")
+	response.write(f"<tr style='background-color: #e5f3dd;'><td style='font-weight: bold;'>Nombre</td><td>{escape(datos_visita['responsable'])}</td></tr>")
+	response.write(f"<tr><td style='font-weight: bold;'>Tipo de Documento</td><td>{escape(datos_visita['tipo_documento'])}</td></tr>")
+	response.write(f"<tr style='background-color: #e5f3dd;'><td style='font-weight: bold;'>Número de Documento</td><td>{escape(datos_visita['documento'])}</td></tr>")
+	response.write(f"<tr><td style='font-weight: bold;'>Correo Electrónico</td><td>{escape(datos_visita['correo'])}</td></tr>")
+	response.write(f"<tr style='background-color: #e5f3dd;'><td style='font-weight: bold;'>Teléfono</td><td>{escape(datos_visita['telefono'])}</td></tr>")
 	
-	# Listado de asistentes
 	if asistentes:
 		response.write(
 			"<tr style='background-color: #d4edda;'>"
-			f"<td colspan='2'><strong>LISTADO DE VISITANTES REGISTRADOS ({len(asistentes)})</strong></td>"
+			f"<td colspan='7' style='padding: 8px;'><strong>LISTADO DE VISITANTES REGISTRADOS ({len(asistentes)})</strong></td>"
 			"</tr>"
 		)
 		response.write(
@@ -773,7 +900,7 @@ def descargar_excel_individual(request, tipo, id_visita):
 		
 		for asistente in asistentes:
 			response.write(
-				"<tr>"
+				"<tr style='background-color: #ffffff;'>"
 				f"<td>{escape(asistente['nombre'])}</td>"
 				f"<td>{escape(asistente['tipo_documento'])}</td>"
 				f"<td>{escape(asistente['numero_documento'])}</td>"
@@ -786,7 +913,7 @@ def descargar_excel_individual(request, tipo, id_visita):
 	else:
 		response.write(
 			"<tr style='background-color: #d4edda;'>"
-			"<td colspan='2'><strong>LISTADO DE VISITANTES REGISTRADOS</strong></td>"
+			"<td colspan='2' style='padding: 8px;'><strong>LISTADO DE VISITANTES REGISTRADOS</strong></td>"
 			"</tr>"
 		)
 		response.write(

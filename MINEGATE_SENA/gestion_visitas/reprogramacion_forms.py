@@ -1,4 +1,4 @@
-"""
+﻿"""
 Formularios para gestión de reprogramación de visitas
 y cambios de estado con validaciones personalizadas
 """
@@ -46,7 +46,6 @@ class SolicitudesReprogramacionForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.usuario = usuario
         
-        # Si el usuario es coordinador, predefinir
         if usuario and usuario.groups.filter(name="coordinador").exists():
             self.fields['tipo_solicitud'].initial = 'coordinador'
             self.fields['tipo_solicitud'].widget.attrs['disabled'] = True
@@ -117,12 +116,10 @@ class CompletarReprogramacionForm(forms.Form):
     def clean_fecha(self):
         fecha = self.cleaned_data.get('fecha')
         if fecha:
-            # Validar que sea una fecha futura
             hoy = timezone.now().date()
             if fecha <= hoy:
                 raise ValidationError('La nuevo debe ser en el futuro.')
             
-            # Validar no más allá de 90 días
             fecha_max = hoy + timedelta(days=90)
             if fecha > fecha_max:
                 raise ValidationError('La fecha no puede ser más allá de 90 días.')
@@ -135,7 +132,6 @@ class CompletarReprogramacionForm(forms.Form):
         hora = cleaned_data.get('hora')
         
         if fecha and hora:
-            # Validar que fecha + hora sea en el futuro
             fecha_hora = timezone.datetime.combine(fecha, hora)
             if fecha_hora < timezone.now():
                 raise ValidationError('La fecha y hora deben ser en el futuro.')
@@ -199,14 +195,11 @@ class RegistroRechazoDocumentoForm(forms.Form):
     def __init__(self, visita=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # Si se proporciona una visita, filtrar aprendices de esa visita
         if visita:
             if hasattr(visita, 'visitainterna'):
-                # Es una visita interna
                 self.fields['aprendiz'].queryset = Aprendiz.objects.filter(
                     ficha__numero=visita.numero_ficha
                 )
-            # Para visita externa, se podría agregar lógica similar si existe relación
 
 
 class CambioEstadoVisitaForm(forms.Form):
@@ -251,14 +244,12 @@ class CambioEstadoVisitaForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.usuario = usuario
         
-        # Determinar qué transiciones están disponibles
         if usuario:
             if usuario.is_superuser:
                 self.fields['nuevo_estado'].choices = self.TRANSICIONES_ADMIN
             elif usuario.groups.filter(name="coordinador").exists():
                 self.fields['nuevo_estado'].choices = self.TRANSICIONES_COORDINADOR
             else:
-                # Usuario normal, sin cambios de estado
                 self.fields['nuevo_estado'].widget.attrs['disabled'] = True
 
 

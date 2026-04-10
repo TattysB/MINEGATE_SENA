@@ -1,6 +1,7 @@
-from io import StringIO
+﻿from io import StringIO
 from datetime import date, timedelta, datetime
 import calendar
+import re
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -11,6 +12,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.db.models import Q
@@ -57,6 +59,7 @@ SECCIONES_PANEL_SST = {
 }
 
 ALLOWED_BACKUP_EXTENSIONS = {".dump", ".backup"}
+ANSI_ESCAPE_RE = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
 
 
 def es_superusuario(user):
@@ -163,6 +166,12 @@ def _validar_password_operacion_sensible(request):
     return True
 
 
+def _normalizar_salida_terminal(texto):
+    """Limpia secuencias ANSI y espacios para mostrar mensajes legibles."""
+    limpio = ANSI_ESCAPE_RE.sub("", str(texto or ""))
+    return " ".join(limpio.split()).strip()
+
+
 def _obtener_horas_frecuencia_backup(frecuencia):
     try:
         return int(str(frecuencia).replace("h", ""))
@@ -242,7 +251,6 @@ def _ejecutar_backup_automatico_si_corresponde(request, config):
         )
     except CommandError as exc:
         detalle = errores.getvalue().strip() or str(exc)
-        # Evita repetir intento en cada recarga inmediata cuando hay error.
         config.ultima_ejecucion = ahora
         config.save()
         messages.warning(
@@ -259,18 +267,14 @@ def _ejecutar_backup_desde_panel(request):
     try:
         call_command("backupdb", stdout=salida, stderr=errores)
     except CommandError as exc:
-        detalle = errores.getvalue().strip() or str(exc)
+        detalle = _normalizar_salida_terminal(errores.getvalue()) or _normalizar_salida_terminal(str(exc))
         messages.error(
             request,
             f"No fue posible generar la copia de seguridad. Detalle: {detalle}",
         )
         return
 
-    resumen = salida.getvalue().strip()
-    if resumen:
-        messages.success(request, f"Copia generada correctamente. {resumen}")
-    else:
-        messages.success(request, "Copia generada correctamente.")
+    messages.success(request, "Copia de seguridad generada exitosamente.")
 
 
 def _ejecutar_restore_desde_panel(request):
@@ -292,18 +296,17 @@ def _ejecutar_restore_desde_panel(request):
     try:
         call_command("restoredb", stdout=salida, stderr=errores, **kwargs_restore)
     except CommandError as exc:
-        detalle = errores.getvalue().strip() or str(exc)
+        detalle = _normalizar_salida_terminal(errores.getvalue()) or _normalizar_salida_terminal(str(exc))
         messages.error(
             request,
             f"No fue posible restaurar la base de datos. Detalle: {detalle}",
         )
         return
 
-    resumen = salida.getvalue().strip()
-    if resumen:
-        messages.success(request, f"Restauracion ejecutada correctamente. {resumen}")
-    else:
-        messages.success(request, "Restauracion ejecutada correctamente.")
+    messages.success(
+        request,
+        f"Copia {archivo_resuelto.name} restaurada exitosamente.",
+    )
 
 
 def _eliminar_backup_desde_panel(request):
@@ -433,6 +436,7 @@ def _aplicar_recorte_desde_request(request, prefijo, ruta_archivo):
     return _aplicar_recorte_imagen(ruta_archivo, x, y, ancho_recorte, alto_recorte)
 
 
+@ensure_csrf_cookie
 def index(request):
     contenido_pagina = None
     elementos_galeria = []
@@ -440,7 +444,6 @@ def index(request):
 
     try:
         contenido_pagina = ContenidoPaginaInformativa.obtener()
-        # Evita inconsistencias visuales si existen filas sin archivo asociado.
         elementos_galeria = ElementoGaleriaInformativa.objects.filter(
             activo=True
         ).exclude(archivo="")
@@ -542,7 +545,6 @@ def panel_copias_seguridad(request):
 
     contexto_backups = {
         "backups_disponibles": _listar_backups_disponibles(),
-        "ruta_backups": str(_obtener_directorio_backups()),
         "config_backup_auto": config_backup_auto,
         "frecuencias_backup_auto": frecuencias_backup,
         "proxima_ejecucion_backup": proxima_ejecucion,
@@ -734,6 +736,7 @@ def _agregar_contexto_panel_principal(context):
                     "responsable": visita.responsable,
                     "entidad": visita.nombre_programa,
                     "estado": visita.estado,
+                    "estado_label": visita.estado.replace("_", " ").capitalize(),
                     "fecha_solicitud": visita.fecha_solicitud,
                 }
             )
@@ -746,6 +749,7 @@ def _agregar_contexto_panel_principal(context):
                     "responsable": visita.nombre_responsable,
                     "entidad": visita.nombre,
                     "estado": visita.estado,
+                    "estado_label": visita.estado.replace("_", " ").capitalize(),
                     "fecha_solicitud": visita.fecha_solicitud,
                 }
             )
@@ -810,7 +814,6 @@ def _render_panel_administrativo(
     Panel administrativo principal
     Incluye gestión de permisos solo para superusuarios
     """
-    # Verificar que el usuario esté activo (excepto superusuarios)
     if not request.user.is_superuser:
         if not request.user.is_active:
             messages.error(
@@ -818,7 +821,6 @@ def _render_panel_administrativo(
             )
             return redirect("usuarios:login")
 
-    # Redirigir instructores a sus paneles correspondientes
     if request.user.groups.filter(name="coordinador").exists():
         return redirect("coordinador:panel")
     if request.user.groups.filter(name="instructor_interno").exists():
@@ -846,28 +848,23 @@ def _render_panel_administrativo(
         "solo_sst": usuario_sst,
         "perfil": getattr(request.user, "perfil", None),
         "perfil_panel": getattr(request.user, "perfil", None),
-        "panel_role_label": "Superusuario" if request.user.is_superuser else "SST",
+        "panel_role_label": "Administrador" if request.user.is_superuser else "SST",
         "seccion_activa": seccion_activa,
     }
 
-    # Si es superusuario, agregar datos para gestión de permisos
     if request.user.is_superuser:
-        # Obtener filtros
         filtro_actual = request.GET.get("filtro", "todos")
         buscar = request.GET.get("buscar", "")
 
-        # Obtener todos los perfiles (excluyendo superusuarios)
         perfiles = PerfilUsuario.objects.select_related("user").exclude(
             user__is_superuser=True
         )
 
-        # Aplicar filtros
         if filtro_actual == "activos":
             perfiles = perfiles.filter(user__is_active=True)
         elif filtro_actual == "inactivos":
             perfiles = perfiles.filter(user__is_active=False)
 
-        # Aplicar búsqueda
         if buscar:
             perfiles = perfiles.filter(
                 Q(user__username__icontains=buscar)
@@ -877,10 +874,8 @@ def _render_panel_administrativo(
                 | Q(documento__icontains=buscar)
             )
 
-        # Ordenar por fecha de registro
         perfiles = perfiles.order_by("-user__date_joined")
 
-        # Estadísticas
         total_usuarios = PerfilUsuario.objects.exclude(user__is_superuser=True).count()
         usuarios_activos = (
             PerfilUsuario.objects.filter(user__is_active=True)
@@ -940,8 +935,12 @@ def _agregar_contexto_pagina_informativa(request, context):
 
     try:
         contenido = ContenidoPaginaInformativa.obtener()
-        elementos_encabezado = list(ElementoEncabezadoInformativo.objects.all())
-        elementos_galeria = list(ElementoGaleriaInformativa.objects.all())
+        elementos_encabezado = list(
+            ElementoEncabezadoInformativo.objects.all().order_by("orden", "id")
+        )
+        elementos_galeria = list(
+            ElementoGaleriaInformativa.objects.all().order_by("orden", "id")
+        )
     except (OperationalError, ProgrammingError):
         context["error_gestion_pagina"] = (
             "Falta aplicar migraciones del módulo de página informativa. Ejecuta: python manage.py migrate"
@@ -1210,9 +1209,23 @@ def _agregar_contexto_pagina_informativa(request, context):
                 f"{destino_gpi}?abrir={abrir_destino}&enfocar=gpi-galeria-lista&recargar={int(timezone.now().timestamp())}"
             )
 
-    # Refresca listas desde BD para evitar que el render use datos antiguos.
-    elementos_encabezado = list(ElementoEncabezadoInformativo.objects.all())
-    elementos_galeria = list(ElementoGaleriaInformativa.objects.all())
+    elementos_encabezado = list(
+        ElementoEncabezadoInformativo.objects.all().order_by("orden", "id")
+    )
+    elementos_galeria = list(
+        ElementoGaleriaInformativa.objects.all().order_by("orden", "id")
+    )
+
+    galeria_con_archivo = [
+        item for item in elementos_galeria if getattr(item, "archivo", None)
+    ]
+    galeria_activa_con_archivo = [item for item in galeria_con_archivo if item.activo]
+    galeria_base_preview = (
+        galeria_en_edicion
+        or (galeria_activa_con_archivo[0] if galeria_activa_con_archivo else None)
+        or (galeria_con_archivo[0] if galeria_con_archivo else None)
+        or (elementos_galeria[0] if elementos_galeria else None)
+    )
 
     context.update(
         {
@@ -1228,10 +1241,7 @@ def _agregar_contexto_pagina_informativa(request, context):
                 slide_en_edicion
                 or (elementos_encabezado[0] if elementos_encabezado else None)
             ),
-            "galeria_base_preview": (
-                galeria_en_edicion
-                or (elementos_galeria[0] if elementos_galeria else None)
-            ),
+            "galeria_base_preview": galeria_base_preview,
         }
     )
 

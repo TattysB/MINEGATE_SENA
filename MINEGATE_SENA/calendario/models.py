@@ -1,11 +1,10 @@
-from django.db import models
+﻿from django.db import models
 
 
 class Availability(models.Model):
 	date = models.DateField()
 	time = models.TimeField()
 	end_time = models.TimeField(null=True, blank=True)
-	# optional: who configured
 	created_at = models.DateTimeField(auto_now_add=True)
 
 	class Meta:
@@ -35,7 +34,6 @@ class ReservaHorario(models.Model):
 	hora_fin = models.TimeField(verbose_name="Hora de fin")
 	estado = models.CharField(max_length=15, choices=ESTADO_CHOICES, default='pendiente')
 	
-	# Relación con visita (solo una será válida)
 	visita_interna = models.ForeignKey(
 		'visitaInterna.VisitaInterna',
 		on_delete=models.CASCADE,
@@ -122,11 +120,9 @@ class ReservaHorario(models.Model):
 	@classmethod
 	def horario_disponible(cls, fecha, hora_inicio, hora_fin):
 		"""Verifica si un horario está disponible (no hay reservas que se superpongan)"""
-		# Buscar reservas que se superponen con el horario solicitado
 		reservas_existentes = cls.objects.filter(
 			fecha=fecha
 		).filter(
-			# Superposición: inicio1 < fin2 AND inicio2 < fin1
 			hora_inicio__lt=hora_fin,
 			hora_fin__gt=hora_inicio
 		)

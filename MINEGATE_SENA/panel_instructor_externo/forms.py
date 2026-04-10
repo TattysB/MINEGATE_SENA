@@ -1,10 +1,9 @@
-from django import forms
+﻿from django import forms
 from visitaExterna.models import VisitaExterna
 import re
 from django.core.exceptions import ValidationError
 
 
-# ==================== VALIDADORES PERSONALIZADOS ====================
 
 def validar_correo_formato(correo):
     """
@@ -24,11 +23,9 @@ def validar_documento_numero(numero_documento):
     
     numero_documento = str(numero_documento).strip()
     
-    # Solo números permitidos
     if not re.match(r'^[0-9]+$', numero_documento):
         raise ValidationError('El número de documento solo debe contener números (sin puntos ni guiones).')
     
-    # Validar rango de longitud
     if len(numero_documento) < 5:
         raise ValidationError('El número de documento debe tener al menos 5 dígitos.')
     if len(numero_documento) > 15:
@@ -61,17 +58,14 @@ def validar_nombre_alfabetico(nombre, campo='nombre'):
     
     nombre = nombre.strip()
     
-    # Permite letras (incluyendo acentos), espacios y apóstrofos
     if not re.match(r"^[a-záéíóúñüA-ZÁÉÍÓÚÑÜ\s'-]+$", nombre):
         raise ValidationError(f'El {campo} solo debe contener letras, espacios y apóstrofos (sin números ni caracteres especiales).')
     
-    # Validar longitud
     if len(nombre) < 2:
         raise ValidationError(f'El {campo} debe tener al menos 2 caracteres.')
     if len(nombre) > 100:
         raise ValidationError(f'El {campo} no puede exceder 100 caracteres.')
     
-    # Validar que no sea solo espacios
     if not nombre.replace(' ', '').replace("'", ''):
         raise ValidationError(f'El {campo} no puede ser solo espacios.')
     
@@ -87,11 +81,9 @@ def validar_telefono(telefono):
     
     telefono = str(telefono).strip()
     
-    # Permite números, +, espacios y guiones
     if not re.match(r'^[\+]?[0-9\s\-]{6,14}$', telefono):
         raise ValidationError('El teléfono solo debe contener números y caracteres válidos (+, espacios, guiones).')
     
-    # Contar solo los dígitos
     digitos = re.sub(r'[^\d]', '', telefono)
     if len(digitos) < 7 or len(digitos) > 15:
         raise ValidationError('El teléfono debe tener entre 7 y 15 dígitos.')
@@ -111,14 +103,12 @@ def validar_observaciones(observaciones):
     if len(observaciones) > 500:
         raise ValidationError('Las observaciones no pueden exceder 500 caracteres.')
     
-    # Rechaza caracteres de control peligrosos
     if re.search(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', observaciones):
         raise ValidationError('Las observaciones contienen caracteres no permitidos.')
     
     return observaciones
 
 
-# ==================== FORMULARIOS ====================
 
 class VisitaExternaInstructorForm(forms.ModelForm):
     """
@@ -229,7 +219,6 @@ class VisitaExternaInstructorForm(forms.ModelForm):
         
         validar_correo_formato(correo)
         
-        # Validar dominio
         partes = correo.split('@')
         if len(partes) != 2 or '.' not in partes[1]:
             raise ValidationError('El correo debe tener un dominio válido (ej: usuario@empresa.com).')
@@ -244,11 +233,19 @@ class VisitaExternaInstructorForm(forms.ModelForm):
         return validar_telefono(self.cleaned_data.get('telefono_responsable', ''))
     
     def clean_cantidad_visitantes(self):
-        """Validación de cantidad."""
+        """Validación de cantidad - entre 1 y 80 visitantes."""
         cantidad = self.cleaned_data.get('cantidad_visitantes')
         if cantidad is None or cantidad == '':
             raise ValidationError('La cantidad de visitantes es obligatoria.')
-        return validar_cantidad_minima(cantidad)
+        try:
+            cantidad_int = int(cantidad)
+            if cantidad_int < 1:
+                raise ValidationError('Debe registrar mínimo 1 visitante.')
+            if cantidad_int > 80:
+                raise ValidationError('La cantidad de visitantes no puede exceder 80.')
+        except (ValueError, TypeError):
+            raise ValidationError('La cantidad debe ser un número válido.')
+        return cantidad
     
     def clean_observacion(self):
         """Validación de observaciones."""

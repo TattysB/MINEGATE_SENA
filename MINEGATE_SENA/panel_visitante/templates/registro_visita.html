@@ -1,22 +1,11 @@
-{% extends "master.html" %}
+﻿{% extends "master.html" %}
 {% load static %}
 
-{% block title %}Registro de Visita - MINEGATE{% endblock %}
+{% block title %}Registro de Visita - SICAM{% endblock %}
 
 {% block content %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <link rel="stylesheet" href="{% static 'registro_visita.css' %}">
-<style>
-	.realtime-invalid {
-		border-color: #dc2626 !important;
-		box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15) !important;
-	}
-
-	.realtime-valid {
-		border-color: #16a34a !important;
-		box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15) !important;
-	}
-</style>
 
 <div class="login-container">
 	<div class="login-card">
@@ -171,6 +160,18 @@
 							<span class="field-error">{{ form.password2.errors|striptags }}</span>
 						{% endif %}
 					</div>
+
+					<div class="form-group full-width">
+						<label>
+							<i class="fas fa-shield-halved"></i> Verificación de seguridad
+						</label>
+						<div class="captcha-wrapper captcha-wrapper-registro">
+							<div id="registro-recaptcha" class="captcha-box"></div>
+						</div>
+						{% if form.captcha.errors %}
+							<span class="field-error">{{ form.captcha.errors|striptags }}</span>
+						{% endif %}
+					</div>
 				</div>
 
 				<button type="submit" class="btn-login">
@@ -190,6 +191,19 @@
 		</div>
 	</div>
 </div>
+
+<script>
+	window.onRecaptchaLoad = function() {
+		if (window.grecaptcha && document.getElementById('registro-recaptcha') && !window.__registroRecaptchaRendered) {
+			window.__registroRecaptchaRendered = true;
+			grecaptcha.render('registro-recaptcha', {
+				sitekey: '{{ recaptcha_public_key|escapejs }}',
+				theme: 'light'
+			});
+		}
+	};
+</script>
+<script src="https://www.google.com/recaptcha/api.js?hl=es&render=explicit&onload=onRecaptchaLoad" async defer></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

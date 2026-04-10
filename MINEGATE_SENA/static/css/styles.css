@@ -1,4 +1,4 @@
-.footer-mine-bg {
+﻿.footer-mine-bg {
     position: absolute;
     left: 0;
     bottom: 0;
@@ -57,7 +57,7 @@
     overflow: hidden;
 }
 
-/* Footer moderno  */
+
 .modern-footer {
     background: linear-gradient(135deg, #00af00 80%, #009900 100%) !important;
     border-top-left-radius: 18px;
@@ -112,8 +112,8 @@
     letter-spacing: 1px;
 }
 
-/* Global overrides */
-/* Fondo verde personalizado para toda la navbar */
+
+
 .navbar {
     background-color: #00af00 !important;
     position: fixed;
@@ -123,13 +123,13 @@
     z-index: 1100;
 }
 
-/* Evita conflicto con Bootstrap .sticky-top que devuelve la navbar al flujo normal. */
+
 .navbar.sticky-top {
     position: fixed !important;
     top: 0;
 }
 
-/* Fondo verde para el footer igual a la navbar */
+
 .bg-navbar-green {
     background-color: #00af00 !important;
 }
@@ -145,6 +145,10 @@ body {
     font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     font-weight: 400;
     padding-top: 86px;
+}
+
+body.home-has-hero {
+    padding-top: 0 !important;
 }
 
 @media (max-width: 991.98px) {
@@ -177,6 +181,13 @@ h6,
     transition: color 0.2s, transform 0.2s cubic-bezier(.4, 2, .6, 1);
 }
 
+.navbar-brand {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    gap: 8px;
+}
+
 .navbar-brand:hover,
 .navbar-brand:focus,
 .nav-link:hover,
@@ -191,15 +202,15 @@ b {
     font-weight: 700;
 }
 
-/* Make Bootstrap primary use the project green */
 
-/* Botón principal (Estilo Verde Vibrante Ovalado) */
+
+
 .btn-primary {
     background-color: #1738027a !important;
     color: #ffffff !important;
     border-color: #3fa500 !important;
     border-radius: 50px !important;
-    /* Forma ovalada */
+    
     padding: 10px 25px !important;
     font-weight: 600 !important;
     box-shadow: 0 4px 15px rgba(63, 165, 0, 0.2);
@@ -215,7 +226,7 @@ b {
     box-shadow: 0 8px 25px rgba(63, 165, 0, 0.3);
 }
 
-/* Logo sizing (applies site-wide) */
+
 .navbar .navbar-brand img.navbar-logo,
 .navbar-logo,
 .navbar-brand .navbar-logo {
@@ -226,21 +237,42 @@ b {
     display: inline-block !important;
     margin-right: 10px !important;
     object-fit: contain !important;
+    vertical-align: middle !important;
 }
 
-/* Ajuste adicional para móviles */
+.logo-duo-wrap {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    gap: 6px;
+}
+
+.logo-duo-wrap .logo-secondary {
+    opacity: 0.95;
+}
+
+
 @media (max-width: 576px) {
     .navbar .navbar-brand img.navbar-logo {
         height: 30px !important;
         max-height: 30px !important;
+        vertical-align: middle !important;
+    }
+
+    .logo-duo-wrap {
+        gap: 4px;
+    }
+
+    .logo-duo-wrap .navbar-logo {
+        margin-right: 0 !important;
     }
 }
 
-/* Botón Flotante */
+
 .minegate-acc-trigger {
     position: fixed;
     bottom: 25px;
-    /* Mod rigth por left en caso de que se quiera cambiar */
+    
     left: 25px;
     width: 60px;
     height: 60px;
@@ -261,7 +293,7 @@ b {
     transform: scale(1.1);
 }
 
-/* Panel de Control */
+
 .acc-widget-panel {
     display: none;
     position: fixed;
@@ -306,7 +338,7 @@ b {
     background: #e9ecef;
 }
 
-/* Alto contraste */
+
 body.high-contrast-mode {
     background-color: #000 !important;
     color: #fff !important;
@@ -330,13 +362,13 @@ body.high-contrast-mode .btn {
     border: 2px solid #fff !important;
 }
 
-/* Subrayar enlaces */
+
 body.underline-links a {
     text-decoration: underline !important;
     font-weight: bold;
 }
 
-/* Accessibility Widget - Override para Admin y Coordinador al lado derecho */
+
 body.admin-page .minegate-acc-trigger,
 body.coordinador-page .minegate-acc-trigger {
     right: 25px !important;
@@ -349,7 +381,7 @@ body.coordinador-page .acc-widget-panel {
     left: auto !important;
 }
 
-/* Cursor grande */
+
 body.big-cursor,
 body.big-cursor * {
     cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 24 24'%3E%3Cpath fill='%23000000' stroke='%23ffffff' stroke-width='1.5' d='M5.5 3.21V20.8l4.86-4.86h6.78L5.5 3.21z'/%3E%3C/svg%3E") 0 0, auto !important;
@@ -360,7 +392,7 @@ body.big-cursor button {
     cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 24 24'%3E%3Cpath fill='%23000000' stroke='%23ffffff' stroke-width='1.5' d='M5.5 3.21V20.8l4.86-4.86h6.78L5.5 3.21z'/%3E%3C/svg%3E") 0 0, pointer !important;
 }
 
-/* Espaciado de letras */
+
 body.extra-spacing {
     letter-spacing: 2px !important;
 }
@@ -372,23 +404,23 @@ body.extra-spacing {
     left: 0;
     width: 100vw;
     height: 100vh;
-    /* Creamos una "ventana" transparente en medio de una pantalla oscura */
+    
     background: radial-gradient(circle at var(--mouse-x) var(--mouse-y),
             transparent 0%,
             transparent 50px,
             rgba(0, 0, 0, 0.5) 80px);
     z-index: 2147483647;
     pointer-events: none;
-    /* Permite hacer clic a través de la máscara */
+    
 }
 
 
-/* para el mapa */
+
 #map {
     height: 400px;
     width: 100%;
     border-radius: 15px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     z-index: 1;
-    /* Para que no se ponga encima del botón de accesibilidad */
+    
 }
