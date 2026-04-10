@@ -1,4 +1,4 @@
-from django import forms
+﻿from django import forms
 from .models import VisitaExterna
 
 
@@ -17,7 +17,6 @@ class VisitaExternaForm(forms.ModelForm):
             'cantidad_visitantes',
             'observacion'
         ]
-        # Widgets
         widgets = {
             'nombre': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -57,7 +56,6 @@ class VisitaExternaForm(forms.ModelForm):
                 'rows': 4
             })
         }
-        # Etiquetas 
         labels = {
             'nombre': 'Nombre de la Institución',
             'nombre_responsable': 'Nombre del Responsable',
@@ -69,7 +67,6 @@ class VisitaExternaForm(forms.ModelForm):
             'observacion': 'Observación'
         }
         
-    # Validaciones 
     
     def clean_telefono_responsable(self):
         """Validar que el teléfono contenga solo números"""

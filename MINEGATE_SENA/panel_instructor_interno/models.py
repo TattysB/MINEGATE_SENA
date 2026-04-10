@@ -1,4 +1,4 @@
-from django.core.validators import MaxValueValidator, MinValueValidator
+﻿from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -160,7 +160,6 @@ class Aprendiz(models.Model):
         default=''
     )
     
-    # Documentos requeridos
     documento_identidad = models.FileField(
         upload_to='aprendices/documentos/%Y/%m/',
         blank=True,
@@ -186,7 +185,6 @@ class Aprendiz(models.Model):
         verbose_name='Estado'
     )
     
-    # Estado de documentos para seguimiento en visitas
     estado_doc = models.CharField(
         max_length=20,
         choices=[

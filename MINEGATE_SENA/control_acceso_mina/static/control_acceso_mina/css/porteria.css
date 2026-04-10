@@ -1,6 +1,4 @@
-/* =============================================
-   CONTROL DE ACCESO A LA MINA - PORTERÍA
-   ============================================= */
+﻿
 
 :root {
   --sena-verde-primario: #39A900;
@@ -47,7 +45,7 @@
   }
 }
 
-/* ---------- Header ---------- */
+
 .porteria-header {
   display: flex;
   justify-content: space-between;
@@ -185,7 +183,7 @@
   margin-top: 2px;
 }
 
-/* ---------- Stats Cards ---------- */
+
 .porteria-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -301,7 +299,7 @@
   color: #64748b;
 }
 
-/* ---------- Scanner Input ---------- */
+
 .porteria-scanner-section {
   margin-bottom: 0;
 }
@@ -428,7 +426,7 @@
   transform: scale(0.97);
 }
 
-/* ---------- Feedback Area ---------- */
+
 .porteria-feedback {
   margin-bottom: 20px;
   border-radius: 14px;
@@ -537,7 +535,7 @@
   color: #fff;
 }
 
-/* ---------- Table Section ---------- */
+
 .porteria-table-section {
   background: #fff;
   border-radius: 18px;
@@ -704,7 +702,7 @@
   margin-bottom: 6px;
 }
 
-/* Badge de tipo */
+
 .badge-entrada {
   display: inline-block;
   background: var(--sena-verde-suave);
@@ -823,7 +821,7 @@
   color: #fff;
 }
 
-/* Row highlight animation */
+
 .porteria-table tbody tr.row-new {
   animation: rowHighlight 1.5s ease;
 }
@@ -878,7 +876,7 @@
   margin-top: 16px;
 }
 
-/* ---------- Loading Spinner ---------- */
+
 .scanner-loading {
   display: inline-block;
   width: 20px;
@@ -895,7 +893,7 @@
   }
 }
 
-/* ---------- Responsive ---------- */
+
 @media (max-width: 768px) {
   .porteria-page-shell {
     padding: 16px 12px 24px;
@@ -1079,7 +1077,7 @@
   }
 }
 
-/* ---------- QR Camera Scanner ---------- */
+
 .scanner-btn-camera {
   background: linear-gradient(135deg, var(--sena-verde-claro), var(--sena-verde-primario)) !important;
   margin-right: 8px;
@@ -1177,7 +1175,7 @@
   margin: 0;
 }
 
-/* Estilos internos de html5-qrcode para que se vea premium */
+
 #qrReaderContainer video {
   border-radius: 12px !important;
 }

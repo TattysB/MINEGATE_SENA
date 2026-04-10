@@ -1,5 +1,4 @@
-(function(){
-  // Inicializador reutilizable para la UI del calendario
+﻿(function(){
   function initCalendar(container){
     if(!container) return;
     const prev = container.querySelector('#prev');
@@ -8,27 +7,22 @@
     const month = parseInt(container.getAttribute('data-month'));
 
     function fetchMonth(y,m){
-      // construir URL absoluta relativa a /calendario/
       const url = new URL(window.location.origin + '/calendario/' + y + '/' + m + '/');
       return fetch(url, {headers: {'X-Requested-With':'XMLHttpRequest'}})
         .then(r => r.text());
     }
 
     function goTo(y,m){
-      // Si estamos dentro del panel principal (injected), usa AJAX
       const main = document.getElementById('mainContent');
       if(main){
         fetchMonth(y,m).then(html => {
           main.innerHTML = html;
-          // re-inicializar calendar en el nuevo contenido
           const page = main.querySelector('.calendar-page');
           const newContainer = main.querySelector('.calendar-card');
-          // cargar el script si es necesario
           if(window.initCalendar && newContainer){ window.initCalendar(newContainer); }
           if(window.initAvailabilityControls && page){ window.initAvailabilityControls(page); }
         }).catch(err => console.error(err));
       } else {
-        // caso normal: navegar a la URL completa
         window.location.href = '/calendario/' + y + '/' + m + '/';
       }
     }
@@ -47,10 +41,8 @@
     });
   }
 
-  // Exponer para que el panel pueda re-inicializar después de inyección
   window.initCalendar = initCalendar;
 
-  // Inicializador para los controles de disponibilidad (formulario)
   function initAvailabilityControls(container){
     var root = container || document;
     var form = root.querySelector('#availabilityForm');
@@ -401,7 +393,6 @@
         var state = getCellState(td);
         loadDayInspector(d, state);
 
-        // Días con reserva: solo mostrar panel de detalle, no permitir selección múltiple para guardado.
         if(state === 'pending' || state === 'occupied'){
           return;
         }
@@ -525,7 +516,6 @@
           });
           (json.available_dates || []).forEach(function(d){ avail.add(d); });
 
-          // Para cada celda visible del calendario: marcar disponible o deshabilitar
           root.querySelectorAll('table.calendar-table td[data-date]').forEach(function(td){
             if(td.classList.contains('other-month') || td.classList.contains('disabled')) return;
             if(td.classList.contains('pending') || td.classList.contains('occupied')) return;
@@ -559,7 +549,6 @@
       .catch(function(err){ console.error(err); alert('Error al guardar disponibilidades.'); });
     });
 
-    // initial state
     renderSelectedDates();
     renderRanges();
     renderDayEditorDisabled();
@@ -568,12 +557,10 @@
 
   window.initAvailabilityControls = initAvailabilityControls;
 
-  // Auto-init en carga normal de página
   document.addEventListener('DOMContentLoaded', function(){
     const container = document.querySelector('.calendar-card');
     const page = document.querySelector('.calendar-page');
     if(container) initCalendar(container);
-    // Inicializar controles de disponibilidad en carga normal
     if(page && window.initAvailabilityControls){ window.initAvailabilityControls(page); }
   });
 })();

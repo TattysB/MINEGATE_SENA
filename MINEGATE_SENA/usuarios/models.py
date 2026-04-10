@@ -1,4 +1,4 @@
-from django.db import models
+﻿from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -61,7 +61,6 @@ class PerfilUsuario(models.Model):
         return f"{self.user.first_name} {self.user.last_name}"
 
 
-# Señales para crear/actualizar perfil automáticamente
 @receiver(post_save, sender=User)
 def crear_perfil_usuario(sender, instance, created, **kwargs):
     """
@@ -69,13 +68,10 @@ def crear_perfil_usuario(sender, instance, created, **kwargs):
     Solo si el perfil no existe ya (evita duplicados con el formulario de registro)
     """
     if created:
-        # Solo crear si no existe ya un perfil para este usuario
         if not hasattr(instance, 'perfil'):
             try:
                 PerfilUsuario.objects.get(user=instance)
             except PerfilUsuario.DoesNotExist:
-                # Solo crear para usuarios que no vienen del registro
-                # (superusuarios creados desde consola, etc.)
                 pass
 
 @receiver(post_save, sender=User)

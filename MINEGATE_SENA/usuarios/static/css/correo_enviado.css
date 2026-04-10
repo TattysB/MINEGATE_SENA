@@ -1,6 +1,6 @@
-/* ===== ESTILOS DE CORREO ENVIADO ===== */
+﻿
 
-/* Animaciones de entrada */
+
 .recuperacion-container {
     animation: scaleIn 0.5s ease-out;
 }
@@ -16,7 +16,7 @@
     }
 }
 
-/* Animación del sobre */
+
 .success-icon {
     position: relative;
     margin-bottom: 20px;
@@ -45,7 +45,7 @@
     }
 }
 
-/* Círculo de éxito animado */
+
 .success-circle {
     width: 120px;
     height: 120px;
@@ -107,7 +107,7 @@
     }
 }
 
-/* Animación del header */
+
 .recuperacion-header {
     animation: fadeInUp 0.6s ease-out 0.5s both;
 }
@@ -123,7 +123,7 @@
     }
 }
 
-/* Info box animada */
+
 .info-box {
     animation: fadeInUp 0.6s ease-out 0.7s both;
     background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
@@ -147,7 +147,7 @@
     50% { transform: scale(1.1); }
 }
 
-/* Lista animada */
+
 ul {
     list-style: none;
     padding: 0;
@@ -197,7 +197,7 @@ ul li .bullet {
     box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
 }
 
-/* Botón animado */
+
 .btn-back {
     animation: fadeInUp 0.6s ease-out 1.4s both;
     position: relative;
@@ -225,7 +225,7 @@ ul li .bullet {
     box-shadow: 0 10px 30px rgba(46, 125, 50, 0.3);
 }
 
-/* Partículas flotantes */
+
 .particles {
     position: fixed;
     top: 0;

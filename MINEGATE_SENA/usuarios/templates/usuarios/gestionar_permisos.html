@@ -1,4 +1,4 @@
-{% extends "core/panel_administrativo.html" %}
+﻿{% extends "core/panel_administrativo.html" %}
 {% load static %}
  {% block content %} 
 <link rel="stylesheet" href="{% static 'css/gestionar_permisos.css' %}?v=20260325a" />
@@ -335,7 +335,7 @@
     </div>
   </div>
 
-  <!-- Mensajes -->
+  
   {% if messages %}
   <div class="mensajes">
     {% for message in messages %}
@@ -353,7 +353,7 @@
   </div>
   {% endif %}
 
-  <!-- Botón Crear Usuario -->
+  
   <div class="seccion-acciones-principales" style="margin-bottom: 1.5rem; display: flex; justify-content: flex-end;">
     <a href="{% url 'usuarios:crear_usuario_permisos' %}" class="btn-crear-usuario">
       <i class="ri-user-add-line"></i>
@@ -361,7 +361,7 @@
     </a>
   </div>
 
-  <!-- Tarjetas de Estadísticas -->
+  
   <div class="seccion-estadisticas">
     <div class="titulo-seccion">Estadísticas de Usuarios</div>
     <div class="grid-estadisticas">
@@ -380,7 +380,7 @@
     </div>
   </div>
 
-  <!-- Filtros y Búsqueda -->
+  
   <div class="seccion-filtros">
     <div class="titulo-seccion">Filtros</div>
     <form
@@ -439,7 +439,7 @@
     </form>
   </div>
 
-  <!-- Tabla de Usuarios -->
+  
   <div class="seccion-tabla">
     <div class="titulo-seccion">
       Lista de Usuarios{% if perfiles %} ({{ perfiles.count }}){% endif %}
@@ -539,9 +539,9 @@
     {% endif %}
   </div>
 
-  <!-- Modales -->
   
-  <!-- Modal Eliminar Usuario -->
+  
+  
   <div id="modalEliminar" class="modal">
     <div class="modal-contenido">
       <div class="modal-encabezado modal-encabezado-eliminar">
@@ -587,7 +587,7 @@
     </div>
   </div>
 
-  <!-- Modal Toggle Estado Usuario -->
+  
   <div id="modalToggleEstado" class="modal">
     <div class="modal-contenido">
       <div class="modal-encabezado" id="encabezadoToggle">
@@ -619,10 +619,10 @@
     </div>
   </div>
 
-  <!-- Script para Modal Unificado -->
+  
   <script src="{% static 'core/js/custom_modal.js' %}?v=20260320a"></script>
 
-  <!-- Script para Gestión de Permisos -->
+  
   <script>
     let usuarioIdEliminar = null;
     let usuarioIdToggle = null;
@@ -1161,7 +1161,7 @@
     }
   </script>
 
-  <!-- Modal Ver Usuario -->
+  
   <div id="modalVerUsuario" class="modal" style="display:none;">
     <div class="modal-contenido" style="max-width:600px;width:100%;max-height:90vh;overflow-y:auto;">
       <div class="modal-encabezado" style="background:linear-gradient(135deg,#00b000,#185027);">
@@ -1181,7 +1181,7 @@
     </div>
   </div>
 
-  <!-- Modal Editar Usuario -->
+  
   <div id="modalEditarUsuario" class="modal" style="display:none;">
     <div class="modal-contenido" style="max-width:520px;width:100%;">
       <div class="modal-encabezado" style="background:linear-gradient(135deg,#1976d2,#1565c0);">

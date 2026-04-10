@@ -1,4 +1,4 @@
-{% load static %}
+﻿{% load static %}
 <!doctype html>
 <html lang="es">
 <head>
@@ -18,6 +18,10 @@
   <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
   <style>
     /* Notificaciones Coordinador - Responsive */
+    .notification-wrapper:hover {
+      transform: none !important;
+    }
+
     @media (max-width: 768px) {
       #coordNotifDropdown {
         width: min(96vw, 380px) !important;
@@ -104,7 +108,7 @@
       <div class="topbar-right">
         <div class="topbar-actions">
           <div class="notification-wrapper" id="coordNotificationWrapper">
-            <button id="coordNotifBtn" class="notification-btn" aria-label="Notificaciones coordinador" style="background:white;border:none;padding:8px;border-radius:10px;display:flex;align-items:center;justify-content:center;min-width:44px;min-height:40px;">
+            <button id="coordNotifBtn" type="button" class="notification-btn" aria-label="Notificaciones coordinador" title="Abrir notificaciones" style="background:white;border:none;padding:8px;border-radius:10px;display:flex;align-items:center;justify-content:center;min-width:44px;min-height:40px;">
               <i class="ri-notification-3-line notification-icon" style="color:#10b981;font-size:20px;background:transparent;border-radius:0;display:block;"></i>
               <span id="coordNotifBadge" class="notification-badge" style="display:none;background:#ef4444;color:white;border-radius:50%;min-width:20px;height:20px;font-size:12px;font-weight:700;line-height:20px;text-align:center;padding:0 5px;margin-left:8px;">0</span>
             </button>
@@ -229,7 +233,7 @@
     }
   </script>
   {% block extra_js %}{% endblock %}
-  <!-- Modal Cerrar Sesión -->
+  
   <div id="modalCerrarSesion" class="modal">
     <div class="modal-contenido">
       <div class="modal-encabezado">
@@ -260,7 +264,7 @@
     </div>
   </div>
 
-  <!-- Modal Mi Perfil -->
+  
   <div id="modalPerfil" class="modal-perfil-overlay" style="display: none;">
     <div class="modal-perfil-card" onclick="event.stopPropagation()">
       <div class="modal-header-perfil">
@@ -294,7 +298,7 @@
     </div>
   </div>
 
-  <!-- Modal Personalizado de Alertas/Confirmaciones -->
+  
   <div id="customModal" class="cm-overlay">
     <div class="cm-box" id="cmBox">
       <div class="cm-icon" id="cmIcon"></div>
@@ -307,7 +311,52 @@
     </div>
   </div>
 
-  <!-- Elementos de accesibilidad -->
+  <style>
+    .btn-ayuda-manual {
+      position: fixed;
+      right: 14px;
+      bottom: 88px;
+      width: 38px;
+      height: 38px;
+      border-radius: 999px;
+      background: #00af00;
+      color: #ffffff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+      z-index: 1100;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .btn-ayuda-manual:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+      color: #ffffff;
+    }
+
+    @media (max-width: 768px) {
+      .btn-ayuda-manual {
+        right: 10px;
+        bottom: 84px;
+        width: 36px;
+        height: 36px;
+      }
+    }
+  </style>
+
+  <a
+    href="{% static 'pdf/MANUAL DE USUARIO SICAM - ADMINISTRADOR.pdf' %}"
+    download="MANUAL DE USUARIO SICAM - ADMINISTRADOR.pdf"
+    class="btn-ayuda-manual"
+    title="Descargar manual de usuario"
+    aria-label="Descargar manual de usuario del panel de coordinador"
+  >
+    <i class="ri-question-line" aria-hidden="true"></i>
+  </a>
+
+  
   <div class="minegate-acc-trigger" onclick="toggleAccPanel()" title="Opciones de Accesibilidad">
     <i class="fas fa-universal-access fa-2x"></i>
   </div>
@@ -511,6 +560,24 @@
 
       if (dropdown) dropdown.addEventListener('click', function (e) { e.stopPropagation(); });
 
+      function isDropdownOpen() {
+        return dropdown && dropdown.getAttribute('aria-hidden') === 'false';
+      }
+
+      function closeDropdown() {
+        if (!dropdown) return;
+        dropdown.setAttribute('aria-hidden', 'true');
+        dropdown.style.display = 'none';
+      }
+
+      function openDropdown() {
+        if (!dropdown) return;
+        dropdown.setAttribute('aria-hidden', 'false');
+        dropdown.style.display = 'block';
+        posicionarDropdown();
+        refreshNotificaciones();
+      }
+
       // Use same read key as admin so reads are consistent across panels
       const READ_KEY = 'adminNotifReadIds_v1';
       function getReadSet() {
@@ -628,7 +695,7 @@
         const viewportHeight = window.innerHeight;
         
         // Calcular posición X
-        let left = btnRect.left - 10;
+        let left = btnRect.left - 180;
         let width = 360;
         
         // En móvil, ajustar ancho
@@ -637,7 +704,7 @@
           left = Math.max(8, (viewportWidth - width) / 2);
         } else if (viewportWidth <= 768) {
           width = Math.min(380, viewportWidth - 20);
-          left = Math.max(10, Math.min(left, viewportWidth - width - 10));
+          left = Math.max(10, Math.min(btnRect.left - 140, viewportWidth - width - 10));
         } else {
           left = Math.max(10, Math.min(left, viewportWidth - width - 10));
         }
@@ -665,24 +732,30 @@
       if(filterInternas) filterInternas.addEventListener('click', function(){ window._coordNotifCurrentFilter='internas'; setActiveFilterBtn(this); renderFilter('internas'); });
       if(filterExternas) filterExternas.addEventListener('click', function(){ window._coordNotifCurrentFilter='externas'; setActiveFilterBtn(this); renderFilter('externas'); });
 
-      if(btn) btn.addEventListener('click', function(e){ 
-        e.stopPropagation(); 
-        if(dropdown.getAttribute('aria-hidden')==='false'){ 
-          dropdown.setAttribute('aria-hidden','true'); 
-          dropdown.style.display='none'; 
-        } else { 
-          dropdown.setAttribute('aria-hidden','false'); 
-          dropdown.style.display='block'; 
-          posicionarDropdown();
-          refreshNotificaciones(); 
-        } 
+      if (btn) btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (isDropdownOpen()) {
+          closeDropdown();
+        } else {
+          openDropdown();
+        }
       });
-      document.addEventListener('click', function(){ if(dropdown) { dropdown.setAttribute('aria-hidden','true'); dropdown.style.display='none'; } });
+
+      document.addEventListener('click', function (e) {
+        if (!dropdown || !btn) return;
+        if (btn.contains(e.target) || dropdown.contains(e.target)) return;
+        closeDropdown();
+      });
+
       window.addEventListener('resize', posicionarDropdown);
 
       // initial
       refreshNotificaciones();
-      setInterval(refreshNotificaciones, 30000);
+      if (window.__coordNotifIntervalId) {
+        clearInterval(window.__coordNotifIntervalId);
+      }
+      window.__coordNotifIntervalId = setInterval(refreshNotificaciones, 30000);
     })();
   </script>
 </body>

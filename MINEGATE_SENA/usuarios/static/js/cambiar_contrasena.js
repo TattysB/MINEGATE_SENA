@@ -1,4 +1,4 @@
-function checkPasswordStrength(password) {
+﻿function checkPasswordStrength(password) {
   const requirements = {
     length: password.length >= 8,
     uppercase: /[A-Z]/.test(password),

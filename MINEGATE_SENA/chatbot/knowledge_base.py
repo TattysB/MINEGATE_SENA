@@ -1,4 +1,4 @@
-BASE_FAQ = [
+﻿BASE_FAQ = [
     {
         "pregunta": "Que es SICAM?",
         "respuesta": (

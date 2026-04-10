@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect, get_object_or_404
+﻿from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate, update_session_auth_hash
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import Group, User
@@ -16,7 +16,6 @@ from django.conf import settings
 from .forms import LoginForm, RegistroForm, EditarUsuarioForm, EditarPerfilForm
 from .models import PerfilUsuario
 
-# ==================== VISTAS DE AUTENTICACIÓN ====================
 
 AUTH_ADMIN_MESSAGE_TAG = "auth_admin"
 
@@ -76,91 +75,58 @@ def login_view(request):
     Vista para el inicio de sesión de usuarios
     Verifica que el usuario esté aprobado antes de permitir el acceso
     """
-    # Si el usuario ya está autenticado, redirigir según rol
     if request.user.is_authenticated:
         return redirect(resolver_panel_por_rol(request.user))
 
-    if request.method == "POST":
-        form = LoginForm(request, data=request.POST)
+    form = LoginForm(request, data=request.POST or None)
 
-        # Obtener valores directamente del POST para validación personalizada
-        username = request.POST.get("username", "").strip()
-        password = request.POST.get("password", "")
-        remember_me = request.POST.get("remember_me", False)
+    if request.method == "POST" and form.is_valid():
+        username = form.cleaned_data["username"].strip()
+        password = form.cleaned_data["password"]
+        remember_me = form.cleaned_data.get("remember_me", False)
 
-        # Validar campos vacíos
-        if not username and not password:
+        user_exists = User.objects.filter(username=username).first()
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+            if user.is_active:
+                login(request, user)
+
+                if not remember_me:
+                    request.session.set_expiry(0)
+                else:
+                    request.session.set_expiry(60 * 60 * 24 * 30)
+
+                request.session["welcome_name"] = (
+                    user.get_full_name() or user.username
+                )
+
+                next_url = request.GET.get("next") or resolver_panel_por_rol(user)
+                request.session["redirect_after_welcome"] = next_url
+
+                messages.success(
+                    request,
+                    f"¡Bienvenido {user.get_full_name() or user.username}!",
+                    extra_tags=AUTH_ADMIN_MESSAGE_TAG,
+                )
+                return redirect("usuarios:bienvenida")
             messages.error(
                 request,
-                "Ingresa tu número de documento y contraseña.",
+                "Esta cuenta ha sido desactivada. Contacta al administrador.",
                 extra_tags=AUTH_ADMIN_MESSAGE_TAG,
             )
-        elif not username:
+        elif user_exists:
             messages.error(
                 request,
-                "Ingresa tu número de documento.",
-                extra_tags=AUTH_ADMIN_MESSAGE_TAG,
-            )
-        elif not password:
-            messages.error(
-                request,
-                "Ingresa tu contraseña.",
+                "Contraseña incorrecta.",
                 extra_tags=AUTH_ADMIN_MESSAGE_TAG,
             )
         else:
-            # Verificar si el usuario existe
-            user_exists = User.objects.filter(username=username).first()
-
-            # Autenticar usuario
-            user = authenticate(request, username=username, password=password)
-
-            if user is not None:
-                if user.is_active:
-                    login(request, user)
-
-                    # Configurar duración de la sesión
-                    if not remember_me:
-                        request.session.set_expiry(0)
-                    else:
-                        request.session.set_expiry(60 * 60 * 24 * 30)
-
-                    # Guardar el nombre completo en la sesión
-                    request.session["welcome_name"] = (
-                        user.get_full_name() or user.username
-                    )
-
-                    # Redirigir a la página de bienvenida según rol
-                    next_url = request.GET.get("next") or resolver_panel_por_rol(user)
-                    request.session["redirect_after_welcome"] = next_url
-
-                    messages.success(
-                        request,
-                        f"¡Bienvenido {user.get_full_name() or user.username}!",
-                        extra_tags=AUTH_ADMIN_MESSAGE_TAG,
-                    )
-                    return redirect("usuarios:bienvenida")
-                else:
-                    messages.error(
-                        request,
-                        "Esta cuenta ha sido desactivada. Contacta al administrador.",
-                        extra_tags=AUTH_ADMIN_MESSAGE_TAG,
-                    )
-            else:
-                # Mensajes específicos según el error
-                if user_exists:
-                    messages.error(
-                        request,
-                        "Contraseña incorrecta.",
-                        extra_tags=AUTH_ADMIN_MESSAGE_TAG,
-                    )
-                else:
-                    messages.error(
-                        request,
-                        "El número de documento no está registrado.",
-                        extra_tags=AUTH_ADMIN_MESSAGE_TAG,
-                    )
-    else:
-        form = LoginForm()
+            messages.error(
+                request,
+                "El número de documento no está registrado.",
+                extra_tags=AUTH_ADMIN_MESSAGE_TAG,
+            )
 
     context = {"form": form, "titulo": "Iniciar Sesión"}
     return render(request, "usuarios/login.html", context)
@@ -181,7 +147,6 @@ def logout_view(request):
     return redirect("usuarios:login")
 
 
-# ==================== PANEL DE ADMINISTRACIÓN ====================
 
 
 def es_staff(user):
@@ -195,15 +160,12 @@ def lista_usuarios_view(request):
     """
     Vista para listar todos los usuarios
     """
-    # Obtener parámetros de búsqueda y filtrado
     busqueda = request.GET.get("buscar", "")
     filtro_activo = request.GET.get("activo", "")
     filtro_staff = request.GET.get("staff", "")
 
-    # Query base
     usuarios = User.objects.select_related("perfil").all()
 
-    # Aplicar filtros
     if busqueda:
         usuarios = usuarios.filter(
             Q(username__icontains=busqueda)
@@ -219,7 +181,6 @@ def lista_usuarios_view(request):
     if filtro_staff:
         usuarios = usuarios.filter(is_staff=filtro_staff == "true")
 
-    # Ordenar
     usuarios = usuarios.order_by("-date_joined")
 
     context = {
@@ -232,7 +193,6 @@ def lista_usuarios_view(request):
     return render(request, "usuarios/panel_admin/lista_usuarios.html", context)
 
 
-# ==================== REGISTRO DE NUEVO USUARIO ====================
 
 
 @login_required
@@ -259,7 +219,6 @@ def crear_usuario_view(request):
     return render(request, "usuarios/panel_admin/crear_usuario.html", context)
 
 
-# ==================== EDITAR USUARIO ====================
 
 
 @login_required
@@ -270,7 +229,6 @@ def editar_usuario_view(request, user_id):
     """
     usuario = get_object_or_404(User, id=user_id)
 
-    # Determinar URL de retorno
     next_url = request.GET.get("next", request.POST.get("next", ""))
 
     if request.method == "POST":
@@ -285,7 +243,6 @@ def editar_usuario_view(request, user_id):
             messages.success(
                 request, f"Usuario {usuario.get_full_name()} actualizado exitosamente."
             )
-            # Redirigir a la URL de retorno o a gestionar_permisos
             if next_url:
                 return redirect(next_url)
             return redirect("usuarios:gestionar_permisos")
@@ -307,7 +264,6 @@ def editar_usuario_view(request, user_id):
     return render(request, "usuarios/editar_usuario.html", context)
 
 
-# ==================== ELIMINAR USUARIO ====================
 
 
 @login_required
@@ -318,12 +274,10 @@ def eliminar_usuario_view(request, user_id):
     """
     usuario = get_object_or_404(User, id=user_id)
 
-    # No permitir eliminar al superusuario
     if usuario.is_superuser:
         messages.error(request, "No se puede eliminar un superusuario.")
         return redirect("usuarios:lista_usuarios")
 
-    # No permitir que se elimine a sí mismo
     if usuario == request.user:
         messages.error(request, "No puedes eliminarte a ti mismo.")
         return redirect("usuarios:lista_usuarios")
@@ -347,7 +301,6 @@ def perfil_view(request):
     """
     usuario = request.user
 
-    # Crear el perfil si no existe
     perfil, created = PerfilUsuario.objects.get_or_create(user=usuario)
 
     if request.method == "POST":
@@ -361,7 +314,6 @@ def perfil_view(request):
                 form_usuario.save()
                 perfil_actualizado = form_perfil.save()
 
-                # Recortar imagen si vienen coordenadas
                 try:
                     crop_x = int(float(request.POST.get("crop_x", 0)))
                     crop_y = int(float(request.POST.get("crop_y", 0)))
@@ -442,7 +394,6 @@ def cambiar_contraseña_view(request):
     return render(request, "usuarios/cambiar_contrasena.html", context)
 
 
-# ==================== VISTA DE BIENVENIDA ====================
 
 
 @login_required
@@ -458,13 +409,11 @@ def bienvenida_view(request):
         "redirect_after_welcome", resolver_panel_por_rol(request.user)
     )
 
-    # Convertir el nombre de la URL a una URL absoluta
     try:
         redirect_url = reverse(redirect_url_name)
     except:
         redirect_url = reverse(resolver_panel_por_rol(request.user))
 
-    # Limpiar las variables de sesión
     if "welcome_name" in request.session:
         del request.session["welcome_name"]
     if "redirect_after_welcome" in request.session:
@@ -477,7 +426,6 @@ def bienvenida_view(request):
     return render(request, "usuarios/bienvenida.html", context)
 
 
-# ==================== VISTAS DE RECUPERACIÓN DE CONTRASEÑA ====================
 
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
@@ -496,15 +444,12 @@ def password_reset_request_view(request):
         if form.is_valid():
             email = form.cleaned_data["email"]
 
-            # Buscar usuarios con ese email
             users = User.objects.filter(email__iexact=email)
 
             for user in users:
-                # Generar token y uid
                 token = default_token_generator.make_token(user)
                 uid = urlsafe_base64_encode(force_bytes(user.pk))
 
-                # Construir URL de reset
                 reset_url = request.build_absolute_uri(
                     reverse(
                         "usuarios:restablecer_contraseña",
@@ -512,20 +457,17 @@ def password_reset_request_view(request):
                     )
                 )
 
-                # Preparar contexto para el template HTML
                 email_context = {
                     "nombre": user.first_name or user.username,
                     "reset_url": reset_url,
                     "year": datetime.now().year,
                 }
 
-                # Renderizar template HTML
                 html_content = render_to_string(
                     "usuarios/email_recuperacion.html", email_context
                 )
                 text_content = strip_tags(html_content)
 
-                # Enviar correo HTML
                 subject = "🔐 Recuperación de Contraseña - MineGate SENA"
                 email = EmailMultiAlternatives(
                     subject=subject,
@@ -592,7 +534,6 @@ def password_reset_complete_view(request):
     return render(request, "usuarios/contrasena_actualizada.html")
 
 
-# ==================== VISTAS DE EDITAR PERFIL DE ADMINISRADOR ====================
 
 
 from django.http import HttpResponse
@@ -629,7 +570,6 @@ class PerfilUsuarioUpdateView(generic.UpdateView):
         return render(request, "usuarios/contrasena_actualizada.html")
 
 
-# ==================== VISTAS DE GESTIÓN DE PERMISOS ====================
 
 
 def es_superusuario(user):
@@ -644,22 +584,18 @@ def gestionar_permisos_view(request):
     Vista para que el administrador gestione los permisos de acceso de los usuarios
     Solo accesible por superusuarios
     """
-    # Obtener filtros
     filtro_actual = request.GET.get("filtro", "todos")
     buscar = request.GET.get("buscar", "")
 
-    # Obtener todos los perfiles (excluyendo superusuarios)
     perfiles = PerfilUsuario.objects.select_related("user").exclude(
         user__is_superuser=True
     )
 
-    # Aplicar filtros
     if filtro_actual == "activos":
         perfiles = perfiles.filter(user__is_active=True)
     elif filtro_actual == "inactivos":
         perfiles = perfiles.filter(user__is_active=False)
 
-    # Aplicar búsqueda
     if buscar:
         perfiles = perfiles.filter(
             Q(user__username__icontains=buscar)
@@ -669,14 +605,11 @@ def gestionar_permisos_view(request):
             | Q(documento__icontains=buscar)
         )
 
-    # Ordenar por fecha de registro
     perfiles = perfiles.order_by("-user__date_joined")
 
-    # Agregar etiqueta de rol para mostrar en la tabla.
     for perfil in perfiles:
         perfil.rol_label = _etiqueta_rol_usuario(perfil.user)
 
-    # Estadísticas
     total_usuarios = PerfilUsuario.objects.exclude(user__is_superuser=True).count()
     usuarios_activos = (
         PerfilUsuario.objects.filter(user__is_active=True)
@@ -716,12 +649,10 @@ def eliminar_usuario_permisos_view(request, usuario_id):
 
     usuario = get_object_or_404(User, id=usuario_id)
 
-    # No permitir eliminar superusuarios
     if usuario.is_superuser:
         messages.error(request, "❌ No se puede eliminar un superusuario.")
         return redirect("core:panel_administrativo")
 
-    # No permitir que se elimine a sí mismo
     if usuario == request.user:
         messages.error(request, "❌ No puedes eliminarte a ti mismo.")
         return redirect("core:panel_administrativo")
@@ -729,14 +660,12 @@ def eliminar_usuario_permisos_view(request, usuario_id):
     if request.method == "POST":
         nombre_usuario = usuario.get_full_name() or usuario.username
 
-        # Eliminar el usuario (esto también eliminará el perfil por CASCADE)
         usuario.delete()
 
         messages.success(
             request, f"🗑️ Usuario {nombre_usuario} eliminado permanentemente."
         )
 
-        # Si es AJAX, retornar JSON
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return JsonResponse({"success": True, "message": "Usuario eliminado"})
 
@@ -752,22 +681,18 @@ def gestionar_permisos_ajax_view(request):
     """
     from django.http import JsonResponse
 
-    # Obtener filtros
     filtro_actual = request.GET.get("filtro", "todos")
     buscar = request.GET.get("buscar", "")
 
-    # Obtener todos los perfiles (excluyendo superusuarios)
     perfiles = PerfilUsuario.objects.select_related("user").exclude(
         user__is_superuser=True
     )
 
-    # Aplicar filtros
     if filtro_actual == "activos":
         perfiles = perfiles.filter(user__is_active=True)
     elif filtro_actual == "inactivos":
         perfiles = perfiles.filter(user__is_active=False)
 
-    # Aplicar búsqueda
     if buscar:
         perfiles = perfiles.filter(
             Q(user__username__icontains=buscar)
@@ -777,10 +702,8 @@ def gestionar_permisos_ajax_view(request):
             | Q(documento__icontains=buscar)
         )
 
-    # Ordenar por fecha de registro
     perfiles = perfiles.order_by("-user__date_joined")
 
-    # Estadísticas
     total_usuarios = PerfilUsuario.objects.exclude(user__is_superuser=True).count()
     usuarios_activos = (
         PerfilUsuario.objects.filter(user__is_active=True)
@@ -793,7 +716,6 @@ def gestionar_permisos_ajax_view(request):
         .count()
     )
 
-    # Preparar datos de usuarios
     usuarios_data = []
     for perfil in perfiles:
         usuarios_data.append(
@@ -823,7 +745,6 @@ def gestionar_permisos_ajax_view(request):
     )
 
 
-# ==================== CREAR USUARIO DESDE GESTIÓN DE PERMISOS ====================
 
 
 @login_required(login_url="usuarios:login")
@@ -837,26 +758,25 @@ def crear_usuario_permisos_view(request):
 
     if request.method == "POST":
         post_data = request.POST.copy()
-        # El formulario usa documento como username internamente.
-        # Lo seteamos desde la vista para evitar errores de validación del campo oculto.
         if not post_data.get("username"):
             post_data["username"] = post_data.get("documento", "")
 
         form = RegistroForm(post_data)
 
-        # Obtener si el usuario debe estar activo
         usuario_activo = request.POST.get("usuario_activo", "on") == "on"
         rol_usuario = request.POST.get("rol_usuario", "sst")
-        if rol_usuario == "administrador":
+
+        roles_validos = {"administrador", "sst", "coordinador"}
+        if rol_usuario not in roles_validos:
             rol_usuario = "sst"
 
         if form.is_valid():
             user = form.save(commit=False)
             user.is_active = usuario_activo
-            user.is_staff = rol_usuario == "sst"
+            user.is_superuser = rol_usuario == "administrador"
+            user.is_staff = rol_usuario in {"administrador", "sst"}
             user.save()
 
-            # Obtener o crear el perfil
             from .models import PerfilUsuario
 
             try:
@@ -868,7 +788,6 @@ def crear_usuario_permisos_view(request):
                     telefono=form.cleaned_data.get("telefono", ""),
                 )
 
-            # Limpiar grupos de rol y asignar el nuevo
             user.groups.remove(*Group.objects.filter(name__in=["coordinador", "sst"]))
             if rol_usuario == "coordinador":
                 group_coordinador, _ = Group.objects.get_or_create(name="coordinador")
@@ -877,7 +796,12 @@ def crear_usuario_permisos_view(request):
                 group_sst, _ = Group.objects.get_or_create(name="sst")
                 user.groups.add(group_sst)
 
-            rol_mostrado = "SST" if rol_usuario == "sst" else "Coordinador"
+            if rol_usuario == "administrador":
+                rol_mostrado = "Administrador"
+            elif rol_usuario == "sst":
+                rol_mostrado = "SST"
+            else:
+                rol_mostrado = "Coordinador"
 
             messages.success(
                 request,
@@ -885,7 +809,6 @@ def crear_usuario_permisos_view(request):
             )
             return redirect("usuarios:gestionar_permisos")
         else:
-            # Exponer errores concretos para evitar el mensaje genérico de "campo faltante".
             for campo, errores in form.errors.items():
                 etiqueta = "General" if campo == "__all__" else campo.replace("_", " ").title()
                 if campo in form.fields and form.fields[campo].label:
@@ -911,7 +834,6 @@ def crear_usuario_permisos_view(request):
     return render(request, "usuarios/crear_usuario_permisos.html", context)
 
 
-# ==================== VER DETALLE DE USUARIO ====================
 
 
 @login_required(login_url="usuarios:login")
@@ -928,7 +850,6 @@ def detalle_usuario_permisos_view(request, usuario_id):
     except PerfilUsuario.DoesNotExist:
         perfil = None
 
-    # Si es una petición AJAX, retornar JSON
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         datos_usuario = {
             "id": usuario.id,
@@ -965,7 +886,6 @@ def detalle_usuario_permisos_view(request, usuario_id):
 
         return JsonResponse({"success": True, "usuario": datos_usuario})
 
-    # Si no es AJAX, renderizar template
     context = {
         "usuario": usuario,
         "perfil": perfil,
@@ -976,7 +896,6 @@ def detalle_usuario_permisos_view(request, usuario_id):
     return render(request, "usuarios/detalle_usuario_permisos.html", context)
 
 
-# ==================== EDITAR USUARIO (AJAX MODAL) ====================
 
 
 @login_required(login_url="usuarios:login")
@@ -1021,7 +940,6 @@ def editar_usuario_ajax_view(request, usuario_id):
         elif User.objects.exclude(pk=usuario.pk).filter(email__iexact=email).exists():
             errores["email"] = "Este correo ya está en uso por otro usuario."
 
-        # Cambio de contraseña opcional: solo aplica si se diligencia alguno de los campos.
         if password1 or password2:
             if not password1 or not password2:
                 errores["password1"] = "Debes ingresar y confirmar la nueva contraseña."
@@ -1063,7 +981,6 @@ def editar_usuario_ajax_view(request, usuario_id):
     )
 
 
-# ==================== CAMBIAR ESTADO ACTIVO/INACTIVO ====================
 
 
 @login_required(login_url="usuarios:login")
@@ -1074,7 +991,6 @@ def toggle_estado_usuario_view(request, usuario_id):
     """
     usuario = get_object_or_404(User, id=usuario_id)
 
-    # No permitir cambiar estado de superusuarios
     if usuario.is_superuser:
         messages.error(request, "❌ No se puede cambiar el estado de un superusuario.")
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
@@ -1086,7 +1002,6 @@ def toggle_estado_usuario_view(request, usuario_id):
             )
         return redirect("usuarios:gestionar_permisos")
 
-    # No permitir que se desactive a sí mismo
     if usuario == request.user:
         messages.error(request, "❌ No puedes desactivar tu propia cuenta.")
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
@@ -1096,7 +1011,6 @@ def toggle_estado_usuario_view(request, usuario_id):
         return redirect("usuarios:gestionar_permisos")
 
     if request.method == "POST":
-        # Toggle el estado
         usuario.is_active = not usuario.is_active
         usuario.save()
 

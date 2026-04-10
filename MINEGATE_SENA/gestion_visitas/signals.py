@@ -1,4 +1,4 @@
-"""
+﻿"""
 Signals para manejar eventos automáticos de las visitas.
 Dispara la generación y envío de QR cuando un asistente es aprobado.
 """
@@ -206,18 +206,15 @@ def generar_qr_asistente_interno(sender, instance, created, update_fields, **kwa
     Signal que se dispara cuando se cambia el estado de un asistente interno
     a "documentos_aprobados" y la visita ya esta "confirmada".
     """
-    # Verificar si es una actualización del estado
     if update_fields and 'estado' not in update_fields:
         return
     
-    # Verificar estado aprobado, visita confirmada y que no exista QR previo
     if (instance.estado == 'documentos_aprobados' and 
         instance.visita.estado == 'confirmada' and
         not instance.qr_generado and 
         instance.correo):
         
         try:
-            # Generar QR y enviar por correo
             generador = GeneradorQRPDF(
                 asistente=instance,
                 visita=instance.visita,
@@ -225,11 +222,9 @@ def generar_qr_asistente_interno(sender, instance, created, update_fields, **kwa
             )
             
             if generador.enviar_por_email():
-                # Actualizar campos de registro
                 instance.qr_generado = True
                 instance.fecha_envio_qr = timezone.now()
                 instance.email_qr_enviado = True
-                # Usar update para evitar recursión
                 AsistenteVisitaInterna.objects.filter(pk=instance.pk).update(
                     qr_generado=True,
                     fecha_envio_qr=timezone.now(),
@@ -249,18 +244,15 @@ def generar_qr_asistente_externo(sender, instance, created, update_fields, **kwa
     Signal que se dispara cuando se cambia el estado de un asistente externo
     a "documentos_aprobados" y la visita ya esta "confirmada".
     """
-    # Verificar si es una actualización del estado
     if update_fields and 'estado' not in update_fields:
         return
     
-    # Verificar estado aprobado, visita confirmada y que no exista QR previo
     if (instance.estado == 'documentos_aprobados' and 
         instance.visita.estado == 'confirmada' and
         not instance.qr_generado and 
         instance.correo):
         
         try:
-            # Generar QR y enviar por correo
             generador = GeneradorQRPDF(
                 asistente=instance,
                 visita=instance.visita,
@@ -268,11 +260,9 @@ def generar_qr_asistente_externo(sender, instance, created, update_fields, **kwa
             )
             
             if generador.enviar_por_email():
-                # Actualizar campos de registro
                 instance.qr_generado = True
                 instance.fecha_envio_qr = timezone.now()
                 instance.email_qr_enviado = True
-                # Usar update para evitar recursión
                 AsistenteVisitaExterna.objects.filter(pk=instance.pk).update(
                     qr_generado=True,
                     fecha_envio_qr=timezone.now(),

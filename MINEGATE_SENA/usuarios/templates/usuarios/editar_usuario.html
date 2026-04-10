@@ -1,4 +1,4 @@
-{%extends 'core/panel_administrativo.html' %}
+﻿{%extends 'core/panel_administrativo.html' %}
 {% load bootstrap5 %}
 {% load static %}
 
@@ -8,12 +8,12 @@
 <link rel="stylesheet" href="{% static 'css/editar_usuario.css' %}" />
 {% endblock %}
 {% block content %}
-<!-- Main Content -->
+
 <main class="main-content">
     <div class="modal-edit-overlay">
         <div class="modal-edit-card">
 
-            <!-- Modal Header -->
+            
             <div class="modal-edit-header">
                 <h3 class="modal-edit-title">{% if es_perfil_propio %}Editar Perfil{% else %}Editar Usuario{% endif %}
                 </h3>
@@ -22,7 +22,7 @@
                 </a>
             </div>
 
-            <!-- Modal Body (Form) -->
+            
             <div class="modal-edit-body">
                 {% if messages %}
                 <div class="alerts-container">
@@ -50,7 +50,7 @@
                     {% csrf_token %}
 
                     <div class="modal-edit-flex-container">
-                        <!-- Avatar Profile Header -->
+                        
                         <div class="profile-header-card">
                             <div class="profile-image-section">
                                 <div id="perfilActualInfo"
@@ -66,7 +66,7 @@
                                     <p class="profile-email-edit">{{ usuario.email }}</p>
                                 </div>
 
-                                <!-- Mostrar el cropper luego de seleccionar archivo -->
+                                
                                 <div id="cropperWrapper"
                                     style="display:none; width:100%; max-width:400px; margin: 0 auto;">
                                     <p style="font-size:0.9rem; color:#6c757d; margin-bottom:8px;">Ajusta tu foto de
@@ -93,7 +93,7 @@
                             </div>
                         </div>
 
-                        <!-- Personal Information Form -->
+                        
                         <div class="form-section-edit-container">
                             <div class="form-section-edit">
                                 <h4 class="section-title-edit">Información Personal</h4>
@@ -133,7 +133,7 @@
                                     </div>
                                     {% endif %}
 
-                                    <!-- Document or Role (Static as per design, but keeping form fields if they exist) -->
+                                    
                                     {% if form_perfil.documento %}
                                     <div class="form-group-edit">
                                         <label class="form-label-edit">{{ form_perfil.documento.label }}</label>
@@ -145,7 +145,7 @@
                                     {% endif %}
                                 </div>
                             </div>
-                            <!-- Actions -->
+                            
                             <div class="form-actions-edit">
                                 <button type="submit" class="btn-guardar-edit">Guardar Cambios</button>
                             </div>

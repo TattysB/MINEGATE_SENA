@@ -1,10 +1,11 @@
-"""
+﻿"""
 App: gestion_visitas
 Gestión administrativa de visitas - APIs para el panel administrativo
 """
 
 import threading
 from types import SimpleNamespace
+from datetime import date
 
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
@@ -471,6 +472,35 @@ def api_listar_visitas(request):
     tipo = sanitize_token(request.GET.get("tipo", "internas"), max_length=20) or "internas"
     estado = sanitize_token(request.GET.get("estado", "todos"), max_length=30) or "todos"
     buscar = sanitize_text(request.GET.get("buscar", ""), max_length=100, allow_newlines=False)
+    fecha_desde_raw = sanitize_text(
+        request.GET.get("fecha_desde", ""), max_length=10, allow_newlines=False
+    )
+    fecha_hasta_raw = sanitize_text(
+        request.GET.get("fecha_hasta", ""), max_length=10, allow_newlines=False
+    )
+    fecha_hoy = timezone.localdate()
+
+    def _parse_fecha_iso(valor):
+        valor_limpio = (valor or "").strip()
+        if not valor_limpio:
+            return None
+        try:
+            return date.fromisoformat(valor_limpio)
+        except ValueError:
+            return None
+
+    fecha_desde = _parse_fecha_iso(fecha_desde_raw)
+    fecha_hasta = _parse_fecha_iso(fecha_hasta_raw)
+
+    if fecha_desde and fecha_hasta and fecha_desde > fecha_hasta:
+        fecha_desde, fecha_hasta = fecha_hasta, fecha_desde
+
+    def _aplicar_rango_fechas(queryset):
+        if fecha_desde:
+            queryset = queryset.filter(fecha_visita__gte=fecha_desde)
+        if fecha_hasta:
+            queryset = queryset.filter(fecha_visita__lte=fecha_hasta)
+        return queryset
 
     visitas_data = []
 
@@ -478,7 +508,10 @@ def api_listar_visitas(request):
         visitas_internas = VisitaInterna.objects.all().order_by("-fecha_solicitud", "-id")
         visitas_externas = VisitaExterna.objects.all().order_by("-fecha_solicitud", "-id")
 
-        if estado == "aprobadas":
+        if estado == "hoy":
+            visitas_internas = visitas_internas.filter(fecha_visita=fecha_hoy)
+            visitas_externas = visitas_externas.filter(fecha_visita=fecha_hoy)
+        elif estado == "aprobadas":
             visitas_internas = visitas_internas.filter(estado__in=ESTADOS_APROBADAS)
             visitas_externas = visitas_externas.filter(estado__in=ESTADOS_APROBADAS)
         elif estado in ["en_revision_documentos", "pendiente_revision"]:
@@ -507,6 +540,9 @@ def api_listar_visitas(request):
                 | Q(nombre__icontains=buscar)
                 | Q(correo_responsable__icontains=buscar)
             )
+
+        visitas_internas = _aplicar_rango_fechas(visitas_internas)
+        visitas_externas = _aplicar_rango_fechas(visitas_externas)
 
         for v in visitas_internas:
             visitas_data.append(
@@ -656,7 +692,9 @@ def api_listar_visitas(request):
     if tipo == "internas":
         visitas = VisitaInterna.objects.all().order_by("-fecha_solicitud", "-id")
 
-        if estado == "aprobadas":
+        if estado == "hoy":
+            visitas = visitas.filter(fecha_visita=fecha_hoy)
+        elif estado == "aprobadas":
             visitas = visitas.filter(estado__in=ESTADOS_APROBADAS)
         elif estado in ["en_revision_documentos", "pendiente_revision"]:
             visitas = visitas.filter(
@@ -673,6 +711,8 @@ def api_listar_visitas(request):
                 | Q(nombre_programa__icontains=buscar)
                 | Q(correo_responsable__icontains=buscar)
             )
+
+        visitas = _aplicar_rango_fechas(visitas)
 
         for v in visitas:
             visitas_data.append(
@@ -743,7 +783,9 @@ def api_listar_visitas(request):
     else:
         visitas = VisitaExterna.objects.all().order_by("-fecha_solicitud", "-id")
 
-        if estado == "aprobadas":
+        if estado == "hoy":
+            visitas = visitas.filter(fecha_visita=fecha_hoy)
+        elif estado == "aprobadas":
             visitas = visitas.filter(estado__in=ESTADOS_APROBADAS)
         elif estado in ["en_revision_documentos", "pendiente_revision"]:
             visitas = visitas.filter(
@@ -760,6 +802,8 @@ def api_listar_visitas(request):
                 | Q(nombre__icontains=buscar)
                 | Q(correo_responsable__icontains=buscar)
             )
+
+        visitas = _aplicar_rango_fechas(visitas)
 
         for v in visitas:
             visitas_data.append(
@@ -1214,7 +1258,6 @@ def api_accion_visita(request, tipo, visita_id, accion):
         visita.estado = "aprobada_inicial"
         visita.save()
 
-        # Enviar correo al responsable notificando la aprobación inicial y link al panel
         try:
             if tipo == "interna":
                 panel_path = reverse("panel_instructor_interno:panel")
@@ -1249,7 +1292,6 @@ def api_accion_visita(request, tipo, visita_id, accion):
         except Exception:
             pass
 
-        # Crear reserva de horario para bloquear el día/horario
         if tipo == "interna":
             ReservaHorario.crear_reserva_interna(visita)
         else:
@@ -1354,7 +1396,6 @@ def api_accion_visita(request, tipo, visita_id, accion):
                 }
             )
 
-        # Verificar que todos los asistentes tengan documentos aprobados
         asistentes_sin_aprobar = visita.asistentes.exclude(
             estado="documentos_aprobados"
         ).count()
@@ -1369,7 +1410,6 @@ def api_accion_visita(request, tipo, visita_id, accion):
         visita.estado = "confirmada"
         visita.save()
 
-        # Confirmar la reserva de horario (cambiar a estado 'confirmada')
         ReservaHorario.confirmar_reserva(visita, tipo)
 
         if tipo == "interna":
@@ -1451,7 +1491,6 @@ def api_revisar_autorizacion_padres(request, tipo, asistente_id, accion):
     else:
         asistente = get_object_or_404(AsistenteVisitaExterna, pk=asistente_id)
 
-    # Verificar que tenga el archivo
     if not asistente.formato_autorizacion_padres:
         return JsonResponse(
             {
@@ -1564,7 +1603,6 @@ def api_revisar_documento_asistente(request, tipo, asistente_id, accion):
                 }
             )
 
-        # Restricción: No se puede aprobar masivamente si la última versión tiene rechazos
         if any(
             doc_actual["ds"].estado == "rechazado" for doc_actual in documentos_actuales
         ):

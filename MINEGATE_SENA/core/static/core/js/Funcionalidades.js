@@ -1,15 +1,10 @@
-// ==============================
-// Funcionalidad de la barra lateral
-// ==============================
-
+﻿
 const sidebarItems = document.querySelectorAll('.sidebar li');
 
-// Activar item de barra lateral
 sidebarItems.forEach(item => {
   item.addEventListener('click', () => {
     const section = item.getAttribute('data-content');
 
-    // "Cerrar sesión" no representa una sección de contenido.
     if (!section || section === 'cerrar') {
       return;
     }
@@ -20,26 +15,21 @@ sidebarItems.forEach(item => {
   });
 });
 
-// Función para cargar el contenido dinámicamente
 function cargarContenido(section) {
   const mainContent = document.getElementById('mainContent');
 
-  // Evita crear placeholders al pulsar "cerrar sesión".
   if (!section || section === 'cerrar') {
     return;
   }
 
-  // Ocultar todas las secciones
   const todasLasSecciones = mainContent.querySelectorAll('.contenido-seccion');
   todasLasSecciones.forEach(sec => sec.style.display = 'none');
 
-  // Remover contenido temporal si existe
   const contenidoTemporal = mainContent.querySelector('.contenido-temporal');
   if (contenidoTemporal) {
     contenidoTemporal.remove();
   }
 
-  // Si es la sección de Gestión de Permisos, mostrarla
   if (section === 'GestionPermisos') {
     const seccionPermisos = document.getElementById('seccion-gestion-permisos');
     if (seccionPermisos) {
@@ -48,12 +38,10 @@ function cargarContenido(section) {
       console.warn('Sección de permisos no encontrada');
     }
   }
-  // Si es la sección de Gestión de Visitas
   else if (section === 'gestionvisitas') {
     const seccionVisitas = document.getElementById('seccion-gestion-visitas');
     if (seccionVisitas) {
       seccionVisitas.style.display = 'block';
-      // Cargar visitas al mostrar la sección
       if (typeof cargarVisitas === 'function') {
         cargarVisitas();
       }
@@ -62,7 +50,6 @@ function cargarContenido(section) {
     }
   }
   
-  // Si es la sección de Documentos
   else if (section === 'documentos') {
     console.log(">>> Sección DOCUMENTOS activada");
     const seccionDocs = document.getElementById('seccion-documentos');
@@ -80,7 +67,6 @@ function cargarContenido(section) {
     }
   }
   else {
-    // No mostrar placeholders temporales para secciones no manejadas.
     return;
   }
 }

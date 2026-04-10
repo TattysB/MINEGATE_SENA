@@ -1,4 +1,4 @@
-from django.contrib.auth.decorators import login_required, user_passes_test
+﻿from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils.dateparse import parse_date
@@ -270,7 +270,6 @@ def descargar_excel(request):
 		"</tr>"
 	)
 	
-	# Encabezado principal
 	response.write(
 		"<tr style='background-color: #39a900; color: white; font-weight: bold;'>"
 		"<th>Tipo</th><th>ID</th><th>Nombre/Programa</th><th>Responsable</th>"
@@ -283,14 +282,12 @@ def descargar_excel(request):
 		fecha_solicitud = fila["fecha_solicitud"].strftime("%Y-%m-%d %H:%M")
 		fecha_visita = fila["fecha_visita"].strftime("%Y-%m-%d") if fila["fecha_visita"] else "-"
 
-		# Encabezado de la visita
 		response.write(
 			"<tr style='background-color: #e8f5e9;'>"
 			f"<td colspan='11'><strong>Visita: {escape(fila['nombre'])} | Código: {fila['id']}</strong></td>"
 			"</tr>"
 		)
 		
-		# Fila de la visita
 		response.write(
 			"<tr>"
 			f"<td>{escape(fila['tipo'])}</td>"
@@ -307,7 +304,6 @@ def descargar_excel(request):
 			"</tr>"
 		)
 		
-		# Agregar visitantes inmediatamente debajo si los hay
 		if fila['asistentes']:
 			response.write(
 				"<tr style='background-color: #d4edda;'>"
@@ -323,7 +319,6 @@ def descargar_excel(request):
 				"</tr>"
 			)
 			
-			# Agregar cada asistente
 			for asistente in fila['asistentes']:
 				response.write(
 					"<tr style='background-color: #f9f9f9;'>"
@@ -338,7 +333,6 @@ def descargar_excel(request):
 					"</tr>"
 				)
 			
-			# Fila separadora
 			response.write(
 				"<tr style='height: 10px;'>"
 				"<td colspan='11' style='background-color: #ffffff; border: none;'></td>"
@@ -380,10 +374,8 @@ def descargar_pdf(request):
 
 	elementos = []
 	
-	# Crear encabezado con logos
 	_crear_encabezado_pdf(elementos, estilos)
 	
-	# Título del reporte
 	titulo_estilo = ParagraphStyle(
 		'TituloReporteGeneral',
 		parent=estilos['Title'],
@@ -616,10 +608,8 @@ def descargar_pdf_individual(request, tipo, id_visita):
 	estilos = getSampleStyleSheet()
 	elementos = []
 	
-	# Crear encabezado con logos
 	_crear_encabezado_pdf(elementos, estilos)
 	
-	# Título del reporte
 	titulo_estilo = ParagraphStyle(
 		'TituloReporte',
 		parent=estilos['Heading1'],
@@ -633,7 +623,6 @@ def descargar_pdf_individual(request, tipo, id_visita):
 	elementos.append(Paragraph(f"Código: {datos_visita['id']}", estilos["Normal"]))
 	elementos.append(Spacer(1, 15))
 	
-	# Datos de la visita
 	elementos.append(Paragraph("<b>Información General</b>", estilos["Heading2"]))
 	elementos.append(Spacer(1, 10))
 	
@@ -676,7 +665,6 @@ def descargar_pdf_individual(request, tipo, id_visita):
 	elementos.append(tabla_general)
 	elementos.append(Spacer(1, 20))
 	
-	# Datos del responsable
 	elementos.append(Paragraph("<b>Datos del Responsable</b>", estilos["Heading2"]))
 	elementos.append(Spacer(1, 10))
 	
@@ -712,7 +700,6 @@ def descargar_pdf_individual(request, tipo, id_visita):
 	elementos.append(tabla_responsable)
 	elementos.append(Spacer(1, 20))
 	
-	# Listado de asistentes/visitantes
 	if asistentes:
 		elementos.append(Paragraph(f"<b>Listado de Visitantes Registrados ({len(asistentes)})</b>", estilos["Heading2"]))
 		elementos.append(Spacer(1, 10))
@@ -850,7 +837,6 @@ def descargar_excel_individual(request, tipo, id_visita):
 
 	response.write("<table border='1' cellpadding='10' cellspacing='0' style='background-color: #f9fafb; font-family: Arial, sans-serif;'>")
 	
-	# Encabezado principal
 	response.write(
 		"<tr style='background-color: #39a900; color: white; font-weight: bold; font-size: 14px;'>"
 		f"<td colspan='2' style='text-align: center; padding: 15px;'>"
@@ -861,14 +847,12 @@ def descargar_excel_individual(request, tipo, id_visita):
 		"</tr>"
 	)
 	
-	# Línea separadora
 	response.write(
 		"<tr style='background-color: #e5f3dd;'>"
 		"<td colspan='2' style='text-align: center; padding: 5px;'></td>"
 		"</tr>"
 	)
 	
-	# Información General
 	response.write(
 		"<tr style='background-color: #39a900; color: white; font-weight: bold;'>"
 		"<td colspan='2' style='padding: 8px;'>INFORMACIÓN GENERAL</td>"
@@ -890,7 +874,6 @@ def descargar_excel_individual(request, tipo, id_visita):
 	if datos_visita["observaciones"]:
 		response.write(f"<tr><td><strong>Observaciones</strong></td><td>{escape(datos_visita['observaciones'])}</td></tr>")
 	
-	# Información del Responsable
 	response.write(
 		"<tr style='background-color: #39a900; color: white; font-weight: bold;'>"
 		"<td colspan='2' style='padding: 8px;'>DATOS DEL RESPONSABLE</td>"
@@ -902,7 +885,6 @@ def descargar_excel_individual(request, tipo, id_visita):
 	response.write(f"<tr><td style='font-weight: bold;'>Correo Electrónico</td><td>{escape(datos_visita['correo'])}</td></tr>")
 	response.write(f"<tr style='background-color: #e5f3dd;'><td style='font-weight: bold;'>Teléfono</td><td>{escape(datos_visita['telefono'])}</td></tr>")
 	
-	# Listado de asistentes
 	if asistentes:
 		response.write(
 			"<tr style='background-color: #d4edda;'>"

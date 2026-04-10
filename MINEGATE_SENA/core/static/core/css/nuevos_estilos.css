@@ -1,8 +1,6 @@
-/* ========================================
-   VARIABLES Y CONFIGURACIÓN GLOBAL
-   ======================================== */
+﻿
 :root {
-  /* Paleta de Verdes SENA */
+  
   --verde-primario: #39A900;
   --verde-oscuro: #2d8500;
   --verde-claro: #4FBF26;
@@ -11,7 +9,7 @@
   --verde-gradiente-2: #39A900;
   --verde-gradiente-3: #4FBF26;
 
-  /* Colores Complementarios */
+  
   --blanco: #FFFFFF;
   --negro: #1A1A1A;
   --gris-oscuro: #2C3E50;
@@ -19,24 +17,24 @@
   --gris-claro: #ECF0F1;
   --gris-muy-claro: #F8F9FA;
 
-  /* Colores de Estado */
+  
   --azul-info: #3498DB;
   --amarillo-warning: #F39C12;
   --rojo-danger: #E74C3C;
   --verde-success: #27AE60;
 
-  /* Sombras */
+  
   --sombra-suave: 0 2px 8px rgba(57, 169, 0, 0.1);
   --sombra-media: 0 4px 16px rgba(57, 169, 0, 0.15);
   --sombra-fuerte: 0 8px 24px rgba(57, 169, 0, 0.2);
   --sombra-topbar: 0 2px 10px rgba(0, 0, 0, 0.1);
 
-  /* Transiciones */
+  
   --transicion-rapida: all 0.2s ease;
   --transicion-media: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --transicion-suave: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Tamaños */
+  
   --sidebar-width: 280px;
   --sidebar-collapsed-width: 120px;
   --topbar-height: 90px;
@@ -44,7 +42,7 @@
   --border-radius-small: 8px;
 }
 
-/* Reset y Base */
+
 * {
   margin: 0;
   padding: 0;
@@ -61,18 +59,14 @@ body {
   margin-top: 0 !important;
 }
 
-/* ========================================
-   CONTENEDOR PRINCIPAL
-   ======================================== */
+
 .app-container {
   display: flex;
   min-height: 100vh;
   position: relative;
 }
 
-/* ========================================
-   TOPBAR - BARRA SUPERIOR
-   ======================================== */
+
 .topbar {
   position: fixed;
   top: 0;
@@ -103,10 +97,10 @@ body {
 
 .topbar-logo-img {
   height: 50px;
-  /* Made slightly larger */
+  
   width: auto;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-  /* Subtle shadow to pop */
+  
   transition: transform var(--transicion-media);
 }
 
@@ -139,19 +133,19 @@ body {
   opacity: 0.9;
 }
 
-/* Buscador Central */
+
 .topbar-center {
   display: flex;
   justify-content: flex-end;
   margin-left: auto;
-  /* Push to the right */
+  
   margin-right: 2rem;
-  /* Spacing from notifications */
+  
 }
 
 .search-container {
   width: 450px;
-  /* Fixed width for a more compact look */
+  
   position: relative;
   display: flex;
   align-items: center;
@@ -187,7 +181,7 @@ body {
   color: rgba(255, 255, 255, 0.8);
 }
 
-/* Acciones Derecha */
+
 .topbar-right {
   display: flex;
   align-items: center;
@@ -212,7 +206,7 @@ body {
 .notification-icon {
   color: white;
   font-size: 2.2rem;
-  /* Significantly larger */
+  
 }
 
 
@@ -237,12 +231,12 @@ body {
 
 .user-profile-photo-container {
   width: 55px;
-  /* Enlarged from 40px */
+  
   height: 55px;
   border-radius: 50%;
   overflow: hidden;
   border: 3px solid white;
-  /* Thicker border */
+  
   cursor: pointer;
   transition: var(--transicion-media);
 }
@@ -387,9 +381,7 @@ body {
 }
 
 
-/* ========================================
-   SIDEBAR - BARRA LATERAL
-   ======================================== */
+
 .sidebar {
   position: fixed;
   left: 0;
@@ -405,17 +397,17 @@ body {
   border-right: 1px solid var(--gris-claro);
   box-shadow: 4px 0 10px rgba(0, 0, 0, 0.05);
   overflow: hidden;
-  /* Prevent sidebar itself from scrolling */
+  
 }
 
 
 
-/* Sidebar Contraído */
+
 .sidebar.collapsed {
   width: var(--sidebar-collapsed-width);
 }
 
-/* Scrollbar personalizado para sidebar */
+
 .sidebar::-webkit-scrollbar {
   width: 4px;
 }
@@ -429,7 +421,7 @@ body {
   border-radius: 10px;
 }
 
-/* Lista del Sidebar */
+
 .sidebar ul {
   list-style: none;
   padding: 1rem 0;
@@ -437,19 +429,19 @@ body {
   flex: 1;
   overflow-y: auto;
   scrollbar-width: none;
-  /* Hide scrollbar for Firefox */
+  
   -ms-overflow-style: none;
-  /* Hide scrollbar for IE/Edge */
+  
 }
 
 .sidebar ul::-webkit-scrollbar {
   display: none;
-  /* Hide scrollbar for Chrome/Safari */
+  
 }
 
 
 
-/* Items del Sidebar */
+
 .sidebar li {
   position: relative;
   display: flex;
@@ -502,11 +494,11 @@ body {
 }
 
 
-/* ICONOS DEL SIDEBAR */
+
 .sidebar li i {
   font-size: 1.5rem;
   width: 25px;
-  /* Subtle fixed width for alignment without "box" feel */
+  
   text-align: center;
   display: flex;
   align-items: center;
@@ -530,7 +522,7 @@ body {
 
 
 
-/* Texto del Sidebar */
+
 .sidebar li span {
   flex: 1;
   opacity: 1;
@@ -545,7 +537,7 @@ body {
 }
 
 
-/* Botón de Logout */
+
 .logout-button {
   width: 100%;
   margin-top: auto;
@@ -579,7 +571,7 @@ body {
 .logout-button:hover li span {
   color: #e74c3c !important;
   background: transparent !important;
-  /* Remove any residual background */
+  
 }
 
 
@@ -589,9 +581,7 @@ body {
 }
 
 
-/* ========================================
-   HAMBURGER BUTTON (MOBILE)
-   ======================================== */
+
 .hamburger-btn {
   position: fixed;
   top: 1rem;
@@ -621,7 +611,7 @@ body {
   background: linear-gradient(135deg, var(--verde-oscuro), var(--verde-primario));
 }
 
-/* Overlay para Mobile */
+
 .sidebar-overlay {
   position: fixed;
   top: 0;
@@ -641,9 +631,7 @@ body {
   visibility: visible;
 }
 
-/* ========================================
-   MAIN CONTENT
-   ======================================== */
+
 main {
   flex: 1;
   min-width: 0;
@@ -655,14 +643,12 @@ main {
   animation: fadeIn 0.6s ease;
 }
 
-/* Ajuste cuando el sidebar está contraído */
+
 .app-container:has(.sidebar.collapsed) main {
   margin-left: var(--sidebar-collapsed-width);
 }
 
-/* ========================================
-   MODALES
-   ======================================== */
+
 .modal {
   display: none;
   position: fixed;
@@ -805,9 +791,7 @@ main {
   transform: translateY(-2px);
 }
 
-/* ========================================
-   ANIMACIONES
-   ======================================== */
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -854,7 +838,7 @@ main {
   }
 }
 
-/* Efecto Ripple */
+
 .ripple {
   position: absolute;
   border-radius: 50%;
@@ -871,9 +855,7 @@ main {
   }
 }
 
-/* ========================================
-   RESPONSIVE DESIGN
-   ======================================== */
+
 @media (max-width: 768px) {
   .hamburger-btn {
     display: flex;
@@ -1130,9 +1112,7 @@ main {
   }
 }
 
-/* ========================================
-   UTILIDADES
-   ======================================== */
+
 .text-center {
   text-align: center;
 }

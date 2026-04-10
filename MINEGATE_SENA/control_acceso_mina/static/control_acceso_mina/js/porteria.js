@@ -1,6 +1,4 @@
-/**
- * Control de Acceso por visita — escaneo y registros individuales
- */
+﻿
 (function () {
     'use strict';
 

@@ -1,4 +1,4 @@
-from unittest.mock import patch
+﻿from unittest.mock import patch
 
 from django.test import TestCase
 from django.urls import reverse
@@ -23,14 +23,12 @@ class RegistroVisitaTests(TestCase):
 			"password2": "Valida123!",
 		}
 
-	# INICIO TEST 1: Carga inicial del formulario de registro
 	def test_registro_get_retorna_200_y_formulario(self):
 		response = self.client.get(self.url_registro)
 
 		self.assertEqual(response.status_code, 200)
 		self.assertIn("form", response.context)
 
-	# INICIO TEST 2: Rechaza telefono con formato invalido
 	def test_registro_post_rechaza_telefono_invalido(self):
 		payload = dict(self.valid_payload)
 		payload["telefono"] = "30012"
@@ -42,7 +40,6 @@ class RegistroVisitaTests(TestCase):
 		self.assertTrue(response.context["form"].errors)
 		self.assertIn("telefono", response.context["form"].errors)
 
-	# INICIO TEST 3: Usuario interno requiere correo institucional
 	def test_registro_post_interno_requiere_correo_sena(self):
 		payload = dict(self.valid_payload)
 		payload["correo"] = "ana@gmail.com"
@@ -54,7 +51,6 @@ class RegistroVisitaTests(TestCase):
 		self.assertIn("correo", response.context["form"].errors)
 
 	@patch("panel_visitante.views._enviar_codigo_verificacion_registro")
-	# INICIO TEST 4: Registro valido guarda sesion y redirige a verificacion
 	def test_registro_post_valido_guarda_sesion_y_redirige(self, mock_enviar):
 		response = self.client.post(self.url_registro, data=self.valid_payload)
 
@@ -68,7 +64,6 @@ class RegistroVisitaTests(TestCase):
 		self.assertEqual(datos["documento"], "1234567890")
 		self.assertEqual(datos["rol"], "interno")
 
-	# INICIO TEST 5: Rechaza documento duplicado en registro
 	def test_registro_post_rechaza_documento_duplicado(self):
 		visitante = RegistroVisitante(
 			nombre="Carlos",

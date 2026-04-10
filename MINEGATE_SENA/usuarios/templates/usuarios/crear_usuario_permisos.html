@@ -1,4 +1,4 @@
-{% extends "core/panel_administrativo.html" %}
+﻿{% extends "core/panel_administrativo.html" %}
 {% load static %}
 
 {% block content %}
@@ -400,7 +400,7 @@
 </style>
 
 <div class="contenedor-crear-usuario">
-    <!-- Header -->
+    
     <div class="header-crear">
         <h1>➕ Crear Nuevo Usuario</h1>
         <a href="{% url 'usuarios:gestionar_permisos' %}" class="btn-volver">
@@ -408,7 +408,7 @@
         </a>
     </div>
 
-    <!-- Mensajes -->
+    
     <div class="mensajes">
         {% if messages %}
         {% for message in messages %}
@@ -436,12 +436,12 @@
         {% endif %}
     </div>
 
-    <!-- Formulario -->
+    
     <form method="POST" class="formulario-crear" id="formCrearUsuario">
         {% csrf_token %}
 
         <div class="grupo-campos">
-            <!-- Documento -->
+            
             <div class="campo">
                 <label for="documento">Número de Documento <span class="requerido">*</span></label>
                 <input type="text" name="documento" id="documento" value="{{ form.documento.value|default:'' }}"
@@ -451,7 +451,7 @@
                 {% endfor %}
             </div>
 
-            <!-- Email -->
+            
             <div class="campo">
                 <label for="email">Correo Electrónico <span class="requerido">*</span></label>
                 <input type="email" name="email" id="email" value="{{ form.email.value|default:'' }}"
@@ -461,7 +461,7 @@
                 {% endfor %}
             </div>
 
-            <!-- Nombre -->
+            
             <div class="campo">
                 <label for="first_name">Nombre <span class="requerido">*</span></label>
                 <input type="text" name="first_name" id="first_name" value="{{ form.first_name.value|default:'' }}"
@@ -471,7 +471,7 @@
                 {% endfor %}
             </div>
 
-            <!-- Apellido -->
+            
             <div class="campo">
                 <label for="last_name">Apellido <span class="requerido">*</span></label>
                 <input type="text" name="last_name" id="last_name" value="{{ form.last_name.value|default:'' }}"
@@ -481,7 +481,7 @@
                 {% endfor %}
             </div>
 
-            <!-- Teléfono -->
+            
             <div class="campo">
                 <label for="telefono">Teléfono (opcional)</label>
                 <input type="text" name="telefono" id="telefono" value="{{ form.telefono.value|default:'' }}"
@@ -491,18 +491,20 @@
                 {% endfor %}
             </div>
 
-            <!-- Espacio vacío para alineación -->
+            
             <div class="campo">
                 <label for="rol_usuario">Rol del Usuario <span class="requerido">*</span></label>
                 <select name="rol_usuario" id="rol_usuario" required>
-                    <option value="sst" {% if rol_actual == "sst" or rol_actual == "administrador" %}selected{% endif %}>SST
+                    <option value="administrador" {% if rol_actual == "administrador" %}selected{% endif %}>Administrador
+                    </option>
+                    <option value="sst" {% if rol_actual == "sst" %}selected{% endif %}>SST
                     </option>
                     <option value="coordinador" {% if rol_actual == "coordinador" %}selected{% endif %}>Coordinador
                     </option>
                 </select>
             </div>
 
-            <!-- Password -->
+            
             <div class="campo campo-completo">
                 <label for="password1">Contraseña <span class="requerido">*</span></label>
                 <div class="password-field">
@@ -511,7 +513,7 @@
                         <i class="fa-solid fa-eye" id="icon-password1"></i>
                     </button>
                 </div>
-                <!-- Contenedor para la barra de seguridad -->
+                
                 <div id="password-strength-container" class="password-strength-container">
                     <div class="strength-bar-wrapper" style="margin-top: 10px;">
                         <div class="strength-bar">
@@ -547,7 +549,7 @@
                 {% endfor %}
             </div>
 
-            <!-- Confirmar Password -->
+            
             <div class="campo campo-completo">
                 <label for="password2">Confirmar Contraseña <span class="requerido">*</span></label>
                 <div class="password-field">
@@ -568,7 +570,7 @@
         </div>
         {% endif %}
 
-        <!-- Opciones adicionales -->
+        
         <div class="opciones-adicionales">
             <h3>⚙️ Opciones de Cuenta</h3>
 
@@ -584,7 +586,7 @@
             </div>
         </div>
 
-        <!-- Botones de acción -->
+        
         <div class="botones-accion">
             <a href="{% url 'usuarios:gestionar_permisos' %}" class="btn-cancelar">Cancelar</a>
             <button type="submit" class="btn-guardar">✓ Crear Usuario</button>

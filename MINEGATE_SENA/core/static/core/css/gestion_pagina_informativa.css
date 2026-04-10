@@ -1,9 +1,6 @@
-/* ==============================================
-   GESTIÓN PÁGINA INFORMATIVA – ESTILOS
-   Fuente: Work Sans  |  Paleta: SENA verde
-   ============================================== */
+﻿
 
-/* ── Base ── */
+
 .gpi-wrapper {
   font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   color: var(--gris-oscuro, #2C3E50);
@@ -22,7 +19,7 @@
   box-sizing: border-box;
 }
 
-/* ── Header ── */
+
 .gpi-header {
   background: linear-gradient(135deg, var(--verde-primario), var(--verde-oscuro));
   color: #fff;
@@ -58,7 +55,7 @@
   color: rgba(255, 255, 255, 0.88);
 }
 
-/* ── Alertas ── */
+
 .gpi-alerts {
   margin-bottom: 1.1rem;
 }
@@ -71,7 +68,7 @@
   padding: 0.75rem 1rem;
 }
 
-/* ── Vista previa ── */
+
 .gpi-preview-container {
   margin-bottom: 1.6rem;
 }
@@ -238,6 +235,32 @@
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
+.gpi-watermark {
+  position: absolute;
+  left: 0.7rem;
+  bottom: 0.7rem;
+  z-index: 3;
+  pointer-events: none;
+  max-width: calc(100% - 1.4rem);
+  padding: 0.22rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: #fff;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.30);
+  backdrop-filter: blur(8px);
+  opacity: 0.72;
+  line-height: 1.1;
+}
+
+.gpi-watermark-gallery {
+  bottom: 3.0rem;
+}
+
 .gpi-live-indicators {
   position: absolute;
   z-index: 3;
@@ -347,6 +370,34 @@
   height: 260px;
 }
 
+.gpi-item-thumb {
+  position: relative;
+  overflow: hidden;
+}
+
+.gpi-item-thumb::after,
+.gpi-item-thumb-video::after {
+  content: "SICAM";
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  z-index: 2;
+  padding: 0.18rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.gpi-item-thumb-video {
+  position: relative;
+  overflow: hidden;
+}
+
 .gpi-live-media-controls {
   position: absolute;
   z-index: 4;
@@ -399,7 +450,7 @@
   line-height: 1.25;
 }
 
-/* ── Layout 2 columnas ── */
+
 .gpi-layout {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -413,7 +464,7 @@
   gap: 1.2rem;
 }
 
-/* ── Tarjetas / Secciones ── */
+
 .gpi-card {
   background: linear-gradient(180deg, #ffffff 0%, #fdfffc 100%);
   border: 1px solid #e4ece0;
@@ -470,7 +521,7 @@
   font-weight: 400;
 }
 
-/* ── Formularios ── */
+
 .gpi-form {
   padding-top: 1rem;
 }
@@ -585,7 +636,7 @@
   color: #b45309;
 }
 
-/* ── Checkbox personalizado ── */
+
 .gpi-checkbox-label {
   display: inline-flex;
   align-items: center;
@@ -612,7 +663,7 @@
   box-shadow: 0 0 0 3px rgba(57, 169, 0, 0.15);
 }
 
-/* ── Botones ── */
+
 .gpi-actions-row {
   margin-top: 1.1rem;
   display: flex;
@@ -712,7 +763,7 @@
   transform: scale(0.97);
 }
 
-/* Primary (verde SENA) */
+
 .gpi-wrapper .btn-primary {
   background: var(--verde-primario);
   color: #fff;
@@ -724,7 +775,7 @@
   box-shadow: 0 4px 14px rgba(57, 169, 0, 0.3);
 }
 
-/* Success */
+
 .gpi-wrapper .btn-success {
   background: linear-gradient(135deg, var(--verde-primario), var(--verde-claro, #4FBF26));
   color: #fff;
@@ -737,7 +788,7 @@
   color: #fff;
 }
 
-/* Warning (editar) */
+
 .gpi-wrapper .btn-warning {
   background: #fff3e0;
   color: #e65100;
@@ -750,7 +801,7 @@
   color: #bf360c;
 }
 
-/* Danger (eliminar) */
+
 .gpi-wrapper .btn-danger {
   background: #fef2f2;
   color: #dc2626;
@@ -763,7 +814,7 @@
   color: #b91c1c;
 }
 
-/* Secondary (cancelar) */
+
 .gpi-wrapper .btn-secondary {
   background: #f4f6f3;
   color: var(--gris-medio, #5A6C7D);
@@ -776,14 +827,14 @@
   color: var(--gris-oscuro);
 }
 
-/* Small buttons */
+
 .gpi-wrapper .btn-sm {
   font-size: 0.78rem;
   padding: 0.38rem 0.85rem;
   border-radius: 8px;
 }
 
-/* ── Lista items (slides/galería) ── */
+
 .gpi-items-header {
   display: flex;
   align-items: center;
@@ -857,6 +908,26 @@
   color: #fff;
 }
 
+.gpi-item-thumb::after,
+.gpi-item-thumb-video::after {
+  content: "SICAM";
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  z-index: 2;
+  padding: 0.12rem 0.35rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.22);
+  color: #fff;
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  pointer-events: none;
+  opacity: 0.7;
+  backdrop-filter: blur(6px);
+}
+
 .gpi-item-thumb-video {
   background: linear-gradient(135deg, #142510, #3a5f2d);
 }
@@ -914,7 +985,7 @@
   margin: 0;
 }
 
-/* ── Estado vacío ── */
+
 .gpi-empty-inline {
   margin: 0;
   padding: 1rem;
@@ -927,7 +998,7 @@
   border: 1px dashed #d5e0d1;
 }
 
-/* ── Errores de formulario ── */
+
 .gpi-field .errorlist {
   list-style: none;
   margin: 0.25rem 0 0;
@@ -937,7 +1008,7 @@
   font-weight: 500;
 }
 
-/* ── Responsive ── */
+
 @media (max-width: 1100px) {
 
   .gpi-layout,

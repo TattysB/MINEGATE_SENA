@@ -1,6 +1,6 @@
-/* ===== ESTILOS ADICIONALES DE VALIDACIÓN (complementa a login.css) ===== */
+﻿
 
-/* Contenedor de grupo de campo */
+
 .form-group {
     display: flex;
     flex-direction: column;
@@ -8,7 +8,7 @@
     margin-bottom: 6px;
 }
 
-/* Mensajes de error generales del formulario */
+
 .form-errors {
     background: #fee2e2;
     border-left: 4px solid #ef4444;
@@ -19,7 +19,7 @@
     color: #991b1b;
 }
 
-/* Errores inline por campo */
+
 .field-error {
     color: #ef4444;
     font-size: 10px;
@@ -29,13 +29,13 @@
     line-height: 1.2;
 }
 
-/* Input con error */
+
 .input-error {
     border: 1px solid #ef4444 !important;
     background-color: #fef2f2 !important;
 }
 
-/* Compatibilidad con error-message */
+
 .error-message {
     color: #ef4444;
     font-size: 10px;
@@ -43,7 +43,7 @@
     display: block;
 }
 
-/* ===== BARRA DE FORTALEZA DE CONTRASEÑA ===== */
+
 
 .password-strength-container {
     width: 100%;
@@ -59,7 +59,7 @@
     max-height: 200px;
 }
 
-/* Barra de fortaleza */
+
 .strength-bar-wrapper {
     display: flex;
     align-items: center;
@@ -82,7 +82,7 @@
     transition: width 0.3s ease, background-color 0.3s ease;
 }
 
-/* Colores de fortaleza */
+
 .strength-bar-fill.strength-weak {
     background: linear-gradient(90deg, #ef4444, #f87171);
 }
@@ -99,7 +99,7 @@
     background: linear-gradient(90deg, #10b981, #34d399);
 }
 
-/* Texto de fortaleza */
+
 .strength-text {
     font-size: 11px;
     font-weight: 600;
@@ -123,7 +123,7 @@
     color: #10b981;
 }
 
-/* Requisitos de contraseña */
+
 .password-requirements {
     display: flex;
     flex-direction: column;
@@ -169,15 +169,15 @@
     color: #10b981 !important;
 }
 
-/* ===== ESTILOS PARA INPUTS CON VALIDACIÓN ===== */
 
-/* Input válido (opcional, para feedback positivo) */
+
+
 .input-valid {
     border: 1px solid #10b981 !important;
     background-color: #f0fdf4 !important;
 }
 
-/* Animación de shake para errores */
+
 @keyframes shake {
     0%, 100% { transform: translateX(0); }
     10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
@@ -188,7 +188,7 @@
     animation: shake 0.5s ease;
 }
 
-/* Responsive para móviles */
+
 @media (max-width: 768px) {
     .password-strength-container {
         margin-top: 6px;

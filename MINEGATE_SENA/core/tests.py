@@ -1,4 +1,4 @@
-from django.test import TestCase
+﻿from django.test import TestCase
 
 from core.sanitization import (
 	sanitize_document_number,

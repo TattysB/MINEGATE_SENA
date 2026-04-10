@@ -1,10 +1,10 @@
-<!-- Componente: Alerta de Estado de Visita y Reprogramación -->
+﻿
 
 {% load static %}
 
 <link rel="stylesheet" href="{% static 'css/componentes-alerta-visita.css' %}">
 
-<!-- Template para CORRECCION_DOCS -->
+
 <template id="template-alerta-correccion-docs">
     <div class="alerta-estado-visita alerta-correccion-docs">
         <div class="alerta-icono">⚠️</div>
@@ -15,7 +15,7 @@
                 Por favor, revisa los detalles abajo y reenvía los documentos solicitados.
             </div>
             <div class="lista-aprendices-problema" id="lista-aprendices-docs">
-                <!-- Se llenará dinámicamente con JS -->
+                
             </div>
             <div class="alerta-acciones">
                 <button class="btn-alerta" onclick="irASeccionDocumentos()">
@@ -26,7 +26,7 @@
     </div>
 </template>
 
-<!-- Template para REPROGRAMACION_SOLICITADA -->
+
 <template id="template-alerta-reprogramacion">
     <div class="alerta-estado-visita alerta-reprogramacion">
         <div class="alerta-icono">📅</div>
@@ -37,7 +37,7 @@
                 en el calendario y confirma el cambio.
             </div>
             <div class="info-reprogramacion" id="info-reprogramacion">
-                <!-- Se llenará dinámicamente con JS -->
+                
             </div>
             <div class="alerta-acciones">
                 <button class="btn-alerta" onclick="abrirModalReprogramacion()">
@@ -48,7 +48,7 @@
     </div>
 </template>
 
-<!-- Modal para seleccionar nueva fecha -->
+
 <div id="modal-reprogramacion" class="modal-reprogramacion">
     <div class="modal-contenido">
         <span class="modal-cerrar" onclick="cerrarModalReprogramacion()">&times;</span>

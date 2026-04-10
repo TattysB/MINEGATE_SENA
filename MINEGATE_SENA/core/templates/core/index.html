@@ -1,7 +1,19 @@
-{% extends "master.html" %}
+﻿{% extends "master.html" %}
 {% load static %}
 
-{% block title %}SICAM - Sistema Informativo del Control y Acceso a la Mina{% endblock %}
+{% block title %}SICAM - Sistema de Información del Control y Acceso a la Mina{% endblock %}
+{% block body_class %}home-has-hero{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'core/css/index_stl.css' %}?v=4">
+<link rel="stylesheet" href="{% static 'chatbot/css/minero_chatbot.css' %}?v=2">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+{% endblock %}
+
 {% block content %}
 
 {% get_media_prefix as MEDIA_PREFIX %}
@@ -11,17 +23,7 @@
 {% bootstrap_javascript %}
 
 <section id="hero-section" class="hero-section">
-    <link rel="stylesheet" href="{% static 'core/css/index_stl.css' %}?v=3">
-    <link rel="stylesheet" href="{% static 'chatbot/css/minero_chatbot.css' %}?v=2">
-
-    {% block extra_css %}
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    {% endblock %}
-
-    <!-- Carrusel de fondo -->
+    
     <div id="heroCarouselBackground" class="carousel slide carousel-fade position-absolute w-100 h-100"
         data-bs-ride="carousel" data-bs-interval="4000"
         style="top: 0; left: 0; z-index: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; background-color: #222;">
@@ -41,6 +43,7 @@
             <div class="carousel-item {% if forloop.first %}active{% endif %} w-100 h-100">
                 <img src="{{ slide.imagen.url }}{% if slide.actualizado_en %}?v={{ slide.actualizado_en|date:'U' }}{% endif %}" class="d-block w-100 h-100"
                     style="object-fit: cover; object-position: center;" alt="Slide {{ forloop.counter }}">
+                <div class="carousel-watermark">SICAM | Imagen Propia{% if slide.actualizado_en %} - {{ slide.actualizado_en|date:"d F Y" }}{% endif %}</div>
                 <div class="carousel-caption d-block h-100 d-flex flex-column justify-content-center align-items-center">
                     {% if slide.titulo %}
                     <h1 class="sicam-title">{{ slide.titulo }}</h1>
@@ -55,6 +58,7 @@
             <div class="carousel-item active w-100 h-100">
                 <img src="{% if contenido_pagina and contenido_pagina.imagen_principal %}{{ contenido_pagina.imagen_principal.url }}{% else %}{{ MEDIA_PREFIX }}img/grupal.jpg{% endif %}" class="d-block w-100 h-100"
                     style="object-fit: cover; object-position: center 20%;" alt="Fondo Grupal">
+                <div class="carousel-watermark">SICAM | Imagen Propia{% if contenido_pagina and contenido_pagina.actualizado_en %} - {{ contenido_pagina.actualizado_en|date:"d F Y" }}{% endif %}</div>
                 <div
                     class="carousel-caption d-block h-100 d-flex flex-column justify-content-center align-items-center">
                     <h1 class="sicam-title">{{ contenido_pagina.titulo_principal|default:'Centro Minero de Morcá' }}</h1>
@@ -66,6 +70,7 @@
             <div class="carousel-item w-100 h-100">
                 <img src="{% if contenido_pagina and contenido_pagina.imagen_secundaria %}{{ contenido_pagina.imagen_secundaria.url }}{% else %}{{ MEDIA_PREFIX }}img/mina.jpg{% endif %}" class="d-block w-100 h-100"
                     style="object-fit: cover; object-position: center;" alt="Fondo Mina">
+                <div class="carousel-watermark">SICAM | Imagen Propia{% if contenido_pagina and contenido_pagina.actualizado_en %} - {{ contenido_pagina.actualizado_en|date:"d F Y" }}{% endif %}</div>
                 <div
                     class="carousel-caption d-block h-100 d-flex flex-column justify-content-center align-items-center">
                     <p class="sicam-invitation fs-4">
@@ -76,6 +81,7 @@
             <div class="carousel-item w-100 h-100">
                 <img src="{% if contenido_pagina and contenido_pagina.imagen_terciaria %}{{ contenido_pagina.imagen_terciaria.url }}{% else %}{{ MEDIA_PREFIX }}img/aprendices.jpg{% endif %}" class="d-block w-100 h-100"
                     style="object-fit: cover; object-position: center;" alt="Fondo Aprendices">
+                <div class="carousel-watermark">SICAM | Imagen Propia{% if contenido_pagina and contenido_pagina.actualizado_en %} - {{ contenido_pagina.actualizado_en|date:"d F Y" }}{% endif %}</div>
                 <div
                     class="carousel-caption d-block h-100 d-flex flex-column justify-content-center align-items-center">
                     <div class="sicam-description px-4">
@@ -91,7 +97,7 @@
 </section>
 <section id="security-protocols-section" class="security-protocols-section py-5">
     <div class="container">
-        <!-- Header del Protocolo -->
+        
         <div class="text-center mb-5">
             <span class="badge rounded-pill bg-success bg-opacity-10 text-success px-4 py-2 mb-3"
                 style="border: 1px solid rgba(63, 165, 0, 0.2); font-weight: 600; font-size: 0.9rem;">
@@ -108,9 +114,9 @@
             </div>
         </div>
 
-        <!-- Grid de Protocolos -->
+        
         <div class="row g-4 mb-5">
-            <!-- EPP -->
+            
             <div class="col-12 col-md-6 col-lg-3">
                 <div class="protocol-card text-center p-4">
                     <div class="protocol-icon-wrapper mb-4">
@@ -122,7 +128,7 @@
                     </p>
                 </div>
             </div>
-            <!-- Guías -->
+            
             <div class="col-12 col-md-6 col-lg-3">
                 <div class="protocol-card text-center p-4">
                     <div class="protocol-icon-wrapper mb-4">
@@ -134,7 +140,7 @@
                     </p>
                 </div>
             </div>
-            <!-- Capacitación -->
+            
             <div class="col-12 col-md-6 col-lg-3">
                 <div class="protocol-card text-center p-4">
                     <div class="protocol-icon-wrapper mb-4">
@@ -146,7 +152,7 @@
                     </p>
                 </div>
             </div>
-            <!-- Emergencias -->
+            
             <div class="col-12 col-md-6 col-lg-3">
                 <div class="protocol-card text-center p-4">
                     <div class="protocol-icon-wrapper mb-4">
@@ -164,10 +170,10 @@
             <div class="mx-auto" style="max-width: 1140px; border-top: 1px solid #d9dee3;"></div>
         </div>
 
-    <!-- Publicidad / Características -->
+    
     <div class="container mt-5 mb-4 safety-info-wrap">
         <div class="row g-4">
-            <!-- Control de Acceso -->
+            
             <div class="col-12 col-md-6 col-lg-4">
                 <div class="card h-100 shadow-sm border-0 rounded-4 p-2 safety-info-card">
                     <div class="card-body">
@@ -187,7 +193,7 @@
                 </div>
             </div>
 
-            <!-- Equipo EPP -->
+            
             <div class="col-12 col-md-6 col-lg-4">
                 <div class="card h-100 shadow-sm border-0 rounded-4 p-2 safety-info-card">
                     <div class="card-body">
@@ -218,7 +224,7 @@
                 </div>
             </div>
 
-            <!-- Notificaciones -->
+            
             <div class="col-12 col-md-6 col-lg-4">
                 <div class="card h-100 shadow-sm border-0 rounded-4 p-2 safety-info-card">
                     <div class="card-body">
@@ -245,23 +251,23 @@
     <section class="py-5" id="galeria">
         <div class="container">
             <div class="text-center mb-5">
-                <!-- Badge Centrado -->
+                
                 <div class="d-inline-block px-4 py-2 mb-4 rounded-pill"
                     style="background-color: #eefae6; color: #3fa500; font-weight: 600; font-family: 'Work Sans', sans-serif; font-size: 1.1rem;">
                     Galería Visual
                 </div>
 
-                <!-- Título Grande y en Negrita -->
+                
                 <h2 class="fw-bold display-3 mb-4" style="font-family: 'Work Sans', sans-serif; color: #1a1a1a;">
                     {{ contenido_pagina.titulo_galeria|default:'Explora Nuestras Instalaciones' }}
                 </h2>
 
-                <!-- Descripción Refinada -->
+                
                 <p class="text-muted lead mx-auto mb-4" style="max-width: 850px; font-size: 1.4rem;">
                     {{ contenido_pagina.descripcion_galeria|default:'Conoce la mina didáctica y las experiencias que viven nuestros aprendices.' }}
                 </p>
 
-                <!-- Divisor Verde Corto -->
+                
                 <div class="mx-auto" style="width: 80px; height: 6px; background-color: #3fa500; border-radius: 3px;">
                 </div>
             </div>
@@ -291,6 +297,8 @@
                                 style="height: 600px; object-fit: contain; background-color: #000;"
                                 alt="{{ elemento.titulo }}">
                             {% endif %}
+
+                            <div class="carousel-watermark">SICAM | Imagen Propia - {{ elemento.actualizado_en|date:"d F Y" }}</div>
 
                             <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded-3 p-3 mb-4">
                                 <h5 class="fw-bold">{{ elemento.titulo }}</h5>
@@ -377,7 +385,7 @@
                 </div>
                 <div class="card-body p-0">
                     <div style="position: relative; width: 100%; height: 0; padding-bottom: 40%;">
-                        <!-- Responsivo 21:9 ratio approx -->
+                        
                         <iframe 
                             src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1083.8853621974079!2d-72.89468105483297!3d5.730627797367029!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8e6a48a8ae9bc4e7%3A0x4577dc8f78e0764b!2sCentro%20Nacional%20Minero%20SENA!5e0!3m2!1ses!2sco!4v1774360687413!5m2!1ses!2sco" 
                             style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;"

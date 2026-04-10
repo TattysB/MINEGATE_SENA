@@ -1,4 +1,4 @@
-from django.contrib import admin
+﻿from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 from django.utils.html import format_html
@@ -35,7 +35,6 @@ class CustomUserAdmin(UserAdmin):
             return format_html('<span style="color: red; font-weight: bold;">✗ Inactivo</span>')
     estado_cuenta.short_description = 'Estado'
 
-# Re-registrar UserAdmin
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
 

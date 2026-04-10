@@ -1,4 +1,4 @@
-{% load static %}
+﻿{% load static %}
 {% load accesibility_tags %}
 <!doctype html>
 <html lang="es">
@@ -10,14 +10,14 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
   <title>SICAM</title>
 
-  <!-- ESTILOS ANTIGUOS (Comentados para pruebas) -->
+  
   <link rel="stylesheet" href="{% static 'core/css/nuevos_estilos.css' %}?v=20260325h" />
-  <!-- Estilos del Dropdown de Usuario -->
+  
   <link rel="stylesheet" href="{% static 'core/css/user_dropdown.css' %}?v=20260325a" />
   <link rel="stylesheet" href="{% static 'css/configuracion_perfil.css' %}?v=20260320a" />
-  <!-- Estilos de Reportes -->
+  
   <link rel="stylesheet" href="{% static 'reportes/css/panel_reportes_admin.css' %}?v=20260326a" />
-  <!-- Iconos y Fuentes -->
+  
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet" />
@@ -38,15 +38,15 @@
 
 <body class="admin-page">
   <div class="app-container">
-    <!-- Hamburger Button -->
+    
     <button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle menu">
       <i class="ri-menu-line"></i>
     </button>
 
-    <!-- Sidebar Overlay for Mobile -->
+    
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <!-- Top Bar -->
+    
     <div class="topbar">
       <div class="topbar-left">
         <div class="topbar-logo-container">
@@ -54,7 +54,7 @@
           <div class="topbar-brand">
             <span class="brand-main">SICAM</span>
             <span class="brand-divider">|</span>
-            <span class="brand-sub">Sistema Informativo del Control y Acceso a la Mina </span>
+            <span class="brand-sub">Sistema de Información del Control y Acceso a la Mina </span>
           </div>
         </div>
       </div>
@@ -62,7 +62,7 @@
       <div class="topbar-right">
         <div class="topbar-actions">
           <div class="notification-wrapper" id="adminNotificationWrapper">
-            <button id="adminNotifBtn" class="notification-btn" aria-label="Notificaciones administrativas" style="background:white;border:none;padding:8px;border-radius:10px;display:flex;align-items:center;justify-content:center;min-width:48px;min-height:40px;">
+            <button id="adminNotifBtn" class="notification-btn" aria-label="Notificaciones administrativas" title="Abrir notificaciones" style="background:white;border:none;padding:8px;border-radius:10px;display:flex;align-items:center;justify-content:center;min-width:48px;min-height:40px;">
               <i class="ri-notification-3-line notification-icon" style="color:#10b981;font-size:22px;background:transparent;border-radius:0;display:block;"></i>
               <span id="adminNotifBadge" class="notification-badge" style="display:none;background:#ef4444;color:white;border-radius:50%;min-width:20px;height:20px;font-size:12px;font-weight:700;line-height:20px;text-align:center;padding:0 5px;margin-left:8px;">0</span>
             </button>
@@ -117,7 +117,7 @@
                 <span class="topbar-role-label">{{ panel_role_label|default:'SST' }}</span>
               </button>
 
-              <!-- desplegable Menu -->
+              
               <div class="user-dropdown-menu" id="userDropdownMenu">
                 <div class="user-dropdown-header">
                   <div class="header-avatar">
@@ -150,7 +150,7 @@
       </div>
     </div>
 
-    <!-- Sidebar -->
+    
     <div class="sidebar" id="sidebar">
       <ul>
         {% if solo_coordinador %}
@@ -231,7 +231,7 @@
       </button>
     </div>
 
-    <!-- Modal Cerrar Sesión -->
+    
     <div id="modalCerrarSesion" class="modal">
       <div class="modal-contenido">
         <div class="modal-encabezado">
@@ -262,7 +262,7 @@
       </div>
     </div>
 
-    <!-- Modal Mi Perfil -->
+    
     <div id="modalPerfil" class="modal-perfil-overlay" style="display: none;">
       <div class="modal-perfil-card" onclick="event.stopPropagation()">
         <div class="modal-header-perfil">
@@ -298,7 +298,7 @@
       </div>
     </div>
 
-    <!-- Main Content -->
+    
     <main id="mainContent">
       {% block content %}
       {% if not solo_coordinador %}
@@ -386,7 +386,7 @@
     </main>
   </div>
 
-  <!-- Scripts -->
+  
   <script defer src="{% static 'core/js/Funcionalidades.js' %}"></script>
   <script src="{% static 'core/js/Ver_todo.js' %}"></script>
   <script>
@@ -402,7 +402,7 @@
   </script>
   <script defer src="{% static 'calendario/js/panel_calendario_loader.js' %}"></script>
 
-  <!-- Script para Gestión de Permisos -->
+  
   {% if es_superusuario %}
   <script>
     function cerrarAlertaSuave(alertaEl) {
@@ -459,9 +459,7 @@
   </script>
   {% endif %}
 
-  <!-- ==========================================
-         FUNCIONES GLOBALES PARA CERRAR SESIÓN
-         ========================================== -->
+  
   <script>
     function abrirModalAnimado(modal) {
       if (!modal) return;
@@ -548,7 +546,7 @@
     });
   </script>
 
-  <!-- Hamburger Menu Script -->
+  
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       // ========================================
@@ -819,10 +817,10 @@
   </script>
   {% if not solo_coordinador %}
   <script defer src="{% static 'documentos/js/panel_documentos_visitas.js' %}?v=20260311-correccion"></script>
-  <script defer src="{% static 'js/panel_visitas.js' %}?v=20260325-tab-todas-v8"></script>
+  <script defer src="{% static 'js/panel_visitas.js' %}?v=20260406-tab-todas-v9"></script>
   {% endif %}
   {% if seccion_activa == 'copias_seguridad' %}
-  <script defer src="{% static 'core/js/panel_backup_db.js' %}?v=20260318a"></script>
+  <script defer src="{% static 'core/js/panel_backup_db.js' %}?v=20260407a"></script>
   {% endif %}
 
   <script>
@@ -1073,7 +1071,7 @@
     })();
   </script>
 
-  <!-- Modal Personalizado de Alertas/Confirmaciones -->
+  
   <div id="customModal" class="cm-overlay">
     <div class="cm-box" id="cmBox">
       <div class="cm-icon" id="cmIcon"></div>
@@ -1087,8 +1085,54 @@
   </div>
 
 
+  <style>
+    .btn-ayuda-manual {
+      position: fixed;
+      right: 14px;
+      bottom: 88px;
+      width: 38px;
+      height: 38px;
+      border-radius: 999px;
+      background: #00af00;
+      color: #ffffff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+      z-index: 1100;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
 
-  <!-- Elementos de accesibilidad -->
+    .btn-ayuda-manual:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+      color: #ffffff;
+    }
+
+    @media (max-width: 768px) {
+      .btn-ayuda-manual {
+        right: 10px;
+        bottom: 84px;
+        width: 36px;
+        height: 36px;
+      }
+    }
+  </style>
+
+  <a
+    href="{% static 'pdf/MANUAL DE USUARIO SICAM - ADMINISTRADOR.pdf' %}"
+    download="MANUAL DE USUARIO SICAM - ADMINISTRADOR.pdf"
+    class="btn-ayuda-manual"
+    title="Descargar manual de usuario"
+    aria-label="Descargar manual de usuario del panel administrativo"
+  >
+    <i class="ri-question-line" aria-hidden="true"></i>
+  </a>
+
+
+
+  
   {% accessibility_widget %}
 
   <script src="{% static 'accessibility/js/accessibility.js' %}?v=1.1"></script>

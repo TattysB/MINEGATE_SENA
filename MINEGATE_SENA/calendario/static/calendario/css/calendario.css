@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   --green: #19a974;
   --light-green: #eaf9ef;
   --orange: #ff9a3c;
@@ -139,7 +139,7 @@
   font-size: 34px;
 }
 
-/* Admin calendar in panel: stronger selectors to avoid overlap with generic #mainContent rules */
+
 #mainContent .admin-calendar-page {
   max-width: min(1420px, 100%);
 }
@@ -212,7 +212,7 @@
   padding-right: 6px;
 }
 
-/* Keep both columns clean even when sidebar is collapsed (icons-only mode). */
+
 .app-container:has(.sidebar.collapsed) #mainContent .admin-calendar-page .calendar-layout {
   grid-template-columns: minmax(0, 1fr) minmax(300px, 340px);
 }
@@ -291,20 +291,19 @@
   font-size: 18px;
 }
 
-/* Coordinator-specific adjustments to keep nav arrows inside the card and
-   avoid overlapping the app header/panel. These override generic .nav values. */
+
 #coordinadorCalendarPage .card-top {
   padding-top: 10px;
-  /* ensure space at top inside the card */
+  
 }
 
 #coordinadorCalendarPage .card-top .nav {
   top: 18px;
-  /* position relative to the card */
+  
   width: 40px;
   height: 40px;
   z-index: 2;
-  /* keep them above card content but below global header */
+  
 }
 
 #coordinadorCalendarPage .card-top .nav#prev {
@@ -507,7 +506,7 @@
   font-weight: 700;
 }
 
-/* Día con visita pendiente por revisar - naranja */
+
 .calendar-page .calendar-table td.pending {
   background: #ff9a3c;
   border: 2px solid #e88830;
@@ -520,7 +519,7 @@
   background: #ffab5c;
 }
 
-/* Día ocupado con visita confirmada - rojo */
+
 .calendar-page .calendar-table td.occupied {
   background: #e74c3c;
   border: 2px solid #c0392b;

@@ -1,4 +1,4 @@
-from django import forms
+﻿from django import forms
 from visitaInterna.models import VisitaInterna
 from .models import Ficha, Programa, Aprendiz
 import os
@@ -6,7 +6,6 @@ import re
 from django.core.exceptions import ValidationError
 
 
-# ==================== VALIDADORES PERSONALIZADOS ====================
 
 EXTENSIONES_DOCUMENTO_APRENDIZ_PERMITIDAS = {'.pdf', '.doc', '.docx'}
 MAX_TAMANO_ARCHIVO_APRENDIZ = 10 * 1024 * 1024
@@ -48,11 +47,9 @@ def validar_documento_numero(numero_documento, min_len=5, max_len=15):
     
     numero_documento = str(numero_documento).strip()
     
-    # Solo números permitidos
     if not re.match(r'^[0-9]+$', numero_documento):
         raise ValidationError('El número de documento solo debe contener números (sin puntos ni guiones).')
     
-    # Validar rango de longitud
     if len(numero_documento) < min_len:
         raise ValidationError(f'El número de documento debe tener al menos {min_len} dígitos.')
     if len(numero_documento) > max_len:
@@ -83,20 +80,16 @@ def validar_nombre_alfabetico(nombre, campo='nombre'):
     if not nombre:
         raise ValidationError(f'El {campo} no puede estar vacío.')
     
-    # Normaliza espacios múltiples a un solo espacio.
     nombre = re.sub(r'\s+', ' ', nombre.strip())
     
-    # Permite letras (incluyendo acentos), espacios y apóstrofos
     if not re.match(r"^[a-záéíóúñüA-ZÁÉÍÓÚÑÜ\s'-]+$", nombre):
         raise ValidationError(f'El {campo} solo debe contener letras, espacios y apóstrofos (sin números ni caracteres especiales).')
     
-    # Validar longitud
     if len(nombre) < 2:
         raise ValidationError(f'El {campo} debe tener al menos 2 caracteres.')
     if len(nombre) > 100:
         raise ValidationError(f'El {campo} no puede exceder 100 caracteres.')
     
-    # Validar que no sea solo espacios
     if not nombre.replace(' ', '').replace("'", ''):
         raise ValidationError(f'El {campo} no puede ser solo espacios.')
     
@@ -115,11 +108,9 @@ def validar_telefono(telefono, requerido=False):
     
     telefono = str(telefono).strip()
     
-    # Permite números, +, espacios y guiones
     if not re.match(r'^[\+]?[0-9\s\-]{7,20}$', telefono):
         raise ValidationError('El teléfono solo debe contener números y caracteres válidos (+, espacios, guiones).')
     
-    # Contar solo los dígitos
     digitos = re.sub(r'[^\d]', '', telefono)
     if len(digitos) < 7 or len(digitos) > 15:
         raise ValidationError('El teléfono debe tener entre 7 y 15 dígitos.')
@@ -157,14 +148,12 @@ def validar_observaciones(observaciones):
     if len(observaciones) > 500:
         raise ValidationError('Las observaciones no pueden exceder 500 caracteres.')
     
-    # Rechaza caracteres de control peligrosos
     if re.search(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', observaciones):
         raise ValidationError('Las observaciones contienen caracteres no permitidos.')
     
     return observaciones
 
 
-# ==================== FORMULARIOS ====================
 
 class VisitaInternaInstructorForm(forms.ModelForm):
     """
@@ -300,7 +289,6 @@ class VisitaInternaInstructorForm(forms.ModelForm):
         
         validar_correo_formato(correo)
         
-        # Validar dominio
         partes = correo.split('@')
         if len(partes) != 2 or '.' not in partes[1]:
             raise ValidationError('El correo debe tener un dominio válido (ej: usuario@empresa.com).')
@@ -427,7 +415,6 @@ class FichaForm(forms.ModelForm):
             'nombre del programa'
         )
 
-        # Evita enlazar fichas a programas de otro instructor.
         existente = Programa.objects.filter(nombre__iexact=nombre).first()
         if (
             existente
@@ -489,8 +476,6 @@ class AprendizForm(forms.ModelForm):
         self.ficha = ficha
         super().__init__(*args, **kwargs)
 
-        # En este módulo el documento obligatorio es el Auto Reporte de Salud
-        # (documentos dinámicos), no documento_identidad.
         self.fields["documento_identidad"].required = False
         self.fields["documento_identidad"].widget.attrs.pop("required", None)
     
@@ -588,7 +573,6 @@ class AprendizForm(forms.ModelForm):
         
         validar_correo_formato(correo)
         
-        # Validar dominio
         partes = correo.split('@')
         if len(partes) != 2 or '.' not in partes[1]:
             raise ValidationError('El correo debe tener un dominio válido.')
@@ -621,12 +605,10 @@ class AprendizForm(forms.ModelForm):
         cleaned_data = super().clean()
         numero_documento = cleaned_data.get('numero_documento')
         
-        # Obtener ficha: de la inicialización o del instance
         ficha = self.ficha or (self.instance.ficha if self.instance else None)
         
         if numero_documento and ficha:
             from django.db.models import Q
-            # Excluir el aprendiz actual si está editando
             query = Q(ficha=ficha, numero_documento=numero_documento)
             if self.instance and self.instance.pk:
                 query &= ~Q(pk=self.instance.pk)

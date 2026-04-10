@@ -1,4 +1,4 @@
-{% load static %}
+﻿{% load static %}
 {% load accesibility_tags %}
 
 <!DOCTYPE html>
@@ -231,12 +231,12 @@
   <form method="POST">
     {% csrf_token %}
     
-    <!-- Campos ocultos para fecha y hora -->
+    
     {{ form.fecha_visita }}
     {{ form.hora_inicio }}
     {{ form.hora_fin }}
 
-    <!-- Selección de Fecha y Horario -->
+    
     <div class="form-card">
       <div class="form-card-header">
         <i class="fas fa-calendar-alt"></i>Fecha y Horario de la Visita
@@ -256,7 +256,7 @@
       </div>
     </div>
 
-    <!-- Datos de la Institución -->
+    
     <div class="form-card">
       <div class="form-card-header">
         <i class="fas fa-building"></i>Datos de la Institución o Empresa
@@ -276,7 +276,7 @@
       </div>
     </div>
 
-    <!-- Datos del Responsable -->
+    
     <div class="form-card">
       <div class="form-card-header">
         <i class="fas fa-user-tie"></i>Datos del Responsable
@@ -307,7 +307,7 @@
       </div>
     </div>
 
-    <!-- Observaciones -->
+    
     <div class="form-card">
       <div class="form-card-header">
         <i class="fas fa-comment-alt"></i>Observaciones
@@ -612,7 +612,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<!-- Modal Términos y Condiciones -->
+
 <div class="modal fade" id="modalTerminos" tabindex="-1" aria-labelledby="modalTerminosLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content">
@@ -756,7 +756,7 @@ document.addEventListener('DOMContentLoaded', function() {
   </div>
 </div>
 
-<!-- Modal Confirmacion de Envio -->
+
 <div class="modal fade" id="modalConfirmarEnvio" tabindex="-1" aria-labelledby="modalConfirmarEnvioLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content modal-confirmacion-envio">

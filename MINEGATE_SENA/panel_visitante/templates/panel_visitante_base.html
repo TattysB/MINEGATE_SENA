@@ -1,4 +1,4 @@
-{% load static %}
+﻿{% load static %}
 {% load accesibility_tags %}
 <!DOCTYPE html>
 <html lang="es">
@@ -6,7 +6,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}SICAM-Sistema Informativo del Control y Acceso a la Mina{% endblock %}</title>
+    <title>{% block title %}SICAM-Sistema de Información del Control y Acceso a la Mina{% endblock %}</title>
 
     {% load bootstrap5 %}
     {% bootstrap_css %}
@@ -20,41 +20,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=20260318a">
     <link rel="stylesheet" href="{% static 'core/css/custom_modal.css' %}?v=20260311a">
+    <link rel="stylesheet" href="{% static 'panel_visitante_base.css' %}">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-    <style>
-        html,
-        body {
-            height: 100%;
-            font-family: 'Work Sans', sans-serif;
-        }
-
-        body {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-
-        h1,
-        h2,
-        h3,
-        h4,
-        h5,
-        h6 {
-            font-family: 'Work Sans', sans-serif;
-            font-weight: 700;
-        }
-
-        main {
-            flex: 1 0 auto;
-        }
-
-        footer {
-            flex-shrink: 0;
-        }
-    </style>
 
     {% block extra_css %}
     {% endblock %}
@@ -103,7 +72,7 @@
                             class="navbar-logo me-2 footer-logo-big">
                         <span class="fs-2 fw-bold footer-sicam-big">SICAM</span>
                     </div>
-                    <div class="footer-desc">Sistema Informativo del Control y Acceso a la Mina</div>
+                    <div class="footer-desc">Sistema de Información del Control y Acceso a la Mina</div>
                     <div class="footer-desc small">Fomentando la seguridad y el conocimiento en el sector.</div>
                 </div>
                 <div class="col-lg-3 col-md-6 mb-3 mb-lg-0">
@@ -121,6 +90,10 @@
                 <div class="col-lg-3 col-md-6">
                     <div class="fw-semibold mb-2"><i class="fas fa-phone-alt me-2"></i>Contacto</div>
                     <div class="footer-desc small mb-1"><i class="fas fa-phone me-1"></i> +(57) 601 736 60 60</div>
+                    <div class="footer-desc small mb-1 footer-mail-row">
+                        <i class="fas fa-envelope footer-mail-icon"></i>
+                        <a href="mailto:sicamsenacentrominero@gmail.com" class="footer-mail-link">sicamsenacentrominero@gmail.com</a>
+                    </div>
                 </div>
             </div>
             <hr class="footer-hr">

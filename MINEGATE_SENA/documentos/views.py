@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect, get_object_or_404
+﻿from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
@@ -180,7 +180,6 @@ def registro_publico_asistentes(request, token, tipo):
     Vista pública para registro de asistentes usando enlace único con token.
     No requiere autenticación, solo el token válido.
     """
-    # Obtener la visita según el tipo y token
     if tipo == "interna":
         visita = get_object_or_404(VisitaInterna, token_acceso=token)
         asistentes = visita.asistentes.all()
@@ -193,7 +192,6 @@ def registro_publico_asistentes(request, token, tipo):
         messages.error(request, "Tipo de visita no válido.")
         return redirect("core:index")
 
-    # Verificar que la visita esté aprobada inicialmente para registro de asistentes
     if visita.estado not in [
         "aprobada_inicial",
         "documentos_enviados",
@@ -206,7 +204,6 @@ def registro_publico_asistentes(request, token, tipo):
         }
         return render(request, "documentos/registro_publico_asistentes.html", context)
 
-    # Verificar límite de asistentes
     asistentes_actuales = asistentes.count()
     puede_agregar = asistentes_actuales < max_asistentes
 
@@ -285,7 +282,6 @@ def registro_publico_asistentes(request, token, tipo):
                         f'¡Asistente "{nombre}" registrado correctamente! Estado: Pendiente de revisión de documentos.',
                     )
 
-                    # Redirigir según el tipo
                     if tipo == "interna":
                         return redirect(
                             "documentos:registro_publico_interna", token=token
@@ -309,10 +305,8 @@ def registro_publico_asistentes(request, token, tipo):
                     "Complete todos los campos obligatorios (nombre, tipo y número de documento).",
                 )
 
-    # Generar enlace completo para compartir
     enlace_registro = request.build_absolute_uri()
 
-    # Obtener documentos disponibles para descargar, agrupados por categoría
     documentos_disponibles = Documento.objects.all().order_by(
         "categoria", "-fecha_subida"
     )
@@ -429,9 +423,6 @@ def actualizar_asistente_publico(request, tipo, token, asistente_id):
     return redirect(redirect_name, token=token)
 
 
-# =============================================
-# API para gestión de documentos en panel admin
-# =============================================
 
 
 @login_required(login_url="usuarios:login")
@@ -441,12 +432,10 @@ def listar_documentos_api(request):
 
     documentos = Documento.objects.all()
 
-    # Filtrar por categoría si se envía
     categoria = sanitize_token(request.GET.get("categoria", ""), max_length=40)
     if categoria:
         documentos = documentos.filter(categoria=categoria)
 
-    # Buscar por título, nombre de archivo o categoría
     buscar = sanitize_text(request.GET.get("buscar", ""), max_length=100, allow_newlines=False)
     if buscar:
         from django.db.models import Q
@@ -459,7 +448,6 @@ def listar_documentos_api(request):
 
     data = []
     for doc in documentos:
-        # Generar URL a través de la vista descargar_documento
         archivo_url = reverse(
             "documentos:descargar_documento", kwargs={"documento_id": doc.id}
         )
@@ -518,7 +506,6 @@ def subir_documentos_api(request):
 
     import os
 
-    # Extensiones permitidas
     extensiones_permitidas = [
         ".pdf",
         ".doc",
@@ -529,11 +516,9 @@ def subir_documentos_api(request):
     documentos_creados = []
     errores = []
 
-    # Categorías válidas del modelo
     cats_validas = [c[0] for c in Documento.CATEGORIA_CHOICES]
     categorias_existentes = set(Documento.objects.values_list("categoria", flat=True))
 
-    # Normalizar nombres de archivo ya existentes en BD
     nombres_existentes = {
         os.path.basename(nombre).lower()
         for nombre in Documento.objects.values_list("archivo", flat=True)
@@ -563,7 +548,6 @@ def subir_documentos_api(request):
             errores.append(f'"{archivo.name}": ya existe un archivo con ese nombre.')
             continue
 
-        # Obtener categoría individual del archivo
         cat_archivo = (
             categorias[idx]
             if idx < len(categorias)
@@ -578,7 +562,6 @@ def subir_documentos_api(request):
             )
             continue
 
-        # El título visible debe ser el label del formato/categoría
         titulo = cat_archivo
 
         doc = Documento(
@@ -616,7 +599,6 @@ def eliminar_documento_api(request, documento_id):
     """API: Elimina un documento."""
     doc = get_object_or_404(Documento, id=documento_id)
 
-    # Eliminar el archivo físico
     if doc.archivo:
         try:
             doc.archivo.delete(save=False)
@@ -670,7 +652,6 @@ def descargar_documento(request, documento_id):
     import mimetypes
 
     try:
-        # Verificar que el archivo existe
         if not doc.archivo.storage.exists(doc.archivo.name):
             logger.error(f"El archivo físico no existe: {doc.archivo.name}")
             from django.http import HttpResponseNotFound
@@ -678,21 +659,16 @@ def descargar_documento(request, documento_id):
             return HttpResponseNotFound("El archivo no existe en el servidor")
 
         logger.info(f"Abriendo archivo: {doc.archivo.name}")
-        # Abrir el archivo
         archivo = doc.archivo.open("rb")
 
-        # Determinar el tipo MIME
         tipo_mime, _ = mimetypes.guess_type(doc.archivo.name)
         if not tipo_mime:
             tipo_mime = "application/octet-stream"
 
         logger.info(f"MIME type detectado: {tipo_mime}")
 
-        # Crear respuesta
         response = FileResponse(archivo, content_type=tipo_mime)
 
-        # Para PDFs e imágenes, mostrarlas en línea (inline)
-        # Para otros archivos, forzar descarga (attachment)
         ext = doc.extension.lower().lstrip(".")  # Remover el punto (.pdf -> pdf)
         logger.info(f"Extensión detectada: {ext}")
 
@@ -877,7 +853,6 @@ def revisar_documento_asistente_api(request, documento_subido_id):
             {"success": False, "error": "Estado no válido."}, status=400
         )
 
-    # Solo se permite revisar documentos que estén pendientes.
     if doc.estado != "pendiente":
         return JsonResponse(
             {
@@ -902,7 +877,6 @@ def revisar_documento_asistente_api(request, documento_subido_id):
 
     asistente = doc.asistente_interna or doc.asistente_externa
 
-    # Sincronizar estado del asistente si hay un rechazo
     if estado == "rechazado":
         if asistente:
             if not _es_categoria_archivo_final(doc.documento_requerido.categoria):
@@ -967,7 +941,6 @@ def enviar_solicitud_final(request, token, tipo):
             status=400,
         )
 
-    # Verificar que haya al menos un asistente registrado
     if visita.asistentes.count() == 0:
         return JsonResponse(
             {
@@ -977,7 +950,6 @@ def enviar_solicitud_final(request, token, tipo):
             status=400,
         )
 
-    # No permitir reenvío si aún hay asistentes con rechazo pendiente de corrección
     if visita.asistentes.filter(estado="documentos_rechazados").exists():
         return JsonResponse(
             {

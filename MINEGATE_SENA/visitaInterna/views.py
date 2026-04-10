@@ -1,4 +1,4 @@
-from django.http import HttpResponse
+﻿from django.http import HttpResponse
 from django.template import loader
 from django.shortcuts import redirect
 from django.contrib import messages
@@ -9,22 +9,18 @@ from .forms import VisitaInternaForm
 def visita_interna(request):
   visitas = VisitaInterna.objects.all()
 
-  # Filtrar por nombre de programa
   nombre_programa = request.GET.get('nombre_programa', '')
   if nombre_programa:
     visitas = visitas.filter(nombre_programa__icontains=nombre_programa)
 
-  # Filtrar por responsable
   responsable = request.GET.get('responsable', '')
   if responsable:
     visitas = visitas.filter(responsable__icontains=responsable)
 
-  # Filtrar por número de ficha
   numero_ficha = request.GET.get('numero_ficha', '')
   if numero_ficha:
     visitas = visitas.filter(numero_ficha=numero_ficha)
 
-  # Filtrar por documento del responsable
   documento_responsable = request.GET.get('documento_responsable', '')
   if documento_responsable:
     visitas = visitas.filter(documento_responsable__icontains=documento_responsable)
@@ -35,9 +31,7 @@ def visita_interna(request):
   }
   return HttpResponse(template.render(context, request))
 
-# Vista para crear una nueva visita interna
 def crear_visita(request):
-  # Verificar si el usuario está autenticado desde la sesión
   if not request.session.get('responsable_autenticado'):
     return redirect('panel_visitante:login_responsable')
   
@@ -47,9 +41,7 @@ def crear_visita(request):
   if request.method == 'POST':
     form = VisitaInternaForm(request.POST)
     if form.is_valid():
-      # Crear la visita con estado enviada a coordinación (primera revisión)
       visita = form.save(commit=False)
-      # Usar los datos de la sesión para correo y documento
       visita.correo_responsable = correo_responsable
       visita.documento_responsable = documento_responsable
       visita.estado = 'enviada_coordinacion'  # Primera revisión por coordinador
@@ -71,7 +63,6 @@ def crear_visita(request):
   }
   return HttpResponse(template.render(context, request))
 
-# Vista para editar una visita interna
 def editar_visita(request, id):
   visita = VisitaInterna.objects.get(id=id)
   if request.method == 'POST':
@@ -89,7 +80,6 @@ def editar_visita(request, id):
   }
   return HttpResponse(template.render(context, request))
 
-# Vista para ver los detalles de una visita interna
 def details(request, id):
   visita = VisitaInterna.objects.get(id=id)
   template = loader.get_template('detalle_visita_interna.html')
@@ -98,7 +88,6 @@ def details(request, id):
   }
   return HttpResponse(template.render(context, request))
 
-# Vista para eliminar una visita interna
 def eliminar_visita(request, id):
   visita = VisitaInterna.objects.get(id=id)
   if request.method == 'POST':

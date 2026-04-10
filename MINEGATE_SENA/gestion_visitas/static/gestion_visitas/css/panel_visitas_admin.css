@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   --gv-primary: #22c55e;
   --gv-primary-dark: #16a34a;
   --gv-bg: #f4fbf6;
@@ -313,16 +313,15 @@
 }
 
 #seccion-gestion-visitas .gv-filters {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(260px, 1.5fr) repeat(2, minmax(160px, 0.8fr)) minmax(230px, 1fr) auto auto;
   gap: 10px;
-  flex-wrap: wrap;
   align-items: center;
 }
 
 #seccion-gestion-visitas .gv-search-wrap {
   position: relative;
-  flex: 1;
-  min-width: 240px;
+  min-width: 0;
 }
 
 #seccion-gestion-visitas .gv-search-wrap i {
@@ -342,6 +341,19 @@
   color: #1e293b;
   background: #fff;
   font-size: 14px;
+}
+
+#seccion-gestion-visitas #filtroFechaDesde,
+#seccion-gestion-visitas #filtroFechaHasta {
+  height: 42px;
+  border: 1px solid #dbe7de;
+  border-radius: 12px;
+  padding: 0 12px;
+  color: #1e293b;
+  background: #fff;
+  font-size: 14px;
+  width: 100%;
+  min-width: 0;
 }
 
 #seccion-gestion-visitas #buscarVisita {
@@ -365,6 +377,7 @@
   gap: 8px;
   align-items: center;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .gv-tabla-contenedor {
@@ -610,7 +623,7 @@
   transform: translateY(0) scale(0.95) !important;
 }
 
-/* Botones solo con ícono (icon-only) */
+
 #seccion-gestion-visitas .gv-celda-acciones .docs-btn-accion.gv-btn-icon-only {
   width: 34px !important;
   min-width: 34px !important;
@@ -732,6 +745,15 @@
     min-width: 210px;
     flex: 1;
   }
+
+  #seccion-gestion-visitas .gv-filters {
+    grid-template-columns: minmax(240px, 1.4fr) repeat(2, minmax(150px, 1fr)) minmax(220px, 1fr);
+  }
+
+  #seccion-gestion-visitas .gv-filters .gv-refresh-btn {
+    grid-column: span 2;
+    justify-content: center;
+  }
 }
 
 @media (max-width: 900px) {
@@ -788,6 +810,18 @@
 
   .gv-filtros {
     gap: 10px !important;
+  }
+
+  #seccion-gestion-visitas .gv-filters {
+    grid-template-columns: 1fr;
+  }
+
+  #seccion-gestion-visitas .gv-filters .gv-refresh-btn,
+  #seccion-gestion-visitas #filtroEstadoVisita,
+  #seccion-gestion-visitas #filtroFechaDesde,
+  #seccion-gestion-visitas #filtroFechaHasta {
+    width: 100%;
+    min-width: 0;
   }
 
   .gv-select,
@@ -969,7 +1003,6 @@
   .gv-tabla-contenedor {
     border-radius: 8px;
   }
-}
   #seccion-gestion-visitas .gv-layout {
     padding: 12px;
   }
@@ -987,8 +1020,7 @@
   }
 
   #seccion-gestion-visitas .gv-filters {
-    flex-direction: column;
-    align-items: stretch;
+    grid-template-columns: 1fr;
   }
 
   #seccion-gestion-visitas .gv-refresh-btn,

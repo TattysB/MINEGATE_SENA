@@ -1,6 +1,6 @@
-/* ===== ESTILOS DE RESTABLECER CONTRASEÑA ===== */
+﻿
 
-/* Animaciones de entrada */
+
 .recuperacion-container {
     animation: slideUp 0.6s ease-out;
 }
@@ -16,7 +16,7 @@
     }
 }
 
-/* Animación del icono del header */
+
 .recuperacion-header i.fa-lock {
     animation: lockBounce 2s ease-in-out infinite;
 }
@@ -27,7 +27,7 @@
     75% { transform: translateY(-5px) rotate(5deg); }
 }
 
-/* Form groups con animación escalonada */
+
 .form-group {
     animation: fadeInLeft 0.5s ease-out both;
 }
@@ -46,7 +46,7 @@
     }
 }
 
-/* Input con transiciones suaves */
+
 .form-group input {
     transition: all 0.3s ease;
 }
@@ -56,7 +56,7 @@
     box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
 }
 
-/* Botón con efectos mejorados */
+
 .btn-submit {
     position: relative;
     overflow: hidden;
@@ -99,7 +99,7 @@
     transform: translateY(-1px);
 }
 
-/* Estado de carga */
+
 .btn-submit.loading {
     pointer-events: none;
     opacity: 0.85;
@@ -114,7 +114,7 @@
     to { transform: rotate(360deg); }
 }
 
-/* Toggle password con animación */
+
 .toggle-password {
     transition: all 0.3s ease;
 }
@@ -124,7 +124,7 @@
     color: #10b981;
 }
 
-/* Enlace inválido con animación */
+
 .invalid-link {
     animation: shake 0.5s ease-out, fadeIn 0.5s ease-out;
 }
@@ -151,7 +151,7 @@
     50% { transform: scale(1.1); opacity: 0.8; }
 }
 
-/* Alerta de error con animación */
+
 .alert-error {
     animation: slideInShake 0.5s ease-out;
 }

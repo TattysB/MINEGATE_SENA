@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect, get_object_or_404
+﻿from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
@@ -685,7 +685,6 @@ def login_responsable(request):
                 visitante.bloqueado_hasta = None
                 visitante.save(update_fields=["intentos_fallidos", "bloqueado_hasta"])
 
-            # Guardar sesión
             request.session["responsable_correo"] = visitante.correo
             request.session["responsable_documento"] = visitante.documento
             request.session["responsable_rol"] = visitante.rol
@@ -701,7 +700,6 @@ def login_responsable(request):
                 f"Bienvenido {visitante.nombre} {visitante.apellido}. Accediendo a tu panel...",
                 extra_tags=AUTH_VISITANTE_MESSAGE_TAG,
             )
-            # Redirigir al panel de instructor según el rol
             if visitante.rol == "interno":
                 return redirect("panel_instructor_interno:panel")
             else:
@@ -780,7 +778,11 @@ def registro_visita(request):
                 return render(
                     request,
                     "registro_visita.html",
-                    {"form": form, "titulo": "Registro de Usuario"},
+                    {
+                        "form": form,
+                        "titulo": "Registro de Usuario",
+                        "recaptcha_public_key": settings.RECAPTCHA_PUBLIC_KEY,
+                    },
                 )
 
             messages.info(
@@ -795,7 +797,11 @@ def registro_visita(request):
     return render(
         request,
         "registro_visita.html",
-        {"form": form, "titulo": "Registro de Usuario"},
+        {
+            "form": form,
+            "titulo": "Registro de Usuario",
+            "recaptcha_public_key": settings.RECAPTCHA_PUBLIC_KEY,
+        },
     )
 
 
@@ -913,13 +919,11 @@ def panel_responsable(request):
     """
     Panel para que el responsable vea sus visitas y registre asistentes.
     """
-    # Obtener datos de sesión
     correo = request.session.get("responsable_correo")
     documento = request.session.get("responsable_documento")
     rol = request.session.get("responsable_rol")
     autenticado = request.session.get("responsable_autenticado", False)
 
-    # Verificar si está autenticado
     if not autenticado or not correo or not documento:
         messages.warning(
             request,
@@ -929,7 +933,6 @@ def panel_responsable(request):
         return redirect("panel_visitante:login_responsable")
 
     try:
-        # Obtener visitas del responsable
         visitas_internas = VisitaInterna.objects.filter(
             correo_responsable__iexact=correo
         ).prefetch_related("asistentes")
@@ -1086,7 +1089,6 @@ def registrar_asistentes(request, tipo, visita_id):
     """
     es_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
 
-    # Verificar autenticación
     if not request.session.get("responsable_autenticado"):
         messages.warning(
             request,
@@ -1096,7 +1098,6 @@ def registrar_asistentes(request, tipo, visita_id):
         return redirect("panel_visitante:login_responsable")
 
     correo = request.session.get("responsable_correo")
-    # Obtener la visita según el tipo
     if tipo == "interna":
         visita = get_object_or_404(
             VisitaInterna,
@@ -1117,7 +1118,6 @@ def registrar_asistentes(request, tipo, visita_id):
         messages.error(request, "Tipo de visita no válido.")
         return _redirect_segun_rol(request)
 
-    # Validación de seguridad: la visita debe tener al menos 1 asistente requerido
     if max_asistentes < 1:
         messages.error(
             request,
@@ -1126,7 +1126,6 @@ def registrar_asistentes(request, tipo, visita_id):
         )
         return _redirect_segun_rol(request)
 
-    # Verificar que la visita esté aprobada inicialmente para registro de asistentes
     if visita.estado not in [
         "aprobada_inicial",
         "documentos_enviados",
@@ -1135,10 +1134,8 @@ def registrar_asistentes(request, tipo, visita_id):
         messages.error(request, "Solo puede registrar asistentes en visitas aprobadas.")
         return _redirect_segun_rol(request)
 
-    # Obtener asistentes previos disponibles (de visitas pasadas del mismo programa)
     asistentes_previos = []
     if tipo == "interna":
-        # Obtener todas las fichas anteriores del mismo programa
         visitas_anteriores = VisitaInterna.objects.filter(
             numero_ficha=visita.numero_ficha,
             id__lt=visita.id,
@@ -1156,7 +1153,6 @@ def registrar_asistentes(request, tipo, visita_id):
                 "telefono",
             )
             asistentes_previos.extend(asistentes_del_programa)
-        # Eliminar duplicados basados en número de documento
         nums_doc_vistos = set()
         asistentes_previos_unicos = []
         for doc_info in asistentes_previos:
@@ -1166,7 +1162,6 @@ def registrar_asistentes(request, tipo, visita_id):
                 asistentes_previos_unicos.append(doc_info)
         asistentes_previos = asistentes_previos_unicos
     elif tipo == "externa":
-        # Obtener todas las visitas anteriores de la misma institución
         visitas_anteriores = VisitaExterna.objects.filter(
             nombre=visita.nombre,
             id__lt=visita.id,
@@ -1184,7 +1179,6 @@ def registrar_asistentes(request, tipo, visita_id):
                 "telefono",
             )
             asistentes_previos.extend(asistentes_del_programa)
-        # Eliminar duplicados basados en número de documento
         nums_doc_vistos = set()
         asistentes_previos_unicos = []
         for doc_info in asistentes_previos:
@@ -1194,7 +1188,6 @@ def registrar_asistentes(request, tipo, visita_id):
                 asistentes_previos_unicos.append(doc_info)
         asistentes_previos = asistentes_previos_unicos
 
-    # Sincronizar documento de salud desde Aprendiz -> Asistente (solo visitas internas)
     if tipo == "interna":
         from panel_instructor_interno.models import Aprendiz
 
@@ -1227,7 +1220,6 @@ def registrar_asistentes(request, tipo, visita_id):
                             defaults={"archivo": doc_subido.archivo},
                         )
 
-                    # Compatibilidad con registros antiguos que guardaban en documento_adicional
                     if (
                         not docs_salud_aprendiz.exists()
                         and aprendiz.documento_adicional
@@ -1249,7 +1241,6 @@ def registrar_asistentes(request, tipo, visita_id):
                 documento_requerido__categoria="Formato Auto Reporte Condiciones de Salud"
             ).exists()
 
-    # Obtener documentos disponibles para descargar, agrupados por categoria
     documentos_disponibles = Documento.objects.all().order_by(
         "categoria", "-fecha_subida"
     )
@@ -1268,7 +1259,6 @@ def registrar_asistentes(request, tipo, visita_id):
     asistentes_actuales = asistentes.count()
     solicitud_final_historica = _solicitud_final_ya_enviada(visita, tipo)
     puede_agregar = asistentes_actuales < max_asistentes and not solicitud_final_historica
-    # Permitir archivos finales si hay al menos 1 asistente registrado
     mostrar_archivos_finales = asistentes_actuales > 0
 
     resumen_pendientes = _resumen_pendientes_correccion(visita, tipo)
@@ -1402,7 +1392,6 @@ def registrar_asistentes(request, tipo, visita_id):
             visita_id=visita_id,
         )
 
-    # Procesar archivos finales si se envía el formulario del modal
     if (
         request.method == "POST"
         and mostrar_archivos_finales  # Permitir si hay al menos 1 asistente
@@ -1412,7 +1401,6 @@ def registrar_asistentes(request, tipo, visita_id):
         archivos_subidos = []
         archivos_invalidos = []
         archivos_a_guardar = []
-        # Obtener el primer asistente para asociar los archivos finales
         primer_asistente = asistentes.first() if asistentes.exists() else None
 
         if primer_asistente:
@@ -1420,7 +1408,6 @@ def registrar_asistentes(request, tipo, visita_id):
                 for doc in docs:
                     archivo = request.FILES.get(f"archivo_final_{doc.id}")
                     if archivo:
-                        # Guardar una nueva versión para conservar historial de envíos.
                         DocumentoSubidoAsistente.objects.create(
                             documento_requerido=doc,
                             asistente_interna=(
@@ -1508,7 +1495,6 @@ def registrar_asistentes(request, tipo, visita_id):
             correo_asistente = request.POST.get("correo", "").strip().lower()
             telefono = request.POST.get("telefono", "").strip()
 
-            # Validar campos obligatorios y formato
             campos_ok = True
             errores_campos = []
             tipos_documento_validos = {"CC", "CE", "TI", "PPT", "PP"}
@@ -1587,7 +1573,6 @@ def registrar_asistentes(request, tipo, visita_id):
                 if _es_categoria_documento_registro(categoria)
             }
 
-            # Validar que solo el documento de 'Formato Auto Reporte Condiciones de Salud' fue subido
             archivos_ok = False
             archivos_dict = {}
             extensiones_permitidas_docs = {".pdf", ".doc", ".docx"}
@@ -1612,7 +1597,6 @@ def registrar_asistentes(request, tipo, visita_id):
                             extension = Path(archivo.name).suffix.lower()
                             if extension not in extensiones_permitidas_docs:
                                 archivos_invalidos.append(doc.categoria or archivo.name)
-                        # Este archivo es opcional, por lo que no afecta archivos_ok
                         archivos_dict[doc.id] = archivo
 
             if archivos_invalidos:
@@ -1658,15 +1642,12 @@ def registrar_asistentes(request, tipo, visita_id):
                             correo=correo_asistente,
                             telefono=telefono,
                         )
-                    # Guardar archivos subidos
 
-                    # Separar el formato de autorización de padres de los demás documentos
                     formato_padres_archivo = None
                     documentos_regulares = {}
 
                     for doc_id, archivo in archivos_dict.items():
                         if archivo:
-                            # Verificar si es el documento de autorización de padres
                             documento = Documento.objects.get(id=doc_id)
                             if (
                                 documento.categoria
@@ -1676,12 +1657,10 @@ def registrar_asistentes(request, tipo, visita_id):
                             else:
                                 documentos_regulares[doc_id] = archivo
 
-                    # Guardar el formato de autorización de padres directamente en el asistente
                     if formato_padres_archivo:
                         asistente.formato_autorizacion_padres = formato_padres_archivo
                         asistente.save()
 
-                    # Guardar los demás documentos en DocumentoSubidoAsistente
                     for doc_id, archivo in documentos_regulares.items():
                         DocumentoSubidoAsistente.objects.create(
                             documento_requerido_id=doc_id,
@@ -1694,21 +1673,17 @@ def registrar_asistentes(request, tipo, visita_id):
                             archivo=archivo,
                         )
 
-                    # Si es visita interna, también registrar aprendiz en la ficha
                     if tipo == "interna":
                         try:
                             from panel_instructor_interno.models import Ficha, Aprendiz
 
-                            # Obtener la ficha de la visita
                             ficha = Ficha.objects.get(numero=visita.numero_ficha)
 
-                            # Verificar si el aprendiz ya existe en la ficha
                             aprendiz_existe = Aprendiz.objects.filter(
                                 ficha=ficha, numero_documento=num_doc
                             ).exists()
 
                             if not aprendiz_existe:
-                                # Crear aprendiz en la ficha con el documento de salud
                                 aprendiz_data = {
                                     "ficha": ficha,
                                     "nombre": (
@@ -1726,24 +1701,19 @@ def registrar_asistentes(request, tipo, visita_id):
                                     "estado": "activo",
                                 }
 
-                                # Si hay documento de salud, asignarlo
                                 for doc_id, archivo in archivos_dict.items():
                                     if archivo and doc_id in archivos_dict:
-                                        # El archivo del Auto Reporte va a documento_adicional
                                         aprendiz_data["documento_adicional"] = archivo
 
                                 Aprendiz.objects.create(**aprendiz_data)
                         except Exception as e:
-                            # Si falla la creación del aprendiz en ficha, no interrumpir el flujo
                             pass
 
-                    # El QR se envia unicamente cuando la visita queda confirmada en su totalidad.
                     messages.success(
                         request,
                         f'Asistente "{nombre}" registrado correctamente. El QR se enviara cuando la visita sea confirmada definitivamente.',
                     )
 
-                    # Ya no es necesario guardar en session, el context lo calcula dinámicamente
                     return redirect(
                         "panel_visitante:registrar_asistentes",
                         tipo=tipo,
@@ -1761,7 +1731,6 @@ def registrar_asistentes(request, tipo, visita_id):
                 if campos_ok and not archivos_ok:
                     messages.error(request, "Debe subir todos los archivos requeridos.")
 
-    # Obtener documentos disponibles para descargar, agrupados por categoría
     documentos_disponibles = Documento.objects.all().order_by(
         "categoria", "-fecha_subida"
     )
@@ -1802,7 +1771,6 @@ def eliminar_asistente(request, tipo, asistente_id):
     """
     Eliminar un asistente de una visita.
     """
-    # Verificar autenticación
     if not request.session.get("responsable_autenticado"):
         return redirect("panel_visitante:login_responsable")
 
@@ -1810,7 +1778,6 @@ def eliminar_asistente(request, tipo, asistente_id):
     if tipo == "interna":
         asistente = get_object_or_404(AsistenteVisitaInterna, id=asistente_id)
         visita = asistente.visita
-        # Verificar que el responsable tenga acceso a esta visita
         if not _tiene_acceso_por_correo(visita, correo):
             messages.error(request, "No tiene permiso para esta acción.")
             return _redirect_segun_rol(request)
@@ -1859,7 +1826,6 @@ def enviar_solicitud_final(request, tipo, visita_id):
     Vista para que el responsable envíe la solicitud final de aprobación.
     Cambia el estado de la visita a 'documentos_enviados' para revisión de documentos.
     """
-    # Verificar autenticación
     es_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
 
     def respuesta_error(mensaje, status_code=400):
@@ -1897,7 +1863,6 @@ def enviar_solicitud_final(request, tipo, visita_id):
         return redirect("panel_visitante:login_responsable")
 
     correo = request.session.get("responsable_correo")
-    # Obtener la visita
     if tipo == "interna":
         visita = get_object_or_404(VisitaInterna, id=visita_id)
         if not _tiene_acceso_por_correo(visita, correo):
@@ -1936,13 +1901,11 @@ def enviar_solicitud_final(request, tipo, visita_id):
         messages.error(request, "Tipo de visita no válido.")
         return _redirect_segun_rol(request)
 
-    # Hacer el endpoint idempotente cuando ya esta en revision o confirmada.
     if visita.estado in ["documentos_enviados", "en_revision_documentos", "confirmada"]:
         return respuesta_ok(
             "La solicitud ya fue enviada y la visita se encuentra en proceso de revisión.",
         )
 
-    # Verificar que la visita esté en estado aprobada_inicial
     if visita.estado != "aprobada_inicial":
         return respuesta_error(
             "Solo puede enviar la solicitud final cuando la visita esté aprobada inicialmente.",
@@ -1956,24 +1919,19 @@ def enviar_solicitud_final(request, tipo, visita_id):
             "La visita debe tener una cantidad de asistentes mayor a cero antes de enviar la solicitud final.",
         )
 
-    # Verificar que haya al menos un asistente registrado
     if visita.asistentes.count() == 0:
         return respuesta_error(
             "Debe registrar al menos un asistente antes de enviar la solicitud final.",
         )
 
-    # Evitar reenvío mientras existan rechazos pendientes de corrección
     if visita.asistentes.filter(estado="documentos_rechazados").exists():
         return respuesta_error(
             "Hay asistentes con documentos rechazados. Corrija los archivos antes de reenviar la solicitud.",
         )
 
-    # Cambiar el estado a documentos_enviados
     visita.estado = "documentos_enviados"
     visita.save()
 
-    # Guardar una marca historica para bloquear futuras ediciones de asistentes,
-    # incluso si la visita vuelve temporalmente a aprobada_inicial por correcciones.
     try:
         usuario_historial = (
             request.user
@@ -2004,7 +1962,6 @@ def enviar_solicitud_final(request, tipo, visita_id):
     except Exception:
         pass
 
-    # Enviar correo al responsable informando que la solicitud final fue enviada
     try:
         if tipo == "interna":
             panel_path = reverse("panel_instructor_interno:panel")
@@ -2046,37 +2003,31 @@ def restablecer_contraseña(request):
         if form.is_valid():
             email = form.cleaned_data["email"]
 
-            # Buscar visitante con ese email
             visitante = RegistroVisitante.objects.filter(correo__iexact=email).first()
 
             if not visitante:
                 form.add_error("email", "Este correo no está registrado.")
             else:
-                # Generar token y uid usando Django's default_token_generator
                 token = default_token_generator.make_token(visitante)
                 uid = urlsafe_base64_encode(force_bytes(visitante.pk))
 
-                # Construir URL de reset usando reverse
                 reset_path = reverse(
                     "panel_visitante:restablecer_contraseña_confirm",
                     kwargs={"uidb64": uid, "token": token},
                 )
                 reset_url = request.build_absolute_uri(reset_path)
 
-                # Preparar contexto para el template HTML
                 email_context = {
                     "nombre": visitante.documento,
                     "reset_url": reset_url,
                     "year": datetime.now().year,
                 }
 
-                # Renderizar template HTML
                 html_content = render_to_string(
                     "email_restablecer_visitante.html", email_context
                 )
                 text_content = strip_tags(html_content)
 
-                # Enviar correo HTML
                 subject = "🔐 Recuperación de Contraseña - MINEGATE"
                 email_msg = EmailMultiAlternatives(
                     subject=subject,
@@ -2164,7 +2115,6 @@ def actualizar_perfil(request):
     """
     embed_mode = request.GET.get("embed") == "1" or request.POST.get("embed") == "1"
 
-    # Verificar que el usuario esté autenticado
     if not request.session.get("responsable_autenticado"):
         messages.warning(
             request,
@@ -2200,7 +2150,6 @@ def actualizar_perfil(request):
                 visitante.correo = form_perfil.cleaned_data["correo"]
                 visitante.save()
 
-                # Actualizar sesión
                 request.session["responsable_nombre"] = visitante.nombre
                 request.session["responsable_apellido"] = visitante.apellido
                 request.session["responsable_tipo_documento"] = visitante.tipo_documento
@@ -2351,8 +2300,6 @@ def actualizar_documento_asistente(request, tipo, asistente_id):
 
     from documentos.models import Documento as DocumentoModel
 
-    # Para AJAX llega "archivo_correccion". Para formulario tradicional,
-    # se mantiene la compatibilidad con los nombres por asistente.
     documento_subido_id = (request.POST.get("documento_subido_id") or "").strip()
     tipo_correccion = (request.POST.get("tipo_correccion") or "documento").strip().lower()
     if tipo_correccion not in {"documento", "autorizacion_padres"}:
@@ -2700,7 +2647,6 @@ def actualizar_info_asistente(request, tipo, asistente_id):
 
                 ficha = Ficha.objects.filter(numero=visita.numero_ficha).first()
                 if ficha:
-                    # Buscar el aprendiz vinculado por documento anterior para mantener el mismo registro.
                     aprendiz_a_actualizar = Aprendiz.objects.filter(
                         ficha=ficha, numero_documento=numero_doc_anterior
                     ).first()
@@ -2731,8 +2677,6 @@ def actualizar_info_asistente(request, tipo, asistente_id):
                             if p
                         ]
 
-                        # Intenta conservar apellidos compuestos usando la cantidad de palabras
-                        # del apellido actual; si no hay referencia, asume 1 apellido.
                         if len(partes_nombre) <= 1:
                             nuevo_nombre = partes_nombre[0] if partes_nombre else nombre
                             nuevo_apellido = aprendiz_a_actualizar.apellido or "-"
@@ -2835,19 +2779,16 @@ def copiar_asistente_previo(request, tipo, visita_id, asistente_previo_id):
     """
     Copia un asistente previo de una visita anterior a la visita actual.
     """
-    # Verificar autenticación
     if not request.session.get("responsable_autenticado"):
         return redirect("panel_visitante:login_responsable")
 
     correo = request.session.get("responsable_correo")
-    # Obtener visita actual
     if tipo == "interna":
         visita = get_object_or_404(
             VisitaInterna,
             id=visita_id,
             correo_responsable__iexact=correo,
         )
-        # Obtener asistente previo (de cualquier visita anterior con el mismo número de ficha)
         asistente_original = get_object_or_404(
             AsistenteVisitaInterna, id=asistente_previo_id, puede_reutilizar=True
         )
@@ -2857,7 +2798,6 @@ def copiar_asistente_previo(request, tipo, visita_id, asistente_previo_id):
             id=visita_id,
             correo_responsable__iexact=correo,
         )
-        # Obtener asistente previo (de cualquier visita anterior con el mismo nombre)
         asistente_original = get_object_or_404(
             AsistenteVisitaExterna, id=asistente_previo_id, puede_reutilizar=True
         )
@@ -2865,7 +2805,6 @@ def copiar_asistente_previo(request, tipo, visita_id, asistente_previo_id):
         messages.error(request, "Tipo de visita no válido.")
         return _redirect_segun_rol(request)
 
-    # Verificar que no esté duplicado
     asistentes_actuales = visita.asistentes.all()
     max_asistentes = (
         visita.cantidad_aprendices if tipo == "interna" else visita.cantidad_visitantes
@@ -2879,7 +2818,6 @@ def copiar_asistente_previo(request, tipo, visita_id, asistente_previo_id):
             "panel_visitante:registrar_asistentes", tipo=tipo, visita_id=visita_id
         )
 
-    # Verificar si el asistente ya está en la visita actual
     if asistentes_actuales.filter(
         numero_documento=asistente_original.numero_documento
     ).exists():
@@ -2892,7 +2830,6 @@ def copiar_asistente_previo(request, tipo, visita_id, asistente_previo_id):
         )
 
     try:
-        # Copiar asistente
         if tipo == "interna":
             nuevo_asistente = AsistenteVisitaInterna.objects.create(
                 visita=visita,
@@ -2904,7 +2841,6 @@ def copiar_asistente_previo(request, tipo, visita_id, asistente_previo_id):
                 es_reutilizado=True,
                 visita_original=asistente_original,
             )
-            # Copiar el archivo de autorización de padres si existe
             if asistente_original.formato_autorizacion_padres:
                 from django.core.files.base import ContentFile
 
@@ -2925,7 +2861,6 @@ def copiar_asistente_previo(request, tipo, visita_id, asistente_previo_id):
                 es_reutilizado=True,
                 visita_original=asistente_original,
             )
-            # Copiar el archivo de autorización de padres si existe
             if asistente_original.formato_autorizacion_padres:
                 from django.core.files.base import ContentFile
 

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Vistas para gestión de reprogramación de visitas
 Maneja solicitudes y asignación de nuevas fechas
 """
@@ -148,20 +148,17 @@ def solicitar_reprogramacion(request, tipo, visita_id):
         if tipo == "interna":
             visita = get_object_or_404(VisitaInterna, pk=visita_id)
             
-            # Solo coordinador o administrador pueden solicitar reprogramación
             if not (es_coordinador(request.user) or es_administrador_panel(request.user)):
                 return JsonResponse({
                     "success": False,
                     "message": "No tienes permiso para solicitar reprogramación"
                 }, status=403)
             
-            # Guardar fecha anterior
             fecha_anterior = timezone.datetime.combine(
                 visita.fecha_visita,
                 visita.hora_inicio
             ) if visita.fecha_visita and visita.hora_inicio else timezone.now()
             
-            # Crear historial de reprogramación
             tipo_solicitud = "coordinador" if es_coordinador(request.user) else "administrador"
             historial = HistorialReprogramacionInterna.objects.create(
                 visita_interna=visita,
@@ -172,7 +169,6 @@ def solicitar_reprogramacion(request, tipo, visita_id):
                 completada=False
             )
             
-            # Cambiar estado de la visita
             visita.estado = "reprogramacion_solicitada"
             visita.save()
             
@@ -185,20 +181,17 @@ def solicitar_reprogramacion(request, tipo, visita_id):
         elif tipo == "externa":
             visita = get_object_or_404(VisitaExterna, pk=visita_id)
             
-            # Solo coordinador o administrador pueden solicitar reprogramación
             if not (es_coordinador(request.user) or es_administrador_panel(request.user)):
                 return JsonResponse({
                     "success": False,
                     "message": "No tienes permiso para solicitar reprogramación"
                 }, status=403)
             
-            # Guardar fecha anterior
             fecha_anterior = timezone.datetime.combine(
                 visita.fecha_visita,
                 visita.hora_inicio
             ) if visita.fecha_visita and visita.hora_inicio else timezone.now()
             
-            # Crear historial de reprogramación
             tipo_solicitud = "coordinador" if es_coordinador(request.user) else "administrador"
             historial = HistorialReprogramacionExterna.objects.create(
                 visita_externa=visita,
@@ -209,7 +202,6 @@ def solicitar_reprogramacion(request, tipo, visita_id):
                 completada=False
             )
             
-            # Cambiar estado de la visita
             visita.estado = "reprogramacion_solicitada"
             visita.save()
             
@@ -256,7 +248,6 @@ def completar_reprogramacion(request, tipo, visita_id):
                 "message": "Fecha, hora e ID de historial son requeridos"
             }, status=400)
         
-        # Parsear fecha y hora
         try:
             fecha_obj = timezone.datetime.strptime(nueva_fecha, "%Y-%m-%d").date()
             hora_obj = timezone.datetime.strptime(nueva_hora, "%H:%M").time()
@@ -284,7 +275,6 @@ def completar_reprogramacion(request, tipo, visita_id):
 
         hora_fin_visita = fecha_hora_fin.time()
         
-        # Validar que la fecha sea en el futuro
         fecha_hora_nueva = timezone.datetime.combine(fecha_obj, hora_obj)
         if timezone.is_naive(fecha_hora_nueva) and timezone.is_aware(timezone.now()):
             fecha_hora_nueva = timezone.make_aware(fecha_hora_nueva, timezone.get_current_timezone())
@@ -316,19 +306,16 @@ def completar_reprogramacion(request, tipo, visita_id):
                     "message": "El horario seleccionado ya no está disponible"
                 }, status=409)
 
-            # Actualizar visita
             visita.fecha_visita = fecha_obj
             visita.hora_inicio = hora_obj
             visita.hora_fin = hora_fin_visita
             visita.estado = "enviada_coordinacion"
             visita.save()
             
-            # Marcar histórico como completado
             historial.fecha_reprogramacion = fecha_hora_nueva
             historial.completada = True
             historial.save()
             
-            # Recrear reserva de horario para la nueva fecha
             ReservaHorario.objects.update_or_create(
                 visita_interna=visita,
                 defaults={
@@ -368,19 +355,16 @@ def completar_reprogramacion(request, tipo, visita_id):
                     "message": "El horario seleccionado ya no está disponible"
                 }, status=409)
 
-            # Actualizar visita
             visita.fecha_visita = fecha_obj
             visita.hora_inicio = hora_obj
             visita.hora_fin = hora_fin_visita
             visita.estado = "enviada_coordinacion"
             visita.save()
             
-            # Marcar histórico como completado
             historial.fecha_reprogramacion = fecha_hora_nueva
             historial.completada = True
             historial.save()
             
-            # Recrear reserva de horario para la nueva fecha
             ReservaHorario.objects.update_or_create(
                 visita_externa=visita,
                 defaults={
@@ -469,8 +453,6 @@ def obtener_reprogramaciones_pendientes_instructor(request):
     Filtra visitas con estado REPROGRAMACION_SOLICITADA.
     """
     try:
-        # Asumiendo que el instructor es identificado por el usuario actual
-        # En una mejor implementación, se podría tener una relación User -> Instructor
         
         visitas_internas = VisitaInterna.objects.filter(
             estado="reprogramacion_solicitada"

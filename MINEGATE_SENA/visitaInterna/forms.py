@@ -1,4 +1,4 @@
-from django import forms
+﻿from django import forms
 from .models import VisitaInterna
 
 
@@ -18,7 +18,6 @@ class VisitaInternaForm(forms.ModelForm):
             'cantidad_aprendices',
             'observaciones',
         ]
-        # Widgets 
         widgets = {
             'nombre_programa': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -63,7 +62,6 @@ class VisitaInternaForm(forms.ModelForm):
                 'rows': 4
             }),
         }
-        # Etiquetas 
         labels = {
             'nombre_programa': 'Nombre de Programa',
             'numero_ficha': 'Número de Ficha',
@@ -76,7 +74,6 @@ class VisitaInternaForm(forms.ModelForm):
             'observaciones': 'Observaciones',
         }
         
-    # Validaciones
     
     def clean_telefono_responsable(self):
         """Validar que el teléfono contenga solo números"""

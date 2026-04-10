@@ -1,11 +1,10 @@
-from django.urls import path
+﻿from django.urls import path
 from . import views
 from . import reprogramacion_views
 
 app_name = "gestion_visitas"
 
 urlpatterns = [
-    # Endpoints de gestión de visitas en el panel administrativo
     path("visitas/", views.api_listar_visitas, name="api_listar_visitas"),
     path(
         "visitas/<str:tipo>/<int:visita_id>/",
@@ -27,7 +26,6 @@ urlpatterns = [
         views.api_revisar_autorizacion_padres,
         name="api_revisar_autorizacion_padres",
     ),
-    # Nuevos endpoints requeridos por el panel
     path(
         "visitas-aprobadas/",
         views.api_visitas_aprobadas,
@@ -38,7 +36,6 @@ urlpatterns = [
         views.api_documentos_revision,
         name="api_documentos_revision",
     ),
-    # Compatibilidad temporal: soporta URLs antiguas con prefijo /api/
     path("api/visitas/", views.api_listar_visitas, name="api_listar_visitas_legacy"),
     path(
         "api/visitas/<str:tipo>/<int:visita_id>/",
@@ -65,7 +62,6 @@ urlpatterns = [
         views.api_documentos_revision,
         name="api_documentos_revision_legacy",
     ),
-    # Endpoints de reprogramación
     path(
         "reprogramacion/solicitar/<str:tipo>/<int:visita_id>/",
         reprogramacion_views.solicitar_reprogramacion,
@@ -86,7 +82,6 @@ urlpatterns = [
         reprogramacion_views.obtener_reprogramaciones_pendientes_instructor,
         name="reprogramaciones_pendientes_instructor",
     ),
-    # Compatibilidad con prefijo /api/
     path(
         "api/reprogramacion/solicitar/<str:tipo>/<int:visita_id>/",
         reprogramacion_views.solicitar_reprogramacion,
